@@ -13,10 +13,11 @@ in its doc comment, its docstring, its title or its `[Tags]` line.
 
 The checker is checked by `tests/test_compliance_script.py`.
 
-`index` walks the repositories and writes the index and the committed matrix page. `check` reads
-the committed index (or rescans with `--scan`) and fails on an unproven security requirement, a
-citation of an id that does not exist, a skipped test with no task id beside the skip, and on the
-count of uncited requirements rising above the committed baseline. `report` joins the index with
+`index` walks the repositories and writes the index and the committed matrix page. `check` and
+`report` walk them again rather than trust a file on disk, which takes under a second. `check`
+fails on an unproven security requirement, a citation of an id that does not exist, a skipped test
+with no task id beside the skip, and on the count of uncited requirements rising above the
+committed baseline. `report` joins the index with
 the JUnit output of the lanes and renders a requirement green only when every test citing it
 passed in that input; no number in the report is typed, every one is read from the JUnit files.
 """
@@ -858,10 +859,10 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--repo", action="append", default=[], metavar="NAME=PATH",
                         help="a repository to scan; repeatable")
     parser.add_argument("--docs", type=Path, help="the docs repository (default: the one beside this clone)")
-    parser.add_argument("--index", type=Path, default=Path("compliance/index.json"))
+    parser.add_argument("--index", type=Path, default=Path("compliance/index.json"),
+                        help="index: where the index is written; the other commands always rescan")
     parser.add_argument("--baseline", type=Path, default=Path("compliance/baseline.json"))
     parser.add_argument("--matrix", type=Path, help="the generated matrix page in the docs repository")
-    parser.add_argument("--scan", action="store_true", help="check: rebuild the index instead of reading it")
     parser.add_argument("--record-baseline", action="store_true",
                         help="index: write today's uncited count into the baseline")
     parser.add_argument("--junit", type=Path, action="append", default=[], metavar="PATH",
@@ -903,9 +904,10 @@ def main(argv: list[str] | None = None) -> int:
         return 0
 
     if arguments.command == "check":
-        # The index is generated, not committed: a 2.6 MB JSON rewritten on every run is repo
-        # bloat, and rebuilding it takes under a second. The committed record is the matrix page.
-        index = scan() if arguments.scan or not arguments.index.exists() else load_json(arguments.index, "index")
+        # Always rescan. The index is generated, not committed: a 2.6 MB JSON rewritten on every
+        # run is repo bloat, rebuilding it takes under a second, and a stale file on disk would
+        # make the gate answer about a tree that is no longer there.
+        index = scan()
         failures = check_index(index, load_json(arguments.baseline, "baseline"))
         for failure in failures:
             print(failure)
@@ -918,8 +920,7 @@ def main(argv: list[str] | None = None) -> int:
 
     if not arguments.junit:
         parser.error("report needs at least one --junit path")
-    index = load_json(arguments.index, "index") if arguments.index.exists() else scan()
-    report = build_report(index, arguments.junit)
+    report = build_report(scan(), arguments.junit)
     write(arguments.out_json, json.dumps(report, indent=1) + "\n")
     write(arguments.out_html, render_report_html(report))
     print(" ".join(f"{STATE_WORDS[state]}={count}" for state, count in report["totals"].items()))

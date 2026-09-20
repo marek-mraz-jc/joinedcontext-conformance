@@ -52,8 +52,10 @@ jobs:
           token: ${{ secrets.COMPLIANCE_READ_TOKEN || secrets.GITHUB_TOKEN }}
       - uses: actions/setup-python@v5
         with: { python-version: "3.12" }
-      - name: the checker still fails on an unproven security requirement and a dead citation
-        run: python3 -m pytest joinedcontext-conformance/tests/test_compliance_script.py -q
+      - name: the checkers still fail on an unproven requirement, a dead citation and a missing test
+        run: |
+          python3 -m pytest joinedcontext-conformance/tests/test_compliance_script.py -q
+          python3 -m pytest joinedcontext-conformance/tests/test_security_gate.py -q
       - name: index every requirement against the tests that name it
         working-directory: joinedcontext-conformance
         run: python3 scripts/compliance.py index
@@ -84,6 +86,10 @@ jobs:
             joinedcontext-conformance/compliance/index.json
           retention-days: 30
           if-no-files-found: warn
-      - name: the gate
+      - name: the compliance gate
         working-directory: joinedcontext-conformance
         run: python3 scripts/compliance.py check
+      - name: the production security gate, one row per attack vector (T-1722)
+        if: always()
+        working-directory: joinedcontext-conformance
+        run: python3 scripts/security_gate.py
