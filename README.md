@@ -1,6 +1,12 @@
 # joinedcontext-conformance
 
-Conformance and system test suites run against a deployed instance (requirements TS-01…TS-25, `../docs/Testing/`):
+Every suite that judges a running installation rather than a tree of source: the standards
+conformance runs, the security and MCP suites, the browser journeys, the load profiles. One
+image, one entrypoint, one folder per suite, and a verdict a person can read.
+
+## 1. What is in it
+
+The suites:
 
 - ETSI NGSI-LD robot suite (space surface and endpoints)
 - OGC `ets-ogcapi-features10` (endpoint `ogc/features/`)
@@ -11,7 +17,7 @@ Conformance and system test suites run against a deployed instance (requirements
 - k6 load profiles (thousands rps on endpoints, EP performance budgets)
 - pySHACL validation of served examples against served SHACL (DM-46)
 
-## Layout
+And the repository around them:
 
 | Path | What |
 |---|---|
@@ -22,7 +28,41 @@ Conformance and system test suites run against a deployed instance (requirements
 | `tests/<suite>/` | one folder per suite, each with a `README.md` and a `run.sh` the entrypoint calls |
 | `scripts/` | checks that run on someone else's tree rather than against a deployment: `check-i18n.py` (TS-14), `generate-qualification-report.py` (T-0089), `compare-latency.py` (T-0090) |
 
-## Running a suite
+## 2. How it fits
+
+A suite here proves a claim the specification makes, against an installation that is actually
+running: `docs/Testing/00-strategy.md` says which layer answers which question, and
+`docs/Testing/02-conformance-tests.md` which standard each conformance suite is taken from
+(TS-01…TS-25). The unit and integration tests of a component stay in that component's own
+repository; what needs a deployment lives here.
+
+## 3. Build
+
+The runner image is the artifact: every suite runs inside it, in CI and on a laptop.
+
+```bash
+docker build -t conformance-runner:local .
+```
+
+## 4. Test
+
+The suites need a deployment, but the harness around them does not, and these are the checks
+the merge gate runs — that every suite is discoverable, that every Robot keyword resolves,
+that every pytest suite imports, and that each verdict checker still fails a broken run:
+
+```bash
+pip install --require-hashes -r requirements.txt
+JC_TESTS_DIR=tests bin/jc-conformance --list
+robot --dryrun --outputdir /tmp/robot tests
+python3 tests/etsi-ttf/check_expected_failures.py --selftest
+python3 tests/mcp/selftest.py
+python3 tests/e2e/selftest.py
+```
+
+`--selftest` on the entrypoint prints the version of every installed tool; the image lane runs
+it on every build and refuses an image whose entrypoint does not run as `testrunner`.
+
+## 5. Run a suite
 
 ```bash
 docker run --rm \
@@ -33,20 +73,7 @@ docker run --rm \
 
 Locally, without the image: `JC_TESTS_DIR=tests bin/jc-conformance etsi`.
 
-`--selftest` prints the version of every installed tool; the image CI gate runs it on every
-build and refuses an image whose entrypoint does not run as `testrunner`.
-
-Before pushing anything that changes the image (Dockerfile, `requirements.in`, `package.json`),
-scan it the way `image.yml` does — a new dependency can bring a fresh advisory:
-
-```bash
-docker build -t conformance-runner:local .
-docker run --rm -v /var/run/docker.sock:/var/run/docker.sock -v "$PWD/.trivyignore:/.trivyignore" \
-  aquasec/trivy image --severity HIGH,CRITICAL --ignore-unfixed --ignorefile /.trivyignore \
-  --exit-code 1 conformance-runner:local
-```
-
-## Updating the locks
+### Updating the locks
 
 ```bash
 docker run --rm -v "$PWD:/w" -w /w python:3.12-slim-bookworm sh -c \
@@ -54,7 +81,7 @@ docker run --rm -v "$PWD:/w" -w /w python:3.12-slim-bookworm sh -c \
 npm install --package-lock-only
 ```
 
-## Running against `dev`
+### Against `dev`
 
 `dev` is the one cluster and it is also the demo instance, so a run there is a run against
 seeded data and live pipelines rather than against a fixture. `tests/dev.env.sh` holds what a
@@ -93,3 +120,33 @@ list so the batch reads a verdict instead of a count.
 
 A failure that survives the profile is a platform finding, and becomes a task
 (T-0780…T-0783 are the ones found this way).
+
+## 6. Security
+
+Report a vulnerability in the platform privately through the security advisories of the
+repository it lives in — [platform](https://github.com/marek-mraz-jc/joinedcontext-platform/security/advisories/new)
+for the gateway, the reconciler and the manifest model,
+[portal](https://github.com/marek-mraz-jc/joinedcontext-portal/security/advisories/new) for the
+management application. Please do not open a public issue for one.
+
+A new dependency can bring a fresh advisory, so scan the image the way `image.yml` does
+before pushing anything that changes it (`Dockerfile`, `requirements.in`, `package.json`):
+
+```bash
+docker run --rm -v /var/run/docker.sock:/var/run/docker.sock -v "$PWD/.trivyignore:/.trivyignore" \
+  aquasec/trivy image --severity HIGH,CRITICAL --ignore-unfixed --ignorefile /.trivyignore \
+  --exit-code 1 conformance-runner:local
+```
+
+A suite that finds a bypass is reporting a vulnerability, so it is written down the same way:
+a case in `tests/security/`, the finding in the task, and never a screenshot of a token. No
+credential belongs in this repository. A profile mints every bearer at run time from the
+kubeconfig the shell already holds and exports it into the process; nothing is written to a
+file, a report or a log, and `reports/` is the only thing a run leaves behind.
+
+## 7. Working here
+
+A new suite is a folder under `tests/` with its own `README.md` and `run.sh`, a row in the
+table above, and a verdict checker with a `--selftest` that fails a broken run — a suite that
+cannot go red proves nothing. Cite the requirement ids of the claim it checks, and name the
+standard clause in the case itself rather than in a commit message.
