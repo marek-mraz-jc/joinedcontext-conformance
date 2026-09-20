@@ -31,6 +31,20 @@ jobs:
           GRANTED_ENTITY_ID: ${{ vars.GRANTED_ENTITY_ID }}
           FORBIDDEN_ENTITY_ID: ${{ vars.FORBIDDEN_ENTITY_ID }}
           HIDDEN_ATTR: ${{ vars.HIDDEN_ATTR }}
+          # Organisation and project isolation, end to end (T-1708): two projects, one token
+          # each, and one address per door. Every door skips when its variable is not set.
+          PORTAL_URL: ${{ vars.PORTAL_URL }}
+          PROJECT_A: ${{ vars.PROJECT_A }}
+          PROJECT_B: ${{ vars.PROJECT_B }}
+          TOKEN_PROJECT_A: ${{ secrets.TOKEN_PROJECT_A }}
+          TOKEN_PROJECT_B: ${{ secrets.TOKEN_PROJECT_B }}
+          OTHER_ENDPOINT_URL: ${{ vars.OTHER_ENDPOINT_URL }}
+          OTHER_ARTIFACT_URL: ${{ vars.OTHER_ARTIFACT_URL }}
+          FORGE_URL: ${{ vars.FORGE_URL }}
+          OTHER_FORGE_REPO: ${{ vars.OTHER_FORGE_REPO }}
+          OTHER_RUN_ID: ${{ vars.OTHER_RUN_ID }}
+          BROKER_URL: ${{ vars.BROKER_URL }}
+          MCP_URL: ${{ vars.MCP_URL }}
           JC_REPORTS_DIR: ${{ github.workspace }}/reports/security
         run: tests/security/run.sh
       - if: always()
