@@ -1,0 +1,82 @@
+name: etsi-smoke
+# ETSI NGSI-LD conformance smoke suite against a running system (T-0055, TS-05, TS-06).
+# Dispatch-only while there is one cluster; DEMO.md step 8 is this workflow pointed at dev.
+# The system under test is a Context Gateway there, so the run needs the deployment's org
+# domain and space for the ids it mints (T-0274), a token of the conformance service account
+# for its writes (T-0277) and the quarantine list naming the known gateway defects (T-0276).
+# The client secret comes from the repository secret NGSILD_CLIENT_SECRET, never from an
+# input: without it the run is anonymous and every write answers 403.
+on:
+  workflow_dispatch:
+    inputs:
+      ngsild_url:
+        description: NGSI-LD API root of the system under test
+        required: true
+        default: https://2.28.67.127.sslip.io/api/endpoint/mluyob4nz52lok3ssk7pgn5vwt/ngsi-ld/v1
+      tenant:
+        description: NGSILD-Tenant header (vanilla broker matrix only; empty for a context space)
+        required: false
+        default: ""
+      org_domain:
+        description: org-domain segment of the entity ids the suite mints (global.orgDomain of the deployment)
+        required: false
+        # The instance's organization domain, not the endpoint's project: the gateway is
+        # deployed with one and refuses every other prefix with 400, whichever project the
+        # endpoint belongs to (T-0784).
+        default: hel.fi
+      space:
+        description: context space of the endpoint under test
+        required: false
+        default: ovzdusie
+      token_url:
+        description: realm token endpoint for client_credentials; empty runs anonymously
+        required: false
+        default: https://idm.2.28.67.127.sslip.io/realms/dev/protocol/openid-connect/token
+      client_id:
+        description: the conformance service account's Keycloak client
+        required: false
+        default: banskabystrica-conformance
+      expected_failures:
+        description: quarantine list to apply (empty keeps robot's own verdict)
+        required: false
+        default: tests/etsi/expected_failures_gateway.json
+permissions: { contents: read }
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12", cache: pip }
+      - run: pip install --require-hashes -r requirements.txt
+      - name: mint the conformance token (skipped without the client secret)
+        id: token
+        if: inputs.token_url != ''
+        env:
+          CLIENT_SECRET: ${{ secrets.NGSILD_CLIENT_SECRET }}
+          TOKEN_URL: ${{ inputs.token_url }}
+          CLIENT_ID: ${{ inputs.client_id }}
+        run: |
+          set -eu
+          if [ -z "$CLIENT_SECRET" ]; then echo "no NGSILD_CLIENT_SECRET: running anonymously"; exit 0; fi
+          token=$(curl -fsS -X POST "$TOKEN_URL" -d grant_type=client_credentials -d "client_id=$CLIENT_ID" \
+            --data-urlencode "client_secret=$CLIENT_SECRET" | python3 -c 'import json,sys; print(json.load(sys.stdin)["access_token"])')
+          echo "::add-mask::$token"
+          echo "token=$token" >> "$GITHUB_OUTPUT"
+      - name: run the smoke suite (gate-conformance, budget 60 s)
+        env:
+          NGSILD_URL: ${{ inputs.ngsild_url }}
+          NGSILD_TENANT: ${{ inputs.tenant }}
+          NGSILD_TOKEN: ${{ steps.token.outputs.token }}
+          NGSILD_ORG_DOMAIN: ${{ inputs.org_domain }}
+          NGSILD_SPACE: ${{ inputs.space }}
+          NGSILD_EXPECTED_FAILURES: ${{ inputs.expected_failures }}
+          JC_REPORTS_DIR: ${{ github.workspace }}/reports/etsi
+        run: timeout 120 tests/etsi/run.sh
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: etsi-smoke-report
+          path: reports/etsi
+          retention-days: 14

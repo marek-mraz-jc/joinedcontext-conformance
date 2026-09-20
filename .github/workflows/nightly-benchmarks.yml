@@ -1,0 +1,82 @@
+name: nightly-benchmarks
+# Nightly benchmark regression gate (TS-22, OPS-18, T-0090).
+# The job needs a target: without gateway_url it runs the two self-tests and nothing else, because a nightly job that silently benchmarks nothing is worse than no job.
+# On demand only: the schedule had no gateway_url, so it ran the two self-tests every night and
+# benchmarked nothing, on metered minutes.
+on:
+  workflow_dispatch:
+    inputs:
+      script:
+        description: benchmark script to run (gateway-latency-load.js, gateway-endurance.js, bulk-export.js)
+        required: true
+        default: gateway-latency-load.js
+      gateway_url:
+        description: NGSI-LD API root of the space under test
+        required: false
+        default: ""
+      broker_url:
+        description: broker internal listener; without it the EP-28 overhead is not measured
+        required: false
+        default: ""
+      rate:
+        description: requests per second (TS-22 asks for 5000 per replica)
+        required: true
+        default: "5000"
+      duration:
+        description: how long to hold the rate (e.g. 1m for latency, 30m for endurance)
+        required: true
+        default: 1m
+permissions:
+  contents: write  # the rolling baseline is a commit; without it every night starts from an empty history
+jobs:
+  benchmark:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12" }
+      - name: execute benchmark or selftests
+        env:
+          JC_K6_SCRIPT: ${{ inputs.script || 'gateway-latency-load.js' }}
+          GATEWAY_URL: ${{ inputs.gateway_url }}
+          BROKER_URL: ${{ inputs.broker_url }}
+          BROKER_TENANT: ${{ vars.BROKER_TENANT }}
+          GATEWAY_TOKEN: ${{ secrets.TOKEN_VIEWER }}
+          ENTITY_ID: ${{ vars.GRANTED_ENTITY_ID }}
+          JC_K6_RATE: ${{ inputs.rate || '5000' }}
+          JC_K6_DURATION: ${{ inputs.duration || '1m' }}
+        run: |
+          set -eu
+          if [ -z "${GATEWAY_URL:-}" ]; then
+            echo "No gateway_url provided: running self-tests only"
+            python3 scripts/compare-latency.py --selftest
+            python3 scripts/generate-qualification-report.py --selftest
+            exit 0
+          fi
+
+          mkdir -p reports/k6 && chmod 777 reports/k6
+          docker run --rm \
+            -e JC_K6_SCRIPT -e GATEWAY_URL -e BROKER_URL -e BROKER_TENANT -e GATEWAY_TOKEN -e ENTITY_ID \
+            -e JC_K6_RATE -e JC_K6_DURATION \
+            -v "$PWD/reports:/reports" \
+            "ghcr.io/${GITHUB_REPOSITORY,,}:main" k6
+
+          python3 scripts/compare-latency.py reports/k6/summary.json benchmarks/latency-history.json --commit "$GITHUB_SHA"
+      - name: keep the rolling baseline
+        if: inputs.gateway_url != ''
+        run: |
+          set -eu
+          git diff --quiet benchmarks/latency-history.json && exit 0
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add benchmarks/latency-history.json
+          git commit -m "benchmarks: record ${GITHUB_SHA:0:8} latency run"
+          git pull --rebase origin main
+          git push origin HEAD:main
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: k6-summary
+          path: reports/k6
+          retention-days: 30

@@ -1,0 +1,32 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://data.example.org/api/endpoint/hsl-transport/schema/v1/json-schema",
+  "title": "Vehicle",
+  "type": "object",
+  "required": [
+    "id",
+    "type",
+    "location"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "pattern": "^urn:ngsi-ld:Vehicle:"
+    },
+    "type": {
+      "const": "Vehicle"
+    },
+    "location": {
+      "type": "object"
+    },
+    "vehicleType": {
+      "type": "string"
+    },
+    "speed": {
+      "type": "number"
+    },
+    "refDataSource": {
+      "type": "string"
+    }
+  }
+}

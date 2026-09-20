@@ -1,0 +1,41 @@
+name: security
+# Gateway security suites against a running system (T-0082, T-0083, T-0084).
+# Dispatch-only until the gateway answers on dev; tokens come from repository secrets.
+on:
+  workflow_dispatch:
+    inputs:
+      space_url:
+        description: space surface under test
+        required: true
+        default: https://2.28.67.127.sslip.io/cs/ovzdusie/ngsi-ld/v1
+      other_space_url:
+        description: a second space the caller has no grant on
+        required: true
+        default: https://2.28.67.127.sslip.io/cs/doprava/ngsi-ld/v1
+permissions: { contents: read }
+jobs:
+  security:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12", cache: pip }
+      - run: pip install --require-hashes -r requirements.txt
+      - name: run the security suites
+        env:
+          SPACE_URL: ${{ inputs.space_url }}
+          OTHER_SPACE_URL: ${{ inputs.other_space_url }}
+          TOKEN_VIEWER: ${{ secrets.TOKEN_VIEWER }}
+          TOKEN_STEWARD: ${{ secrets.TOKEN_STEWARD }}
+          GRANTED_ENTITY_ID: ${{ vars.GRANTED_ENTITY_ID }}
+          FORBIDDEN_ENTITY_ID: ${{ vars.FORBIDDEN_ENTITY_ID }}
+          HIDDEN_ATTR: ${{ vars.HIDDEN_ATTR }}
+          JC_REPORTS_DIR: ${{ github.workspace }}/reports/security
+        run: tests/security/run.sh
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: security-report
+          path: reports/security
+          retention-days: 30

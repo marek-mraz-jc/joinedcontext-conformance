@@ -1,0 +1,56 @@
+name: mcp
+# Model Context Protocol conformance against a running system (T-0060, T-0061).
+# Dispatch-only until the gateway answers on dev; tokens come from repository secrets.
+on:
+  workflow_dispatch:
+    inputs:
+      mcp_url:
+        description: per-space MCP surface under test
+        required: true
+        default: https://2.28.67.127.sslip.io/cs/ovzdusie/mcp
+      endpoint_mcp_url:
+        description: endpoint-specific MCP surface
+        required: false
+        default: https://2.28.67.127.sslip.io/api/endpoint/mobility/mcp
+      other_space_mcp_url:
+        description: second space MCP surface for isolation verification
+        required: false
+        default: https://2.28.67.127.sslip.io/cs/doprava/mcp
+      config_mcp_url:
+        description: configuration plane MCP surface
+        required: false
+        default: https://2.28.67.127.sslip.io/mcp/config
+      private_mcp_url:
+        description: private space MCP surface for RFC 9728 401 verification
+        required: false
+        default: https://2.28.67.127.sslip.io/cs/secret-space/mcp
+permissions: { contents: read }
+jobs:
+  mcp:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12", cache: pip }
+      - run: pip install --require-hashes -r requirements.txt
+      - name: run the mcp suite
+        env:
+          MCP_URL: ${{ inputs.mcp_url }}
+          ENDPOINT_MCP_URL: ${{ inputs.endpoint_mcp_url }}
+          OTHER_SPACE_MCP_URL: ${{ inputs.other_space_mcp_url }}
+          CONFIG_MCP_URL: ${{ inputs.config_mcp_url }}
+          PRIVATE_MCP_URL: ${{ inputs.private_mcp_url }}
+          MCP_TOKEN: ${{ secrets.MCP_TOKEN }}
+          MCP_AGENT_TOKEN: ${{ secrets.MCP_AGENT_TOKEN }}
+          MCP_HIDDEN_ATTR: ${{ vars.MCP_HIDDEN_ATTR }}
+          MCP_RESTRICTED_TYPE: ${{ vars.MCP_RESTRICTED_TYPE }}
+          CONFIG_MCP_SCRATCH: ${{ vars.CONFIG_MCP_SCRATCH }}
+          JC_REPORTS_DIR: ${{ github.workspace }}/reports/mcp
+        run: tests/mcp/run.sh
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: mcp-report
+          path: reports/mcp
+          retention-days: 30

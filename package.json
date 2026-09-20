@@ -1,0 +1,15 @@
+{
+  "name": "joinedcontext-conformance",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Browser and accessibility tooling of the conformance runner (TS-12, TS-13)",
+  "license": "Apache-2.0",
+  "dependencies": {
+    "@axe-core/playwright": "4.13.0",
+    "@playwright/test": "1.62.1"
+  },
+  "devDependencies": {
+    "@types/node": "22.18.1",
+    "typescript": "5.9.2"
+  }
+}

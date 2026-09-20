@@ -1,0 +1,21 @@
+apiVersion: joinedcontext.com/v1alpha1
+kind: DataModel
+metadata:
+  name: bb-air-quality
+  namespace: bb-ovzdusie
+  title:
+    sk: "Kvalita ovzdušia"
+    en: "Air quality"
+spec:
+  contextSpaceRef: ovzdusie
+  linkml: ./bb-air-quality.linkml.yaml
+  version: 2.1.0
+  lifecycle: published
+  classes:
+    - AirQualityObserved
+  artifacts:
+    jsonSchema: ./json-schema/bb-air-quality.v2.json
+    context: ./context/bb-air-quality.v2.jsonld
+    shacl: ./shacl/bb-air-quality.v2.ttl
+    docs: ./docs/bb-air-quality.md
+    example: ./examples/bb-air-quality.example.jsonld

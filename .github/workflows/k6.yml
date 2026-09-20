@@ -1,0 +1,95 @@
+name: k6
+# Gateway performance budgets against a running system (T-0065, T-0066, T-0067, T-0332, TS-05, TS-22, EP-05, EP-20, EP-28, EP-41, EP-44, OPS-18).
+# Dispatch-only, and only meaningful on dedicated hardware: a shared runner cannot hold a 5 ms budget.
+on:
+  workflow_dispatch:
+    inputs:
+      script:
+        description: benchmark script to run (gateway-latency-load.js, gateway-endurance.js, bulk-export.js, transport_endpoint_load.js)
+        required: true
+        default: gateway-latency-load.js
+      gateway_url:
+        description: NGSI-LD API root of the space under test
+        required: false
+        default: https://2.28.67.127.sslip.io/cs/ovzdusie/ngsi-ld/v1
+      broker_url:
+        description: broker internal listener; without it the EP-28 overhead is not measured
+        required: false
+        default: ""
+      rate:
+        description: requests per second (TS-22 asks for 5000 per replica)
+        required: true
+        default: "5000"
+      duration:
+        description: how long to hold the rate (e.g. 1m for latency, 30m for endurance)
+        required: true
+        default: 1m
+      gateway_metrics_url:
+        description: gateway Prometheus metrics endpoint (for endurance soak)
+        required: false
+        default: ""
+      broker_metrics_url:
+        description: broker Prometheus metrics endpoint (for endurance soak)
+        required: false
+        default: ""
+      export_url:
+        description: Endpoint base URL for bulk export (bulk-export.js)
+        required: false
+        default: ""
+      export_rows:
+        description: minimum expected rows per export stream (bulk-export.js)
+        required: false
+        default: "50000"
+      export_streams:
+        description: concurrent export streams per format (bulk-export.js)
+        required: false
+        default: "3"
+      endpoint_url:
+        description: Endpoint base URL for the endpoint load benchmark (transport_endpoint_load.js)
+        required: false
+        default: ""
+      burst_rate:
+        description: burst rate that must be shed by the endpoint's own limit; empty leaves EP-20 unproven
+        required: false
+        default: ""
+permissions: { contents: read }
+jobs:
+  k6:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: hold the rate and check the budgets
+        # the signed runner image carries the pinned k6; nothing to install on the runner
+        env:
+          JC_K6_SCRIPT: ${{ inputs.script }}
+          GATEWAY_URL: ${{ inputs.gateway_url }}
+          BROKER_URL: ${{ inputs.broker_url }}
+          BROKER_TENANT: ${{ vars.BROKER_TENANT }}
+          GATEWAY_TOKEN: ${{ secrets.TOKEN_VIEWER }}
+          ENTITY_ID: ${{ vars.GRANTED_ENTITY_ID }}
+          JC_K6_RATE: ${{ inputs.rate }}
+          JC_K6_DURATION: ${{ inputs.duration }}
+          GATEWAY_METRICS_URL: ${{ inputs.gateway_metrics_url }}
+          BROKER_METRICS_URL: ${{ inputs.broker_metrics_url }}
+          EXPORT_URL: ${{ inputs.export_url }}
+          EXPORT_ROWS: ${{ inputs.export_rows }}
+          JC_K6_EXPORT_STREAMS: ${{ inputs.export_streams }}
+          ENDPOINT_URL: ${{ inputs.endpoint_url }}
+          JC_K6_BURST_RATE: ${{ inputs.burst_rate }}
+        run: |
+          set -eu
+          mkdir -p reports/k6 && chmod 777 reports/k6
+          docker run --rm \
+            -e JC_K6_SCRIPT -e GATEWAY_URL -e BROKER_URL -e BROKER_TENANT -e GATEWAY_TOKEN -e ENTITY_ID \
+            -e JC_K6_RATE -e JC_K6_DURATION \
+            -e GATEWAY_METRICS_URL -e BROKER_METRICS_URL \
+            -e EXPORT_URL -e EXPORT_ROWS -e JC_K6_EXPORT_STREAMS \
+            -e ENDPOINT_URL -e JC_K6_BURST_RATE \
+            -v "$PWD/reports:/reports" \
+            "ghcr.io/${GITHUB_REPOSITORY,,}:main" k6
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: k6-report
+          path: reports/k6
+          retention-days: 30

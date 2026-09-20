@@ -1,0 +1,160 @@
+name: e2e
+# Playwright browser journeys against the running portal on dev (T-0068…T-0071, T-0075, T-0362,
+# TS-12, TS-13, OPS-27). Nightly and on demand only: dev is a single shared workbench that
+# DEMO.md is demoed from, so a lane on every push would fight the demo for it. Credentials come
+# from repository secrets, never from this file.
+# On demand only for now (private repository, metered minutes, T-0402/T-0521). Put
+# `schedule: [{ cron: "17 2 * * *" }]` (02:17 UTC, off the hour so it does not queue behind the
+# other nightly lanes) back under `on:` when the minutes are back.
+on:
+  workflow_dispatch:
+    inputs:
+      base_url:
+        description: portal root
+        required: false
+        default: ""
+      spec:
+        description: one spec to run, relative to e2e/ (empty runs every shard)
+        required: false
+        default: ""
+permissions: { contents: read }
+# One run at a time: the journeys write demo data into the one cluster, and two runs writing the
+# same entities would fail each other rather than the portal.
+concurrency: { group: e2e-dev, cancel-in-progress: false }
+env:
+  BASE_URL: ${{ inputs.base_url || vars.PORTAL_BASE_URL || 'https://2.28.67.127.sslip.io' }}
+  PORTAL_PROJECT: ${{ vars.PORTAL_PROJECT || 'ovzdusie' }}
+jobs:
+  # Fails in seconds with the reason, instead of letting four shards spend half an hour timing
+  # out on a portal that is not there. A deployment that is down is not a red journey.
+  preflight:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: the demo project is the only one the journeys may write in
+        run: |
+          set -eu
+          if [ "$PORTAL_PROJECT" != "ovzdusie" ]; then
+            echo "::error::the journeys write only in the ovzdusie demo project, but PORTAL_PROJECT is '$PORTAL_PROJECT'"
+            exit 1
+          fi
+      - name: the credentials exist as repository secrets
+        env:
+          PORTAL_USER: ${{ secrets.PORTAL_USER }}
+          PORTAL_PASSWORD: ${{ secrets.PORTAL_PASSWORD }}
+        run: |
+          set -eu
+          missing=""
+          [ -n "${PORTAL_USER:-}" ] || missing="$missing PORTAL_USER"
+          [ -n "${PORTAL_PASSWORD:-}" ] || missing="$missing PORTAL_PASSWORD"
+          if [ -n "$missing" ]; then
+            echo "::error::repository secrets missing:$missing — every journey signs in, so the run would fail on the login form of each one"
+            exit 1
+          fi
+      - name: the portal answers
+        run: |
+          set -eu
+          if ! code=$(curl -sS -k -m 20 -o /dev/null -w '%{http_code}' "$BASE_URL/"); then
+            echo "::error::the portal at $BASE_URL did not answer at all — the deployment is down, the journeys are not broken"
+            exit 1
+          fi
+          case "$code" in
+            200|301|302|303|307|308|401|403) echo "portal answered $code" ;;
+            *)
+              echo "::error::the portal at $BASE_URL answered $code on / — the deployment is unhealthy, the journeys are not broken"
+              exit 1
+              ;;
+          esac
+
+  journeys:
+    needs: preflight
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    strategy:
+      fail-fast: false
+      # Sharded by chain, not by count: journeys 2→3 and 7→8→10→11 read what the previous spec
+      # left behind, so a shard boundary between them would make a green suite depend on which
+      # runner started first.
+      matrix:
+        include:
+          - shard: flows
+            specs: >-
+              journeys/01-onboarding-login.spec.ts
+              journeys/02-blueprint-flow.spec.ts
+              journeys/03-approval-review.spec.ts
+              journeys/06-drift-management.spec.ts
+              journeys/14-drift-revert-adopt.spec.ts
+          - shard: endpoints
+            specs: >-
+              journeys/07-endpoints-manager.spec.ts
+              journeys/08-service-account-key.spec.ts
+              journeys/10-approval-round-trip.spec.ts
+              journeys/11-access-matrix.spec.ts
+              journeys/17-assistant-navigation.spec.ts
+          - shard: views
+            specs: >-
+              journeys/04-map-dashboard.spec.ts
+              journeys/05-deckgl-visualization.spec.ts
+              journeys/09-pipelines.spec.ts
+              journeys/12-localization.spec.ts
+              journeys/13-dashboard-live.spec.ts
+              journeys/15-session.spec.ts
+              journeys/16-role-permissions.spec.ts
+          - shard: accessibility
+            specs: >-
+              smoke.spec.ts
+              accessibility/wcag.spec.ts
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: "22", cache: npm }
+      - run: npm ci --no-audit --no-fund
+      - run: ./node_modules/.bin/playwright install --with-deps chromium
+      - name: run the journeys
+        env:
+          PORTAL_USER: ${{ secrets.PORTAL_USER }}
+          PORTAL_PASSWORD: ${{ secrets.PORTAL_PASSWORD }}
+          PORTAL_VIEWER_USER: ${{ secrets.PORTAL_VIEWER_USER }}
+          PORTAL_VIEWER_PASSWORD: ${{ secrets.PORTAL_VIEWER_PASSWORD }}
+          PORTAL_INVITE_URL: ${{ secrets.PORTAL_INVITE_URL }}
+          PORTAL_INVITE_PASSWORD: ${{ secrets.PORTAL_INVITE_PASSWORD }}
+          PORTAL_APPROVER_USER: ${{ secrets.PORTAL_APPROVER_USER }}
+          PORTAL_APPROVER_PASSWORD: ${{ secrets.PORTAL_APPROVER_PASSWORD }}
+          PORTAL_BLUEPRINT: ${{ vars.PORTAL_BLUEPRINT }}
+          PORTAL_SENSOR_LABEL: ${{ vars.PORTAL_SENSOR_LABEL }}
+          PORTAL_FORBIDDEN_ENTITY_LABEL: ${{ vars.PORTAL_FORBIDDEN_ENTITY_LABEL }}
+          PORTAL_PIPELINE: ${{ vars.PORTAL_PIPELINE }}
+          PORTAL_DASHBOARD: ${{ vars.PORTAL_DASHBOARD }}
+          PORTAL_DENSE_DASHBOARD: ${{ vars.PORTAL_DENSE_DASHBOARD }}
+          PORTAL_PRIVATE_DASHBOARD: ${{ vars.PORTAL_PRIVATE_DASHBOARD }}
+          PORTAL_PUBLIC_DASHBOARD_URL: ${{ vars.PORTAL_PUBLIC_DASHBOARD_URL }}
+          PORTAL_DRIFTED_FLOW: ${{ vars.PORTAL_DRIFTED_FLOW }}
+          PORTAL_LIVE_FLOW: ${{ vars.PORTAL_LIVE_FLOW }}
+          PORTAL_ENDPOINT: ${{ vars.PORTAL_ENDPOINT }}
+          PORTAL_DRIFT_RESOURCE: ${{ vars.PORTAL_DRIFT_RESOURCE }}
+          # Scoped ServiceAccount token of T-0353; it writes the drift journey 14 resolves and
+          # may do nothing else. Never an admin credential.
+          JC_DRIFT_TOKEN: ${{ secrets.JC_DRIFT_TOKEN }}
+          JC_REPORTS_DIR: ${{ github.workspace }}/reports/e2e
+        # The `github` reporter turns every failure into an annotation naming the journey and the
+        # step that failed, so a red run is readable without downloading the artifact first.
+        run: |
+          set -eu
+          specs="${{ matrix.specs }}"
+          want="${{ inputs.spec }}"
+          # A dispatch that names one spec runs it in the shard that owns it, not in all four.
+          if [ -n "$want" ]; then
+            case " $specs " in
+              *" $want "*) specs="$want" ;;
+              *) echo "shard ${{ matrix.shard }} does not own $want"; exit 0 ;;
+            esac
+          fi
+          # shellcheck disable=SC2086 -- the spec list is deliberately word-split into arguments
+          ./node_modules/.bin/playwright test --config e2e/playwright.config.ts $specs
+      # The html report carries the traces and videos the config retains on failure.
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-report-${{ matrix.shard }}
+          path: reports/e2e
+          retention-days: 14

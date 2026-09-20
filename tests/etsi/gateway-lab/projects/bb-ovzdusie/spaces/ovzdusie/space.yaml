@@ -1,0 +1,9 @@
+apiVersion: joinedcontext.com/v1alpha1
+kind: ContextSpace
+metadata:
+  name: ovzdusie
+  namespace: bb-ovzdusie
+  title: { sk: "Ovzdušie", en: "Air quality" }
+spec:
+  isSandbox: false
+  defaultLocale: sk

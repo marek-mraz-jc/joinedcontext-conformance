@@ -1,0 +1,62 @@
+name: ogc-sta
+# OGC API - Features and SensorThings conformance against a running endpoint
+# (T-0057, T-0058, T-0059, TS-07, TS-08). Dispatch-only until an endpoint answers on dev.
+on:
+  workflow_dispatch:
+    inputs:
+      landing_url:
+        description: OGC Features landing page of the endpoint
+        required: true
+        default: https://2.28.67.127.sslip.io/api/endpoint/ovzdusie/ogc/features
+      sta_url:
+        description: SensorThings root of the endpoint
+        required: true
+        default: https://2.28.67.127.sslip.io/api/endpoint/ovzdusie/sta/v1.1
+      collections:
+        description: how many collections the OGC Abstract Test Suite covers (-1 = all)
+        required: false
+        default: "3"
+permissions: { contents: read }
+jobs:
+  ogc:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12", cache: pip }
+      - run: pip install --require-hashes -r requirements.txt
+      - name: query contract and the official Abstract Test Suite
+        env:
+          OGC_LANDING_URL: ${{ inputs.landing_url }}
+          OGC_TOKEN: ${{ secrets.TOKEN_VIEWER }}
+          OGC_COLLECTION: ${{ vars.OGC_COLLECTION }}
+          OGC_COLLECTIONS: ${{ inputs.collections }}
+          JC_REPORTS_DIR: ${{ github.workspace }}/reports/ogc
+        run: tests/ogc/run.sh
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ogc-report
+          path: reports/ogc
+          retention-days: 30
+  sta:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12", cache: pip }
+      - run: pip install --require-hashes -r requirements.txt
+      - name: SensorThings Sensing Profile read path
+        env:
+          STA_URL: ${{ inputs.sta_url }}
+          STA_TOKEN: ${{ secrets.TOKEN_VIEWER }}
+          JC_REPORTS_DIR: ${{ github.workspace }}/reports/sta
+        run: tests/sta/run.sh
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: sta-report
+          path: reports/sta
+          retention-days: 30

@@ -1,0 +1,25 @@
+{
+  "@context": {
+    "bb": "https://bb.example.sk/ns/air-quality#",
+    "ngsi-ld": "https://uri.etsi.org/ngsi-ld/",
+    "id": "@id",
+    "type": "@type",
+    "AirQualityObserved": "bb:AirQualityObserved",
+    "stationName": "bb:stationName",
+    "pm10": "bb:pm10",
+    "pm25": "bb:pm25",
+    "temperature": "bb:temperature",
+    "dateObserved": "bb:dateObserved",
+    "Property": "ngsi-ld:Property",
+    "Relationship": "ngsi-ld:Relationship",
+    "value": "ngsi-ld:hasValue",
+    "object": {
+      "@id": "ngsi-ld:hasObject",
+      "@type": "@id"
+    },
+    "observedAt": {
+      "@id": "ngsi-ld:observedAt",
+      "@type": "http://www.w3.org/2001/XMLSchema#dateTime"
+    }
+  }
+}

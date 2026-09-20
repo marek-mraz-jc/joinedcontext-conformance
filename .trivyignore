@@ -1,0 +1,11 @@
+# Advisories accepted for the conformance runner image, with the reason and the exit condition.
+# Nothing else is ignored: image.yml still fails the build on every other HIGH or CRITICAL, and
+# the list is re-checked on every k6 bump.
+#
+# Both entries sit in modules k6 pins in its own go.mod; the binary is already built from source
+# against the current Go toolchain, which is what removed the other nineteen findings. The two
+# that remain are in code paths no suite in tests/k6 executes: k6's SSH client
+# (golang.org/x/crypto/ssh, an authentication bypass for source-address restrictions on an SSH
+# server we never run) and its gRPC module. Delete an entry the day k6 ships the fixed module.
+CVE-2026-56854
+CVE-2026-84304

@@ -1,0 +1,106 @@
+name: ci
+# fast merge gate: shell lint, robot dry run over every suite, tool availability (T-0004).
+on:
+  pull_request:
+  push:
+    branches: [main]
+    paths-ignore: ["**.md"]
+permissions: { contents: read }
+concurrency: { group: "ci-${{ github.ref }}", cancel-in-progress: true }
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - run: sudo apt-get update && sudo apt-get install -y shellcheck
+      - name: shellcheck every script
+        run: |
+          set -eu
+          files=$(find . -name '*.sh' -not -path './node_modules/*'; echo bin/jc-conformance)
+          echo "$files" | tr ' ' '\n' | xargs -r shellcheck -x
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12", cache: pip }
+      - run: pip install --require-hashes -r requirements.txt
+      - name: robot dry run over every suite
+        run: |
+          set -eu
+          test -n "$(find tests -name '*.robot')" || { echo "no robot suite found"; exit 1; }
+          robot --dryrun --outputdir "${RUNNER_TEMP}/robot" tests
+      - name: every pytest suite imports and its fixtures resolve
+        # one invocation per suite: each folder has its own conftest, and the suites import from it
+        run: |
+          set -eu
+          for suite in security ogc sta mcp schemathesis models ckan e2e; do python3 -m pytest "tests/$suite" --collect-only -q; done
+      - name: expected-failure checker logic (T-0054)
+        run: python3 tests/etsi-ttf/check_expected_failures.py --selftest
+      - name: gateway divergence fails the transparency comparison (T-0056)
+        run: python3 tests/etsi-ttf/compare_transparency.py --selftest
+      - name: a failed OGC assertion fails the ATS verdict (T-0057)
+        run: python3 tests/ogc/check_ogc_results.py --selftest
+      - name: a failed DSP assertion fails the TCK verdict, whatever the runtime exits with (T-0062)
+        run: python3 tests/dsp/check_dsp_results.py --selftest
+      - name: contract checks fail a panicking Portal and pass a conforming one (T-0063)
+        run: python3 tests/schemathesis/selftest.py
+      - name: MCP framing and isolation assertions fail a broken server (T-0060, T-0061)
+        run: python3 tests/mcp/selftest.py
+      - name: the DCAT-AP record and the CKAN publication go red when they are wrong (T-0320)
+        run: python3 tests/ckan/selftest.py
+      - name: the committed record conforms to the DCAT-AP core shapes with nothing configured
+        run: python3 -m pytest tests/ckan -q
+      - name: the platform journey goes red at each stage that can break (T-0331)
+        run: python3 tests/e2e/selftest.py
+      - name: the committed journey shapes hold with nothing configured (T-0331)
+        # The stages that need a running platform skip here and are reported as skipped, never
+        # as passed; `selftest.py` above is what proves those stages can fail at all.
+        run: python3 -m pytest tests/e2e -q
+      - uses: actions/setup-node@v4
+        with: { node-version: "22", cache: npm }
+      - run: npm ci --no-audit --no-fund
+      - name: e2e harness compiles and every spec is discoverable (T-0068)
+        run: |
+          set -eu
+          ./node_modules/.bin/tsc --noEmit -p e2e/tsconfig.json
+          ./node_modules/.bin/playwright test --config e2e/playwright.config.ts --list | tee "${RUNNER_TEMP}/specs"
+          for spec in journeys/01-onboarding-login journeys/02-blueprint-flow journeys/03-approval-review \
+                      journeys/04-map-dashboard journeys/05-deckgl-visualization journeys/06-drift-management \
+                      journeys/08-service-account-key journeys/11-access-matrix \
+                      accessibility/wcag; do
+            grep -q "$spec.spec.ts" "${RUNNER_TEMP}/specs" || { echo "$spec.spec.ts is not discoverable"; exit 1; }
+          done
+      - name: the chaos verdict rejects an outage, a slow recovery and a run with no fault (T-0088)
+        run: python3 tests/chaos/check_chaos_results.py --selftest
+      - name: a lossy ODRL mapping and a disclosing access document go red (T-0086, T-0087)
+        run: python3 tests/security/selftest_access.py
+      - name: a hidden attribute leaking through one representation fails parity (T-0085)
+        run: python3 tests/security/selftest_representations.py
+      - name: the injection corpus and the sandbox manifest checks go red on a leaky runner (T-0080, T-0081)
+        run: python3 tests/security/selftest_agent.py
+      - name: artifact drift, a lenient shape set and an untyped expansion all go red (T-0078)
+        run: python3 tests/models/selftest.py
+      - name: two mapping engines that disagree fail the parity runner (T-0079)
+        run: python3 tests/models/selftest_parity.py
+      - name: a wrong digest, a wrong media type and toothless shapes go red on an endpoint (T-0337)
+        run: python3 tests/models/selftest_endpoint.py
+      - name: locale rules fire on a bundle that breaks them (T-0076)
+        run: python3 scripts/check-i18n.py --selftest
+      - name: qualification report aggregates suite outcomes and catches corrupt files (T-0089)
+        run: python3 scripts/generate-qualification-report.py --selftest
+      - name: latency regression gate flags degradations and respects baselines (T-0090)
+        run: python3 scripts/compare-latency.py --selftest
+      - name: install bento from the pinned upstream image (it is kept out of our own)
+        run: |
+          set -eu
+          mkdir -p "${RUNNER_TEMP}/bin"
+          cid=$(docker create ghcr.io/warpstreamlabs/bento:1.21.1@sha256:656c55de3f8deddd4ee743f3c76f3b497e67324e940f2bc1769693cd8b906364)
+          docker cp "$cid:/bento" "${RUNNER_TEMP}/bin/bento"
+          docker rm "$cid"
+          echo "${RUNNER_TEMP}/bin" >> "$GITHUB_PATH"
+          "${RUNNER_TEMP}/bin/bento" --version
+      - name: pipeline golden tests fail a drifted mapping (T-0077)
+        run: tests/pipelines/selftest.sh
+      - name: entrypoint lists the suites
+        run: |
+          set -eu
+          JC_TESTS_DIR=tests bin/jc-conformance --list | tee "${RUNNER_TEMP}/suites"
+          grep -qx etsi "${RUNNER_TEMP}/suites"

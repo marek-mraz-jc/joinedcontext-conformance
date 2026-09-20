@@ -1,0 +1,26 @@
+# The app that renders the journey's last visible step (AP-01, T-0309). Committed here as the
+# shape the suite checks, so the manifest rules hold in the fast lane; APP_MANIFEST points the
+# same checks at the real file in an organization repository.
+apiVersion: joinedcontext.com/v1
+kind: App
+metadata:
+  name: hsl-transport
+  title:
+    en: HSL vehicle tracker
+    fi: HSL-ajoneuvoseuranta
+spec:
+  kind: fullstack
+  source:
+    repository: projects/helsinki/apps/hsl-transport
+  build:
+    command: npm run build
+    output: dist
+  visibility: public
+  dataNeeds:
+    - endpoint: hsl-transport
+      representations:
+        - ngsi-ld
+        - file.geojson
+  limits:
+    memory: 256Mi
+    cpu: 200m

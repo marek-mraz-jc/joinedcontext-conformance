@@ -1,0 +1,64 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://bb.example.sk/schema/v2/bb-air-quality.json",
+  "title": "AirQualityObserved",
+  "description": "An air quality observation at a monitoring station.",
+  "type": "object",
+  "required": [
+    "id",
+    "type",
+    "stationName",
+    "pm10",
+    "dateObserved"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "format": "uri"
+    },
+    "type": {
+      "type": "string",
+      "enum": ["AirQualityObserved"]
+    },
+    "stationName": {
+      "type": "object",
+      "required": ["type", "value"],
+      "properties": {
+        "type": { "type": "string", "enum": ["Property"] },
+        "value": { "type": "string" }
+      }
+    },
+    "pm10": {
+      "type": "object",
+      "required": ["type", "value"],
+      "properties": {
+        "type": { "type": "string", "enum": ["Property"] },
+        "value": { "type": "number", "minimum": 0 }
+      }
+    },
+    "pm25": {
+      "type": "object",
+      "required": ["type", "value"],
+      "properties": {
+        "type": { "type": "string", "enum": ["Property"] },
+        "value": { "type": "number", "minimum": 0 }
+      }
+    },
+    "temperature": {
+      "type": "object",
+      "required": ["type", "value"],
+      "properties": {
+        "type": { "type": "string", "enum": ["Property"] },
+        "value": { "type": "number" }
+      }
+    },
+    "dateObserved": {
+      "type": "object",
+      "required": ["type", "value"],
+      "properties": {
+        "type": { "type": "string", "enum": ["Property"] },
+        "value": { "type": "string", "format": "date-time" }
+      }
+    }
+  }
+}

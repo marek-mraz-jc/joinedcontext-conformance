@@ -1,0 +1,43 @@
+{
+  "@context": "https://www.w3.org/ns/dcat.jsonld",
+  "@id": "https://data.example.org/api/endpoint/zt4qm7ge2xdv6ksb3ncf5arw2y/",
+  "@type": "dcat:Dataset",
+  "dct:identifier": "ovzdusie-public",
+  "dct:title": [
+    { "@value": "Kvalita ovzdušia", "@language": "sk" },
+    { "@value": "Air quality", "@language": "en" }
+  ],
+  "dct:description": [
+    { "@value": "Hodinové merania kvality ovzdušia.", "@language": "sk" },
+    { "@value": "Hourly air quality observations.", "@language": "en" }
+  ],
+  "dct:accessRights": "http://publications.europa.eu/resource/authority/access-right/PUBLIC",
+  "dct:license": "https://creativecommons.org/licenses/by/4.0/",
+  "dct:publisher": "Mesto Banská Bystrica",
+  "dcat:keyword": ["ovzdusie", "air-quality"],
+  "dcat:distribution": [
+    {
+      "@type": "dcat:Distribution",
+      "dct:title": "NGSI-LD API",
+      "dcat:accessURL": "https://data.example.org/api/endpoint/zt4qm7ge2xdv6ksb3ncf5arw2y/ngsi-ld/v1/",
+      "dcat:mediaType": "application/ld+json"
+    },
+    {
+      "@type": "dcat:Distribution",
+      "dct:title": "CSV",
+      "dcat:accessURL": "https://data.example.org/api/endpoint/zt4qm7ge2xdv6ksb3ncf5arw2y/file.csv",
+      "dcat:mediaType": "text/csv"
+    },
+    {
+      "@type": "dcat:Distribution",
+      "dct:title": "JSON Schema",
+      "dct:conformsTo": "https://json-schema.org/draft-07/schema",
+      "dcat:accessURL": "https://data.example.org/api/endpoint/zt4qm7ge2xdv6ksb3ncf5arw2y/schema/v2/model.schema.json",
+      "dcat:mediaType": "application/schema+json",
+      "spdx:checksum": {
+        "spdx:algorithm": "spdx:checksumAlgorithm_sha256",
+        "spdx:checksumValue": "9f2b1c4e7a0d3b6f8c1e4a7d0b3f6c9e2a5d8b1f4c7e0a3d6b9f2c5e8a1d4b7f"
+      }
+    }
+  ]
+}

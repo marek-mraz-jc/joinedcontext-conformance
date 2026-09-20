@@ -1,0 +1,37 @@
+name: etsi-ttf
+# Full ETSI NGSI-LD Testing Task Force suite against a running system (T-0054, TS-05, TS-06).
+# Dispatch-only for the same reason as etsi-smoke.yml: nothing serves /cs/{space} yet, and a
+# scheduled run that is red for a missing deployment teaches everyone to ignore it.
+on:
+  workflow_dispatch:
+    inputs:
+      ngsild_url:
+        description: NGSI-LD API root of the system under test
+        required: true
+        default: https://2.28.67.127.sslip.io/cs/ovzdusie/ngsi-ld/v1
+      legs:
+        description: suite folders under TP/NGSI-LD, space separated
+        required: false
+        default: CommonBehaviours ContextInformation ContextSource jsonldContext
+permissions: { contents: read }
+jobs:
+  ttf:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12", cache: pip }
+      - run: pip install --require-hashes -r requirements.txt
+      - name: run the Testing Task Force suite
+        env:
+          NGSILD_URL: ${{ inputs.ngsild_url }}
+          TTF_LEGS: ${{ inputs.legs }}
+          JC_REPORTS_DIR: ${{ github.workspace }}/reports/etsi-ttf
+        run: tests/etsi-ttf/run.sh
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: etsi-ttf-report
+          path: reports/etsi-ttf
+          retention-days: 30

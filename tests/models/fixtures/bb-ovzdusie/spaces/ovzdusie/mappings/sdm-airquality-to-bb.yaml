@@ -1,0 +1,45 @@
+apiVersion: joinedcontext.com/v1alpha1
+kind: Mapping
+metadata:
+  name: sdm-airquality-to-bb
+  namespace: bb-ovzdusie
+  title:
+    sk: "SDM AirQualityObserved → BB kvalita ovzdušia"
+    en: "SDM AirQualityObserved → BB air quality"
+spec:
+  contextSpaceRef: ovzdusie
+  source:
+    kind: DataModel
+    name: sdm-airqualityobserved
+    version: "1"
+  target:
+    kind: DataModel
+    name: bb-air-quality
+    version: "2"
+  transformation:
+    id: https://bb.example.sk/mappings/sdm-airquality-to-bb
+    class_derivations:
+      BBAirQuality:
+        populated_from: AirQualityObserved
+        slot_derivations:
+          id:
+            populated_from: id
+          pm10:
+            populated_from: pm10
+          pm25:
+            populated_from: pm2p5
+          stationName:
+            populated_from: stationName
+          dateObserved:
+            populated_from: dateObserved
+          qualityBand:
+            populated_from: airQualityLevel
+            value_mappings:
+              good: A
+              moderate: B
+              unhealthy: C
+  tests:
+    - input: examples/sdm-good.jsonld
+      expect: examples/bb-good.jsonld
+    - input: examples/sdm-unhealthy.jsonld
+      expect: examples/bb-unhealthy.jsonld

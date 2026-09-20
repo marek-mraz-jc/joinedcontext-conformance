@@ -1,0 +1,24 @@
+{
+  "id": "urn:ngsi-ld:AirQualityObserved:BB-02",
+  "type": "BBAirQuality",
+  "stationName": {
+    "type": "Property",
+    "value": "Tajovskeho"
+  },
+  "pm10": {
+    "type": "Property",
+    "value": 68.4
+  },
+  "pm25": {
+    "type": "Property",
+    "value": 42.1
+  },
+  "qualityBand": {
+    "type": "Property",
+    "value": "C"
+  },
+  "dateObserved": {
+    "type": "Property",
+    "value": "2024-04-12T09:00:00Z"
+  }
+}

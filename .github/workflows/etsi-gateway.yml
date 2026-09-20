@@ -1,0 +1,78 @@
+name: etsi-gateway
+# The ETSI smoke suite through a real Context Gateway (matrix 3 of docs/Testing/02 §1; T-0276).
+# The broker is the fixed reference and is pinned by digest; the gateway is the system under
+# test and is deliberately the latest main image, because the lane exists to catch what the
+# platform repo just pushed. Green means: every case passes except the ones the quarantine
+# list names by task id, and none of those has started passing (that goes red too, so the
+# list cannot rot).
+# On demand only for now (private repository, metered minutes, T-0402/T-0521). Put
+# `push: { branches: [main] }` and `schedule: [{ cron: "30 3 * * *" }]` back under `on:` when the
+# minutes are back.
+on:
+  workflow_dispatch:
+permissions: { contents: read }
+jobs:
+  gateway:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      SLUG: adldef3aksndswos6ug4pv5cpf  # the fixed slug of tests/etsi/gateway-lab
+      PROJECTED_SLUG: pr0jectedaksndswos6ug4pv5cpf
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12", cache: pip }
+      - run: pip install --require-hashes -r requirements.txt
+      - name: broker and gateway
+        run: |
+          set -eu
+          docker network create jclab
+          docker run -d --name jc-broker --network jclab -e ANTARES_STORE=memory \
+            ghcr.io/marek-mraz/antares-broker@sha256:c049084076e389d2cb85be2b22235a9f64b810cd4a71b63bddf9a460b7f762b9
+          docker run -d --name jc-gw --network jclab -p 8080:8080 \
+            -v "$PWD/tests/etsi/gateway-lab:/repo:ro" \
+            -e JC_GATEWAY_BROKER_URL=http://jc-broker:9090 \
+            -e JC_GATEWAY_ORG_DOMAIN=banskabystrica.sk \
+            -e JC_GATEWAY_REPO_DIR=/repo \
+            ghcr.io/marek-mraz/joinedcontext-platform:main
+          for i in $(seq 1 30); do
+            curl -fsS "http://localhost:8080/healthz" >/dev/null 2>&1 && break
+            sleep 1
+          done
+          curl -fsS "http://localhost:8080/api/endpoint/$SLUG/access" | grep -q '"space":"ovzdusie"' \
+            || { echo "the gateway did not load tests/etsi/gateway-lab"; docker logs jc-gw; exit 1; }
+          curl -fsS "http://localhost:8080/api/endpoint/$PROJECTED_SLUG/access" | grep -q '"space":"ovzdusie"' \
+            || { echo "the gateway did not load projected endpoint in tests/etsi/gateway-lab"; docker logs jc-gw; exit 1; }
+      - name: the smoke suite through the gateway, quarantine applied
+        env:
+          NGSILD_URL: http://localhost:8080/api/endpoint/${{ env.SLUG }}/ngsi-ld/v1
+          NGSILD_ORG_DOMAIN: banskabystrica.sk
+          NGSILD_SPACE: ovzdusie
+          NGSILD_EXPECTED_FAILURES: tests/etsi/expected_failures_gateway.json
+          JC_REPORTS_DIR: ${{ github.workspace }}/reports/smoke
+        run: timeout 120 tests/etsi/run.sh --include smoke
+      - name: temporal and projected suites through the gateway
+        env:
+          NGSILD_URL: http://localhost:8080/api/endpoint/${{ env.SLUG }}/ngsi-ld/v1
+          NGSILD_PROJECTED_URL: http://localhost:8080/api/endpoint/${{ env.PROJECTED_SLUG }}/ngsi-ld/v1
+          NGSILD_ORG_DOMAIN: banskabystrica.sk
+          NGSILD_SPACE: ovzdusie
+          NGSILD_EXPECTED_FAILURES: tests/etsi/expected_failures_gateway.json
+          JC_REPORTS_DIR: ${{ github.workspace }}/reports/temporal
+        run: timeout 120 tests/etsi/run.sh --include temporal
+      - name: merge reports and check claims
+        run: |
+          set -eu
+          mkdir -p reports/etsi-gateway
+          rebot --outputdir reports/etsi-gateway -o output.xml reports/smoke/output.xml reports/temporal/output.xml
+          python3 scripts/generate-qualification-report.py \
+            --claims tests/etsi/claims.json \
+            --reports reports/etsi-gateway
+      - if: always()
+        run: docker logs jc-gw 2>&1 | tail -50
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: etsi-gateway-report
+          path: reports/etsi-gateway
+          retention-days: 14

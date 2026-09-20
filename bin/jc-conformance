@@ -1,0 +1,62 @@
+#!/usr/bin/env bash
+# Entrypoint of the conformance runner image: runs one or more suites (T-0053).
+#   jc-conformance --list                 suites that exist in $JC_TESTS_DIR
+#   jc-conformance --selftest             version of every installed tool
+#   jc-conformance etsi schemathesis      run tests/<suite>/run.sh in order
+# Suite arguments after "--" are passed to every suite script.
+set -euo pipefail
+
+TESTS_DIR=${JC_TESTS_DIR:-/tests}
+REPORTS_DIR=${JC_REPORTS_DIR:-/reports}
+
+usage() {
+  sed -n '2,7p' "$0" | sed 's/^# \{0,1\}//'
+  printf '\nsuites: %s\n' "$(list_suites | tr '\n' ' ')"
+}
+
+list_suites() {
+  find "$TESTS_DIR" -mindepth 1 -maxdepth 1 -type d -printf '%f\n' 2>/dev/null | sort
+}
+
+selftest() {
+  local rc=0
+  robot --version || [ $? -eq 251 ] || rc=1   # robot --version exits 251
+  schemathesis --version || rc=1
+  k6 version || rc=1
+  node --version || rc=1
+  playwright --version || rc=1
+  pyshacl --version || rc=1
+  python3 -c 'import RequestsLibrary; print("robot RequestsLibrary ok")' || rc=1
+  return $rc
+}
+
+main() {
+  [ $# -gt 0 ] || set -- --help
+  case "$1" in
+    -h|--help) usage; return 0 ;;
+    -l|--list) list_suites; return 0 ;;
+    -s|--selftest) selftest; return $? ;;
+  esac
+
+  local suites=() args=()
+  while [ $# -gt 0 ]; do
+    if [ "$1" = "--" ]; then shift; args=("$@"); break; fi
+    suites+=("$1"); shift
+  done
+
+  mkdir -p "$REPORTS_DIR"
+  local rc=0 suite runner
+  for suite in "${suites[@]}"; do
+    runner="$TESTS_DIR/$suite/run.sh"
+    if [ ! -f "$runner" ]; then
+      printf 'suite %s has no run.sh yet (see %s/%s/README.md)\n' "$suite" "$TESTS_DIR" "$suite" >&2
+      rc=3
+      continue
+    fi
+    printf '\n=== suite %s ===\n' "$suite"
+    JC_REPORTS_DIR="$REPORTS_DIR/$suite" bash "$runner" ${args[0]+"${args[@]}"} || rc=1
+  done
+  return $rc
+}
+
+main "$@"

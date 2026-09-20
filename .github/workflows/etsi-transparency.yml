@@ -1,0 +1,43 @@
+name: etsi-transparency
+# The ETSI TTF suite run at the broker and through the Context Gateway, then compared
+# (T-0056, TS-06, R15). Dispatch-only for the same reason as etsi-ttf.yml: nothing serves
+# /cs/{space} yet, and a scheduled run that is red for a missing deployment teaches everyone
+# to ignore it.
+on:
+  workflow_dispatch:
+    inputs:
+      broker_url:
+        description: NGSI-LD API root of the broker itself
+        required: true
+        default: http://antares.joinedcontext.svc:8080/ngsi-ld/v1
+      gateway_url:
+        description: the same data through the gateway
+        required: true
+        default: https://2.28.67.127.sslip.io/cs/ovzdusie/ngsi-ld/v1
+      legs:
+        description: suite folders under TP/NGSI-LD, space separated
+        required: false
+        default: CommonBehaviours ContextInformation ContextSource jsonldContext
+permissions: { contents: read }
+jobs:
+  transparency:
+    runs-on: ubuntu-latest
+    timeout-minutes: 240
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12", cache: pip }
+      - run: pip install --require-hashes -r requirements.txt
+      - name: run both legs and compare them
+        env:
+          BROKER_URL: ${{ inputs.broker_url }}
+          GATEWAY_URL: ${{ inputs.gateway_url }}
+          TTF_LEGS: ${{ inputs.legs }}
+          JC_REPORTS_DIR: ${{ github.workspace }}/reports/etsi-transparency
+        run: tests/etsi-ttf/transparency.sh
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: etsi-transparency-report
+          path: reports/etsi-transparency
+          retention-days: 30

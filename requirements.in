@@ -1,0 +1,11 @@
+# direct dependencies of the conformance runner image (TS-05, TS-09, TS-25)
+robotframework==7.4.2
+robotframework-requests==0.9.7
+schemathesis==4.25.2
+pyshacl==0.40.1
+# libraries the ETSI Testing Task Force suite imports (T-0054); versions follow its requirements.txt
+robotframework-jsonlibrary==0.5
+deepdiff==8.6.2   # 8.6.1 is what the TTF pins; CVE-2026-33155 (DoS) is fixed in 8.6.2
+prettydiff==0.1.0
+paho-mqtt==1.6.1
+robotframework-mqttlibrary==0.7.1.post3

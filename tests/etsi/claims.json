@@ -1,0 +1,13 @@
+{
+  "ngsi-ld": [
+    "core",
+    "temporal"
+  ],
+  "ogc": [
+    "core",
+    "oas30",
+    "geojson",
+    "crs",
+    "basic-cql2"
+  ]
+}

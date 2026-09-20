@@ -1,0 +1,15 @@
+apiVersion: joinedcontext.com/v1alpha1
+kind: ModelProjection
+metadata:
+  name: partner-view
+  namespace: bb-ovzdusie
+spec:
+  contextSpaceRef: ovzdusie
+  dataModelRef:
+    kind: DataModel
+    name: ovzdusie
+    version: "1"
+  classes:
+    - name: AirQualityObserved
+      slots:
+        - temperature

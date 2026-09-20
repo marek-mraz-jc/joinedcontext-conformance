@@ -1,0 +1,8 @@
+.secrets/
+reports/
+node_modules/
+__pycache__/
+*.pyc
+
+# pytest
+.pytest_cache/

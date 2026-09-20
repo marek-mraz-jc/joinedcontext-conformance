@@ -1,0 +1,85 @@
+# Security and policy tests (R1–R15, GW1–GW30, TS-25)
+
+Adversarial checks of the enforcement point: PEP bypass and AST rewrite integrity, tenant
+header stripping, 404-vs-403 silent narrowing, representation parity, AuthZEN decisions,
+ODRL round-trip, prompt-injection corpus for the Agent Runner.
+
+Tasks: T-0080…T-0088.
+
+## Running
+
+The suites talk to a deployed gateway; every variable they need names itself when it is missing.
+
+| Variable | What |
+|---|---|
+| `PARITY_BASE_URL` | space or endpoint base URL for representation parity checks (e.g. `https://{host}/cs/ovzdusie` or `https://{host}/api/endpoint/{slug}`) |
+| `PARITY_TYPE` | NGSI-LD entity type tested across representations (default: `AirQualityObserved`) |
+| `PARITY_COLLECTION` | collection name for OGC Features path (default: lowercase `PARITY_TYPE`) |
+| `PARITY_LIMIT` | maximum records to query during parity tests (default: `100`) |
+| `GEO_ATTR` | geometry attribute name for spatial representations (default: `location`) |
+| `STA_ID_FIELD` | identifier field for SensorThings observation parity mapping (default: `@iot.id`) |
+| `SPACE_URL` | the space surface, e.g. `https://{host}/cs/ovzdusie/ngsi-ld/v1` |
+| `OTHER_SPACE_URL` | a second space the caller has no grant on (SP-06 probe) |
+| `TOKEN_VIEWER`, `TOKEN_STEWARD` | bearer tokens; anonymous is simply no token |
+| `GRANTED_TYPE`, `FORBIDDEN_TYPE` | a type inside and a type outside the grant |
+| `GRANTED_ENTITY_ID`, `FORBIDDEN_ENTITY_ID` | an entity the caller may read, and one that exists but is outside every grant |
+| `HIDDEN_ATTR` | an attribute of `GRANTED_TYPE` the public grant does not include |
+| `MCP_URL` | live MCP streamable HTTP surface for parameter sanitization checks (AG-21) |
+| `MCP_TOOL` | MCP tool tested with hostile parameters (default: `query_entities`) |
+| `AGENT_RUNNER_URL` | deployed Agent Runner API endpoint for TS-25 autonomous containment |
+| `AGENT_RUNNER_TOKEN` | Bearer token for Agent Runner API session access |
+| `AGENT_TASK` | task prompt used during live runner containment check |
+| `AGENT_RUNNER_MANIFEST` | rendered Kubernetes manifest file or directory for sandbox isolation |
+| `AGENT_RUNNER_PROFILE` | runner profile verified under AG-26 (`builder` default, or `steward`) |
+| `INJECTION_CORPUS` | optional custom path to prompt injection YAML corpus (default: local corpus) |
+| `AGENT_TRANSCRIPT` | a run's event frames as JSON (`GET /api/v1/projects/{p}/agent-runs/{id}/events` collected) checked for secret-shaped values and unlisted egress (T-0608, AG-35, AG-56) |
+| `AGENT_ALLOWED_HOSTS` | comma-separated hosts the run profile allows (default: `registry.npmjs.org,portal.hel.fi`) |
+| `AGENT_PROXY_URL`, `AGENT_PROXY_RUN`, `AGENT_PROXY_TICKET` | a live jc-agent-proxy and one run's ticket: an unlisted host is refused with the allow-list named (AG-50) and the diagnostics door answers without a secret (AG-56) |
+| `ACCESS_URL` | the effective grant surface, e.g. `https://{host}/cs/ovzdusie/access` or `/api/endpoint/{slug}/access` (EP-55, EP-56) |
+| `ACCESS_CHECK_URL` | AuthZEN evaluation endpoint (default `ACCESS_URL` + `/check`, R51) |
+| `DATA_URL` | context broker NGSI-LD entities surface for access document parity checks (EP-55) |
+
+## Access surface & ODRL round-trip suites (T-0086, T-0087)
+
+- **`test_authzen_access.py` (T-0086: R51, EP-55, EP-56, EP-59):** Validates that `GET …/access` answers
+  the AuthZEN resource-search shape — `subject`, `resource`, `permissions[]`, `prohibitions[]`, one
+  entry per grant, and the Endpoint's `limits` when it has any — residuals parse as CIM 009 query
+  strings (`geoQ`, `temporalQ`, `scopeQ`, `q`), unauthorized types and hidden attributes are omitted
+  without existence disclosure (R20), no entry grants a type and none of its attributes,
+  `POST …/access/check` answers standard boolean AuthZEN decisions without policy leaks, and the
+  document maintains parity with live data responses. Entries are folded per entity type before any
+  comparison (`access_doc.by_type`), because two policies reaching one type are two entries.
+- **`test_odrl_mapping.py` (T-0087: R26, R52, EP-57, MIM3-R10):** Validates that `Accept: application/odrl+json`
+  and `Accept: text/turtle` negotiate conforming ODRL 2.2 policies in the `ngsi-ld:` profile, all leftOperands
+  are defined by the profile, folded grants match the JSON access document without information loss
+  (`q`, `scopeQ`, operations, attributes), and no forbidden types or hidden attributes leak across representations.
+
+Both suites can be executed offline using the built-in self-test harness:
+
+```bash
+python3 agents/qa/joinedcontext-conformance/tests/security/selftest_access.py
+```
+
+The prompt-injection corpus integrity tests (`test_prompt_injection.py`) and the Agent Runner sandbox
+manifest conformance checks (`test_agent_sandbox_isolation.py`) run entirely offline without requiring
+any cluster deployment or live gateway. The live MCP leg (`MCP_URL`) and Agent Runner autonomous leg
+(`AGENT_RUNNER_URL`) automatically skip by name whenever their respective environment variables are unset.
+
+```bash
+SPACE_URL=https://<host>/cs/ovzdusie/ngsi-ld/v1 jc-conformance security
+```
+
+The suites are read-only apart from the two denied writes they assert on, and those address ids
+under the `conformance` URN prefix. `.github/workflows/security.yml` runs them on dispatch with
+the tokens as repository secrets; the fast CI lane collects them so a broken fixture is caught on
+every commit.
+
+### Representation Parity (T-0085: TS-03, EP-06, EP-07)
+
+The representation parity suite (`test_representation_parity.py`) queries the same context space or
+endpoint base across all five standardized child representations (`ngsi-ld/v1/entities`, `file.csv`,
+`file.geojson`, `ogc/features/collections/{collection}/items`, and `sta/v1.1/Observations`). It proves
+that the Policy Enforcement Point (PEP) decision is evaluated identically across every representation:
+entity sets match (EP-06, R20), normalized attribute projections and values agree (EP-07, TS-03), and
+any forbidden or hidden attributes (`HIDDEN_ATTR`) are never leaked through any representation in either
+parsed records or raw payloads.

@@ -1,0 +1,87 @@
+# Conforming Builder Agent Runner Manifest (AG-22, AG-26, AG-27, AG-28)
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: agent-builder-runner
+  namespace: agent-sandboxes
+  annotations:
+    forge.joinedcontext.org/scope: "apps/conformance-app"
+spec:
+  ttlSecondsAfterFinished: 300
+  activeDeadlineSeconds: 1800
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: agent-runner
+        app.kubernetes.io/component: builder
+      annotations:
+        forge.joinedcontext.org/scope: "apps/conformance-app"
+    spec:
+      restartPolicy: Never
+      automountServiceAccountToken: false
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        runAsGroup: 10001
+        fsGroup: 10001
+      volumes:
+        - name: workspace
+          emptyDir: {}
+      containers:
+        - name: builder
+          image: ghcr.io/joinedcontext/agent-runner:latest
+          securityContext:
+            allowPrivilegeEscalation: false
+            privileged: false
+            readOnlyRootFilesystem: true
+            runAsNonRoot: true
+            capabilities:
+              drop:
+                - ALL
+          volumeMounts:
+            - name: workspace
+              mountPath: /workspace
+          env:
+            - name: HTTP_PROXY
+              value: "http://platform-egress-proxy.platform.svc:3128"
+            - name: HTTPS_PROXY
+              value: "http://platform-egress-proxy.platform.svc:3128"
+            - name: NO_PROXY
+              value: "localhost,127.0.0.1"
+            - name: SANDBOX_URL
+              valueFrom:
+                secretKeyRef:
+                  name: sandbox-auth
+                  key: endpoint
+            - name: FORGE_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: forge-auth
+                  key: token
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: agent-builder-egress
+  namespace: agent-sandboxes
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: agent-runner
+  policyTypes:
+    - Egress
+  egress:
+    # DNS resolution
+    - ports:
+        - protocol: UDP
+          port: 53
+        - protocol: TCP
+          port: 53
+    # Platform egress proxy only
+    - to:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: platform-egress-proxy
+      ports:
+        - protocol: TCP
+          port: 3128

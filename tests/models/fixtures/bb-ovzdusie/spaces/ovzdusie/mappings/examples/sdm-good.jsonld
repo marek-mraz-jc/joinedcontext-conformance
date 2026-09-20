@@ -1,0 +1,24 @@
+{
+  "id": "urn:ngsi-ld:AirQualityObserved:BB-01",
+  "type": "AirQualityObserved",
+  "stationName": {
+    "type": "Property",
+    "value": "Namestie Slobody"
+  },
+  "pm10": {
+    "type": "Property",
+    "value": 14.2
+  },
+  "pm2p5": {
+    "type": "Property",
+    "value": 7.5
+  },
+  "airQualityLevel": {
+    "type": "Property",
+    "value": "good"
+  },
+  "dateObserved": {
+    "type": "Property",
+    "value": "2024-04-12T08:30:00Z"
+  }
+}

@@ -1,0 +1,12 @@
+root.id = this.id
+root.type = "BBAirQuality"
+root.stationName = this.stationName
+root.pm10 = this.pm10
+root.pm25 = this.pm2p5
+root.qualityBand.type = this.airQualityLevel.type
+root.qualityBand.value = match this.airQualityLevel.value {
+  "good" => "A"
+  "moderate" => "B"
+  "unhealthy" => "C"
+}
+root.dateObserved = this.dateObserved

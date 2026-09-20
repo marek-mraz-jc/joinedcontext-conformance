@@ -1,0 +1,14 @@
+apiVersion: joinedcontext.com/v1alpha1
+kind: Endpoint
+metadata:
+  name: projected
+  namespace: bb-ovzdusie
+spec:
+  contextSpaceRef: ovzdusie
+  slug: pr0jectedaksndswos6ug4pv5cpf
+  audience: public
+  enabledRepresentations:
+    - ngsi-ld
+  projectionRef:
+    kind: ModelProjection
+    name: partner-view

@@ -1,0 +1,14 @@
+[
+  {
+    "suite": "Smoke",
+    "test_case": "CIM009 5.7.2.4 Id List Alone Is BadRequestData 400",
+    "expiration": "2026-10-17",
+    "reason": "T-0780: the gateway answers an id-only query 200 because its constraint set adds the granted types before the too-wide check runs. Blocked on the owner's decision between refusing as CIM 009 5.7.2.4 says (and changing the Portal links, the builder's sample reads and dev-smoke to name a type) and recording it as a documented deviation."
+  },
+  {
+    "suite": "Smoke",
+    "test_case": "CIM009 5.7.2.4 idPattern Alone Is BadRequestData 400",
+    "expiration": "2026-10-17",
+    "reason": "T-0780: same cause as the id-only case — the narrowing selects, so the caller's selector-less query is answered instead of refused."
+  }
+]

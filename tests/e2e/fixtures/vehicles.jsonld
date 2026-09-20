@@ -1,0 +1,83 @@
+[
+  {
+    "id": "urn:ngsi-ld:Vehicle:hel.fi:transport:bus-1001",
+    "type": "Vehicle",
+    "location": {
+      "type": "GeoProperty",
+      "value": {
+        "type": "Point",
+        "coordinates": [
+          24.9384,
+          60.1699
+        ]
+      }
+    },
+    "vehicleType": {
+      "type": "Property",
+      "value": "bus"
+    },
+    "speed": {
+      "type": "Property",
+      "value": 12.5
+    },
+    "refDataSource": {
+      "type": "Relationship",
+      "object": "urn:ngsi-ld:DataSource:hel.fi:transport:hfp-ingest"
+    },
+    "@context": "https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context-v1.8.jsonld"
+  },
+  {
+    "id": "urn:ngsi-ld:Vehicle:hel.fi:transport:bus-1002",
+    "type": "Vehicle",
+    "location": {
+      "type": "GeoProperty",
+      "value": {
+        "type": "Point",
+        "coordinates": [
+          24.941,
+          60.1721
+        ]
+      }
+    },
+    "vehicleType": {
+      "type": "Property",
+      "value": "bus"
+    },
+    "speed": {
+      "type": "Property",
+      "value": 0.0
+    },
+    "refDataSource": {
+      "type": "Relationship",
+      "object": "urn:ngsi-ld:DataSource:hel.fi:transport:hfp-ingest"
+    },
+    "@context": "https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context-v1.8.jsonld"
+  },
+  {
+    "id": "urn:ngsi-ld:Vehicle:hel.fi:transport:bus-1003",
+    "type": "Vehicle",
+    "location": {
+      "type": "GeoProperty",
+      "value": {
+        "type": "Point",
+        "coordinates": [
+          25.0301,
+          60.2055
+        ]
+      }
+    },
+    "vehicleType": {
+      "type": "Property",
+      "value": "bus"
+    },
+    "speed": {
+      "type": "Property",
+      "value": 47.25
+    },
+    "refDataSource": {
+      "type": "Relationship",
+      "object": "urn:ngsi-ld:DataSource:hel.fi:transport:hfp-ingest"
+    },
+    "@context": "https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context-v1.8.jsonld"
+  }
+]

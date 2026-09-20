@@ -1,0 +1,36 @@
+{
+  "irVersion": "1",
+  "sourceClass": "AirQualityObserved",
+  "targetClass": "BBAirQuality",
+  "slots": [
+    {
+      "target": "id",
+      "from": "id"
+    },
+    {
+      "target": "stationName",
+      "from": "stationName"
+    },
+    {
+      "target": "pm10",
+      "from": "pm10"
+    },
+    {
+      "target": "pm25",
+      "from": "pm2p5"
+    },
+    {
+      "target": "qualityBand",
+      "from": "airQualityLevel",
+      "valueMap": {
+        "good": "A",
+        "moderate": "B",
+        "unhealthy": "C"
+      }
+    },
+    {
+      "target": "dateObserved",
+      "from": "dateObserved"
+    }
+  ]
+}

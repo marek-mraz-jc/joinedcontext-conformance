@@ -1,0 +1,22 @@
+# Sample transformation the golden test harness runs against (T-0077, PL-22).
+# Vendor parking telemetry in, one normalised NGSI-LD ParkingSpot out.
+input:
+  stdin: {}
+
+pipeline:
+  processors:
+    - mapping: |
+        root.id = "urn:ngsi-ld:ParkingSpot:banskabystrica:doprava:" + this.spot_id
+        root.type = "ParkingSpot"
+        root.status = {
+          "type": "Property",
+          "value": if this.occupied { "occupied" } else { "free" },
+          "observedAt": this.ts
+        }
+        root.location = {
+          "type": "GeoProperty",
+          "value": {"type": "Point", "coordinates": [this.lon, this.lat]}
+        }
+
+output:
+  stdout: {}

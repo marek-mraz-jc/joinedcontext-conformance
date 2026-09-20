@@ -1,0 +1,41 @@
+name: dsp
+# Eclipse Dataspace Protocol TCK against the connector addon (T-0062, DS-05).
+# Dispatch-only until the connector answers on dev.
+on:
+  workflow_dispatch:
+    inputs:
+      dsp_url:
+        description: connector dataspace protocol URL
+        required: true
+        default: https://2.28.67.127.sslip.io/api/v1/dsp
+      dsp_base_url:
+        description: connector base URL serving the metadata endpoint
+        required: true
+        default: https://2.28.67.127.sslip.io/api/dsp
+      participant_id:
+        description: connector agent id (did:web of the organization domain, DS-04)
+        required: true
+        default: did:web:banskabystrica.sk
+permissions: { contents: read }
+jobs:
+  tck:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12" }
+      - name: run the dataspace protocol test kit
+        env:
+          DSP_URL: ${{ inputs.dsp_url }}
+          DSP_BASE_URL: ${{ inputs.dsp_base_url }}
+          DSP_PARTICIPANT_ID: ${{ inputs.participant_id }}
+          DSP_AUTHORIZATION: ${{ secrets.DSP_AUTHORIZATION }}
+          JC_REPORTS_DIR: ${{ github.workspace }}/reports/dsp
+        run: tests/dsp/run.sh
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: dsp-tck-report
+          path: reports/dsp
+          retention-days: 30

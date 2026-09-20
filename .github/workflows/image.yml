@@ -1,0 +1,57 @@
+name: image
+# builds, smoke-tests, signs and publishes the conformance runner image (T-0053, TS-23).
+# On a tag and on demand only for now: this repository is private, its Actions minutes are metered
+# (T-0402/T-0521), and a runner image built on every push was the biggest single spend. Put
+# `branches: [main]` back under `push:` when the minutes are back.
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+permissions: { contents: read, packages: write, id-token: write }
+concurrency: { group: "image-${{ github.ref }}", cancel-in-progress: true }
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - name: build for the local daemon
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          load: true
+          tags: conformance-runner:smoke
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+      - name: smoke test — every installed tool answers, container is non-root
+        run: |
+          set -eu
+          test "$(docker run --rm --entrypoint id conformance-runner:smoke -un)" = testrunner
+          docker run --rm conformance-runner:smoke --selftest
+          docker run --rm conformance-runner:smoke --list | grep -qx etsi
+          docker run --rm conformance-runner:smoke --help
+      - name: performance budgets fail a slow gateway and the benchmark reads both hops (T-0065)
+        run: docker run --rm --network none --entrypoint python3 conformance-runner:smoke /tests/k6/selftest.py
+      - uses: docker/login-action@v3
+        with: { registry: ghcr.io, username: "${{ github.actor }}", password: "${{ secrets.GITHUB_TOKEN }}" }
+      - id: push
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          tags: ghcr.io/${{ github.repository }}:${{ github.sha }},ghcr.io/${{ github.repository }}:main
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          provenance: true
+          sbom: true
+      - uses: sigstore/cosign-installer@v3
+      - run: cosign sign --yes ghcr.io/${{ github.repository }}@${{ steps.push.outputs.digest }}
+      - run: echo "runner image ghcr.io/${{ github.repository }}@${{ steps.push.outputs.digest }}" >> "$GITHUB_STEP_SUMMARY"
+      - uses: aquasecurity/trivy-action@v0.36.0
+        with:
+          image-ref: "ghcr.io/${{ github.repository }}@${{ steps.push.outputs.digest }}"
+          severity: "HIGH,CRITICAL"
+          exit-code: "1"
+          ignore-unfixed: true
+          trivyignores: .trivyignore

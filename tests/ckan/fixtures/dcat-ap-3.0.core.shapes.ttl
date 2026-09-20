@@ -1,0 +1,45 @@
+# The DCAT-AP 3.0 constraints this platform's own requirements depend on, written here
+# (T-0320, EP-27, EP-63, EP-68, EP-69).
+#
+# This is NOT the SEMIC DCAT-AP shapes distribution and does not claim to be: it is the
+# mandatory core of the Dataset and Distribution classes, plus `dct:accessRights`, which
+# EP-69 makes mandatory for this platform and DCAT-AP only recommends. Point
+# `DCAT_AP_SHACL` at the official shapes to validate against the full specification; this
+# file is what the fast lane runs, so the lane is never empty and never depends on a
+# download.
+
+@prefix sh:   <http://www.w3.org/ns/shacl#> .
+@prefix dcat: <http://www.w3.org/ns/dcat#> .
+@prefix dct:  <http://purl.org/dc/terms/> .
+@prefix jc:   <https://joinedcontext.com/shapes/dcat-ap#> .
+
+jc:DatasetShape
+    a sh:NodeShape ;
+    sh:targetClass dcat:Dataset ;
+    sh:property [
+        sh:path dct:title ;
+        sh:minCount 1 ;
+        sh:message "a DCAT-AP Dataset must carry dct:title" ;
+    ] ;
+    sh:property [
+        sh:path dct:description ;
+        sh:minCount 1 ;
+        sh:message "a DCAT-AP Dataset must carry dct:description" ;
+    ] ;
+    sh:property [
+        sh:path dct:accessRights ;
+        sh:minCount 1 ;
+        sh:message "the record must declare dct:accessRights, PUBLIC or RESTRICTED (EP-69)" ;
+    ] ;
+    sh:property [
+        sh:path dcat:distribution ;
+        sh:node jc:DistributionShape ;
+    ] .
+
+jc:DistributionShape
+    a sh:NodeShape ;
+    sh:property [
+        sh:path dcat:accessURL ;
+        sh:minCount 1 ;
+        sh:message "a DCAT-AP Distribution must carry dcat:accessURL" ;
+    ] .

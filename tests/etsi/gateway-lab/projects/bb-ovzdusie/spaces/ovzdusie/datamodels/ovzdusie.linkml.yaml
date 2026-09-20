@@ -1,0 +1,39 @@
+id: https://banskabystrica.sk/models/ovzdusie
+name: ovzdusie
+title: Air Quality and Sensor Models
+version: 1.0.0
+default_range: string
+
+prefixes:
+  linkml: https://w3id.org/linkml/
+  schema: http://schema.org/
+
+imports:
+  - linkml:types
+
+classes:
+  AirQualityObserved:
+    description: Observation of air quality metrics
+    slots:
+      - temperature
+      - relativeHumidity
+      - location
+      - name
+  Device:
+    description: Measuring device
+    slots:
+      - name
+      - location
+      - batteryLevel
+
+slots:
+  temperature:
+    range: float
+  relativeHumidity:
+    range: float
+  location:
+    range: string
+  name:
+    range: string
+  batteryLevel:
+    range: float

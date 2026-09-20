@@ -1,0 +1,59 @@
+name: qualification-report
+# Aggregated conformance qualification report (T-0089, TS-05, TS-07, TS-08, TS-13).
+# Without a run to pull suite reports from, every suite this repository owns is reported
+# as not run and the job goes red: an honest empty report beats a green one.
+# On demand only for now (private repository, metered minutes, T-0402/T-0521). Put
+# `schedule: [{ cron: "0 5 * * 1" }]` (Monday 05:00 UTC) back under `on:` when the minutes are back.
+on:
+  workflow_dispatch:
+    inputs:
+      reports_run_id:
+        description: id of the workflow run whose artifacts hold the suite report folders
+        required: false
+        default: ""
+      reports_artifact:
+        description: name of the artifact inside that run (empty downloads every artifact)
+        required: false
+        default: ""
+      allow_missing:
+        description: comma-separated suites allowed to be not run without failing the gate
+        required: false
+        default: dsp
+permissions:
+  contents: read
+  actions: read
+jobs:
+  report:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12" }
+      - name: the aggregator still catches corrupt and missing reports
+        run: python3 scripts/generate-qualification-report.py --selftest
+      - name: collect suite reports
+        if: inputs.reports_run_id != ''
+        uses: actions/download-artifact@v4
+        with:
+          run-id: ${{ inputs.reports_run_id }}
+          name: ${{ inputs.reports_artifact }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path: reports
+      - name: generate report
+        env:
+          ALLOW_MISSING: ${{ inputs.allow_missing || 'dsp' }}
+        run: |
+          set -eu
+          python3 scripts/generate-qualification-report.py \
+            --reports reports \
+            --output conformance-qualification-report.md \
+            --for "${GITHUB_SHA:0:8}" \
+            --allow-missing "$ALLOW_MISSING"
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: conformance-qualification-report
+          path: conformance-qualification-report.md
+          retention-days: 30
+          if-no-files-found: error

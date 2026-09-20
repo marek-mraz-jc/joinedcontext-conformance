@@ -1,0 +1,37 @@
+# Golden input/output tests for bento.yaml (PL-22, PL-38).
+tests:
+  - name: an occupied spot becomes a normalised ParkingSpot entity
+    target_processors: '/pipeline/processors'
+    input_batch:
+      - content: '{"spot_id":"A-17","occupied":true,"ts":"2026-09-06T10:00:00Z","lat":48.7359,"lon":19.1461}'
+    output_batches:
+      - - json_equals:
+            id: urn:ngsi-ld:ParkingSpot:banskabystrica:doprava:A-17
+            type: ParkingSpot
+            status:
+              type: Property
+              value: occupied
+              observedAt: "2026-09-06T10:00:00Z"
+            location:
+              type: GeoProperty
+              value:
+                type: Point
+                coordinates: [19.1461, 48.7359]
+
+  - name: a free spot keeps the same shape with the other value
+    target_processors: '/pipeline/processors'
+    input_batch:
+      - content: '{"spot_id":"B-02","occupied":false,"ts":"2026-09-06T10:05:00Z","lat":48.7361,"lon":19.1462}'
+    output_batches:
+      - - json_equals:
+            id: urn:ngsi-ld:ParkingSpot:banskabystrica:doprava:B-02
+            type: ParkingSpot
+            status:
+              type: Property
+              value: free
+              observedAt: "2026-09-06T10:05:00Z"
+            location:
+              type: GeoProperty
+              value:
+                type: Point
+                coordinates: [19.1462, 48.7361]

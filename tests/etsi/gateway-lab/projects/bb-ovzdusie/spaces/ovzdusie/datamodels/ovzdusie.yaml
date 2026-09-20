@@ -1,0 +1,13 @@
+apiVersion: joinedcontext.com/v1alpha1
+kind: DataModel
+metadata:
+  name: ovzdusie
+  namespace: bb-ovzdusie
+spec:
+  contextSpaceRef: ovzdusie
+  linkml: ./ovzdusie.linkml.yaml
+  version: 1.0.0
+  lifecycle: draft
+  classes:
+    - AirQualityObserved
+    - Device

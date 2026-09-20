@@ -1,0 +1,11 @@
+apiVersion: joinedcontext.com/v1alpha1
+kind: Policy
+metadata:
+  name: smoke
+  namespace: bb-ovzdusie
+  title: { sk: "Konformančný smoke test", en: "Conformance smoke suite" }
+spec:
+  contextSpaceRef: { kind: ContextSpace, name: ovzdusie }
+  assigner: did:web:banskabystrica.sk
+  assignee: { kind: role, id: public }
+  operations: [redirectionOps, createBatch, deleteBatch, queryBatch]

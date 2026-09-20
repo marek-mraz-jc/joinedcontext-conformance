@@ -1,0 +1,63 @@
+id: https://bb.example.sk/models/environment/bb-air-quality
+name: BBAirQuality
+title: "Banská Bystrica Air Quality Observation Model"
+prefixes:
+  bb: https://bb.example.sk/ns/air-quality#
+  sosa: http://www.w3.org/ns/sosa/
+  linkml: https://w3id.org/linkml/
+default_range: string
+
+classes:
+  AirQualityObserved:
+    description: "An air quality observation at a monitoring station."
+    class_uri: bb:AirQualityObserved
+    slots:
+      - id
+      - type
+      - stationName
+      - pm10
+      - pm25
+      - temperature
+      - dateObserved
+
+slots:
+  id:
+    identifier: true
+    range: uriorcurie
+  type:
+    designates_type: true
+    range: string
+  stationName:
+    range: string
+    required: true
+    slot_uri: bb:stationName
+    annotations:
+      ngsi_ld_kind: Property
+  pm10:
+    range: float
+    required: true
+    unit:
+      ucum_code: "ug/m3"
+      symbol: "ug/m3"
+    slot_uri: bb:pm10
+    annotations:
+      ngsi_ld_kind: Property
+  pm25:
+    range: float
+    slot_uri: bb:pm25
+    annotations:
+      ngsi_ld_kind: Property
+  temperature:
+    range: float
+    unit:
+      ucum_code: "Cel"
+      symbol: "Cel"
+    slot_uri: bb:temperature
+    annotations:
+      ngsi_ld_kind: Property
+  dateObserved:
+    range: datetime
+    required: true
+    slot_uri: bb:dateObserved
+    annotations:
+      ngsi_ld_kind: Property

@@ -1,0 +1,60 @@
+# Leaky Agent Runner Manifest intentionally violating AG-22, AG-26, AG-27, AG-28
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: agent-runner-leaky
+  namespace: agent-sandboxes
+spec:
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: agent-runner
+    spec:
+      hostNetwork: true
+      automountServiceAccountToken: true
+      restartPolicy: Always
+      volumes:
+        - name: dockersock
+          hostPath:
+            path: /var/run/docker.sock
+        - name: workspace
+          persistentVolumeClaim:
+            claimName: durable-workspace-pvc
+      containers:
+        - name: runner
+          image: ghcr.io/joinedcontext/agent-runner:latest
+          securityContext:
+            privileged: true
+            allowPrivilegeEscalation: true
+            readOnlyRootFilesystem: false
+            runAsNonRoot: false
+            capabilities:
+              drop: []
+          volumeMounts:
+            - name: dockersock
+              mountPath: /var/run/docker.sock
+            - name: workspace
+              mountPath: /workspace
+          env:
+            - name: NO_PROXY
+              value: "*"
+            - name: JC_GATEWAY_TOKEN
+              value: "literal-plaintext-gateway-token"
+            - name: FORGE_TOKEN
+              value: "literal-unscoped-forge-token"
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: leaky-egress
+  namespace: agent-sandboxes
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: agent-runner
+  policyTypes:
+    - Egress
+  egress:
+    - to:
+        - ipBlock:
+            cidr: 0.0.0.0/0

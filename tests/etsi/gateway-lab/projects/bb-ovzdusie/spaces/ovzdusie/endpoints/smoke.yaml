@@ -1,0 +1,12 @@
+apiVersion: joinedcontext.com/v1alpha1
+kind: Endpoint
+metadata:
+  name: smoke
+  namespace: bb-ovzdusie
+spec:
+  contextSpaceRef: ovzdusie
+  slug: adldef3aksndswos6ug4pv5cpf
+  audience: public
+  enabledRepresentations:
+    - ngsi-ld
+    - geojson
