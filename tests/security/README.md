@@ -43,6 +43,7 @@ The suites talk to a deployed gateway; every variable they need names itself whe
 | `FORGE_ORG`, `FORGE_REPO`, `FORGE_BRANCH` | where the configuration repository lives (defaults `joinedcontext`, `configuration`, `main`) |
 | `FORGE_OTHER_ORG`, `FORGE_OTHER_REPO` | an organization of the same forge the reader is in no team of (default `mesto-kosice/configuration`) |
 | `DATA_URL` | context broker NGSI-LD entities surface for access document parity checks (EP-55) |
+| `PIPELINE_RUNNER_MANIFEST` | rendered pipeline-runner manifests (a file, a directory or a `kubectl get -o yaml` dump) judged for per-project isolation and default-deny egress; the fixtures beside the suites are the default (T-1701, T-1702) |
 
 ## Access surface & ODRL round-trip suites (T-0086, T-0087)
 
@@ -64,6 +65,23 @@ Both suites can be executed offline using the built-in self-test harness:
 ```bash
 python3 agents/qa/joinedcontext-conformance/tests/security/selftest_access.py
 ```
+
+## Pipeline runner suites (T-1701, T-1702)
+
+- **`test_pipeline_escape.py` (T-1701: PL-18, PL-23, MF-39):** the runner's egress is default-deny —
+  the Context Gateway, DNS and public addresses, and no rule that reaches a private range, a node
+  or 169.254.169.254, because a check fetches a `DataSource` URL a person typed on that very
+  runner. The manifest half of the vector (a mapping reading the environment or the runner's
+  files, a `${VAR}` naming another source's secret, a processor the platform does not ship) is
+  refused before anything runs and is proved in `jc-core`,
+  `crates/jc-core/tests/pipeline_escape_tests.rs`.
+- **`test_pipeline_project_isolation.py` (T-1702: PL-07):** two projects never share a runner
+  process — a workload, a streams ConfigMap, a `pipeline-secrets` Secret and a files volume each,
+  a CPU and memory limit per runner, and no API token, host namespace or writable root.
+
+Both read rendered manifests rather than a cluster: `fixtures/pipeline-runner/conforming.yaml` has
+to pass and `leaky.yaml` has to fail naming every defence it takes off, so a green run means the
+analyser still bites. `PIPELINE_RUNNER_MANIFEST` points them at the real chart or a live dump.
 
 The prompt-injection corpus integrity tests (`test_prompt_injection.py`) and the Agent Runner sandbox
 manifest conformance checks (`test_agent_sandbox_isolation.py`) run entirely offline without requiring
