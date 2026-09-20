@@ -44,12 +44,15 @@ export function storageStatePath(user: string): string {
   return path.join(reportDir, '.auth', `${sanitized}.json`);
 }
 
-export async function signIn(page: Page, user: string, pass: string): Promise<void> {
-  // the portal origin is wherever the page already is; the identity provider lives elsewhere
+export async function signIn(page: Page, user: string, pass: string, portal?: string): Promise<void> {
   if (!page.url().startsWith('http')) {
     throw new Error('signIn expects the page to be on the portal already — call page.goto(\'/\') first');
   }
-  const portalOrigin = new URL(page.url()).origin;
+  // The origin to come back to is the Portal's, and the caller knows it. Reading it off the page
+  // was right while `/` showed an anonymous landing page with a Sign in button; the Portal now
+  // redirects straight to the realm, so by the time this runs the page is already on the identity
+  // provider and every journey waited 20s for a return to `idm.…` that never came (T-2420).
+  const portalOrigin = portal ? new URL(portal).origin : new URL(page.url()).origin;
 
   const signInBtn = page.getByRole('button', { name: /sign in|log in|prihlásiť|anmelden/i });
   const signInLink = page.getByRole('link', { name: /sign in|log in|prihlásiť|anmelden/i });
@@ -70,16 +73,21 @@ export async function signIn(page: Page, user: string, pass: string): Promise<vo
     );
   }
 
-  const passInput = page.getByLabel(/password|heslo|passwort/i);
+  // `.and(input)`, not the label alone: Keycloak's login page carries a "Show password"
+  // button whose own aria-label holds the word, so the label matches two elements and every
+  // journey dies in the fixture with a strict mode violation before it has signed in (T-2420).
+  const passInput = page.getByLabel(/password|heslo|passwort/i).and(page.locator('input'));
   await userInput.fill(user);
   await passInput.fill(pass);
 
   const submitBtn = page.getByRole('button', { name: /sign in|log in|prihlásiť|anmelden/i });
   await submitBtn.click();
 
-  // Wait for return to Portal base domain
+  // Wait for return to Portal base domain. 45s, not 20: the first sign-in after a deploy pays
+  // for the Portal's cold start behind the realm round trip, and a journey that fails there
+  // reads as a broken portal rather than a slow one (T-2420).
   await page.waitForURL((url) => url.origin === portalOrigin && !url.pathname.includes('/auth/'), {
-    timeout: 20_000,
+    timeout: 45_000,
   });
 }
 
@@ -178,7 +186,7 @@ async function useSignedIn(
   const context = await browser.newContext({ baseURL, ignoreHTTPSErrors: true, locale: 'en-GB' });
   const page = await context.newPage();
   await page.goto('/');
-  await signIn(page, user, pass);
+  await signIn(page, user, pass, baseURL);
   await use({ context, page });
   await context.close();
 }
