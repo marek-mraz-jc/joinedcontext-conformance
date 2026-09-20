@@ -14,3 +14,4 @@ citation.
 - **ZZ-03** [S] — The platform MUST never log a secret.
 - **ZZ-04** [S] — The platform MUST pin every image by digest.
 - **YY-01** [H] — The Portal MUST name the field in the form.
+- **ZZ-05** — The platform MAY colour the refusal.

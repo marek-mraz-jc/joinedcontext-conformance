@@ -130,16 +130,25 @@ def lane_for(repo: str, path: str) -> str:
 # `- **PF-50** [S] — statement.` (docs/STYLE.md) and the legacy paragraph form of the R and I
 # families, `**R45, Conditional writes …** statement.`
 REQUIREMENT_BULLET = re.compile(
-    r"^- \*\*([A-Za-z][A-Za-z0-9]*?-?\d{1,3})(?:,\s*[^*]*)?\*\*[,:]?\s*"
+    r"^- \*\*([A-Za-z][A-Za-z0-9]*?-?\d{1,3}(?:-[A-Za-z]+\d{1,3})?)(?:[,;:. ]\s*[^*]*)?\*\*[,:]?\s*"
     r"((?:\[[A-Za-z]\]\s*)*)(?:[—–-]\s*)?(.*)$"
 )
 REQUIREMENT_PARAGRAPH = re.compile(r"^\*\*([A-Za-z][A-Za-z0-9]*?-?\d{1,3}),\s*(.*)$")
 ID_PARTS = re.compile(r"^([A-Za-z]+)-?(\d{1,3})$")
+# The two-level ids of the OASC families: `MIM0-R1`, `MIM7-R12`. The chapter number belongs to
+# the prefix, so `MIM0-R1` and `MIM7-R1` are two requirements and not one read twice (T-2142).
+TWO_LEVEL_PARTS = re.compile(r"^([A-Za-z]+\d{1,2}-[A-Za-z]+)-?(\d{1,3})$")
 
 
 def split_id(identifier: str) -> tuple[str, int] | None:
-    match = ID_PARTS.match(identifier)
+    match = ID_PARTS.match(identifier) or TWO_LEVEL_PARTS.match(identifier)
     return (match.group(1).upper(), int(match.group(2))) if match else None
+
+
+def family_of(identifier: str) -> str:
+    """The family a requirement is counted under: `MIM0-R1` belongs to MIM, not to `MIM0-R`."""
+    head = identifier.split("-")[0]
+    return re.sub(r"\d+$", "", head).upper() or head.upper()
 
 
 def read_requirements(docs: Path) -> list[Requirement]:
@@ -171,7 +180,7 @@ def read_requirements(docs: Path) -> list[Requirement]:
                 continue
             found[identifier] = Requirement(
                 id=identifier,
-                family=parts[0],
+                family=family_of(identifier),
                 tags=tuple(re.findall(r"\[([A-Za-z])\]", tag_text)),
                 statement=" ".join(statement.split()),
                 source=f"Requirements/{page.name}",
@@ -180,13 +189,16 @@ def read_requirements(docs: Path) -> list[Requirement]:
     return list(found.values())
 
 
-def citation_pattern(families: set[str]) -> re.Pattern[str]:
+def citation_pattern(prefixes: set[str]) -> re.Pattern[str]:
     """Only prefixes that actually define a requirement are citations; `v1` and `sha256` are not.
 
     Neither `\\b` nor a plain boundary works here: a pytest name writes the id as
     `test_gw10_query_…`, where `_` is a word character, so the boundary is spelled out.
+
+    A two-level prefix (`MIM0-R`) is one alternative like any other, and the longest match wins,
+    so `MIM0-R1` is read as MIM0-R1 rather than as MIM 0.
     """
-    alternatives = "|".join(sorted(families, key=len, reverse=True))
+    alternatives = "|".join(re.escape(prefix) for prefix in sorted(prefixes, key=len, reverse=True))
     return re.compile(rf"(?<![A-Za-z0-9])({alternatives})-?(\d{{1,3}})(?![A-Za-z0-9])", re.IGNORECASE)
 
 
@@ -399,6 +411,65 @@ def scan_robot(text: str, repo: str, path: str, pattern, canonical) -> list[Test
     return cases
 
 
+# What a citation in production code is read from. A test names a requirement to prove it; this
+# is the other half — the code that implements it, which is what tells a "built but untested"
+# requirement apart from one nobody has written yet (T-2142).
+CODE_SUFFIXES = {".rs", ".ts", ".tsx", ".py", ".yaml", ".yml", ".sql", ".rego", ".sh"}
+
+
+def is_test_file(path: str) -> bool:
+    """Whether a path is a test rather than the code it tests."""
+    name = path.rsplit("/", 1)[-1]
+    parts = path.split("/")
+    return (
+        "tests" in parts
+        or "test" in parts
+        or "e2e" in parts
+        or "benchmarks" in parts
+        or name.startswith("test_")
+        or name.endswith(".robot")
+        or ".test." in name
+        or ".spec." in name
+        or name.startswith("selftest")
+    )
+
+
+def code_text(path: str, text: str) -> str:
+    """The part of a file that is production code: a Rust test module is not."""
+    if path.endswith(".rs"):
+        cut = text.find("#[cfg(test)]")
+        if cut != -1:
+            return text[:cut]
+    return text
+
+
+def scan_code(repo: str, root: Path, pattern, canonical) -> dict[str, list[str]]:
+    """Requirement ids named in a repository's production code, by id.
+
+    A citation here is the code saying which requirement it implements — a doc comment, a
+    policy rule, a chart annotation. It is weaker evidence than a test, and the matrix says so:
+    `built` rather than `tested`.
+    """
+    found: dict[str, list[str]] = {}
+    for path in sorted(root.rglob("*")):
+        if not path.is_file() or path.suffix not in CODE_SUFFIXES:
+            continue
+        relative = path.relative_to(root).as_posix()
+        if any(part in SKIP_DIRECTORIES for part in path.relative_to(root).parts):
+            continue
+        if is_test_file(relative):
+            continue
+        try:
+            text = path.read_text(encoding="utf-8")
+        except (OSError, UnicodeDecodeError):
+            continue
+        for identifier in cited_ids(code_text(relative, text), pattern, canonical):
+            references = found.setdefault(identifier, [])
+            if len(references) < 5:
+                references.append(f"{repo}/{relative}")
+    return found
+
+
 def scan_repo(repo: str, root: Path, pattern, canonical) -> list[TestCase]:
     """Every test file of one repository, by the scanner its language needs."""
     cases: list[TestCase] = []
@@ -441,11 +512,16 @@ def build_index(docs: Path, repos: dict[str, Path]) -> dict:
     if not requirements:
         raise SystemExit(f"no requirement found in {docs / 'Requirements'}: wrong --docs path?")
     canonical = {split_id(r.id): r.id for r in requirements}  # type: ignore[misc]
-    pattern = citation_pattern({r.family for r in requirements})
+    # The prefix a citation is written with, which is the family for a plain id and the
+    # chapter-level prefix for a two-level one.
+    pattern = citation_pattern({split_id(r.id)[0] for r in requirements})  # type: ignore[index]
 
     cases: list[TestCase] = []
+    implements: dict[str, list[str]] = {}
     for repo, root in sorted(repos.items()):
         cases.extend(scan_repo(repo, root, pattern, canonical))
+        for identifier, references in scan_code(repo, root, pattern, canonical).items():
+            implements.setdefault(identifier, []).extend(references)
 
     by_requirement: dict[str, list[int]] = {r.id: [] for r in requirements}
     unknown: dict[str, list[str]] = {}
@@ -462,6 +538,13 @@ def build_index(docs: Path, repos: dict[str, Path]) -> dict:
         "requirements": [asdict(r) for r in requirements],
         "tests": [asdict(c) for c in cases],
         "proves": {identifier: positions for identifier, positions in by_requirement.items() if positions},
+        # Only for requirements that exist: an id named in code and nowhere in the requirements
+        # is an unknown citation, and `unknown_citations` is where a test's is already reported.
+        "implements": {
+            identifier: references
+            for identifier, references in sorted(implements.items())
+            if identifier in by_requirement
+        },
         "unknown_citations": {identifier: sorted(set(refs)) for identifier, refs in sorted(unknown.items())},
     }
 
@@ -488,10 +571,22 @@ def short(case: dict) -> str:
     return f"{SHORT_REPO.get(case['repo'], case['repo'])} `{case['path']}::{case['name']}`"
 
 
+def state_of(identifier: str, index: dict) -> str:
+    """What the platform has done about one requirement (T-2142).
+
+    `tested` — a test names it, so a regression goes red. `built` — the code names it and no
+    test does, which is a claim nobody checks. `open` — neither: a sentence in a document.
+    """
+    if index["proves"].get(identifier):
+        return "tested"
+    return "built" if index.get("implements", {}).get(identifier) else "open"
+
+
 def render_matrix(index: dict) -> str:
-    """The committed page: every requirement, its tags, the tests that cite it and their lane."""
+    """The committed page: every requirement, its state, the tests that cite it and their lane."""
     tests = index["tests"]
     proves = index["proves"]
+    implements = index.get("implements", {})
     requirements = index["requirements"]
     families: dict[str, list[dict]] = {}
     for requirement in requirements:
@@ -520,9 +615,15 @@ def render_matrix(index: dict) -> str:
         "",
         "- **Tags** are the ones `STYLE.md` defines: `[P]` performance, `[H]` human-facing, "
         "`[A]` agent-facing, `[S]` security.",
-        "- **State** is `proven` when at least one test names the requirement id, `unproven` when "
-        "none does. A proven requirement is not a passing one: whether those tests passed is the "
-        "compliance report, which reads the lanes' JUnit output.",
+        "- **State** is one of three (T-2142). `tested`: at least one test names the requirement "
+        "id, so a regression turns a lane red. `built`: the code names it — a doc comment, a "
+        "policy rule, a chart — and no test does, so the claim is written down and unchecked. "
+        "`open`: neither. A tested requirement is not a passing one: whether those tests passed "
+        "is the compliance report, which reads the lanes' JUnit output.",
+        "- **`open` measures citation, not behaviour.** A requirement can be built and still be "
+        "`open` when nothing names its id — which is itself a traceability gap (TS-18), because "
+        "the code that implements it cannot be found from the requirement. Cite the id in the "
+        "test, or in the code when there is no test yet.",
         "- **Lane** is where the tests run: the fast `ci` merge gate, the hourly `ci-full`, the "
         "conformance workflows, or the suites that need a live cluster.",
         f"- At most {TESTS_SHOWN} tests are named per requirement. The complete join, with every "
@@ -530,21 +631,32 @@ def render_matrix(index: dict) -> str:
         "",
         "## 2. Coverage by family",
         "",
-        "| Family | Requirements | Proven | Unproven | Unproven and security-tagged |",
-        "|---|---|---|---|---|",
+        "| Family | Requirements | Tested | Built | Open | Untested and security-tagged |",
+        "|---|---|---|---|---|---|",
     ]
+
+    def counts(members: list[dict]) -> tuple[int, int, int, int]:
+        states = [state_of(r["id"], index) for r in members]
+        untested_security = [
+            r for r in members if state_of(r["id"], index) != "tested" and "S" in r["tags"]
+        ]
+        return (
+            states.count("tested"),
+            states.count("built"),
+            states.count("open"),
+            len(untested_security),
+        )
+
     for family, members in sorted(families.items()):
-        unproven = [r for r in members if r["id"] not in proves]
-        security = [r for r in unproven if "S" in r["tags"]]
+        tested, built, opened, security = counts(members)
         title = FAMILY_TITLES.get(family, family)
         lines.append(
-            f"| **{family}** — {title} | {len(members)} | {len(members) - len(unproven)} | "
-            f"{len(unproven)} | {len(security)} |"
+            f"| **{family}** — {title} | {len(members)} | {tested} | {built} | {opened} | "
+            f"{security} |"
         )
-    total_unproven = [r for r in requirements if r["id"] not in proves]
+    tested, built, opened, security = counts(requirements)
     lines += [
-        f"| **Total** | {len(requirements)} | {len(requirements) - len(total_unproven)} | "
-        f"{len(total_unproven)} | {len([r for r in total_unproven if 'S' in r['tags']])} |",
+        f"| **Total** | {len(requirements)} | {tested} | {built} | {opened} | {security} |",
         "",
         "## 3. Requirement to test",
         "",
@@ -553,19 +665,29 @@ def render_matrix(index: dict) -> str:
         lines += [
             f"### {family} — {FAMILY_TITLES.get(family, family)}",
             "",
-            "| Requirement | Tags | State | Lane | Tests |",
+            "| Requirement | Tags | State | Lane | Tests, or the code that claims it |",
             "|---|---|---|---|---|",
         ]
         for requirement in members:
-            positions = proves.get(requirement["id"], [])
+            identifier = requirement["id"]
+            positions = proves.get(identifier, [])
             cases = [tests[position] for position in positions]
             lanes = sorted({case["lane"] for case in cases})
-            named = ", ".join(short(case) for case in cases[:TESTS_SHOWN])
-            if len(cases) > TESTS_SHOWN:
-                named += f", and {len(cases) - TESTS_SHOWN} more"
+            state = state_of(identifier, index)
+            if cases:
+                named = ", ".join(short(case) for case in cases[:TESTS_SHOWN])
+                if len(cases) > TESTS_SHOWN:
+                    named += f", and {len(cases) - TESTS_SHOWN} more"
+            elif state == "built":
+                places = implements[identifier]
+                named = ", ".join(f"`{place}`" for place in places[:TESTS_SHOWN])
+                if len(places) > TESTS_SHOWN:
+                    named += ", and more"
+            else:
+                named = ""
             lines.append(
-                f"| **{requirement['id']}** | {' '.join(f'[{t}]' for t in requirement['tags'])} | "
-                f"{'proven' if cases else 'unproven'} | {', '.join(lanes)} | {named} |"
+                f"| **{identifier}** | {' '.join(f'[{t}]' for t in requirement['tags'])} | "
+                f"{state} | {', '.join(lanes)} | {named} |"
             )
         lines.append("")
     lines += [
