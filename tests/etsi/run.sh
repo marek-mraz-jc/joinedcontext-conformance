@@ -14,6 +14,7 @@ verdict=()
 [ -z "$quarantine" ] || verdict=(--nostatusrc)
 robot \
   --outputdir "$out" \
+  --xunit xunit.xml \
   --variable "NGSILD_URL:${NGSILD_URL:?set NGSILD_URL to the NGSI-LD API root of the system under test}" \
   --variable "TENANT:${NGSILD_TENANT:-}" \
   --variable "TOKEN:${NGSILD_TOKEN:-}" \

@@ -31,6 +31,10 @@ REQUIRED_FAILURES = [
     "test_ep71_the_hub_says_what_it_federates_before_a_tool_is_called",
     "test_ep71_a_hub_tool_result_names_the_sources_it_is_a_union_over",
     "test_pf48_the_hub_grants_no_more_than_its_own_policy_says",
+    # T-1860: the broken stub serves one entity fewer over REST than over MCP, which is the
+    # whole point of reading both doors with one token.
+    "test_every_read_answers_the_same_over_both_doors",
+    "test_a_narrowed_grant_narrows_both_doors_the_same",
 ]
 
 

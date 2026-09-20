@@ -110,3 +110,83 @@ def entity_ids(response: requests.Response) -> list[str]:
         assert isinstance(element, dict) and "id" in element, f"array element without an id: {element!r:.200}"
         ids.append(element["id"])
     return ids
+
+
+# -- the forge (T-1703, CC-41, PF-51) -------------------------------------------------------
+#
+# The configuration repository lives in a forge that is reachable by every signed-in person.
+# `test_forge_side_door.py` plays the attack with a reader's own token, so the probes below
+# need nothing an administrator holds; the two cases that read the branch protection rule and
+# the one that plays a leaked platform credential ask for FORGE_PLATFORM_TOKEN and skip without
+# it. Never point these at dev: the suite writes, and a throwaway forge is what it is for.
+
+
+@pytest.fixture(scope="session")
+def forge_url() -> str:
+    return _require_env("FORGE_URL").rstrip("/")
+
+
+@pytest.fixture(scope="session")
+def forge_reader_token() -> str:
+    """A token of a person who is signed in and reads the configuration repository — the least
+    privilege anybody on the platform has, and the identity the whole attack is played from."""
+    return _require_env("FORGE_READER_TOKEN")
+
+
+@pytest.fixture(scope="session")
+def forge_platform_token() -> typing.Optional[str]:
+    """The Portal's own forge credential, played here as one that has leaked."""
+    return os.getenv("FORGE_PLATFORM_TOKEN") or None
+
+
+@pytest.fixture(scope="session")
+def forge_org() -> str:
+    return os.getenv("FORGE_ORG", "joinedcontext")
+
+
+@pytest.fixture(scope="session")
+def forge_repo() -> str:
+    return os.getenv("FORGE_REPO", "configuration")
+
+
+@pytest.fixture(scope="session")
+def forge_branch() -> str:
+    return os.getenv("FORGE_BRANCH", "main")
+
+
+@pytest.fixture(scope="session")
+def forge_other_org() -> str:
+    """An organization of the same forge the reader is in no team of."""
+    return os.getenv("FORGE_OTHER_ORG", "mesto-kosice")
+
+
+@pytest.fixture(scope="session")
+def forge_other_repo() -> str:
+    return os.getenv("FORGE_OTHER_REPO", "configuration")
+
+
+@pytest.fixture
+def forge(http_session: requests.Session, forge_url: str, forge_reader_token: str):
+    """A call on the forge's API as a chosen token. Never raises on status: every case here
+    asserts the refusal itself, and a raised exception would hide which door opened."""
+
+    def _call(
+        method: str,
+        path: str,
+        token: typing.Optional[str] = None,
+        json_body: typing.Optional[dict] = None,
+    ) -> requests.Response:
+        return http_session.request(
+            method,
+            forge_url + ("" if path.startswith("/") else "/") + path,
+            headers={
+                "Authorization": f"token {token or forge_reader_token}",
+                "Content-Type": "application/json",
+                "Accept": "application/json",
+            },
+            json=json_body,
+            timeout=30,
+            allow_redirects=False,
+        )
+
+    return _call

@@ -1,0 +1,18 @@
+// Form verdicts (YY-01).
+import { describe, it, expect } from "vitest";
+
+describe("the refusal (ZZ-01)", () => {
+  it("names the field", () => {
+    expect(1).toBe(1);
+  });
+
+  it.skip("names the second field", () => {
+    expect(1).toBe(1);
+  });
+});
+
+describe("the form", () => {
+  it("inherits the file's requirement", () => {
+    expect(1).toBe(1);
+  });
+});

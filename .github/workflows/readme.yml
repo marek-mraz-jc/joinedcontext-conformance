@@ -1,0 +1,30 @@
+name: readme
+# Every command the README tells a newcomer to type is run here (T-2144, TS-19): a renamed
+# suite, a moved script or a flag that no longer exists fails a lane rather than somebody's
+# first hour. Only the Build and Test sections run; "Run a suite" needs a deployment.
+#
+# This repository has no ci-full lane, and `ci.yml` ignores a markdown-only push, so the check
+# has its own workflow: on a change to the README or to the extractor, and on demand. The
+# commands rot when the code moves rather than when the README does, so run it by hand after
+# a suite is renamed. To have it catch that by itself once the Actions minutes are back
+# (T-0402, T-0521): add `schedule: [{ cron: "23 3 * * *" }]` under `on:`.
+on:
+  pull_request:
+    paths: ["README.md", "scripts/ci/check-readme-commands.py", ".github/workflows/readme.yml"]
+  push:
+    branches: [main]
+    paths: ["README.md", "scripts/ci/check-readme-commands.py", ".github/workflows/readme.yml"]
+  workflow_dispatch:
+permissions: { contents: read }
+concurrency: { group: "readme-${{ github.ref }}", cancel-in-progress: true }
+jobs:
+  readme:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12", cache: pip }
+      - name: the extractor reads what it is meant to read
+        run: python3 scripts/ci/check-readme-commands.py --selftest
+      - run: python3 scripts/ci/check-readme-commands.py

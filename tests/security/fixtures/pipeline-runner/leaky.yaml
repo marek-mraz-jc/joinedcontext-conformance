@@ -1,0 +1,80 @@
+---
+# The same two projects, every defence off: one runner for both, one secret and one files
+# volume between them, no limits, a Kubernetes API token, a writable root, and an egress rule
+# that reaches the metadata service. Each line here is one assertion of the suite (T-1702).
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: pipeline-runner-shared
+  namespace: pipeline-runner
+  labels:
+    app.kubernetes.io/name: pipeline-runner-runner
+    app.kubernetes.io/instance: pipeline-runner-shared
+    joinedcontext.com/project: ovzdusie
+spec:
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: pipeline-runner-runner
+        joinedcontext.com/project: ovzdusie
+    spec:
+      hostNetwork: true
+      hostPID: true
+      volumes:
+        - name: files
+          persistentVolumeClaim: { claimName: pipeline-runner-data }
+        - name: node
+          hostPath: { path: / }
+      containers:
+        - name: bento
+          image: ghcr.io/warpstreamlabs/bento:latest
+          envFrom:
+            - secretRef: { name: pipeline-secrets }
+          volumeMounts:
+            - { name: files, mountPath: /data }
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: pipeline-runner-shared-two
+  namespace: pipeline-runner
+  labels:
+    app.kubernetes.io/name: pipeline-runner-runner
+    app.kubernetes.io/instance: pipeline-runner-shared-two
+    joinedcontext.com/project: doprava
+spec:
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: pipeline-runner-runner
+        joinedcontext.com/project: doprava
+    spec:
+      containers:
+        - name: bento
+          image: ghcr.io/warpstreamlabs/bento:latest
+          envFrom:
+            - secretRef: { name: pipeline-secrets }
+          volumeMounts:
+            - { name: files, mountPath: /data }
+      volumes:
+        - name: files
+          persistentVolumeClaim: { claimName: pipeline-runner-data }
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: pipeline-runner
+  namespace: pipeline-runner
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: pipeline-runner-runner
+  policyTypes: [Egress]
+  egress:
+    - to:
+        - ipBlock:
+            cidr: 0.0.0.0/0
+      ports:
+        - { protocol: TCP, port: 443 }
+    - ports:
+        - { protocol: TCP, port: 80 }
