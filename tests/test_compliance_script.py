@@ -301,8 +301,17 @@ def test_the_cli_writes_the_index_the_matrix_and_the_baseline(workspace: Path, t
     assert json.loads((out / "baseline.json").read_text(encoding="utf-8"))["uncited_requirements"] == 1
     assert (out / "compliance-matrix.md").read_text(encoding="utf-8").startswith("---")
 
+    # `check` always rescans, so it needs the same fixture tree the index was built from. Without
+    # `--docs` and `--repo` it falls back to the tree beside the clone: green on a workstation that
+    # has a docs checkout there (and gating on the real repository rather than on this fixture),
+    # `SystemExit: …/docs/Requirements is not a directory` on a CI runner that has none.
     assert compliance.main([
-        "check", "--index", str(out / "index.json"), "--baseline", str(out / "baseline.json"),
+        "check",
+        "--repo", f"joinedcontext-platform={workspace / 'joinedcontext-platform'}",
+        "--repo", f"joinedcontext-portal={workspace / 'joinedcontext-portal'}",
+        "--repo", f"joinedcontext-conformance={workspace / 'joinedcontext-conformance'}",
+        "--docs", str(workspace / "docs"),
+        "--index", str(out / "index.json"), "--baseline", str(out / "baseline.json"),
     ]) == 1, "the fixture has an unproven [S] requirement, so the gate must be red"
 
 
