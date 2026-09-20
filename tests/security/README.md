@@ -35,6 +35,11 @@ The suites talk to a deployed gateway; every variable they need names itself whe
 | `AGENT_TRANSCRIPT` | a run's event frames as JSON (`GET /api/v1/projects/{p}/agent-runs/{id}/events` collected) checked for secret-shaped values and unlisted egress (T-0608, AG-35, AG-56) |
 | `AGENT_ALLOWED_HOSTS` | comma-separated hosts the run profile allows (default: `registry.npmjs.org,portal.hel.fi`) |
 | `AGENT_PROXY_URL`, `AGENT_PROXY_RUN`, `AGENT_PROXY_TICKET` | a live jc-agent-proxy and one run's ticket: an unlisted host is refused with the allow-list named (AG-50) and the diagnostics door answers without a secret (AG-56) |
+| `PORTAL_URL`, `PROJECT_A`, `PROJECT_B` | the Portal's API root and two projects of two organisations, for the isolation suite (T-1708, PF-32) |
+| `TOKEN_PROJECT_A`, `TOKEN_PROJECT_B` | one bearer token per project; each person is bound in their own project and in no other |
+| `OTHER_ENDPOINT_URL` | an endpoint of project B, e.g. `https://{host}/api/endpoint/{slug}/ngsi-ld/v1` |
+| `OTHER_ARTIFACT_URL`, `FORGE_URL`, `OTHER_FORGE_REPO`, `OTHER_RUN_ID` | one artifact, the forge root, `{owner}/{name}` and one agent run of project B |
+| `BROKER_URL` | the broker's own address as seen from outside the cluster; the probe passes when nothing answers |
 | `ACCESS_URL` | the effective grant surface, e.g. `https://{host}/cs/ovzdusie/access` or `/api/endpoint/{slug}/access` (EP-55, EP-56) |
 | `ACCESS_CHECK_URL` | AuthZEN evaluation endpoint (default `ACCESS_URL` + `/check`, R51) |
 | `FORGE_URL` | a **throwaway** forge under test, never dev (T-1703) |
@@ -114,3 +119,11 @@ and is what makes a green live run mean something:
 ```bash
 python3 tests/security/selftest_forge.py
 ```
+## Proving a suite before it is run
+
+`selftest_tenancy.py` runs `test_tenant_isolation.py` against `stub_tenancy_server.py`, a
+two-project platform in one process: correct in `isolating` mode and wrong in one named way in
+each of the others (`leaky_list`, `existence_disclosure`, `write_lands`, `artifact_served`,
+`mcp_follows_argument`). It needs no deployed system, runs in the fast CI lane beside
+`selftest_access.py`, `selftest_representations.py` and `selftest_forge.py`, and fails if the
+suite passes against a platform that does not isolate.

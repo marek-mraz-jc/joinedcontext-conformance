@@ -78,6 +78,8 @@ jobs:
         run: python3 tests/security/selftest_agent.py
       - name: every side door into the forge goes red when it is open (T-1703)
         run: python3 tests/security/selftest_forge.py
+      - name: a platform that lets one project read, write or find another goes red (T-1708)
+        run: python3 tests/security/selftest_tenancy.py
       - name: artifact drift, a lenient shape set and an untyped expansion all go red (T-0078)
         run: python3 tests/models/selftest.py
       - name: two mapping engines that disagree fail the parity runner (T-0079)
