@@ -39,6 +39,35 @@ export async function openView(page: Page, name: RegExp): Promise<void> {
   ).toBeVisible({ timeout: 20_000 });
 }
 
+/**
+ * Switches to `project` through the project menu, the way a person does (TS-12).
+ *
+ * A journey that works in one project has to say which one: a sign-in lands on whatever project
+ * comes first for that user, and that order changes with every seed change. Journey 17 read the
+ * builder of whichever project it landed on and then picked the first entry of its endpoint list,
+ * which left the form incomplete and the submit button disabled for the whole click timeout
+ * (T-2429). Nothing here types a URL: the menu is the control a person uses.
+ */
+export async function openProject(page: Page, project: string): Promise<void> {
+  if (new URL(page.url()).pathname.startsWith(`/projects/${project}/`)) {
+    return;
+  }
+  const menu = page.getByRole('button', { name: /^projects$|^projekty$|^projekte$/i }).first();
+  await expect(menu, 'the sidebar must offer the project menu').toBeVisible({ timeout: 20_000 });
+  await menu.click();
+  const entry = page.getByRole('menuitem', { name: new RegExp(`^${project}$`, 'i') }).first();
+  await expect(
+    entry,
+    `the project menu must offer ${project}; this run signs in as a user who is not a member of it, ` +
+      'or the seed does not hold it',
+  ).toBeVisible({ timeout: 15_000 });
+  await entry.click();
+  await expect(page, `choosing ${project} must open it`).toHaveURL(
+    new RegExp(`/projects/${project}(/|\\?|$)`),
+    { timeout: 20_000 },
+  );
+}
+
 export function storageStatePath(user: string): string {
   const sanitized = user.replace(/[^a-zA-Z0-9_-]/g, '_');
   return path.join(reportDir, '.auth', `${sanitized}.json`);
