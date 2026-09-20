@@ -1,0 +1,77 @@
+name: forge-side-door
+# The forge as a side door to the configuration, played against a throwaway forge (T-1703,
+# CC-41, PF-51). The suite writes: it forks, pushes and opens pull requests, and every one of
+# those is expected to be refused. Against dev a defence that has failed would leave the
+# configuration repository changed, so the first step refuses the dev domain outright.
+#
+# Dispatch only while the private repositories' Actions minutes are metered (T-0402, T-0521).
+# To put it back on a schedule, restore the commented lines below.
+on:
+  workflow_dispatch:
+    inputs:
+      forge_url:
+        description: base URL of the THROWAWAY forge under test (never dev)
+        required: true
+      org:
+        description: organization the configuration repository lives in
+        required: true
+        default: joinedcontext
+      repo:
+        description: the configuration repository
+        required: true
+        default: configuration
+      branch:
+        description: the branch the platform reads its configuration from
+        required: true
+        default: main
+      other_org:
+        description: an organization of the same forge the reader is in no team of
+        required: true
+        default: mesto-kosice
+  # schedule:
+  #   - cron: "40 3 * * *"
+permissions: { contents: read }
+jobs:
+  forge-side-door:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: refuse a forge that is not throwaway
+        env:
+          FORGE_URL: ${{ inputs.forge_url }}
+          DEV_DOMAIN: ${{ vars.DEV_DOMAIN || '2.28.67.127.sslip.io' }}
+        run: |
+          set -eu
+          case "$FORGE_URL" in
+            *"$DEV_DOMAIN"*)
+              echo "$FORGE_URL is dev; this suite writes and never runs against it" >&2
+              exit 1 ;;
+          esac
+          echo "target accepted: $FORGE_URL"
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12", cache: pip }
+      - run: pip install --require-hashes -r requirements.txt
+      - name: the suite is red for every open door before it is trusted here
+        run: python3 tests/security/selftest_forge.py
+      - name: play the attack
+        env:
+          FORGE_URL: ${{ inputs.forge_url }}
+          FORGE_ORG: ${{ inputs.org }}
+          FORGE_REPO: ${{ inputs.repo }}
+          FORGE_BRANCH: ${{ inputs.branch }}
+          FORGE_OTHER_ORG: ${{ inputs.other_org }}
+          FORGE_READER_TOKEN: ${{ secrets.FORGE_READER_TOKEN }}
+          FORGE_PLATFORM_TOKEN: ${{ secrets.FORGE_PLATFORM_TOKEN }}
+        run: |
+          set -eu
+          mkdir -p reports/forge-side-door
+          python3 -m pytest -q \
+            --junitxml=reports/forge-side-door/junit.xml \
+            tests/security/test_forge_side_door.py
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: forge-side-door-report
+          path: reports/forge-side-door
+          retention-days: 30

@@ -35,9 +35,20 @@ The suites talk to a deployed gateway; every variable they need names itself whe
 | `AGENT_TRANSCRIPT` | a run's event frames as JSON (`GET /api/v1/projects/{p}/agent-runs/{id}/events` collected) checked for secret-shaped values and unlisted egress (T-0608, AG-35, AG-56) |
 | `AGENT_ALLOWED_HOSTS` | comma-separated hosts the run profile allows (default: `registry.npmjs.org,portal.hel.fi`) |
 | `AGENT_PROXY_URL`, `AGENT_PROXY_RUN`, `AGENT_PROXY_TICKET` | a live jc-agent-proxy and one run's ticket: an unlisted host is refused with the allow-list named (AG-50) and the diagnostics door answers without a secret (AG-56) |
+| `PORTAL_URL`, `PROJECT_A`, `PROJECT_B` | the Portal's API root and two projects of two organisations, for the isolation suite (T-1708, PF-32) |
+| `TOKEN_PROJECT_A`, `TOKEN_PROJECT_B` | one bearer token per project; each person is bound in their own project and in no other |
+| `OTHER_ENDPOINT_URL` | an endpoint of project B, e.g. `https://{host}/api/endpoint/{slug}/ngsi-ld/v1` |
+| `OTHER_ARTIFACT_URL`, `FORGE_URL`, `OTHER_FORGE_REPO`, `OTHER_RUN_ID` | one artifact, the forge root, `{owner}/{name}` and one agent run of project B |
+| `BROKER_URL` | the broker's own address as seen from outside the cluster; the probe passes when nothing answers |
 | `ACCESS_URL` | the effective grant surface, e.g. `https://{host}/cs/ovzdusie/access` or `/api/endpoint/{slug}/access` (EP-55, EP-56) |
 | `ACCESS_CHECK_URL` | AuthZEN evaluation endpoint (default `ACCESS_URL` + `/check`, R51) |
+| `FORGE_URL` | a **throwaway** forge under test, never dev (T-1703) |
+| `FORGE_READER_TOKEN` | a token of a signed-in person in the read-only forge team; the identity the whole attack is played from |
+| `FORGE_PLATFORM_TOKEN` | the Portal's own forge credential, played as one that has leaked; without it the two cases that need it skip |
+| `FORGE_ORG`, `FORGE_REPO`, `FORGE_BRANCH` | where the configuration repository lives (defaults `joinedcontext`, `configuration`, `main`) |
+| `FORGE_OTHER_ORG`, `FORGE_OTHER_REPO` | an organization of the same forge the reader is in no team of (default `mesto-kosice/configuration`) |
 | `DATA_URL` | context broker NGSI-LD entities surface for access document parity checks (EP-55) |
+| `PIPELINE_RUNNER_MANIFEST` | rendered pipeline-runner manifests (a file, a directory or a `kubectl get -o yaml` dump) judged for per-project isolation and default-deny egress; the fixtures beside the suites are the default (T-1701, T-1702) |
 
 ## Access surface & ODRL round-trip suites (T-0086, T-0087)
 
@@ -59,6 +70,23 @@ Both suites can be executed offline using the built-in self-test harness:
 ```bash
 python3 agents/qa/joinedcontext-conformance/tests/security/selftest_access.py
 ```
+
+## Pipeline runner suites (T-1701, T-1702)
+
+- **`test_pipeline_escape.py` (T-1701: PL-18, PL-23, MF-39):** the runner's egress is default-deny —
+  the Context Gateway, DNS and public addresses, and no rule that reaches a private range, a node
+  or 169.254.169.254, because a check fetches a `DataSource` URL a person typed on that very
+  runner. The manifest half of the vector (a mapping reading the environment or the runner's
+  files, a `${VAR}` naming another source's secret, a processor the platform does not ship) is
+  refused before anything runs and is proved in `jc-core`,
+  `crates/jc-core/tests/pipeline_escape_tests.rs`.
+- **`test_pipeline_project_isolation.py` (T-1702: PL-07):** two projects never share a runner
+  process — a workload, a streams ConfigMap, a `pipeline-secrets` Secret and a files volume each,
+  a CPU and memory limit per runner, and no API token, host namespace or writable root.
+
+Both read rendered manifests rather than a cluster: `fixtures/pipeline-runner/conforming.yaml` has
+to pass and `leaky.yaml` has to fail naming every defence it takes off, so a green run means the
+analyser still bites. `PIPELINE_RUNNER_MANIFEST` points them at the real chart or a live dump.
 
 The prompt-injection corpus integrity tests (`test_prompt_injection.py`) and the Agent Runner sandbox
 manifest conformance checks (`test_agent_sandbox_isolation.py`) run entirely offline without requiring
@@ -83,3 +111,37 @@ that the Policy Enforcement Point (PEP) decision is evaluated identically across
 entity sets match (EP-06, R20), normalized attribute projections and values agree (EP-07, TS-03), and
 any forbidden or hidden attributes (`HIDDEN_ATTR`) are never leaked through any representation in either
 parsed records or raw payloads.
+
+### The forge as a side door to the configuration (T-1703: CC-41, PF-51)
+
+Every change to the platform's configuration is a Change with a Verdict, and the forge is where that
+Change ends up. `test_forge_side_door.py` plays the attack that skips the Verdict, as the least
+privileged identity the platform has — somebody who signed in through Keycloak and landed in the
+read-only forge team. One case per step: fork the configuration repository, create a repository to
+copy it into, commit on the default branch, commit on the branch a Change is reviewed from, open a
+pull request outside the Portal, read another organization's repository, list or add a repository
+webhook, and spend the Portal's own forge credential as if it had leaked. Two further cases read the
+branch protection rule itself: it pins the pusher to the Portal's identity, and it drops an approval
+that a commit pushed after the Verdict has invalidated.
+
+**This suite writes.** A defence that has failed leaves the repository changed, so it runs against a
+throwaway forge and never against dev; `.github/workflows/forge-side-door.yml` refuses a URL on the
+dev domain before it installs anything.
+
+A suite of refusals passes beautifully against a forge that is not there, so it is not trusted until
+it has been shown to go red. `selftest_forge.py` runs every case against `stub_forge_server.py` —
+once hardened, where the whole suite is green, and once per planted door, where the case that watches
+that door is named in the failures. That runs in the fast CI lane, needs no forge and no credential,
+and is what makes a green live run mean something:
+
+```bash
+python3 tests/security/selftest_forge.py
+```
+## Proving a suite before it is run
+
+`selftest_tenancy.py` runs `test_tenant_isolation.py` against `stub_tenancy_server.py`, a
+two-project platform in one process: correct in `isolating` mode and wrong in one named way in
+each of the others (`leaky_list`, `existence_disclosure`, `write_lands`, `artifact_served`,
+`mcp_follows_argument`). It needs no deployed system, runs in the fast CI lane beside
+`selftest_access.py`, `selftest_representations.py` and `selftest_forge.py`, and fails if the
+suite passes against a platform that does not isolate.

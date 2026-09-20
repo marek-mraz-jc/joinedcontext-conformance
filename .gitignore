@@ -6,3 +6,8 @@ __pycache__/
 
 # pytest
 .pytest_cache/
+
+# compliance.py: the index and a run's report are generated. The committed record is
+# compliance/baseline.json here and Requirements/compliance-matrix.md in the docs repository.
+compliance/index.json
+compliance/compliance-report.*

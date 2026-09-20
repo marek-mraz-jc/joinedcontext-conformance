@@ -1,0 +1,127 @@
+---
+# Two projects, each with its own runner, its own streams ConfigMap, its own secrets and its
+# own files volume; egress default-deny with every private range out of reach (T-1701, T-1702).
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: pipeline-runner-ovzdusie
+  namespace: pipeline-runner
+  labels:
+    app.kubernetes.io/name: pipeline-runner-runner
+    app.kubernetes.io/instance: pipeline-runner-ovzdusie
+    joinedcontext.com/project: ovzdusie
+spec:
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: pipeline-runner-runner
+        joinedcontext.com/project: ovzdusie
+    spec:
+      automountServiceAccountToken: false
+      enableServiceLinks: false
+      securityContext:
+        runAsNonRoot: true
+        seccompProfile: { type: RuntimeDefault }
+      volumes:
+        - name: streams
+          configMap: { name: pipeline-runner-ovzdusie-streams }
+        - name: files
+          persistentVolumeClaim: { claimName: pipeline-runner-ovzdusie-data }
+      containers:
+        - name: bento
+          image: ghcr.io/warpstreamlabs/bento@sha256:0000000000000000000000000000000000000000000000000000000000000001
+          envFrom:
+            - secretRef: { name: pipeline-secrets-ovzdusie, optional: true }
+          volumeMounts:
+            - { name: streams, mountPath: /streams }
+            - { name: files, mountPath: /data }
+          resources:
+            limits: { cpu: 1000m, memory: 1024Mi }
+            requests: { cpu: 100m, memory: 256Mi }
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            runAsNonRoot: true
+            capabilities: { drop: [ALL] }
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: pipeline-runner-doprava
+  namespace: pipeline-runner
+  labels:
+    app.kubernetes.io/name: pipeline-runner-runner
+    app.kubernetes.io/instance: pipeline-runner-doprava
+    joinedcontext.com/project: doprava
+spec:
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: pipeline-runner-runner
+        joinedcontext.com/project: doprava
+    spec:
+      automountServiceAccountToken: false
+      enableServiceLinks: false
+      securityContext:
+        runAsNonRoot: true
+        seccompProfile: { type: RuntimeDefault }
+      volumes:
+        - name: streams
+          configMap: { name: pipeline-runner-doprava-streams }
+        - name: files
+          persistentVolumeClaim: { claimName: pipeline-runner-doprava-data }
+      containers:
+        - name: bento
+          image: ghcr.io/warpstreamlabs/bento@sha256:0000000000000000000000000000000000000000000000000000000000000001
+          envFrom:
+            - secretRef: { name: pipeline-secrets-doprava, optional: true }
+          volumeMounts:
+            - { name: streams, mountPath: /streams }
+            - { name: files, mountPath: /data }
+          resources:
+            limits: { cpu: 1000m, memory: 1024Mi }
+            requests: { cpu: 100m, memory: 256Mi }
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            runAsNonRoot: true
+            capabilities: { drop: [ALL] }
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: pipeline-runner
+  namespace: pipeline-runner
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: pipeline-runner-runner
+  policyTypes: [Ingress, Egress]
+  egress:
+    - to:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: context-gateway-gateway
+      ports:
+        - { protocol: TCP, port: 8080 }
+    - to:
+        - ipBlock:
+            cidr: 0.0.0.0/0
+            except:
+              - 10.0.0.0/8
+              - 172.16.0.0/12
+              - 192.168.0.0/16
+              - 169.254.0.0/16
+              - 127.0.0.0/8
+      ports:
+        - { protocol: TCP, port: 443 }
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: kube-system
+          podSelector:
+            matchLabels:
+              k8s-app: kube-dns
+      ports:
+        - { protocol: UDP, port: 53 }
+        - { protocol: TCP, port: 53 }

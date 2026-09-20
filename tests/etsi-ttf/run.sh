@@ -69,6 +69,7 @@ set +e
 # shellcheck disable=SC2086  # $legs is a deliberate list of suite paths
 robot \
   --outputdir "$out" \
+  --xunit xunit.xml \
   --variable "url:${NGSILD_URL}" \
   --variable "context_server_host:${callback}" \
   --variable "context_source_host:${callback}" \
