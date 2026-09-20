@@ -20,8 +20,8 @@ Browser end-to-end user journeys for the JoinedContext Portal UI (React 19 / axu
 - `PORTAL_LIVE_FLOW`: converged flow that must offer no Revert or Adopt button. Unset skips the negative drift test.
 - `PORTAL_PIPELINE`: the running pipeline journey 9 watches (default `aq-mqtt-ingest`). Its counter must move while the journey runs; a view showing "no numbers" means the portal has no runner URL configured.
 - `PORTAL_PUBLIC_DASHBOARD_URL`: full URL of a published public dashboard. Journey 13 opens it in an anonymous context to prove it needs no session; unset skips that one test.
-- `PORTAL_ENDPOINT`: the published endpoint journeys 8 and 11 use (default `public-air`). Journey 11 selects it in the Data Access view's own endpoint control and reads the slug from there, so the matrix it checks belongs to the endpoint it then calls.
-- `PORTAL_PROJECT`: project the drift journey writes in (default `banskabystrica`).
+- `PORTAL_ENDPOINT`: the published endpoint journeys 8, 11 and 17 use (default `public-air`). It must be an endpoint of `PORTAL_PROJECT`: journey 17 picks it in the app builder by name, and the builder lists the endpoints of the project that is open. Journey 11 selects it in the Data Access view's own endpoint control and reads the slug from there, so the matrix it checks belongs to the endpoint it then calls.
+- `PORTAL_PROJECT`: the project journeys 14 and 17 work in (default `banskabystrica`). Journey 17 opens it through the project menu before it touches anything, because a sign-in lands on whichever project comes first for that user.
 - `PORTAL_DRIFT_RESOURCE`: the resource journey 14 drifts on purpose (default `ovzdusie`).
 - `JC_DRIFT_TOKEN`: bearer token of the scoped ServiceAccount that writes that drift. It is scoped to the one resource and is never an admin credential; an unset variable fails journey 14 with the variable name rather than skipping it.
 - `JC_REPORTS_DIR`: Target folder for JUnit, HTML, and artifact test reports.
