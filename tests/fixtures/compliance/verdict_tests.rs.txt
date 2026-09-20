@@ -1,0 +1,26 @@
+//! Fixture crate tests (ZZ-02).
+
+/// ZZ-01: a write without a verdict is refused.
+#[test]
+fn a_write_without_a_verdict_is_refused() {
+    assert!(true);
+}
+
+#[tokio::test]
+async fn the_field_is_named() {
+    assert!(true);
+}
+
+#[test]
+#[ignore = "flaky on the shared runner"]
+fn an_ignored_case_without_a_task() {
+    assert!(true);
+}
+
+#[test]
+#[ignore = "waits for the runner rebuild, T-1234"]
+fn an_ignored_case_with_a_task() {
+    assert!(true);
+}
+
+fn not_a_test() {}

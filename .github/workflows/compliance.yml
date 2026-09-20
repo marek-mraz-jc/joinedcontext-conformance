@@ -1,0 +1,89 @@
+name: compliance
+# The compliance run: every requirement with the named tests that prove it, one report
+# (T-1725, TS-19, OPS-27).
+#
+# The gate needs all five repositories, because a requirement is proven by a test wherever that
+# test lives. Four of them are private, so cross-repository checkout needs a read-only token in
+# `COMPLIANCE_READ_TOKEN` (contents: read on docs, deployment, platform, portal). Without it the
+# job stops and says which checkout failed rather than reporting a green run over half the tests.
+#
+# On demand only for now (private repository, metered minutes, T-0402/T-0521). Put
+# `schedule: [{ cron: "0 6 * * 1" }]` (Monday 06:00 UTC) back under `on:` when the minutes are back.
+on:
+  workflow_dispatch:
+    inputs:
+      reports_run_id:
+        description: id of a workflow run whose artifacts hold JUnit output of the lanes
+        required: false
+        default: ""
+      reports_artifact:
+        description: name of the artifact inside that run (empty downloads every artifact)
+        required: false
+        default: ""
+permissions:
+  contents: read
+  actions: read
+jobs:
+  compliance:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with: { path: joinedcontext-conformance }
+      - uses: actions/checkout@v4
+        with:
+          repository: marek-mraz/joinedcontext-docs
+          path: docs
+          token: ${{ secrets.COMPLIANCE_READ_TOKEN || secrets.GITHUB_TOKEN }}
+      - uses: actions/checkout@v4
+        with:
+          repository: marek-mraz/joinedcontext-platform
+          path: joinedcontext-platform
+          token: ${{ secrets.COMPLIANCE_READ_TOKEN || secrets.GITHUB_TOKEN }}
+      - uses: actions/checkout@v4
+        with:
+          repository: marek-mraz/joinedcontext-portal
+          path: joinedcontext-portal
+          token: ${{ secrets.COMPLIANCE_READ_TOKEN || secrets.GITHUB_TOKEN }}
+      - uses: actions/checkout@v4
+        with:
+          repository: marek-mraz/joinedcontext-deployment
+          path: joinedcontext-deployment
+          token: ${{ secrets.COMPLIANCE_READ_TOKEN || secrets.GITHUB_TOKEN }}
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12" }
+      - name: the checker still fails on an unproven security requirement and a dead citation
+        run: python3 -m pytest joinedcontext-conformance/tests/test_compliance_script.py -q
+      - name: index every requirement against the tests that name it
+        working-directory: joinedcontext-conformance
+        run: python3 scripts/compliance.py index
+      - name: the committed matrix page is the one the index produces
+        run: |
+          set -eu
+          git -C docs diff --exit-code -- Requirements/compliance-matrix.md \
+            || { echo "Requirements/compliance-matrix.md is stale: run tasks/compliance index and commit it"; exit 1; }
+      - name: collect the lanes' JUnit output
+        if: inputs.reports_run_id != ''
+        uses: actions/download-artifact@v4
+        with:
+          run-id: ${{ inputs.reports_run_id }}
+          name: ${{ inputs.reports_artifact }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path: junit
+      - name: the compliance report of this run
+        if: inputs.reports_run_id != ''
+        working-directory: joinedcontext-conformance
+        run: python3 scripts/compliance.py report --junit ../junit
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: compliance-report
+          path: |
+            joinedcontext-conformance/compliance/compliance-report.html
+            joinedcontext-conformance/compliance/compliance-report.json
+            joinedcontext-conformance/compliance/index.json
+          retention-days: 30
+          if-no-files-found: warn
+      - name: the gate
+        working-directory: joinedcontext-conformance
+        run: python3 scripts/compliance.py check

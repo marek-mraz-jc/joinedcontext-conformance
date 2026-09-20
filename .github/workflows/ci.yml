@@ -84,6 +84,8 @@ jobs:
         run: python3 tests/models/selftest_endpoint.py
       - name: locale rules fire on a bundle that breaks them (T-0076)
         run: python3 scripts/check-i18n.py --selftest
+      - name: the compliance gate still goes red on an unproven [S] requirement (T-1725)
+        run: python3 -m pytest tests/test_compliance_script.py -q
       - name: qualification report aggregates suite outcomes and catches corrupt files (T-0089)
         run: python3 scripts/generate-qualification-report.py --selftest
       - name: latency regression gate flags degradations and respects baselines (T-0090)

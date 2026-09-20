@@ -1,0 +1,12 @@
+*** Settings ***
+Documentation     Fixture suite (ZZ-02).
+Force Tags        fixture
+
+*** Test Cases ***
+A Refused Write Names Its Field
+    [Documentation]    ZZ-01 names the field.
+    [Tags]    smoke
+    Should Be Equal    1    1
+
+An Inherited Case
+    Should Be Equal    1    1

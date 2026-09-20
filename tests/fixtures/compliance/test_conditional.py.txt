@@ -1,0 +1,8 @@
+"""Conditional fixtures (ZZ-02)."""
+
+import pytest
+
+
+@pytest.mark.skipif(True, reason="no broker here")
+def test_zz01_only_with_a_broker():
+    assert True
