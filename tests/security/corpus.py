@@ -14,6 +14,22 @@ _MUST_NOT_PATTERN = re.compile(r"^(call|egress|leak|escalate|write|exec):[a-z0-9
 _VALID_EXPECT = {"literal", "refused"}
 _VALID_REQUIREMENT = {"AG-20", "AG-21", "TS-25"}
 
+# Every surface the assistant reads, and the one name each is filed under. A placement outside
+# this set is a misspelling, and a misspelled surface is a surface nothing covers: the coverage
+# tests count vectors by this name (T-1691).
+_VALID_PLACEMENT = {
+    "attribute-value",
+    "commit-message",
+    "description",
+    "entity-name",
+    "file-upload",
+    "observation-payload",
+    "prior-conversation",
+    "schema-annotation",
+    "tool-output",
+    "tool-parameter",
+}
+
 
 @dataclass(frozen=True)
 class Vector:
@@ -126,6 +142,11 @@ def corpus_violations(vectors: list[Vector]) -> list[str]:
         if v.requirement not in _VALID_REQUIREMENT:
             violations.append(
                 f"Vector '{v.id}' requirement '{v.requirement}' outside allowed {_VALID_REQUIREMENT}"
+            )
+
+        if v.placement not in _VALID_PLACEMENT:
+            violations.append(
+                f"Vector '{v.id}' placement '{v.placement}' outside allowed {sorted(_VALID_PLACEMENT)}"
             )
 
     fam_counts = families(vectors)
