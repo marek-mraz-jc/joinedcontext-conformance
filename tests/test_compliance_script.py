@@ -51,6 +51,9 @@ def workspace(tmp_path: Path) -> Path:
           tmp_path / "joinedcontext-conformance" / "tests" / "mcp" / "test_portal_mcp.py")
     place("smoke.robot.txt",
           tmp_path / "joinedcontext-conformance" / "tests" / "etsi" / "smoke.robot")
+    # Production code, not a test: it is what makes ZZ-03 `built` rather than `open` (T-2142).
+    place("handler.rs.txt",
+          tmp_path / "joinedcontext-platform" / "crates" / "jc-core" / "src" / "handler.rs")
     return tmp_path
 
 
@@ -118,6 +121,45 @@ def test_each_test_carries_the_lane_that_runs_it(workspace: Path):
     assert case(index, "test_zz01_a_write_without_a_verdict_is_refused")["lane"] == "conformance"
     assert case(index, "A Refused Write Names Its Field")["lane"] == "live on dev"
     assert all(test["lane"] != "unknown" for test in index["tests"])
+
+
+def test_a_requirement_with_a_test_is_tested(workspace: Path):
+    """TS-19, T-2142 - a test names ZZ-01, so a regression in it turns a lane red."""
+    index = index_of(workspace)
+    assert compliance.state_of("ZZ-01", index) == "tested"
+
+
+def test_a_requirement_only_the_code_names_is_built(workspace: Path):
+    """TS-19, T-2142 - ZZ-05 is claimed by a handler and by no test: written down, unchecked."""
+    index = index_of(workspace)
+    assert compliance.state_of("ZZ-05", index) == "built"
+    assert index["implements"]["ZZ-05"] == ["joinedcontext-platform/crates/jc-core/src/handler.rs"]
+
+
+def test_a_requirement_nothing_names_is_open(workspace: Path):
+    """TS-19, T-2142 - ZZ-04 is a sentence in a document and nothing else."""
+    index = index_of(workspace)
+    assert compliance.state_of("ZZ-04", index) == "open"
+    assert "ZZ-04" not in index["proves"]
+    assert "ZZ-04" not in index["implements"]
+
+
+def test_a_test_file_is_never_read_as_the_code_that_implements_it(workspace: Path):
+    """TS-19, T-2142 - otherwise every tested requirement would also read as built, and the
+    three states would collapse into one."""
+    index = index_of(workspace)
+    assert "ZZ-01" not in index["implements"]
+    assert "YY-01" not in index["implements"]
+
+
+def test_the_matrix_prints_one_of_the_three_states_for_every_requirement(workspace: Path):
+    """TS-19, T-2142 - the page a reader sees is the join the gate holds."""
+    index = index_of(workspace)
+    page = compliance.render_matrix(index)
+    for identifier, state in [("ZZ-01", "tested"), ("ZZ-05", "built"), ("ZZ-04", "open")]:
+        row = next(line for line in page.splitlines() if line.startswith(f"| **{identifier}**"))
+        assert f"| {state} |" in row, row
+    assert "crates/jc-core/src/handler.rs" in page, "a built requirement names what claims it"
 
 
 def test_an_unproven_security_requirement_fails_the_check(workspace: Path):
@@ -228,7 +270,8 @@ def test_a_requirement_no_test_names_is_reported_as_having_none(workspace: Path,
     report = compliance.build_report(index, [reports])
     uncited = [identifier for identifier, verdict in report["requirements"].items()
                if verdict["state"] == "uncited"]
-    assert uncited == ["ZZ-04"]  # the one fixture requirement no test names
+    # The two fixture requirements no test names: one claimed by code, one by nothing.
+    assert uncited == ["ZZ-04", "ZZ-05"]
     assert report["junit_cases"] == 1
     assert report["matched_tests"] == 0
 
@@ -298,7 +341,7 @@ def test_the_cli_writes_the_index_the_matrix_and_the_baseline(workspace: Path, t
     assert code == 0
     written = json.loads((out / "index.json").read_text(encoding="utf-8"))
     assert written["proves"]["ZZ-01"]
-    assert json.loads((out / "baseline.json").read_text(encoding="utf-8"))["uncited_requirements"] == 1
+    assert json.loads((out / "baseline.json").read_text(encoding="utf-8"))["uncited_requirements"] == 2
     assert (out / "compliance-matrix.md").read_text(encoding="utf-8").startswith("---")
 
     # `check` always rescans, so it needs the same fixture tree the index was built from. Without

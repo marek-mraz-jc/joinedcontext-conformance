@@ -1,0 +1,7 @@
+//! A handler of the fixture platform, which is production code rather than a test.
+
+/// Colours the refusal (ZZ-05): the field it names is the one that was refused.
+pub fn refuse(write: &Write) -> Result<(), Error> {
+    Err(Error::NoVerdict)
+}
+
