@@ -82,6 +82,16 @@ def mcp_agent_token() -> str:
 
 
 @pytest.fixture(scope="session")
+def narrowed_token(mcp_token: str | None) -> str | None:
+    """A bearer whose grant sees less than `MCP_TOKEN`'s, for the read parity suite (T-1860).
+
+    Falls back to `MCP_TOKEN` rather than skipping: the parity a suite asserts holds for any
+    grant, and a deployment that has no second identity still gets the assertion run. Where
+    the variable is set, the same table is proved for a grant that is actually narrower."""
+    return os.getenv("MCP_NARROWED_TOKEN") or mcp_token
+
+
+@pytest.fixture(scope="session")
 def portal_mcp_url() -> str:
     """The Portal MCP server over the operation registry (T-0637, AG-60), `/api/v1/mcp`."""
     return _require_env("PORTAL_MCP_URL").rstrip("/")

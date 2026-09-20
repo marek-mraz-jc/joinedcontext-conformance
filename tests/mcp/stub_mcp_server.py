@@ -104,8 +104,54 @@ class StubMcpHandler(BaseHTTPRequestHandler):
         body = json.dumps(frame).encode("utf-8")
         self._send_bytes(200, "application/json", body, headers=headers)
 
+    def _sanitized(self, space: str) -> list[dict]:
+        """The entities of one space as a caller may read them: the masked attribute gone."""
+        served = []
+        for entity in ENTITIES_BY_SPACE.get(space, []):
+            copy_e = dict(entity)
+            copy_e.pop("secretReading", None)
+            served.append(copy_e)
+        return served
+
+    def _rest_entities(self, path: str) -> bool:
+        """The NGSI-LD read surface of the endpoint, beside its MCP one (T-1860).
+
+        The parity suite sends one request to each door and compares the answers, so the stub
+        has to have both. In broken mode this door serves one entity fewer than the tool does,
+        which is the defect the suite exists to catch.
+        """
+        marker = "/ngsi-ld/v1/entities"
+        if marker not in path:
+            return False
+        space = "ovzdusie"
+        segments = path.split("/")
+        if "cs" in segments[:-1]:
+            space = segments[segments.index("cs") + 1]
+        served = self._sanitized(space)
+        tail = path.split(marker, 1)[1].strip("/")
+        if tail:
+            wanted = next((e for e in served if e["id"] == tail), None)
+            if wanted is None:
+                body = json.dumps(
+                    {
+                        "type": "https://uri.etsi.org/ngsi-ld/errors/ResourceNotFound",
+                        "title": "Resource not found",
+                        "detail": f"Entity not found: {tail}",
+                    }
+                ).encode("utf-8")
+                self._send_bytes(404, "application/problem+json", body)
+                return True
+            self._send_bytes(200, "application/json", json.dumps(wanted).encode("utf-8"))
+            return True
+        if self.server.mode == "broken":
+            served = served[:-1]
+        self._send_bytes(200, "application/json", json.dumps(served).encode("utf-8"))
+        return True
+
     def do_GET(self) -> None:
         path = self.path.split("?", 1)[0].rstrip("/")
+        if self._rest_entities(path):
+            return
         if path == "/.well-known/oauth-protected-resource/cs/tajne/mcp":
             host = self.headers.get("Host") or f"127.0.0.1:{self.server.server_address[1]}"
             metadata = {
@@ -128,6 +174,45 @@ class StubMcpHandler(BaseHTTPRequestHandler):
         "a result carries the names it came from as `jc:source`, and an answer can be "
         "partial when one of them does not respond."
     )
+
+    # The rendered formalisms `describe_schema` serves, each small and each really of the
+    # language it claims (T-1860): the parity suite parses them rather than reading them.
+    FORMALISMS = {
+        "linkml": {
+            "format": "linkml",
+            "mediaType": "text/yaml",
+            "document": (
+                "id: urn:joinedcontext:model:ovzdusie:v1\n"
+                "name: ovzdusie\n"
+                "classes:\n"
+                "  AirQualityObserved:\n"
+                "    attributes:\n"
+                "      temperature:\n"
+                "        range: float\n"
+            ),
+        },
+        "shacl": {
+            "format": "shacl",
+            "mediaType": 'text/turtle; profile="shacl"',
+            "document": (
+                "@prefix sh: <http://www.w3.org/ns/shacl#> .\n"
+                "@prefix m: <urn:joinedcontext:model:ovzdusie:v1:> .\n\n"
+                "<urn:joinedcontext:model:ovzdusie:v1:AirQualityObservedShape>\n"
+                "  a sh:NodeShape ;\n"
+                "  sh:targetClass m:AirQualityObserved ;\n"
+                "  sh:closed false .\n"
+            ),
+        },
+        "rdf": {
+            "format": "rdf",
+            "mediaType": "text/turtle",
+            "document": (
+                "@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .\n"
+                "@prefix m: <urn:joinedcontext:model:ovzdusie:v1:> .\n\n"
+                "m:AirQualityObserved a rdfs:Class .\n"
+            ),
+        },
+    }
 
     def _is_hub(self, path: str) -> bool:
         return path.endswith("/cs/hub/mcp")
@@ -461,7 +546,14 @@ class StubMcpHandler(BaseHTTPRequestHandler):
 
         if tool_name == "get_entity":
             target_id = tool_args.get("id", "")
-            current_space_entities = ENTITIES_BY_SPACE.get(space, [])
+            # The masked attribute is gone here as it is on the REST door, so the two answer
+            # one entity (T-1860); in broken mode the raw entity goes out, which is the leak
+            # the isolation suite is looking for.
+            current_space_entities = (
+                ENTITIES_BY_SPACE.get(space, [])
+                if self.server.mode == "broken"
+                else self._sanitized(space)
+            )
             found = next((e for e in current_space_entities if e["id"] == target_id), None)
             if found:
                 result = {"structuredContent": found}
@@ -491,9 +583,14 @@ class StubMcpHandler(BaseHTTPRequestHandler):
             return
 
         if tool_name == "describe_schema":
+            rendered = self.FORMALISMS.get(tool_args.get("format", ""))
+            if rendered is not None:
+                self._send_json_rpc(req_id, result={"structuredContent": rendered})
+                return
             result = {
                 "structuredContent": {
                     "type": "AirQualityObserved",
+                    "recommended": "linkml",
                     "properties": {"temperature": {"type": "number"}},
                 }
             }
