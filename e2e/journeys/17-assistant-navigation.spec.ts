@@ -1,4 +1,4 @@
-import { test, expect, openView } from '../fixtures/portal.js';
+import { test, expect, openProject, openView } from '../fixtures/portal.js';
 
 /**
  * Journey 17 (T-0610): the assistant drives the Portal. The steward asks the assistant for an
@@ -17,6 +17,19 @@ const endpoints = /^endpoints$|^koncové body$|^endpunkte$/i;
 const approvals = /^approvals$|^schválenia$|^freigaben$/i;
 const PROMPT = 'Help me create an endpoint for public air quality data.';
 
+/**
+ * The project this journey works in and the endpoint its app reads, by name and as a pair
+ * (T-2429): the endpoint has to be one of that project's, because the builder lists the
+ * endpoints of the project that is open.
+ *
+ * A sign-in lands on whichever project comes first for that user, which is not necessarily this
+ * one and changes with the seed; the list inside the builder is that project's and its order is
+ * its own. The two variables are the ones journeys 8, 11 and 14 already read, with the same
+ * defaults, so one installation is described in one place.
+ */
+const PROJECT = process.env.PORTAL_PROJECT || 'banskabystrica';
+const ENDPOINT = process.env.PORTAL_ENDPOINT || 'public-air';
+
 test.describe('Journey 17: the assistant navigates to a prefilled endpoint form (T-0610)', () => {
   test.describe.configure({ mode: 'serial' });
 
@@ -25,14 +38,34 @@ test.describe('Journey 17: the assistant navigates to a prefilled endpoint form 
   }) => {
     const { page } = steward;
 
+    // The project first: the builder reads the endpoints of the project that is open, and the
+    // prompt below is written for this one (T-2429).
+    await openProject(page, PROJECT);
+
     // The assistant lives in the builder's conversation: open it the way a person does.
     await openView(page, applications);
     await page.getByRole('button', { name: /generate your own app|vygenerovať|eigene app/i }).first().click();
     const endpointPicker = page.getByLabel(/^endpoint$|^rozhranie$|^endpunkt$/i).first();
     await expect(endpointPicker).toBeVisible({ timeout: 20_000 });
-    await endpointPicker.selectOption({ index: 1 });
+    // By name, never by position: the option's value is the Endpoint's own name, the label is its
+    // title in the person's language, and the order is whatever the project's list happens to be.
+    await expect(
+      endpointPicker.locator(`option[value="${ENDPOINT}"]`),
+      `the builder of project ${PROJECT} must offer the endpoint ${ENDPOINT}`,
+    ).toHaveCount(1);
+    await endpointPicker.selectOption(ENDPOINT);
+    await expect(endpointPicker, 'the picked endpoint is what the form holds').toHaveValue(ENDPOINT);
+    const submit = page.getByRole('button', { name: /generate the app|vygenerovať aplikáciu|app erzeugen/i }).first();
     await page.getByLabel(/what should the app do|čo má aplikácia robiť|was soll die app/i).first().fill(PROMPT);
-    await page.getByRole('button', { name: /generate the app|vygenerovať aplikáciu|app erzeugen/i }).first().click();
+    // The button enables once the endpoint, the prompt and the attributes the app may read are
+    // all settled — the last of those is derived from the endpoint's own schema surface, so it
+    // arrives a moment after the pick. Waiting for the button here names what is missing if it
+    // never enables, instead of failing inside the click's own timeout.
+    await expect(
+      submit,
+      'the builder enables Generate once the endpoint, the prompt and the endpoint\'s published attributes are all there',
+    ).toBeEnabled({ timeout: 30_000 });
+    await submit.click();
 
     // The run's conversation is live; the same request is sent as a message so the assistant
     // answers it as a share request, not only as an app to build.
@@ -71,6 +104,9 @@ test.describe('Journey 17: the assistant navigates to a prefilled endpoint form 
     const { page } = approver;
     const proposed = test.info().annotations.find((a) => a.type === 'endpoint')?.description;
 
+    // The approver signs in on their own first project, which is not necessarily the one the
+    // change was proposed in (T-2429).
+    await openProject(page, PROJECT);
     await openView(page, approvals);
     const pending = page.getByRole('row').or(page.getByRole('article')).filter({ hasText: /endpoint|rozhranie|endpunkt/i }).first();
     await expect(pending).toBeVisible({ timeout: 30_000 });
