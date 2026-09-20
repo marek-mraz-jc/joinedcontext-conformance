@@ -34,7 +34,7 @@ jobs:
             -e JC_GATEWAY_BROKER_URL=http://jc-broker:9090 \
             -e JC_GATEWAY_ORG_DOMAIN=banskabystrica.sk \
             -e JC_GATEWAY_REPO_DIR=/repo \
-            ghcr.io/marek-mraz/joinedcontext-platform:main
+            ghcr.io/marek-mraz-jc/joinedcontext-platform:main
           for i in $(seq 1 30); do
             curl -fsS "http://localhost:8080/healthz" >/dev/null 2>&1 && break
             sleep 1

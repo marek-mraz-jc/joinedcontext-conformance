@@ -37,7 +37,7 @@ BASE_URL=https://<host> ./node_modules/.bin/playwright test --config e2e/playwri
 
 # from the runner image, which carries Chromium and the harness
 docker run --rm -e BASE_URL=https://<host> -e PORTAL_USER -e PORTAL_PASSWORD \
-  -v "$PWD/reports:/reports" ghcr.io/marek-mraz/joinedcontext-conformace:main playwright
+  -v "$PWD/reports:/reports" ghcr.io/marek-mraz-jc/joinedcontext-conformance:main playwright
 ```
 
 Journeys 2 and 3 are a chain: journey 2 leaves a change proposal pending, journey 3 approves it. Journey 6 is a chain of its own: adopting the drift leaves a pending proposal that the same file then reads, so its tests run in file order.

@@ -28,7 +28,7 @@ Conformance and system test suites run against a deployed instance (requirements
 docker run --rm \
   -e NGSILD_URL=https://<host>/cs/<space>/ngsi-ld/v1 \
   -v "$PWD/reports:/reports" \
-  ghcr.io/marek-mraz/joinedcontext-conformace:main etsi
+  ghcr.io/marek-mraz-jc/joinedcontext-conformance:main etsi
 ```
 
 Locally, without the image: `JC_TESTS_DIR=tests bin/jc-conformance etsi`.

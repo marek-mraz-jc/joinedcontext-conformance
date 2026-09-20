@@ -86,7 +86,7 @@ docker run -d --name jc-gw --network jclab --platform linux/amd64 \
   -v "$PWD/tests/etsi/gateway-lab:/repo:ro" \
   -e JC_GATEWAY_BROKER_URL=http://jc-broker:9090 \
   -e JC_GATEWAY_ORG_DOMAIN=banskabystrica.sk -e JC_GATEWAY_REPO_DIR=/repo \
-  ghcr.io/marek-mraz/joinedcontext-platform:main
+  ghcr.io/marek-mraz-jc/joinedcontext-platform:main
 docker run --rm --network jclab -v "$PWD:/work" -w /work \
   -e NGSILD_URL="http://jc-gw:8080/api/endpoint/adldef3aksndswos6ug4pv5cpf/ngsi-ld/v1" \
   -e NGSILD_ORG_DOMAIN=banskabystrica.sk -e NGSILD_SPACE=ovzdusie \
