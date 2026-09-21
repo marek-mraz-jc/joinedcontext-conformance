@@ -442,7 +442,9 @@ def test_a_document_tool_answers_what_its_rest_route_serves(
     for fmt, parser in (("linkml", "yaml"), ("shacl", "turtle"), ("rdf", "turtle")):
         frame = endpoint_mcp.tool_call("describe_schema", {"format": fmt})
         assert not refused(frame), f"{fmt} was refused: {refusal_words(frame)}"
-        body = frame["result"].get("structuredContent", {})
+        # A tool's structured result is an object with the answer under the tool's own key
+        # (API/02 "structuredContent is an object"): `schema` for describe_schema.
+        body = frame["result"].get("structuredContent", {}).get("schema", {})
         document = body.get("document")
         assert isinstance(document, str) and document.strip(), (
             f"{fmt} came back without a document: {body!r:.200}"
