@@ -1,17 +1,18 @@
 name: schemathesis
-# Portal API contract fuzzing against a running system (T-0063, TS-09).
-# Dispatch-only until the Portal answers on dev; the token comes from a repository secret.
+# Portal API contract fuzzing against a running system (T-0063, TS-09, T-1658).
+# Dispatch-only, and never against dev: 500 generated writes per operation would propose real
+# Changes there. The target is a throwaway Portal, named on each dispatch. One run per demo role
+# whose token secret is set (viewer, steward, approver); a viewer's accepted write fails the run.
 on:
   workflow_dispatch:
     inputs:
       portal_url:
-        description: Portal API root under test
+        description: Portal API root of a throwaway system under test, never dev
         required: true
-        default: https://portal.2.28.67.127.sslip.io
       gateway_url:
-        description: Context Gateway root under test
+        description: Context Gateway root of the same throwaway system
         required: false
-        default: https://gateway.2.28.67.127.sslip.io
+        default: ""
       gateway_openapi_url:
         description: Gateway OpenAPI document URL (if published)
         required: false
@@ -42,6 +43,9 @@ jobs:
         env:
           PORTAL_URL: ${{ inputs.portal_url }}
           PORTAL_TOKEN: ${{ secrets.PORTAL_TOKEN }}
+          PORTAL_TOKEN_VIEWER: ${{ secrets.PORTAL_TOKEN_VIEWER }}
+          PORTAL_TOKEN_STEWARD: ${{ secrets.PORTAL_TOKEN_STEWARD }}
+          PORTAL_TOKEN_APPROVER: ${{ secrets.PORTAL_TOKEN_APPROVER }}
           GATEWAY_URL: ${{ inputs.gateway_url }}
           GATEWAY_OPENAPI_URL: ${{ inputs.gateway_openapi_url }}
           GATEWAY_TOKEN: ${{ secrets.GATEWAY_TOKEN }}

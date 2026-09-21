@@ -3,11 +3,14 @@
 Loaded through `SCHEMATHESIS_HOOKS`; every check is named after the requirement it enforces so
 a JUnit failure names the requirement and not a generic assertion. Only what the built-in
 checks do not already cover lives here: the built-ins validate a response against the published
-OpenAPI document, these two validate it against the contract in docs/API/01-portal-api.md.
+OpenAPI document, these validate it against the contract in docs/API/01-portal-api.md and the
+role a run is made as.
 The assertions themselves live in contract.py, which the endpoint leg shares.
 """
 
 from __future__ import annotations
+
+import os
 
 import schemathesis
 
@@ -40,3 +43,20 @@ def ts09_no_internal_detail_leak(ctx, response: schemathesis.Response, case) -> 
     violations = leak_violations(response.content, label)
     if violations:
         raise AssertionError("\n".join(violations))
+
+
+WRITES = {"POST", "PUT", "PATCH", "DELETE"}
+
+
+@schemathesis.check
+def pf50_viewer_never_writes(ctx, response: schemathesis.Response, case) -> None:
+    """PF-50 — a run as the viewer (`JC_SCHEMATHESIS_ROLE=viewer`) never gets a 2xx on a write.
+
+    The viewer holds no write verb anywhere, so an accepted write is a missing authorization
+    check, a priority-1 finding. Inactive for every other role."""
+    if os.environ.get("JC_SCHEMATHESIS_ROLE") != "viewer":
+        return
+    if case.method.upper() in WRITES and 200 <= response.status_code < 300:
+        raise AssertionError(
+            f"{case.operation.label} -> {response.status_code}: the viewer wrote (PF-50)"
+        )

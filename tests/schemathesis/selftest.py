@@ -47,7 +47,15 @@ SPEC = {
                     },
                 },
             }
-        }
+        },
+        # One write with nothing to generate, so every case reaches the handler: the PF-50 leg
+        # needs a write the stub accepts.
+        "/api/v1/projects/demo/notes": {
+            "post": {
+                "operationId": "createNote",
+                "responses": {"201": {"description": "created"}},
+            }
+        },
     },
 }
 
@@ -69,6 +77,10 @@ class Stub(BaseHTTPRequestHandler):
             # what a panicking axum handler behind a bare error layer would answer
             body = b"thread 'main' panicked at src/api/resources.rs:42:\nindex out of bounds"
             return self._send(404, "text/plain; charset=utf-8", body)
+        if path == "/api/v1/projects/demo/notes":
+            # a Portal that accepts this write from whoever sends it
+            STATE["errors"] -= 1
+            return self._send(201, "application/json", b"{}")
         segments = path.strip("/").split("/")
         if len(segments) == 5 and segments[3] == "demo":
             STATE["errors"] -= 1
@@ -95,15 +107,18 @@ class Stub(BaseHTTPRequestHandler):
             self.wfile.write(body)
 
 
-def schemathesis(port: int, workdir: str) -> subprocess.CompletedProcess:
+def schemathesis(port: int, workdir: str, checks: str = CHECKS, role: str | None = None) -> subprocess.CompletedProcess:
     env = dict(os.environ)
+    env.pop("JC_SCHEMATHESIS_ROLE", None)
+    if role:
+        env["JC_SCHEMATHESIS_ROLE"] = role
     env["PYTHONPATH"] = HERE + (os.pathsep + env["PYTHONPATH"] if env.get("PYTHONPATH") else "")
     env["SCHEMATHESIS_HOOKS"] = "jc_checks"
     return subprocess.run(
         [
             "schemathesis", "run",
             "--url", f"http://127.0.0.1:{port}",
-            "--checks", CHECKS,
+            "--checks", checks,
             "--max-examples", "12",
             "--continue-on-failure",
             "--no-color",
@@ -276,6 +291,17 @@ def main() -> int:
         for check in CHECKS.split(","):
             if check not in bad.stdout:
                 failures.append(f"{check} did not fire on the panicking Portal stub:\n{bad.stdout}")
+
+        # PF-50: the same accepted write fails a viewer run, naming the check, and passes a
+        # steward run, so the check is neither vacuous nor always on.
+        role_checks = CHECKS + ",pf50_viewer_never_writes"
+        STATE.update(mode="good", errors=0)
+        viewer = schemathesis(port, workdir, role_checks, role="viewer")
+        if viewer.returncode == 0 or "pf50_viewer_never_writes" not in viewer.stdout:
+            failures.append(f"a write the viewer got through passed the viewer run:\n{viewer.stdout}")
+        steward = schemathesis(port, workdir, role_checks, role="steward")
+        if steward.returncode != 0:
+            failures.append(f"a steward's accepted write failed the steward run:\n{steward.stdout}")
 
         # 2. Gateway stub selftest (T-0064)
         GW_STATE.update(mode="good")

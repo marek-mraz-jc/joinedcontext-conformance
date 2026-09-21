@@ -8,7 +8,7 @@ Tasks: T-0063 (Portal API), T-0064 (gateway schema and access endpoints).
 ## Run
 
 ```bash
-PORTAL_URL=https://portal.example jc-conformance schemathesis
+PORTAL_URL=https://portal.throwaway.example jc-conformance schemathesis   # never dev
 ```
 
 | Variable | Meaning |
@@ -16,6 +16,7 @@ PORTAL_URL=https://portal.example jc-conformance schemathesis
 | `PORTAL_URL` | Portal API root; the OpenAPI document is read from `$PORTAL_URL/api/v1/openapi.json` (UI-05) |
 | `PORTAL_OPENAPI_URL` | override when the Portal OpenAPI document is published elsewhere |
 | `PORTAL_TOKEN` | Portal bearer token; without it operations answer 401 and fuzzing stays shallow |
+| `PORTAL_TOKEN_VIEWER`, `PORTAL_TOKEN_STEWARD`, `PORTAL_TOKEN_APPROVER` | one run per role whose token is set, each with its own `junit-portal-<role>.xml` (the operations that role reached); a viewer run fails on any accepted write (T-1658). Set, they replace the single `PORTAL_TOKEN` run |
 | `GATEWAY_URL` | Context Gateway root for `/api/endpoint/{slug}/...` endpoint tests |
 | `GATEWAY_OPENAPI_URL` | Context Gateway management OpenAPI document URL (if published) |
 | `ENDPOINT_SLUG` | an endpoint slug the caller has grants to read |
@@ -39,6 +40,8 @@ document itself does not express:
 - **`ui05_error_is_problem_json`** — every 4xx/5xx is `application/problem+json` with `type`,
   `title` and a `status` equal to the HTTP status, and the type URI under
   `https://joinedcontext.com/errors/`.
+- **`pf50_viewer_never_writes`** — in a run as the viewer (`JC_SCHEMATHESIS_ROLE=viewer`, set by
+  `run.sh` for the viewer's token), no write answers 2xx: the viewer holds no write verb (PF-50).
 - **`ts09_no_internal_detail_leak`** — no response body carries a Rust panic or backtrace, a
   database DSN, an SQL statement, a server-side source path or a bearer token.
 
