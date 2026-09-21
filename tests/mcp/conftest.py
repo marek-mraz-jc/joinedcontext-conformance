@@ -13,6 +13,8 @@ import typing
 import pytest
 import requests
 
+from rate_limit import RateLimitedSession
+
 
 def _require_env(name: str) -> str:
     val = os.getenv(name)
@@ -130,7 +132,7 @@ def hidden_attr() -> str:
 
 @pytest.fixture(scope="session")
 def http_session() -> requests.Session:
-    s = requests.Session()
+    s = RateLimitedSession()
     with s:
         yield s
 
@@ -141,7 +143,7 @@ class McpClient:
     def __init__(self, url: str, token: str | None = None, session: requests.Session | None = None):
         self.url = url.rstrip("/")
         self.token = token
-        self.http = session or requests.Session()
+        self.http = session or RateLimitedSession()
         self.session_id: str | None = None
         self.protocol_version: str | None = None
         self._request_id: int = 0
