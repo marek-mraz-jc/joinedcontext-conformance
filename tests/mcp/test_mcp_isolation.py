@@ -71,19 +71,18 @@ def test_ag05_sp14_a_space_argument_never_moves_the_caller(
     """AG-05, SP-14 — `space`/`tenant` passed as a tool argument is data, never a selector."""
     own = space_of(mcp_url)
     assert own, f"MCP_URL is not a per-space MCP URL: {mcp_url}"
-    foreign = space_of(other_space_mcp_url) if other_space_mcp_url else "doprava"
+    foreign = space_of(other_space_mcp_url)
     assert foreign != own, f"OTHER_SPACE_MCP_URL serves the same space as MCP_URL: {foreign}"
     tool = query_tool(mcp)
 
-    if other_space_mcp_url:
-        # without this the assertion below would pass on a foreign space that simply holds nothing
-        other = make_mcp_client(other_space_mcp_url, mcp_token)
-        other.initialize()
-        foreign_frame = other.tool_call(tool, {"limit": 5, **other_space_query})
-        assert not refused(foreign_frame), f"the foreign space refused the read, the probe would be vacuous: {foreign_frame}"
-        assert entities_of(foreign_frame["result"]), (
-            f"{other_space_mcp_url} returned no entity, so 'the argument did not reach it' proves nothing"
-        )
+    # without this the assertion below would pass on a foreign space that simply holds nothing
+    other = make_mcp_client(other_space_mcp_url, mcp_token)
+    other.initialize()
+    foreign_frame = other.tool_call(tool, {"limit": 5, **other_space_query})
+    assert not refused(foreign_frame), f"the foreign space refused the read, the probe would be vacuous: {foreign_frame}"
+    assert entities_of(foreign_frame["result"]), (
+        f"{other_space_mcp_url} returned no entity, so 'the argument did not reach it' proves nothing"
+    )
 
     for argument in ({"space": foreign}, {"tenant": foreign}, {"space": foreign, "type": "Device"}):
         frame = mcp.tool_call(tool, {"limit": 10, **argument})
@@ -109,16 +108,14 @@ def test_sp20_a_cross_space_probe_is_byte_identical_to_a_miss(
 ):
     """SP-20 — asking for an entity of another space answers exactly what an invented id answers."""
     own = space_of(mcp_url)
-    foreign = space_of(other_space_mcp_url) if other_space_mcp_url else "doprava"
+    foreign = space_of(other_space_mcp_url)
     assert "get_entity" in mcp.tool_names(), "the surface exposes no get_entity to probe with"
 
-    foreign_id = f"urn:ngsi-ld:Device:joinedcontext.com:{foreign}:probe-1"
-    if other_space_mcp_url:
-        other = make_mcp_client(other_space_mcp_url, mcp_token)
-        other.initialize()
-        found = entities_of(other.tool_call(query_tool(other), {"limit": 1, **other_space_query})["result"])
-        assert found, f"{other_space_mcp_url} holds no entity to probe for, the comparison would be vacuous"
-        foreign_id = found[0]["id"]
+    other = make_mcp_client(other_space_mcp_url, mcp_token)
+    other.initialize()
+    found = entities_of(other.tool_call(query_tool(other), {"limit": 1, **other_space_query})["result"])
+    assert found, f"{other_space_mcp_url} holds no entity to probe for, the comparison would be vacuous"
+    foreign_id = found[0]["id"]
     assert foreign_id.split(":")[URN_SPACE_SEGMENT] != own, f"the probe id {foreign_id} belongs to the caller's own space"
 
     invented_id = f"urn:ngsi-ld:Device:joinedcontext.com:{foreign}:probe-{'9' * 12}"

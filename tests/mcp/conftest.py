@@ -53,8 +53,9 @@ def config_mcp_url() -> str:
 
 @pytest.fixture(scope="session")
 def other_space_mcp_url() -> str:
-    val = os.getenv("OTHER_SPACE_MCP_URL")
-    return val.rstrip("/") if val else ""
+    # Required, not optional: without a second space the isolation probes have nothing to prove
+    # the caller did not reach, and they passed on nothing (T-2573).
+    return _require_env("OTHER_SPACE_MCP_URL").rstrip("/")
 
 
 @pytest.fixture(scope="session")
@@ -368,8 +369,6 @@ def agent_config_mcp(config_mcp_url: str, mcp_agent_token: str, http_session: re
 
 @pytest.fixture
 def other_space_mcp(other_space_mcp_url: str, mcp_token: str | None, http_session: requests.Session) -> McpClient:
-    if not other_space_mcp_url:
-        pytest.skip("OTHER_SPACE_MCP_URL is not set")
     client = McpClient(other_space_mcp_url, mcp_token, http_session)
     client.initialize()
     return client
