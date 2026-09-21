@@ -585,7 +585,8 @@ class StubMcpHandler(BaseHTTPRequestHandler):
         if tool_name == "describe_schema":
             rendered = self.FORMALISMS.get(tool_args.get("format", ""))
             if rendered is not None:
-                self._send_json_rpc(req_id, result={"structuredContent": rendered})
+                # Under the tool's own key, as the gateway answers (API/02, `result_key`).
+                self._send_json_rpc(req_id, result={"structuredContent": {"schema": rendered}})
                 return
             result = {
                 "structuredContent": {
