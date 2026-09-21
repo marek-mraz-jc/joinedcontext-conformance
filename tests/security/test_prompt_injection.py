@@ -67,24 +67,26 @@ def test_ts25_corpus_covers_all_mandated_families():
 
 def test_ag21_tool_parameter_vectors_must_expect_refusal():
     """AG-21: Hostile tool parameters violate schema validation and must be refused."""
-    vectors = load(_corpus_path())
+    vectors = [v for v in load(_corpus_path()) if v.placement == "tool-parameter"]
+    # A corpus without them would pass the rule below on nothing (T-2573).
+    assert vectors, "the corpus holds no tool-parameter vector, so AG-21 is checked on nothing"
     for v in vectors:
-        if v.placement == "tool-parameter":
-            assert v.expect == "refused", (
-                f"Vector '{v.id}' has placement 'tool-parameter' but expect is '{v.expect}'. "
-                "AG-21 requires all hostile tool parameters to carry expect: refused"
-            )
+        assert v.expect == "refused", (
+            f"Vector '{v.id}' has placement 'tool-parameter' but expect is '{v.expect}'. "
+            "AG-21 requires all hostile tool parameters to carry expect: refused"
+        )
 
 
 def test_ag20_attribute_value_vectors_must_expect_literal_data():
     """AG-20: Untrusted external observations remain passive data literals."""
-    vectors = load(_corpus_path())
+    vectors = [v for v in load(_corpus_path()) if v.placement == "attribute-value"]
+    # A corpus without them would pass the rule below on nothing (T-2573).
+    assert vectors, "the corpus holds no attribute-value vector, so AG-20 is checked on nothing"
     for v in vectors:
-        if v.placement == "attribute-value":
-            assert v.expect == "literal", (
-                f"Vector '{v.id}' has placement 'attribute-value' but expect is '{v.expect}'. "
-                "AG-20 requires attribute-value vectors to carry expect: literal"
-            )
+        assert v.expect == "literal", (
+            f"Vector '{v.id}' has placement 'attribute-value' but expect is '{v.expect}'. "
+            "AG-20 requires attribute-value vectors to carry expect: literal"
+        )
 
 
 def test_the_corpus_carries_the_two_coercions_an_application_run_is_near():
