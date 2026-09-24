@@ -12,7 +12,7 @@ on:
       ngsild_url:
         description: NGSI-LD API root of the system under test
         required: true
-        default: https://2.28.67.127.sslip.io/api/endpoint/mluyob4nz52lok3ssk7pgn5vwt/ngsi-ld/v1
+        default: https://dev.joinedcontext.com/api/endpoint/mluyob4nz52lok3ssk7pgn5vwt/ngsi-ld/v1
       tenant:
         description: NGSILD-Tenant header (vanilla broker matrix only; empty for a context space)
         required: false
@@ -31,7 +31,7 @@ on:
       token_url:
         description: realm token endpoint for client_credentials; empty runs anonymously
         required: false
-        default: https://idm.2.28.67.127.sslip.io/realms/dev/protocol/openid-connect/token
+        default: https://idm.dev.joinedcontext.com/realms/dev/protocol/openid-connect/token
       client_id:
         description: the conformance service account's Keycloak client
         required: false

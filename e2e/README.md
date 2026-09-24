@@ -4,7 +4,7 @@ Browser end-to-end user journeys for the JoinedContext Portal UI (React 19 / axu
 
 ## Environment Variables
 
-- `BASE_URL`: Root URL of the deployed portal (default: `https://2.28.67.127.sslip.io`).
+- `BASE_URL`: Root URL of the deployed portal (default: `https://dev.joinedcontext.com`).
 - `PORTAL_USER` / `PORTAL_PASSWORD`: steward credentials. No default — an unset variable fails the run with the variable name rather than pretending the portal is broken.
 - `PORTAL_VIEWER_USER` / `PORTAL_VIEWER_PASSWORD`: the read-only account (`demo.viewer`).
 - `PORTAL_INVITE_URL` / `PORTAL_INVITE_PASSWORD`: Single-use invitation link and initial password for Journey 1 onboarding. When unset, the invite onboarding test is skipped cleanly.

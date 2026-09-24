@@ -7,11 +7,11 @@ on:
       dsp_url:
         description: connector dataspace protocol URL
         required: true
-        default: https://2.28.67.127.sslip.io/api/v1/dsp
+        default: https://dev.joinedcontext.com/api/v1/dsp
       dsp_base_url:
         description: connector base URL serving the metadata endpoint
         required: true
-        default: https://2.28.67.127.sslip.io/api/dsp
+        default: https://dev.joinedcontext.com/api/dsp
       participant_id:
         description: connector agent id (did:web of the organization domain, DS-04)
         required: true

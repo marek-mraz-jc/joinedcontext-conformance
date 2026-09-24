@@ -2,7 +2,7 @@ import { defineConfig, devices } from '@playwright/test';
 import type { ReporterDescription } from '@playwright/test';
 import path from 'node:path';
 
-const baseURL = process.env.BASE_URL || 'https://2.28.67.127.sslip.io';
+const baseURL = process.env.BASE_URL || 'https://dev.joinedcontext.com';
 // /tests and /e2e are read-only in the runner image; reports always go to a writable directory.
 const reportDir = process.env.JC_REPORTS_DIR || 'e2e/reports';
 

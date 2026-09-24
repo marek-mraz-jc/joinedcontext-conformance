@@ -11,7 +11,7 @@ on:
       gateway_url:
         description: NGSI-LD API root of the space under test
         required: false
-        default: https://2.28.67.127.sslip.io/cs/ovzdusie/ngsi-ld/v1
+        default: https://dev.joinedcontext.com/cs/ovzdusie/ngsi-ld/v1
       broker_url:
         description: broker internal listener; without it the EP-28 overhead is not measured
         required: false

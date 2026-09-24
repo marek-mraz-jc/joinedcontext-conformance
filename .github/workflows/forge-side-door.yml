@@ -40,7 +40,7 @@ jobs:
       - name: refuse a forge that is not throwaway
         env:
           FORGE_URL: ${{ inputs.forge_url }}
-          DEV_DOMAIN: ${{ vars.DEV_DOMAIN || '2.28.67.127.sslip.io' }}
+          DEV_DOMAIN: ${{ vars.DEV_DOMAIN || 'dev.joinedcontext.com' }}
         run: |
           set -eu
           case "$FORGE_URL" in

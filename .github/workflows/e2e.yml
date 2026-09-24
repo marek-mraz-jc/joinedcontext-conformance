@@ -22,7 +22,7 @@ permissions: { contents: read }
 # same entities would fail each other rather than the portal.
 concurrency: { group: e2e-dev, cancel-in-progress: false }
 env:
-  BASE_URL: ${{ inputs.base_url || vars.PORTAL_BASE_URL || 'https://2.28.67.127.sslip.io' }}
+  BASE_URL: ${{ inputs.base_url || vars.PORTAL_BASE_URL || 'https://dev.joinedcontext.com' }}
   PORTAL_PROJECT: ${{ vars.PORTAL_PROJECT || 'ovzdusie' }}
 jobs:
   # Fails in seconds with the reason, instead of letting four shards spend half an hour timing

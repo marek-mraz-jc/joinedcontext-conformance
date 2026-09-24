@@ -7,11 +7,11 @@ on:
       space_url:
         description: space surface under test
         required: true
-        default: https://2.28.67.127.sslip.io/cs/ovzdusie/ngsi-ld/v1
+        default: https://dev.joinedcontext.com/cs/ovzdusie/ngsi-ld/v1
       other_space_url:
         description: a second space the caller has no grant on
         required: true
-        default: https://2.28.67.127.sslip.io/cs/doprava/ngsi-ld/v1
+        default: https://dev.joinedcontext.com/cs/doprava/ngsi-ld/v1
 permissions: { contents: read }
 jobs:
   security:

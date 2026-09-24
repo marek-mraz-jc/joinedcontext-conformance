@@ -15,10 +15,10 @@
 # Without a kubeconfig the profile still sets every public URL and names what it could not
 # mint, so an anonymous run works and reports the rest as skipped rather than as failed.
 
-JC_DEV_BASE="${JC_DEV_BASE:-https://2.28.67.127.sslip.io}"
-JC_DEV_IDM="${JC_DEV_IDM:-https://idm.2.28.67.127.sslip.io}"
-JC_DEV_PORTAL="${JC_DEV_PORTAL:-https://portal.2.28.67.127.sslip.io}"
-JC_DEV_CKAN="${JC_DEV_CKAN:-https://data.2.28.67.127.sslip.io}"
+JC_DEV_BASE="${JC_DEV_BASE:-https://dev.joinedcontext.com}"
+JC_DEV_IDM="${JC_DEV_IDM:-https://idm.dev.joinedcontext.com}"
+JC_DEV_PORTAL="${JC_DEV_PORTAL:-https://portal.dev.joinedcontext.com}"
+JC_DEV_CKAN="${JC_DEV_CKAN:-https://data.dev.joinedcontext.com}"
 JC_DEV_NS="${JC_DEV_NS:-dev}"
 JC_DEV_REALM="${JC_DEV_REALM:-dev}"
 # Every entity id on this instance reads urn:ngsi-ld:{Type}:hel.fi:{space}:{localId}: the
