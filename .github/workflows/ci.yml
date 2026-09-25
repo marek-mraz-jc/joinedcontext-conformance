@@ -50,12 +50,12 @@ jobs:
         run: python3 tests/ckan/selftest.py
       - name: the committed record conforms to the DCAT-AP core shapes with nothing configured
         run: python3 -m pytest tests/ckan -q
-      - name: the pipeline runner's egress and per-project isolation (T-1701, T-1702)
+      - name: the pipeline runner's and each App pod's egress, and per-project isolation (T-1701, T-1702, T-2839)
         # Both suites read rendered manifests and need no deployment: the fixtures beside them
         # carry a conforming set and a leaky one, so a green run means the analyser still bites.
         run: |
           python3 -m pytest tests/security/test_pipeline_escape.py \
-            tests/security/test_pipeline_project_isolation.py -q
+            tests/security/test_pipeline_project_isolation.py tests/security/test_app_egress.py -q
       - name: the platform journey goes red at each stage that can break (T-0331)
         run: python3 tests/e2e/selftest.py
       - name: the committed journey shapes hold with nothing configured (T-0331)
@@ -72,7 +72,7 @@ jobs:
           ./node_modules/.bin/playwright test --config e2e/playwright.config.ts --list | tee "${RUNNER_TEMP}/specs"
           for spec in journeys/01-onboarding-login journeys/02-blueprint-flow journeys/03-approval-review \
                       journeys/04-map-dashboard journeys/05-deckgl-visualization journeys/06-drift-management \
-                      journeys/08-service-account-key journeys/11-access-matrix \
+                      journeys/08-service-account-key journeys/11-access-matrix journeys/20-app-isolation \
                       accessibility/wcag; do
             grep -q "$spec.spec.ts" "${RUNNER_TEMP}/specs" || { echo "$spec.spec.ts is not discoverable"; exit 1; }
           done
