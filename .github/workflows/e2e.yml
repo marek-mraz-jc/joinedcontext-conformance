@@ -100,6 +100,7 @@ jobs:
               journeys/13-dashboard-live.spec.ts
               journeys/15-session.spec.ts
               journeys/16-role-permissions.spec.ts
+              journeys/20-app-isolation.spec.ts
           - shard: accessibility
             specs: >-
               smoke.spec.ts
@@ -135,6 +136,10 @@ jobs:
           PORTAL_LIVE_FLOW: ${{ vars.PORTAL_LIVE_FLOW }}
           PORTAL_ENDPOINT: ${{ vars.PORTAL_ENDPOINT }}
           PORTAL_DRIFT_RESOURCE: ${{ vars.PORTAL_DRIFT_RESOURCE }}
+          PORTAL_APP_A: ${{ vars.PORTAL_APP_A }}
+          PORTAL_APP_B: ${{ vars.PORTAL_APP_B }}
+          PORTAL_APP_B_SLUG: ${{ vars.PORTAL_APP_B_SLUG }}
+          PORTAL_APPS_DOMAIN: ${{ vars.PORTAL_APPS_DOMAIN }}
           # Scoped ServiceAccount token of T-0353; it writes the drift journey 14 resolves and
           # may do nothing else. Never an admin credential.
           JC_DRIFT_TOKEN: ${{ secrets.JC_DRIFT_TOKEN }}

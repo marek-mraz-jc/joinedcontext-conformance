@@ -1,0 +1,70 @@
+# One App policy per way out; the metadata name says which, and the suite expects each to be
+# refused for that reason (T-2839).
+apiVersion: v1
+kind: List
+items:
+  - apiVersion: networking.k8s.io/v1
+    kind: NetworkPolicy
+    metadata: { name: every-address, namespace: apps, labels: { joinedcontext.com/app: "true" } }
+    spec:
+      podSelector: {}
+      policyTypes: [Egress]
+      # The rule every App pod had before AP-134: the whole internet, and the cluster with it.
+      egress: [{ to: [{ ipBlock: { cidr: 0.0.0.0/0 } }], ports: [{ protocol: TCP, port: 443 }] }]
+  - apiVersion: networking.k8s.io/v1
+    kind: NetworkPolicy
+    metadata: { name: private-range, namespace: apps, labels: { joinedcontext.com/app: "true" } }
+    spec:
+      podSelector: {}
+      policyTypes: [Egress]
+      egress: [{ to: [{ ipBlock: { cidr: 0.0.0.0/1 } }], ports: [{ protocol: TCP, port: 443 }] }]
+  - apiVersion: networking.k8s.io/v1
+    kind: NetworkPolicy
+    metadata: { name: metadata-service, namespace: apps, labels: { joinedcontext.com/app: "true" } }
+    spec:
+      podSelector: {}
+      policyTypes: [Egress]
+      egress: [{ to: [{ ipBlock: { cidr: 169.254.169.254/32 } }], ports: [{ protocol: TCP, port: 80 }] }]
+  - apiVersion: networking.k8s.io/v1
+    kind: NetworkPolicy
+    metadata: { name: no-destination, namespace: apps, labels: { joinedcontext.com/app: "true" } }
+    spec:
+      podSelector: {}
+      policyTypes: [Egress]
+      egress: [{ ports: [{ protocol: TCP, port: 443 }] }]
+  - apiVersion: networking.k8s.io/v1
+    kind: NetworkPolicy
+    metadata: { name: every-port, namespace: apps, labels: { joinedcontext.com/app: "true" } }
+    spec:
+      podSelector: {}
+      policyTypes: [Egress]
+      egress: [{ to: [{ ipBlock: { cidr: 8.8.8.8/32 } }] }]
+  - apiVersion: networking.k8s.io/v1
+    kind: NetworkPolicy
+    metadata: { name: neighbours, namespace: apps, labels: { joinedcontext.com/app: "true" } }
+    spec:
+      podSelector: {}
+      policyTypes: [Egress]
+      egress: [{ to: [{ podSelector: {} }], ports: [{ protocol: TCP, port: 8080 }] }]
+  - apiVersion: networking.k8s.io/v1
+    kind: NetworkPolicy
+    metadata: { name: every-namespace, namespace: apps, labels: { joinedcontext.com/app: "true" } }
+    spec:
+      podSelector: {}
+      policyTypes: [Egress]
+      egress: [{ to: [{ namespaceSelector: {} }], ports: [{ protocol: TCP, port: 5432 }] }]
+  - apiVersion: networking.k8s.io/v1
+    kind: NetworkPolicy
+    metadata: { name: a-whole-namespace, namespace: apps, labels: { joinedcontext.com/app: "true" } }
+    spec:
+      podSelector: {}
+      policyTypes: [Egress]
+      egress:
+        - to: [{ namespaceSelector: { matchLabels: { kubernetes.io/metadata.name: cnpg } } }]
+          ports: [{ protocol: TCP, port: 5432 }]
+  - apiVersion: networking.k8s.io/v1
+    kind: NetworkPolicy
+    metadata: { name: ingress-only, namespace: apps, labels: { joinedcontext.com/app: "true" } }
+    spec:
+      podSelector: {}
+      policyTypes: [Ingress]

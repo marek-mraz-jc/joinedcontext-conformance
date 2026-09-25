@@ -49,6 +49,7 @@ The suites talk to a deployed gateway; every variable they need names itself whe
 | `FORGE_OTHER_ORG`, `FORGE_OTHER_REPO` | an organization of the same forge the reader is in no team of (default `mesto-kosice/configuration`) |
 | `DATA_URL` | context broker NGSI-LD entities surface for access document parity checks (EP-55) |
 | `PIPELINE_RUNNER_MANIFEST` | rendered pipeline-runner manifests (a file, a directory or a `kubectl get -o yaml` dump) judged for per-project isolation and default-deny egress; the fixtures beside the suites are the default (T-1701, T-1702) |
+| `APP_NETWORKPOLICY` | the App pods' NetworkPolicies (a file, a directory or `kubectl get networkpolicy -n {release}-{project}-apps -o yaml`), judged for egress beyond DNS, the mesh, the gateway and the declared public networks (T-2839, AP-134, AP-135); the fixtures beside the suite are the default |
 
 ## Access surface & ODRL round-trip suites (T-0086, T-0087)
 

@@ -24,6 +24,9 @@ Browser end-to-end user journeys for the JoinedContext Portal UI (React 19 / axu
 - `PORTAL_PROJECT`: the project journeys 14 and 17 work in (default `banskabystrica`). Journey 17 opens it through the project menu before it touches anything, because a sign-in lands on whichever project comes first for that user.
 - `PORTAL_DRIFT_RESOURCE`: the resource journey 14 drifts on purpose (default `ovzdusie`).
 - `JC_DRIFT_TOKEN`: bearer token of the scoped ServiceAccount that writes that drift. It is scoped to the one resource and is never an admin credential; an unset variable fails journey 14 with the variable name rather than skipping it.
+- `PORTAL_APP_A` / `PORTAL_APP_B`: two published Apps journey 20 plays against each other (AP-135). A must ask for a login (visibility `project` or `roles`), so it has a session that could leak. Unset skips journey 20.
+- `PORTAL_APP_B_SLUG`: the slug of an endpoint B reads; journey 20 expects it to answer 404 on A's host.
+- `PORTAL_APPS_DOMAIN`: the apex every App's `{name}.apps.` host sits under (default: the `BASE_URL` host without `portal.`).
 - `JC_REPORTS_DIR`: Target folder for JUnit, HTML, and artifact test reports.
 - `E2E_ALL_BROWSERS`: If set, runs Chromium, Firefox, and WebKit; otherwise runs Chromium only.
 
