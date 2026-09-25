@@ -106,7 +106,7 @@ list so the batch reads a verdict instead of a count.
 The schedules run the suites themselves and file what fails (T-2798):
 `scripts/scheduled-dev.py hourly|6h|nightly --out <summary.json>`, then
 `tasks/file-failures <summary.json>` on the board. `hourly` is the ETSI smoke wrapper, `6h` is
-`ogc`, `sta`, `mcp` and `ckan`, `nightly` is `schemathesis` and `dsp`. Each suite gets its profile,
+`ogc`, `sta`, `mcp` and `ckan`, `nightly` is `schemathesis`, `dsp` and `authz`. Each suite gets its profile,
 writes JUnit into `reports/scheduled/<suite>/`, and each case becomes one result keyed
 `<suite>/<case>`. A suite without a subject is not left out: it reports that it measured nothing,
 which files one task until the subject exists.
@@ -125,6 +125,7 @@ in a row file a task, and `reports/budgets-history.json` keeps the trend.
 | `mcp` | Yes. The data plane is the space and endpoint MCP of that space; the configuration plane is the Portal's operations registry, which takes a person's token (`CONFIG_MCP_TOKEN`). |
 | `e2e` | Yes, the bus journey: the HFP pipeline, the transport endpoint and the catalogue entry it publishes. |
 | `schemathesis` | Yes, against the Portal API and the gateway. It fuzzes a live instance, so run it when nobody is demoing. The nightly schedule sends GET and HEAD only: no throwaway project with an account bound to it alone exists on `dev`, and the fuzzer never writes into the demo projects. |
+| `authz` | Yes, nightly: the Portal's authorization matrix (`tests/authz_matrix.yaml` of the Portal's clone) as the demo people, reads and the writes a row marks live (T-2797). |
 | `playwright` (`e2e/`) | Yes, with `. tests/dev.env.sh portal`. The journeys sign in through the edge as the seeded demo people. |
 | `ogc`, `sta` | `. tests/dev.env.sh ogc` (or `sta`) points at the first seeded Endpoint that enables `ogc-features` (or `sta`). None does today, so both report that they measured nothing. |
 | `ckan` | `. tests/dev.env.sh ckan`; the catalogue is public on `dev` and needs no API token. |

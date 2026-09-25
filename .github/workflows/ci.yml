@@ -33,7 +33,7 @@ jobs:
         # one invocation per suite: each folder has its own conftest, and the suites import from it
         run: |
           set -eu
-          for suite in security ogc sta mcp schemathesis models ckan e2e; do python3 -m pytest "tests/$suite" --collect-only -q; done
+          for suite in security ogc sta mcp schemathesis models ckan e2e authz; do python3 -m pytest "tests/$suite" --collect-only -q; done
       - name: expected-failure checker logic (T-0054)
         run: python3 tests/etsi-ttf/check_expected_failures.py --selftest
       - name: gateway divergence fails the transparency comparison (T-0056)
@@ -102,6 +102,8 @@ jobs:
         run: python3 -m pytest tests/test_security_gate.py -q
       - name: the scheduled dev runs report a suite that measured nothing as an error (T-2798)
         run: python3 -m pytest tests/test_scheduled_dev.py -q
+      - name: the live authorization matrix sends reads and only the writes a row marks live (T-2797)
+        run: python3 -m pytest tests/test_authz_cells.py -q
       - name: the nightly budgets fail on the second night over and never read a refusal as a latency (T-2800)
         run: python3 -m pytest tests/test_budgets_dev.py -q
       - name: qualification report aggregates suite outcomes and catches corrupt files (T-0089)
