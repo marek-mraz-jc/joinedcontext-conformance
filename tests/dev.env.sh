@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Settings for a conformance run against the `dev` cluster (T-0784, TS-05, TS-09, TS-19).
 #
-#   . tests/dev.env.sh [security|mcp|e2e|etsi|schemathesis|portal]
+#   . tests/dev.env.sh [security|mcp|e2e|etsi|ogc|sta|ckan|dsp|budgets|schemathesis|portal]
 #
 # Source it, never run it: it exports the variables the suites read and it takes a suite name
 # because two suites read the same name for different subjects (`SPACE_URL` is the narrowed
@@ -78,6 +78,20 @@ _jc_token_person() {
 _jc_first_id() {
 	curl -sS --max-time 25 -H 'Accept: application/json' "$1/entities?type=$2&limit=1" 2>/dev/null |
 		sed -n 's/.*"id":"\([^"]*\)".*/\1/p' | head -1
+}
+
+# The slug of the first seeded endpoint that enables a representation, so a suite of that
+# surface finds its target the day one is seeded, and says there is none until then.
+_jc_slug_serving() {
+	kubectl get configmap gitea-bootstrap-seed -n "$JC_DEV_NS" -o json 2>/dev/null |
+		python3 -c 'import json, re, sys
+data = json.load(sys.stdin).get("data") or {}
+wanted = re.compile(r"^\s*enabledRepresentations:.*[\[ ,]" + re.escape(sys.argv[1]) + r"[\] ,]", re.M)
+for key in sorted(k for k in data if "__endpoints__" in k):
+    slug = re.search(r"^\s*slug:\s*(\S+)", data[key], re.M)
+    if slug and wanted.search(data[key]):
+        print(slug.group(1))
+        break' "$1" 2>/dev/null
 }
 
 _jc_note() { _jc_missing="${_jc_missing}  - $1
@@ -217,6 +231,53 @@ etsi)
 		_jc_note "NGSILD_FEDERATED_URL: no helsinki-hub endpoint in the seed, so the federated cases skip"
 	fi
 	;;
+ogc)
+	_jc_ogc=$(_jc_slug_serving ogc-features)
+	if [ -n "$_jc_ogc" ]; then
+		export OGC_LANDING_URL="$JC_DEV_BASE/api/endpoint/$_jc_ogc/ogc/features"
+		export OGC_TOKEN="$JC_DEV_TOKEN_GATEWAY"
+	else
+		_jc_note "OGC_LANDING_URL: no seeded endpoint on dev enables ogc-features, so the OGC suite has no target"
+	fi
+	unset _jc_ogc
+	;;
+sta)
+	_jc_sta=$(_jc_slug_serving sta)
+	if [ -n "$_jc_sta" ]; then
+		export STA_URL="$JC_DEV_BASE/api/endpoint/$_jc_sta/sta/v1.1"
+		export STA_TOKEN="$JC_DEV_TOKEN_GATEWAY"
+	else
+		_jc_note "STA_URL: no seeded endpoint on dev enables sta, so the SensorThings suite has no target"
+	fi
+	unset _jc_sta
+	;;
+ckan)
+	export CKAN_URL="$JC_DEV_CKAN"
+	export CKAN_DATASET="helsinki-transport"
+	export GATEWAY_TOKEN="$JC_DEV_TOKEN_GATEWAY"
+	[ -n "$JC_DEV_SLUG_TRANSPORT" ] && export ENDPOINT_URL="$JC_DEV_BASE/api/endpoint/$JC_DEV_SLUG_TRANSPORT"
+	_jc_note "CKAN_API_TOKEN: the catalogue is read anonymously here; a private dataset would need one"
+	;;
+dsp)
+	_jc_note "DSP_URL, DSP_BASE_URL, DSP_PARTICIPANT_ID: dev runs no dataspace connector, so the TCK has no target"
+	;;
+budgets)
+	# The nightly budgets (T-2800): the endpoint and the canonical surface of the conformance
+	# space, and the Portal pages as the read-only demo viewer.
+	[ -n "$JC_DEV_SLUG_AIR" ] && export ENDPOINT_URL="$JC_DEV_BASE/api/endpoint/$JC_DEV_SLUG_AIR/ngsi-ld/v1"
+	export SPACE_URL="$JC_DEV_BASE/cs/ovzdusie/ngsi-ld/v1"
+	export BUDGET_TYPE="AirQualityObserved"
+	export BUDGET_TOKEN="$JC_DEV_TOKEN_GATEWAY"
+	export JC_DEV_NS BASE_URL="$JC_DEV_PORTAL" PORTAL_PROJECT="helsinki"
+	export PORTAL_VIEWER_USER="demo.viewer@$JC_DEV_ORG"
+	PORTAL_VIEWER_PASSWORD=$(_jc_user_password demo.viewer)
+	if [ -n "$PORTAL_VIEWER_PASSWORD" ]; then
+		export PORTAL_VIEWER_PASSWORD
+	else
+		_jc_note "PORTAL_VIEWER_PASSWORD: no seeded password for demo.viewer, so no page is measured"
+	fi
+	_jc_note "JC_K6_RATE: 20 a second is over the seeded endpoints' limits (600 a minute), so the endpoint budget needs a test endpoint that allows it"
+	;;
 schemathesis)
 	export PORTAL_URL="$JC_DEV_PORTAL"
 	export PORTAL_TOKEN="$JC_DEV_TOKEN_PERSON"
@@ -241,7 +302,7 @@ portal)
 	_jc_note "PORTAL_INVITE_URL, PORTAL_DRIFTED_FLOW, PORTAL_PUBLIC_DASHBOARD_URL: each names something produced out of band (those cases skip)"
 	;;
 *)
-	echo "tests/dev.env.sh: unknown suite '$_jc_suite' (security|mcp|e2e|etsi|schemathesis|portal)" >&2
+	echo "tests/dev.env.sh: unknown suite '$_jc_suite' (security|mcp|e2e|etsi|ogc|sta|ckan|dsp|budgets|schemathesis|portal)" >&2
 	;;
 esac
 
@@ -249,4 +310,4 @@ echo "dev profile: $_jc_suite on ${JC_DEV_BASE#https://}"
 [ -z "$_jc_missing" ] || printf 'not set on dev, and why:\n%s' "$_jc_missing"
 
 unset _jc_suite _jc_missing
-unset -f _jc_slug _jc_client_secret _jc_user_password _jc_token_client _jc_token_person _jc_first_id _jc_note
+unset -f _jc_slug _jc_slug_serving _jc_client_secret _jc_user_password _jc_token_client _jc_token_person _jc_first_id _jc_note

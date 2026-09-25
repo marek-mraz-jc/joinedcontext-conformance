@@ -103,6 +103,20 @@ profile, refuses to run without the writing token (31 cases failing on their set
 broken platform), puts `~/.local/bin` on `PATH` for `robot`, and applies the gateway quarantine
 list so the batch reads a verdict instead of a count.
 
+The schedules run the suites themselves and file what fails (T-2798):
+`scripts/scheduled-dev.py hourly|6h|nightly --out <summary.json>`, then
+`tasks/file-failures <summary.json>` on the board. `hourly` is the ETSI smoke wrapper, `6h` is
+`ogc`, `sta`, `mcp` and `ckan`, `nightly` is `schemathesis` and `dsp`. Each suite gets its profile,
+writes JUnit into `reports/scheduled/<suite>/`, and each case becomes one result keyed
+`<suite>/<case>`. A suite without a subject is not left out: it reports that it measured nothing,
+which files one task until the subject exists.
+
+The performance budgets run nightly through `scripts/budgets-dev.py --out <summary.json>` (T-2800):
+`tests/k6/dev-budgets.js` on the endpoint surfaces, only while every node is under 85 % memory;
+`e2e/budgets/pages.spec.ts` for the Portal pages, cold, as the demo viewer; and the assistant's
+answer histogram from the Portal's `/metrics`. One night over a budget is recorded, two nights
+in a row file a task, and `reports/budgets-history.json` keeps the trend.
+
 | Suite | On `dev` |
 |---|---|
 | `etsi` | **`smoke.robot` only**, through the one endpoint bound to a writing service account: `scripts/etsi-smoke-dev.sh`. |
@@ -110,10 +124,10 @@ list so the batch reads a verdict instead of a count.
 | `security` | Yes, against the `ovzdusie` space: the one surface here that narrows attribute by attribute, so a bypass suite can observe narrowing. |
 | `mcp` | Yes. The data plane is the space and endpoint MCP of that space; the configuration plane is the Portal's operations registry, which takes a person's token (`CONFIG_MCP_TOKEN`). |
 | `e2e` | Yes, the bus journey: the HFP pipeline, the transport endpoint and the catalogue entry it publishes. |
-| `schemathesis` | Yes, against the Portal API and the gateway. It fuzzes a live instance, so run it when nobody is demoing. |
+| `schemathesis` | Yes, against the Portal API and the gateway. It fuzzes a live instance, so run it when nobody is demoing. The nightly schedule sends GET and HEAD only: no throwaway project with an account bound to it alone exists on `dev`, and the fuzzer never writes into the demo projects. |
 | `playwright` (`e2e/`) | Yes, with `. tests/dev.env.sh portal`. The journeys sign in through the edge as the seeded demo people. |
-| `ogc`, `sta` | No subject: no Endpoint on `dev` enables the OGC Features or SensorThings representation, so both answer 404 there. |
-| `ckan` | Read through the `e2e` profile; the catalogue is public on `dev` and needs no API token. |
+| `ogc`, `sta` | `. tests/dev.env.sh ogc` (or `sta`) points at the first seeded Endpoint that enables `ogc-features` (or `sta`). None does today, so both report that they measured nothing. |
+| `ckan` | `. tests/dev.env.sh ckan`; the catalogue is public on `dev` and needs no API token. |
 | `dsp` | No subject: the dataspace connector addon is not deployed. |
 | `k6`, `chaos` | Not on `dev` unless the owner asks. One node carries the demo; a load profile and a fault injection both take it away from whoever is watching. |
 | `models`, `pipelines` | Not deployment suites: they check a tree of manifests, not a running instance. |

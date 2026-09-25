@@ -9,6 +9,7 @@ Tasks:
 - **T-0066**: Endurance and memory soak benchmark (`gateway-endurance.js`)
 - **T-0067**: Bulk export streaming benchmark (`bulk-export.js`)
 - **T-0332**: Sustained load on one endpoint's representations (`transport_endpoint_load.js`)
+- **T-2800**: The nightly dev budget, 100 entities at 20 requests a second, p95 under 300 ms, on an endpoint and its space's canonical surface (`dev-budgets.js`, run and judged by `scripts/budgets-dev.py`)
 
 ## Execution
 
