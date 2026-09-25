@@ -18,6 +18,7 @@ with one door open at a time.
 from __future__ import annotations
 
 import typing
+import uuid
 
 import pytest
 import requests
@@ -27,6 +28,10 @@ Call = typing.Callable[..., requests.Response]
 # A refusal is 401, 403 or 404. 404 is honest for a private thing the caller is not in: a 403
 # confirms it exists. Anything in the 2xx range is the door standing open.
 REFUSED = (401, 403, 404, 405, 422)
+
+# What a creation probe asks for: a name no earlier run can have taken, or the forge's "already
+# exists" (409, 422) would read as a refusal of a door that is open.
+FRESH = f"t-1703-side-door-{uuid.uuid4().hex[:10]}"
 
 
 def _refusal(res: requests.Response, what: str) -> None:
@@ -43,7 +48,18 @@ def test_cc41_a_reader_cannot_fork_the_configuration_repository(
     group does not take away, and the forge offers every reader "fork to propose changes"
     (T-1461). The defence is MAX_CREATION_LIMIT=0 with ALLOW_FORK_WITHOUT_MAXIMUM_LIMIT=false."""
     res = forge("POST", f"/api/v1/repos/{forge_org}/{forge_repo}/forks", json_body={})
+    # Gitea refuses a fork over the limit with 409 and says so; any other 409 is not that.
+    if res.status_code == 409 and "maximum limit of repositories" in res.text:
+        return
     _refusal(res, "a reader forked the configuration repository")
+
+
+def test_cc41_a_reader_cannot_create_an_organization(forge: Call):
+    """CC-41, T-1703 — every account the forge knows may open an organization of its own unless
+    DEFAULT_ALLOW_CREATE_ORGANIZATION is off: a place outside the team map that the reader
+    administers. The platform's organizations are the administrator's to create."""
+    res = forge("POST", "/api/v1/orgs", json_body={"username": FRESH})
+    _refusal(res, "a reader created an organization")
 
 
 def test_cc41_a_reader_cannot_create_a_repository_of_their_own(
@@ -52,7 +68,7 @@ def test_cc41_a_reader_cannot_create_a_repository_of_their_own(
     """CC-41 — the fork limit is a repository-creation limit, so a reader who can create a
     repository can also copy one into it. Both doors, the personal one and the organization's."""
     for path in ("/api/v1/user/repos", f"/api/v1/orgs/{forge_org}/repos"):
-        res = forge("POST", path, json_body={"name": "t-1703-side-door", "private": True})
+        res = forge("POST", path, json_body={"name": FRESH, "private": True})
         _refusal(res, f"a reader created a repository through {path}")
 
 
@@ -131,20 +147,23 @@ def test_pf51_the_protection_rule_pins_the_pusher_and_drops_an_approval_a_new_co
     forge_org: str,
     forge_repo: str,
     forge_branch: str,
+    forge_admin_token: typing.Optional[str],
     forge_platform_token: typing.Optional[str],
 ):
-    """PF-51, CC-41 — the rule itself, read with the credential that administers the repository.
-    Three properties make the Verdict mean something: the push whitelist, so only the Portal's
-    identity moves the branch; `dismiss_stale_approvals`, so a commit pushed after the Verdict
-    does not inherit it; and `block_on_outdated_branch`, so an approved diff is not merged over
-    a base it was never reviewed against."""
-    if not forge_platform_token:
-        pytest.skip("FORGE_PLATFORM_TOKEN is not set: the protection rule is not readable")
+    """PF-104, PF-51, CC-41 — the rule itself, read with a credential that administers the
+    repository (the Portal's identity writes it and may not read its rules). The whitelists name
+    the Portal's identity alone, so nobody else moves the branch; `dismiss_stale_approvals`, so
+    a commit pushed after the Verdict does not inherit it; `block_on_outdated_branch`, so a
+    diff is not merged over a base it was never reviewed against; no override for the
+    administrator. No forge approval is asked for: the Verdict is the Portal's, and a forge
+    approval would be the Portal approving itself."""
+    if not forge_admin_token:
+        pytest.skip("FORGE_ADMIN_TOKEN is not set: the protection rule is not readable")
 
     res = forge(
         "GET",
         f"/api/v1/repos/{forge_org}/{forge_repo}/branch_protections",
-        token=forge_platform_token,
+        token=forge_admin_token,
     )
     assert res.status_code == 200, f"the protection rules are not readable: {res.status_code}"
     rules = res.json()
@@ -158,16 +177,30 @@ def test_pf51_the_protection_rule_pins_the_pusher_and_drops_an_approval_a_new_co
         f"no branch protection rule covers {forge_branch}: every identity with write access "
         "pushes past the Change and its Verdict"
     )
-    assert rule.get("enable_push_whitelist") is True and rule.get("push_whitelist_usernames"), (
-        "the rule lets anybody with write access push; only the Portal's identity may"
+    pushers = rule.get("push_whitelist_usernames") or []
+    assert rule.get("enable_push_whitelist") is True and len(pushers) == 1, (
+        f"the rule lets {pushers or 'anybody with write access'} push; only the Portal's identity may"
     )
-    assert rule.get("required_approvals", 0) >= 1, "the branch merges without a Verdict"
+    assert rule.get("enable_merge_whitelist") is True and rule.get("merge_whitelist_usernames") == pushers, (
+        "somebody besides the Portal's identity merges into the branch"
+    )
+    if forge_platform_token:
+        who = forge("GET", "/api/v1/user", token=forge_platform_token)
+        assert who.status_code == 200, f"the Portal's token names no user: {who.status_code}"
+        assert pushers == [who.json().get("login")], (
+            f"the whitelist names {pushers}, not the Portal's identity"
+        )
+    assert rule.get("required_approvals") == 0, (
+        "the forge asks for an approval the Portal can never give its own pull request (PF-104)"
+    )
     assert rule.get("dismiss_stale_approvals") is True, (
         "a commit pushed after the Verdict keeps the approval it was never given"
     )
     assert rule.get("block_on_outdated_branch") is True, (
         "an approved diff merges over a base it was not reviewed against"
     )
+    assert rule.get("block_admin_merge_override") is True, "the administrator merges past the rule"
+    assert not rule.get("enable_bypass_allowlist"), "somebody is allowed around the rule"
 
 
 def test_cc41_a_reader_cannot_read_another_organisations_repository(
@@ -224,9 +257,9 @@ def test_pf51_a_leaked_platform_token_cannot_administer_the_forge(
 
     for method, path, body in (
         ("GET", "/api/v1/admin/users", None),
-        ("POST", "/api/v1/orgs", {"username": "t-1703-side-door"}),
-        ("POST", "/api/v1/user/repos", {"name": "t-1703-side-door", "private": True}),
-        ("POST", f"/api/v1/orgs/{forge_org}/repos", {"name": "t-1703-side-door", "private": True}),
+        ("POST", "/api/v1/orgs", {"username": FRESH}),
+        ("POST", "/api/v1/user/repos", {"name": FRESH, "private": True}),
+        ("POST", f"/api/v1/orgs/{forge_org}/repos", {"name": FRESH, "private": True}),
     ):
         res = forge(method, path, token=forge_platform_token, json_body=body)
         _refusal(res, f"the leaked platform token reached {method} {path}")

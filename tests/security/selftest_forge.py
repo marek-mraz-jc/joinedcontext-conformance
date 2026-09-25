@@ -17,7 +17,16 @@ import subprocess
 import sys
 from pathlib import Path
 
-from stub_forge_server import ORG, OTHER_ORG, OTHER_REPO, PLATFORM_TOKEN, READER_TOKEN, REPO, serve
+from stub_forge_server import (
+    ADMIN_TOKEN,
+    ORG,
+    OTHER_ORG,
+    OTHER_REPO,
+    PLATFORM_TOKEN,
+    READER_TOKEN,
+    REPO,
+    serve,
+)
 
 SUITE = Path(__file__).resolve().parent / "test_forge_side_door.py"
 
@@ -39,6 +48,7 @@ DOORS = {
         "test_pf51_a_leaked_platform_token_cannot_administer_the_forge",
     "protection_without_review_rules":
         "test_pf51_the_protection_rule_pins_the_pusher_and_drops_an_approval_a_new_commit_invalidates",
+    "reader_may_create_an_organisation": "test_cc41_a_reader_cannot_create_an_organization",
 }
 
 
@@ -48,6 +58,7 @@ def run_suite(url: str) -> tuple[int, str]:
         "FORGE_URL": url,
         "FORGE_READER_TOKEN": READER_TOKEN,
         "FORGE_PLATFORM_TOKEN": PLATFORM_TOKEN,
+        "FORGE_ADMIN_TOKEN": ADMIN_TOKEN,
         "FORGE_ORG": ORG,
         "FORGE_REPO": REPO,
         "FORGE_BRANCH": "main",

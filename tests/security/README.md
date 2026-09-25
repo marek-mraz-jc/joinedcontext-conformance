@@ -44,7 +44,8 @@ The suites talk to a deployed gateway; every variable they need names itself whe
 | `ACCESS_CHECK_URL` | AuthZEN evaluation endpoint (default `ACCESS_URL` + `/check`, R51) |
 | `FORGE_URL` | a **throwaway** forge under test, never dev (T-1703) |
 | `FORGE_READER_TOKEN` | a token of a signed-in person in the read-only forge team; the identity the whole attack is played from |
-| `FORGE_PLATFORM_TOKEN` | the Portal's own forge credential, played as one that has leaked; without it the two cases that need it skip |
+| `FORGE_PLATFORM_TOKEN` | the Portal's own forge credential, played as one that has leaked; without it that case skips |
+| `FORGE_ADMIN_TOKEN` | a `read:repository` token of the forge's administrator, which reads the branch rule the Portal's identity may not (PF-104); without it that case skips |
 | `FORGE_ORG`, `FORGE_REPO`, `FORGE_BRANCH` | where the configuration repository lives (defaults `joinedcontext`, `configuration`, `main`) |
 | `FORGE_OTHER_ORG`, `FORGE_OTHER_REPO` | an organization of the same forge the reader is in no team of (default `mesto-kosice/configuration`) |
 | `DATA_URL` | context broker NGSI-LD entities surface for access document parity checks (EP-55) |

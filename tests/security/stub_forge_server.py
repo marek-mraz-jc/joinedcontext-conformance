@@ -23,6 +23,7 @@ OTHER_REPO = "configuration"
 
 READER_TOKEN = "reader-token"
 PLATFORM_TOKEN = "platform-token"
+ADMIN_TOKEN = "admin-token"
 
 # Every door the attack tries, and the mode that opens it. `hardened` opens none.
 MODES = (
@@ -36,6 +37,7 @@ MODES = (
     "reader_may_add_a_webhook",
     "platform_token_is_an_administrator",
     "protection_without_review_rules",
+    "reader_may_create_an_organisation",
 )
 
 HARDENED_PROTECTION: dict[str, Any] = {
@@ -46,12 +48,15 @@ HARDENED_PROTECTION: dict[str, Any] = {
     "push_whitelist_deploy_keys": False,
     "enable_merge_whitelist": True,
     "merge_whitelist_usernames": ["jc-portal"],
-    "required_approvals": 1,
+    # The Verdict is the Portal's (PF-104): a forge approval would be it approving itself.
+    "required_approvals": 0,
     "enable_approvals_whitelist": False,
     "dismiss_stale_approvals": True,
     "block_on_outdated_branch": True,
     "block_on_rejected_reviews": True,
     "block_on_official_review_requests": True,
+    "block_admin_merge_override": True,
+    "enable_bypass_allowlist": False,
 }
 
 
@@ -90,8 +95,11 @@ class StubForgeHandler(BaseHTTPRequestHandler):
     def _is_platform(self) -> bool:
         return self._token() == PLATFORM_TOKEN
 
+    def _is_admin(self) -> bool:
+        return self._token() == ADMIN_TOKEN
+
     def _known_token(self) -> bool:
-        return self._is_reader() or self._is_platform()
+        return self._is_reader() or self._is_platform() or self._is_admin()
 
     # -- routing ---------------------------------------------------------------
 
@@ -139,6 +147,8 @@ class StubForgeHandler(BaseHTTPRequestHandler):
             self._open_pull_request()
         elif method in ("GET", "POST") and path == f"{repo}/hooks":
             self._hooks(method)
+        elif method == "GET" and path == "/api/v1/user":
+            self._send(200, {"login": "jc-portal" if self._is_platform() else "someone"})
         elif method == "GET" and path == "/api/v1/admin/users":
             self._admin_users()
         elif method == "GET" and path in (other, f"{other}/contents/README.md"):
@@ -162,7 +172,8 @@ class StubForgeHandler(BaseHTTPRequestHandler):
         })
 
     def _branch_protections(self) -> None:
-        if not self._is_platform():
+        # The Portal's identity writes the repository and does not administer it (PF-105).
+        if not self._is_admin():
             self._refuse(403, "the caller does not administer this repository")
             return
         if self.mode == "branch_unprotected":
@@ -172,7 +183,6 @@ class StubForgeHandler(BaseHTTPRequestHandler):
         if self.mode == "protection_without_review_rules":
             # The rule exists and pins the pusher, but a commit pushed after the Verdict keeps
             # the approval it was not given: this is "edit a pull request after its Verdict".
-            rule["required_approvals"] = 0
             rule["dismiss_stale_approvals"] = False
             rule["block_on_outdated_branch"] = False
         self._send(200, [rule])
@@ -192,7 +202,9 @@ class StubForgeHandler(BaseHTTPRequestHandler):
             self._refuse(403, "the maximum number of repositories for this user is reached")
 
     def _create_organisation(self) -> None:
-        if self.mode == "platform_token_is_an_administrator" and self._is_platform():
+        if (self.mode == "platform_token_is_an_administrator" and self._is_platform()) or (
+            self.mode == "reader_may_create_an_organisation" and self._is_reader()
+        ):
             self._send(201, {"username": "side-door"})
         else:
             self._refuse(403, "the token does not carry the scope this needs")

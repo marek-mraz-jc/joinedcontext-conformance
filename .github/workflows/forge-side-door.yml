@@ -63,6 +63,7 @@ jobs:
           FORGE_OTHER_ORG: ${{ inputs.other_org }}
           FORGE_READER_TOKEN: ${{ secrets.FORGE_READER_TOKEN }}
           FORGE_PLATFORM_TOKEN: ${{ secrets.FORGE_PLATFORM_TOKEN }}
+          FORGE_ADMIN_TOKEN: ${{ secrets.FORGE_ADMIN_TOKEN }}
         run: |
           set -eu
           mkdir -p reports/forge-side-door
