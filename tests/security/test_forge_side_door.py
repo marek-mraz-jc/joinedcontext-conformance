@@ -18,6 +18,7 @@ with one door open at a time.
 from __future__ import annotations
 
 import typing
+import uuid
 
 import pytest
 import requests
@@ -27,6 +28,10 @@ Call = typing.Callable[..., requests.Response]
 # A refusal is 401, 403 or 404. 404 is honest for a private thing the caller is not in: a 403
 # confirms it exists. Anything in the 2xx range is the door standing open.
 REFUSED = (401, 403, 404, 405, 422)
+
+# What a creation probe asks for: a name no earlier run can have taken, or the forge's "already
+# exists" (409, 422) would read as a refusal of a door that is open.
+FRESH = f"t-1703-side-door-{uuid.uuid4().hex[:10]}"
 
 
 def _refusal(res: requests.Response, what: str) -> None:
@@ -53,7 +58,7 @@ def test_cc41_a_reader_cannot_create_an_organization(forge: Call):
     """CC-41, T-1703 — every account the forge knows may open an organization of its own unless
     DEFAULT_ALLOW_CREATE_ORGANIZATION is off: a place outside the team map that the reader
     administers. The platform's organizations are the administrator's to create."""
-    res = forge("POST", "/api/v1/orgs", json_body={"username": "t-1703-side-door-org"})
+    res = forge("POST", "/api/v1/orgs", json_body={"username": FRESH})
     _refusal(res, "a reader created an organization")
 
 
@@ -63,7 +68,7 @@ def test_cc41_a_reader_cannot_create_a_repository_of_their_own(
     """CC-41 — the fork limit is a repository-creation limit, so a reader who can create a
     repository can also copy one into it. Both doors, the personal one and the organization's."""
     for path in ("/api/v1/user/repos", f"/api/v1/orgs/{forge_org}/repos"):
-        res = forge("POST", path, json_body={"name": "t-1703-side-door", "private": True})
+        res = forge("POST", path, json_body={"name": FRESH, "private": True})
         _refusal(res, f"a reader created a repository through {path}")
 
 
@@ -252,9 +257,9 @@ def test_pf51_a_leaked_platform_token_cannot_administer_the_forge(
 
     for method, path, body in (
         ("GET", "/api/v1/admin/users", None),
-        ("POST", "/api/v1/orgs", {"username": "t-1703-side-door"}),
-        ("POST", "/api/v1/user/repos", {"name": "t-1703-side-door", "private": True}),
-        ("POST", f"/api/v1/orgs/{forge_org}/repos", {"name": "t-1703-side-door", "private": True}),
+        ("POST", "/api/v1/orgs", {"username": FRESH}),
+        ("POST", "/api/v1/user/repos", {"name": FRESH, "private": True}),
+        ("POST", f"/api/v1/orgs/{forge_org}/repos", {"name": FRESH, "private": True}),
     ):
         res = forge(method, path, token=forge_platform_token, json_body=body)
         _refusal(res, f"the leaked platform token reached {method} {path}")
