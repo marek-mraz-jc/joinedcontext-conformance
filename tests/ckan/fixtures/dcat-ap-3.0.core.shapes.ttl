@@ -27,13 +27,19 @@ jc:DatasetShape
         sh:message "a DCAT-AP Dataset must carry dct:description" ;
     ] ;
     sh:property [
+        sh:path dcat:distribution ;
+        sh:node jc:DistributionShape ;
+    ] .
+
+# EP-69 binds the dataset the endpoint serves, the one with distributions. A dataset the record
+# only names, the original open data of `dct:source` (EP-78), is somebody else's to describe.
+jc:ServedDatasetShape
+    a sh:NodeShape ;
+    sh:targetSubjectsOf dcat:distribution ;
+    sh:property [
         sh:path dct:accessRights ;
         sh:minCount 1 ;
         sh:message "the record must declare dct:accessRights, PUBLIC or RESTRICTED (EP-69)" ;
-    ] ;
-    sh:property [
-        sh:path dcat:distribution ;
-        sh:node jc:DistributionShape ;
     ] .
 
 jc:DistributionShape

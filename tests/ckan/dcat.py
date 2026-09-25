@@ -6,10 +6,11 @@ DCAT-AP, and there is one place to check it. These are pure functions over docum
 in memory, because the same three checks run against a live endpoint, against a fixture and
 against the self-test's deliberately broken records.
 
-The record's own `@context` is the remote `https://www.w3.org/ns/dcat.jsonld`. It is replaced
-by the prefix map below before the graph is built: a conformance run that reaches the open
-internet to parse its own input passes or fails on somebody else's uptime, and every term the
-record uses is prefixed anyway.
+A record whose `@context` is an object declares its own prefixes and IRI coercions (EP-78), and
+that context is used as it is, over the prefix map below. A record that names the remote
+`https://www.w3.org/ns/dcat.jsonld` instead gets the prefix map in its place: a conformance run
+that reaches the open internet to parse its own input passes or fails on somebody else's
+uptime, and every term such a record uses is prefixed anyway.
 """
 
 from __future__ import annotations
@@ -49,7 +50,8 @@ DATASET_TYPE = "dcat:Dataset"
 def graph(record: dict[str, Any]) -> rdflib.Graph:
     """The record as RDF, expanded with the local prefix map rather than a fetched context."""
     payload = {key: value for key, value in record.items() if key != "@context"}
-    payload["@context"] = dict(PREFIXES)
+    own = record.get("@context")
+    payload["@context"] = {**PREFIXES, **own} if isinstance(own, dict) else dict(PREFIXES)
     parsed = rdflib.Graph()
     parsed.parse(data=json.dumps(payload), format="json-ld")
     return parsed
