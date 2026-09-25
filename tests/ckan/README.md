@@ -66,3 +66,25 @@ The record's own `@context` is the remote `https://www.w3.org/ns/dcat.jsonld`. I
 by a local prefix map before the graph is built (`dcat.py`): a conformance run that reaches
 the open internet to parse its own input passes or fails on somebody else's uptime, and every
 term the record uses is prefixed anyway.
+
+## A project's catalogue, live (T-2790…T-2793, EP-78…EP-80)
+
+`catalog.py` reads every endpoint of one project from the forge's bootstrap seed (`kubectl`,
+read only; or `CATALOG_SLUGS=slug,slug` without a cluster), fetches each record anonymously as
+JSON-LD and as Turtle, and checks that both are one graph, that they pass the pinned SEMIC
+DCAT-AP 3.0.0 shapes (`DCAT_AP_SHACL`, else the platform clone's
+`crates/context-gateway/tests/fixtures/dcat-ap/dcat-ap-3.0.0-SHACL.ttl`, refused unless its
+sha256 is the pinned one), that the record carries publisher, contact desk, licence, themes,
+spatial coverage, frequency and keywords in every language asked for, and that its ODRL offer
+carries exactly the duties of its licence and constrains the recipient unless it is public.
+It prints the table the task records and exits 1 when any endpoint fails. The hourly batch
+runs it once per city:
+
+```bash
+python3 tests/ckan/catalog.py banskabystrica --languages sk,en
+python3 tests/ckan/catalog.py bbsk --languages sk,en
+python3 tests/ckan/catalog.py praha --languages cs,en
+python3 tests/ckan/catalog.py helsinki --languages fi,sv,en
+```
+
+`test_catalog.py` proves each check can go red, on records the gateway wrote.
