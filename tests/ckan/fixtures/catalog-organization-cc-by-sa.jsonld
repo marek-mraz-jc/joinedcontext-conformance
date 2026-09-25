@@ -1,0 +1,645 @@
+{
+  "@context": {
+    "dcat": "http://www.w3.org/ns/dcat#",
+    "dcat:accessService": {
+      "@type": "@id"
+    },
+    "dcat:accessURL": {
+      "@type": "@id"
+    },
+    "dcat:byteSize": {
+      "@type": "xsd:nonNegativeInteger"
+    },
+    "dcat:endDate": {
+      "@type": "xsd:date"
+    },
+    "dcat:endpointURL": {
+      "@type": "@id"
+    },
+    "dcat:mediaType": {
+      "@type": "@id"
+    },
+    "dcat:servesDataset": {
+      "@type": "@id"
+    },
+    "dcat:startDate": {
+      "@type": "xsd:date"
+    },
+    "dcat:theme": {
+      "@type": "@id"
+    },
+    "dcatap": "http://data.europa.eu/r5r/",
+    "dcatap:applicableLegislation": {
+      "@type": "@id"
+    },
+    "dct": "http://purl.org/dc/terms/",
+    "dct:accessRights": {
+      "@type": "@id"
+    },
+    "dct:accrualPeriodicity": {
+      "@type": "@id"
+    },
+    "dct:conformsTo": {
+      "@type": "@id"
+    },
+    "dct:format": {
+      "@type": "@id"
+    },
+    "dct:license": {
+      "@type": "@id"
+    },
+    "dct:source": {
+      "@type": "@id"
+    },
+    "dct:spatial": {
+      "@type": "@id"
+    },
+    "eli": "http://data.europa.eu/eli/ontology#",
+    "foaf": "http://xmlns.com/foaf/0.1/",
+    "ngsi-ld": "https://joinedcontext.com/odrl/ngsi-ld/v1#",
+    "odrl": "http://www.w3.org/ns/odrl/2/",
+    "odrl:action": {
+      "@type": "@id"
+    },
+    "odrl:assigner": {
+      "@type": "@id"
+    },
+    "odrl:hasPolicy": {
+      "@type": "@id"
+    },
+    "odrl:leftOperand": {
+      "@type": "@id"
+    },
+    "odrl:operator": {
+      "@type": "@id"
+    },
+    "odrl:target": {
+      "@type": "@id"
+    },
+    "prov": "http://www.w3.org/ns/prov#",
+    "rdfs": "http://www.w3.org/2000/01/rdf-schema#",
+    "skos": "http://www.w3.org/2004/02/skos/core#",
+    "spdx": "http://spdx.org/rdf/terms#",
+    "spdx:algorithm": {
+      "@type": "@id"
+    },
+    "spdx:checksumValue": {
+      "@type": "xsd:hexBinary"
+    },
+    "vcard": "http://www.w3.org/2006/vcard/ns#",
+    "vcard:hasEmail": {
+      "@type": "@id"
+    },
+    "xsd": "http://www.w3.org/2001/XMLSchema#"
+  },
+  "@id": "https://data.example.org/api/endpoint/k4y7pq2mzt6vhx3nbwrs5cjd8f",
+  "@included": [
+    {
+      "@id": "http://publications.europa.eu/resource/authority/access-right/RESTRICTED",
+      "@type": "dct:RightsStatement"
+    },
+    {
+      "@id": "http://publications.europa.eu/resource/authority/licence/CC_BYSA_4_0",
+      "@type": "dct:LicenseDocument",
+      "rdfs:label": "Creative Commons Attribution-ShareAlike 4.0"
+    },
+    {
+      "@id": "http://publications.europa.eu/resource/authority/data-theme/TRAN",
+      "@type": "skos:Concept",
+      "skos:prefLabel": {
+        "@language": "en",
+        "@value": "Transport"
+      }
+    },
+    {
+      "@id": "http://publications.europa.eu/resource/authority/data-theme/SOCI",
+      "@type": "skos:Concept",
+      "skos:prefLabel": {
+        "@language": "en",
+        "@value": "Population and society"
+      }
+    },
+    {
+      "@id": "http://data.europa.eu/nuts/code/SK032",
+      "@type": "dct:Location"
+    },
+    {
+      "@id": "https://sws.geonames.org/3061186/",
+      "@type": "dct:Location"
+    },
+    {
+      "@id": "http://publications.europa.eu/resource/authority/frequency/DAILY",
+      "@type": "dct:Frequency"
+    },
+    {
+      "@id": "https://opendata.example.org/dataset/events",
+      "@type": "dcat:Dataset",
+      "dct:description": [
+        {
+          "@language": "en",
+          "@value": "The city's events feed"
+        }
+      ],
+      "dct:title": [
+        {
+          "@language": "en",
+          "@value": "Events"
+        }
+      ]
+    },
+    {
+      "@id": "http://data.europa.eu/eli/reg_impl/2023/138/oj",
+      "@type": "eli:LegalResource"
+    },
+    {
+      "@id": "https://data.example.org/api/endpoint/k4y7pq2mzt6vhx3nbwrs5cjd8f/",
+      "@type": "rdfs:Resource"
+    },
+    {
+      "@id": "https://data.example.org/api/endpoint/k4y7pq2mzt6vhx3nbwrs5cjd8f#service",
+      "@type": "dcat:DataService",
+      "dcat:endpointURL": "https://data.example.org/api/endpoint/k4y7pq2mzt6vhx3nbwrs5cjd8f/",
+      "dcat:servesDataset": "https://data.example.org/api/endpoint/k4y7pq2mzt6vhx3nbwrs5cjd8f",
+      "dct:accessRights": "http://publications.europa.eu/resource/authority/access-right/RESTRICTED",
+      "dct:license": "http://publications.europa.eu/resource/authority/licence/CC_BYSA_4_0",
+      "dct:title": [
+        {
+          "@language": "en",
+          "@value": "City events"
+        }
+      ]
+    },
+    {
+      "@id": "https://data.example.org/api/endpoint/k4y7pq2mzt6vhx3nbwrs5cjd8f/ngsi-ld/v1/",
+      "@type": "rdfs:Resource"
+    },
+    {
+      "@id": "https://www.iana.org/assignments/media-types/application/ld+json",
+      "@type": "dct:MediaType"
+    },
+    {
+      "@id": "http://publications.europa.eu/resource/authority/file-type/JSON_LD",
+      "@type": "dct:MediaTypeOrExtent"
+    },
+    {
+      "@id": "https://www.etsi.org/deliver/etsi_gs/CIM/001_099/009/",
+      "@type": "dct:Standard"
+    },
+    {
+      "@id": "https://data.example.org/api/endpoint/k4y7pq2mzt6vhx3nbwrs5cjd8f/file.geojson",
+      "@type": "rdfs:Resource"
+    },
+    {
+      "@id": "https://www.iana.org/assignments/media-types/application/geo+json",
+      "@type": "dct:MediaType"
+    },
+    {
+      "@id": "http://publications.europa.eu/resource/authority/file-type/GEOJSON",
+      "@type": "dct:MediaTypeOrExtent"
+    },
+    {
+      "@id": "https://www.rfc-editor.org/rfc/rfc7946",
+      "@type": "dct:Standard"
+    },
+    {
+      "@id": "https://data.example.org/api/endpoint/k4y7pq2mzt6vhx3nbwrs5cjd8f/file.csv",
+      "@type": "rdfs:Resource"
+    },
+    {
+      "@id": "https://www.iana.org/assignments/media-types/text/csv",
+      "@type": "dct:MediaType"
+    },
+    {
+      "@id": "http://publications.europa.eu/resource/authority/file-type/CSV",
+      "@type": "dct:MediaTypeOrExtent"
+    },
+    {
+      "@id": "https://data.example.org/api/endpoint/k4y7pq2mzt6vhx3nbwrs5cjd8f/file.xlsx",
+      "@type": "rdfs:Resource"
+    },
+    {
+      "@id": "https://www.iana.org/assignments/media-types/application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      "@type": "dct:MediaType"
+    },
+    {
+      "@id": "http://publications.europa.eu/resource/authority/file-type/XLSX",
+      "@type": "dct:MediaTypeOrExtent"
+    },
+    {
+      "@id": "https://data.example.org/api/endpoint/k4y7pq2mzt6vhx3nbwrs5cjd8f/file.json",
+      "@type": "rdfs:Resource"
+    },
+    {
+      "@id": "https://www.iana.org/assignments/media-types/application/json",
+      "@type": "dct:MediaType"
+    },
+    {
+      "@id": "http://publications.europa.eu/resource/authority/file-type/JSON",
+      "@type": "dct:MediaTypeOrExtent"
+    },
+    {
+      "@id": "https://data.example.org/api/endpoint/k4y7pq2mzt6vhx3nbwrs5cjd8f/file.zip",
+      "@type": "rdfs:Resource"
+    },
+    {
+      "@id": "https://www.iana.org/assignments/media-types/application/zip",
+      "@type": "dct:MediaType"
+    },
+    {
+      "@id": "http://publications.europa.eu/resource/authority/file-type/ZIP",
+      "@type": "dct:MediaTypeOrExtent"
+    },
+    {
+      "@id": "https://data.example.org/api/endpoint/k4y7pq2mzt6vhx3nbwrs5cjd8f/ogc/features/",
+      "@type": "rdfs:Resource"
+    },
+    {
+      "@id": "http://www.opengis.net/spec/ogcapi-features-1/1.0/conf/core",
+      "@type": "dct:Standard"
+    },
+    {
+      "@id": "https://data.example.org/api/endpoint/k4y7pq2mzt6vhx3nbwrs5cjd8f/sta/v1.1/",
+      "@type": "rdfs:Resource"
+    },
+    {
+      "@id": "http://www.opengis.net/spec/sensorthings/1.1",
+      "@type": "dct:Standard"
+    },
+    {
+      "@id": "https://data.example.org/api/endpoint/k4y7pq2mzt6vhx3nbwrs5cjd8f/mcp",
+      "@type": "rdfs:Resource"
+    },
+    {
+      "@id": "https://modelcontextprotocol.io/specification",
+      "@type": "dct:Standard"
+    },
+    {
+      "@id": "https://data.example.org/api/endpoint/k4y7pq2mzt6vhx3nbwrs5cjd8f/schema/v1/model.schema.json",
+      "@type": "rdfs:Resource"
+    },
+    {
+      "@id": "https://www.iana.org/assignments/media-types/application/schema+json",
+      "@type": "dct:MediaType"
+    },
+    {
+      "@id": "http://json-schema.org/draft-07/schema#",
+      "@type": "dct:Standard"
+    },
+    {
+      "@id": "https://data.example.org/api/endpoint/k4y7pq2mzt6vhx3nbwrs5cjd8f/schema/v1/model.shacl.ttl",
+      "@type": "rdfs:Resource"
+    },
+    {
+      "@id": "https://www.iana.org/assignments/media-types/text/turtle",
+      "@type": "dct:MediaType"
+    },
+    {
+      "@id": "https://www.w3.org/TR/shacl/",
+      "@type": "dct:Standard"
+    },
+    {
+      "@id": "spdx:checksumAlgorithm_sha256",
+      "@type": "spdx:ChecksumAlgorithm"
+    }
+  ],
+  "@type": "dcat:Dataset",
+  "dcat:contactPoint": {
+    "@type": "vcard:Kind",
+    "vcard:fn": "Open data desk",
+    "vcard:hasEmail": "mailto:opendata@city.example.org"
+  },
+  "dcat:distribution": [
+    {
+      "@id": "https://data.example.org/api/endpoint/k4y7pq2mzt6vhx3nbwrs5cjd8f/ngsi-ld/v1/",
+      "@type": "dcat:Distribution",
+      "dcat:accessService": "https://data.example.org/api/endpoint/k4y7pq2mzt6vhx3nbwrs5cjd8f#service",
+      "dcat:accessURL": "https://data.example.org/api/endpoint/k4y7pq2mzt6vhx3nbwrs5cjd8f/ngsi-ld/v1/",
+      "dcat:mediaType": "https://www.iana.org/assignments/media-types/application/ld+json",
+      "dct:conformsTo": "https://www.etsi.org/deliver/etsi_gs/CIM/001_099/009/",
+      "dct:format": "http://publications.europa.eu/resource/authority/file-type/JSON_LD",
+      "dct:license": "http://publications.europa.eu/resource/authority/licence/CC_BYSA_4_0",
+      "dct:rights": {
+        "@type": "dct:RightsStatement",
+        "rdfs:label": [
+          {
+            "@language": "en",
+            "@value": "Source: City of Example"
+          }
+        ]
+      },
+      "dct:title": "NGSI-LD API"
+    },
+    {
+      "@id": "https://data.example.org/api/endpoint/k4y7pq2mzt6vhx3nbwrs5cjd8f/file.geojson",
+      "@type": "dcat:Distribution",
+      "dcat:accessService": "https://data.example.org/api/endpoint/k4y7pq2mzt6vhx3nbwrs5cjd8f#service",
+      "dcat:accessURL": "https://data.example.org/api/endpoint/k4y7pq2mzt6vhx3nbwrs5cjd8f/file.geojson",
+      "dcat:mediaType": "https://www.iana.org/assignments/media-types/application/geo+json",
+      "dct:conformsTo": "https://www.rfc-editor.org/rfc/rfc7946",
+      "dct:format": "http://publications.europa.eu/resource/authority/file-type/GEOJSON",
+      "dct:license": "http://publications.europa.eu/resource/authority/licence/CC_BYSA_4_0",
+      "dct:rights": {
+        "@type": "dct:RightsStatement",
+        "rdfs:label": [
+          {
+            "@language": "en",
+            "@value": "Source: City of Example"
+          }
+        ]
+      },
+      "dct:title": "GeoJSON"
+    },
+    {
+      "@id": "https://data.example.org/api/endpoint/k4y7pq2mzt6vhx3nbwrs5cjd8f/file.csv",
+      "@type": "dcat:Distribution",
+      "dcat:accessService": "https://data.example.org/api/endpoint/k4y7pq2mzt6vhx3nbwrs5cjd8f#service",
+      "dcat:accessURL": "https://data.example.org/api/endpoint/k4y7pq2mzt6vhx3nbwrs5cjd8f/file.csv",
+      "dcat:mediaType": "https://www.iana.org/assignments/media-types/text/csv",
+      "dct:format": "http://publications.europa.eu/resource/authority/file-type/CSV",
+      "dct:license": "http://publications.europa.eu/resource/authority/licence/CC_BYSA_4_0",
+      "dct:rights": {
+        "@type": "dct:RightsStatement",
+        "rdfs:label": [
+          {
+            "@language": "en",
+            "@value": "Source: City of Example"
+          }
+        ]
+      },
+      "dct:title": "CSV"
+    },
+    {
+      "@id": "https://data.example.org/api/endpoint/k4y7pq2mzt6vhx3nbwrs5cjd8f/file.xlsx",
+      "@type": "dcat:Distribution",
+      "dcat:accessService": "https://data.example.org/api/endpoint/k4y7pq2mzt6vhx3nbwrs5cjd8f#service",
+      "dcat:accessURL": "https://data.example.org/api/endpoint/k4y7pq2mzt6vhx3nbwrs5cjd8f/file.xlsx",
+      "dcat:mediaType": "https://www.iana.org/assignments/media-types/application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      "dct:format": "http://publications.europa.eu/resource/authority/file-type/XLSX",
+      "dct:license": "http://publications.europa.eu/resource/authority/licence/CC_BYSA_4_0",
+      "dct:rights": {
+        "@type": "dct:RightsStatement",
+        "rdfs:label": [
+          {
+            "@language": "en",
+            "@value": "Source: City of Example"
+          }
+        ]
+      },
+      "dct:title": "Excel workbook"
+    },
+    {
+      "@id": "https://data.example.org/api/endpoint/k4y7pq2mzt6vhx3nbwrs5cjd8f/file.json",
+      "@type": "dcat:Distribution",
+      "dcat:accessService": "https://data.example.org/api/endpoint/k4y7pq2mzt6vhx3nbwrs5cjd8f#service",
+      "dcat:accessURL": "https://data.example.org/api/endpoint/k4y7pq2mzt6vhx3nbwrs5cjd8f/file.json",
+      "dcat:mediaType": "https://www.iana.org/assignments/media-types/application/json",
+      "dct:format": "http://publications.europa.eu/resource/authority/file-type/JSON",
+      "dct:license": "http://publications.europa.eu/resource/authority/licence/CC_BYSA_4_0",
+      "dct:rights": {
+        "@type": "dct:RightsStatement",
+        "rdfs:label": [
+          {
+            "@language": "en",
+            "@value": "Source: City of Example"
+          }
+        ]
+      },
+      "dct:title": "JSON"
+    },
+    {
+      "@id": "https://data.example.org/api/endpoint/k4y7pq2mzt6vhx3nbwrs5cjd8f/file.zip",
+      "@type": "dcat:Distribution",
+      "dcat:accessService": "https://data.example.org/api/endpoint/k4y7pq2mzt6vhx3nbwrs5cjd8f#service",
+      "dcat:accessURL": "https://data.example.org/api/endpoint/k4y7pq2mzt6vhx3nbwrs5cjd8f/file.zip",
+      "dcat:mediaType": "https://www.iana.org/assignments/media-types/application/zip",
+      "dct:format": "http://publications.europa.eu/resource/authority/file-type/ZIP",
+      "dct:license": "http://publications.europa.eu/resource/authority/licence/CC_BYSA_4_0",
+      "dct:rights": {
+        "@type": "dct:RightsStatement",
+        "rdfs:label": [
+          {
+            "@language": "en",
+            "@value": "Source: City of Example"
+          }
+        ]
+      },
+      "dct:title": "Bundle of every representation"
+    },
+    {
+      "@id": "https://data.example.org/api/endpoint/k4y7pq2mzt6vhx3nbwrs5cjd8f/ogc/features/",
+      "@type": "dcat:Distribution",
+      "dcat:accessService": "https://data.example.org/api/endpoint/k4y7pq2mzt6vhx3nbwrs5cjd8f#service",
+      "dcat:accessURL": "https://data.example.org/api/endpoint/k4y7pq2mzt6vhx3nbwrs5cjd8f/ogc/features/",
+      "dcat:mediaType": "https://www.iana.org/assignments/media-types/application/geo+json",
+      "dct:conformsTo": "http://www.opengis.net/spec/ogcapi-features-1/1.0/conf/core",
+      "dct:format": "http://publications.europa.eu/resource/authority/file-type/GEOJSON",
+      "dct:license": "http://publications.europa.eu/resource/authority/licence/CC_BYSA_4_0",
+      "dct:rights": {
+        "@type": "dct:RightsStatement",
+        "rdfs:label": [
+          {
+            "@language": "en",
+            "@value": "Source: City of Example"
+          }
+        ]
+      },
+      "dct:title": "OGC API - Features"
+    },
+    {
+      "@id": "https://data.example.org/api/endpoint/k4y7pq2mzt6vhx3nbwrs5cjd8f/sta/v1.1/",
+      "@type": "dcat:Distribution",
+      "dcat:accessService": "https://data.example.org/api/endpoint/k4y7pq2mzt6vhx3nbwrs5cjd8f#service",
+      "dcat:accessURL": "https://data.example.org/api/endpoint/k4y7pq2mzt6vhx3nbwrs5cjd8f/sta/v1.1/",
+      "dcat:mediaType": "https://www.iana.org/assignments/media-types/application/json",
+      "dct:conformsTo": "http://www.opengis.net/spec/sensorthings/1.1",
+      "dct:format": "http://publications.europa.eu/resource/authority/file-type/JSON",
+      "dct:license": "http://publications.europa.eu/resource/authority/licence/CC_BYSA_4_0",
+      "dct:rights": {
+        "@type": "dct:RightsStatement",
+        "rdfs:label": [
+          {
+            "@language": "en",
+            "@value": "Source: City of Example"
+          }
+        ]
+      },
+      "dct:title": "SensorThings API"
+    },
+    {
+      "@id": "https://data.example.org/api/endpoint/k4y7pq2mzt6vhx3nbwrs5cjd8f/mcp",
+      "@type": "dcat:Distribution",
+      "dcat:accessService": "https://data.example.org/api/endpoint/k4y7pq2mzt6vhx3nbwrs5cjd8f#service",
+      "dcat:accessURL": "https://data.example.org/api/endpoint/k4y7pq2mzt6vhx3nbwrs5cjd8f/mcp",
+      "dcat:mediaType": "https://www.iana.org/assignments/media-types/application/json",
+      "dct:conformsTo": "https://modelcontextprotocol.io/specification",
+      "dct:format": "http://publications.europa.eu/resource/authority/file-type/JSON",
+      "dct:license": "http://publications.europa.eu/resource/authority/licence/CC_BYSA_4_0",
+      "dct:rights": {
+        "@type": "dct:RightsStatement",
+        "rdfs:label": [
+          {
+            "@language": "en",
+            "@value": "Source: City of Example"
+          }
+        ]
+      },
+      "dct:title": "Model Context Protocol"
+    },
+    {
+      "@id": "https://data.example.org/api/endpoint/k4y7pq2mzt6vhx3nbwrs5cjd8f/schema/v1/model.schema.json",
+      "@type": "dcat:Distribution",
+      "dcat:accessURL": "https://data.example.org/api/endpoint/k4y7pq2mzt6vhx3nbwrs5cjd8f/schema/v1/model.schema.json",
+      "dcat:byteSize": "812",
+      "dcat:mediaType": "https://www.iana.org/assignments/media-types/application/schema+json",
+      "dct:conformsTo": "http://json-schema.org/draft-07/schema#",
+      "dct:license": "http://publications.europa.eu/resource/authority/licence/CC_BYSA_4_0",
+      "dct:rights": {
+        "@type": "dct:RightsStatement",
+        "rdfs:label": [
+          {
+            "@language": "en",
+            "@value": "Source: City of Example"
+          }
+        ]
+      },
+      "dct:title": "Event model.schema.json",
+      "spdx:checksum": {
+        "@type": "spdx:Checksum",
+        "spdx:algorithm": "spdx:checksumAlgorithm_sha256",
+        "spdx:checksumValue": "4a1f0c3e9b8d7a6f5e4d3c2b1a0f9e8d7c6b5a4f3e2d1c0b9a8f7e6d5c4b3a2f"
+      }
+    },
+    {
+      "@id": "https://data.example.org/api/endpoint/k4y7pq2mzt6vhx3nbwrs5cjd8f/schema/v1/model.shacl.ttl",
+      "@type": "dcat:Distribution",
+      "dcat:accessURL": "https://data.example.org/api/endpoint/k4y7pq2mzt6vhx3nbwrs5cjd8f/schema/v1/model.shacl.ttl",
+      "dcat:byteSize": "300",
+      "dcat:mediaType": "https://www.iana.org/assignments/media-types/text/turtle",
+      "dct:conformsTo": "https://www.w3.org/TR/shacl/",
+      "dct:license": "http://publications.europa.eu/resource/authority/licence/CC_BYSA_4_0",
+      "dct:rights": {
+        "@type": "dct:RightsStatement",
+        "rdfs:label": [
+          {
+            "@language": "en",
+            "@value": "Source: City of Example"
+          }
+        ]
+      },
+      "dct:title": "Event model.shacl.ttl",
+      "spdx:checksum": {
+        "@type": "spdx:Checksum",
+        "spdx:algorithm": "spdx:checksumAlgorithm_sha256",
+        "spdx:checksumValue": "0f1e2d3c4b5a69788796a5b4c3d2e1f00f1e2d3c4b5a69788796a5b4c3d2e1f0"
+      }
+    }
+  ],
+  "dcat:keyword": [
+    {
+      "@language": "en",
+      "@value": "events"
+    },
+    {
+      "@language": "en",
+      "@value": "culture"
+    },
+    {
+      "@language": "sk",
+      "@value": "podujatia"
+    }
+  ],
+  "dcat:theme": [
+    "http://publications.europa.eu/resource/authority/data-theme/TRAN",
+    "http://publications.europa.eu/resource/authority/data-theme/SOCI"
+  ],
+  "dcatap:applicableLegislation": [
+    "http://data.europa.eu/eli/reg_impl/2023/138/oj"
+  ],
+  "dct:accessRights": "http://publications.europa.eu/resource/authority/access-right/RESTRICTED",
+  "dct:accrualPeriodicity": "http://publications.europa.eu/resource/authority/frequency/DAILY",
+  "dct:conformsTo": [
+    "http://json-schema.org/draft-07/schema#",
+    "https://www.w3.org/TR/shacl/"
+  ],
+  "dct:description": [
+    {
+      "@language": "en",
+      "@value": "Every event the city lists"
+    }
+  ],
+  "dct:identifier": "k4y7pq2mzt6vhx3nbwrs5cjd8f",
+  "dct:license": "http://publications.europa.eu/resource/authority/licence/CC_BYSA_4_0",
+  "dct:publisher": {
+    "@id": "https://city.example.org/",
+    "@type": "foaf:Agent",
+    "foaf:name": [
+      {
+        "@language": "en",
+        "@value": "City of Example"
+      },
+      {
+        "@language": "sk",
+        "@value": "Mesto Príklad"
+      }
+    ]
+  },
+  "dct:source": [
+    "https://opendata.example.org/dataset/events"
+  ],
+  "dct:spatial": [
+    "http://data.europa.eu/nuts/code/SK032",
+    "https://sws.geonames.org/3061186/"
+  ],
+  "dct:temporal": {
+    "@type": "dct:PeriodOfTime",
+    "dcat:endDate": "2026-12-31",
+    "dcat:startDate": "2019-01-01"
+  },
+  "dct:title": [
+    {
+      "@language": "en",
+      "@value": "City events"
+    }
+  ],
+  "odrl:hasPolicy": [
+    "https://data.example.org/api/endpoint/k4y7pq2mzt6vhx3nbwrs5cjd8f/access",
+    {
+      "@id": "https://data.example.org/api/endpoint/k4y7pq2mzt6vhx3nbwrs5cjd8f#offer",
+      "@type": [
+        "odrl:Offer",
+        "odrl:Policy"
+      ],
+      "odrl:assigner": "https://city.example.org/",
+      "odrl:permission": {
+        "odrl:action": "odrl:use",
+        "odrl:constraint": [
+          {
+            "odrl:leftOperand": "odrl:recipient",
+            "odrl:operator": "odrl:isPartOf",
+            "odrl:rightOperand": {
+              "@id": "https://city.example.org/"
+            }
+          },
+          {
+            "odrl:leftOperand": "ngsi-ld:audience",
+            "odrl:operator": "odrl:eq",
+            "odrl:rightOperand": "organization"
+          }
+        ],
+        "odrl:duty": [
+          {
+            "odrl:action": "odrl:attribute"
+          },
+          {
+            "odrl:action": "http://creativecommons.org/ns#ShareAlike"
+          }
+        ],
+        "odrl:target": "https://data.example.org/api/endpoint/k4y7pq2mzt6vhx3nbwrs5cjd8f"
+      }
+    }
+  ],
+  "prov:wasGeneratedBy": {
+    "@type": "prov:Activity",
+    "rdfs:label": "pipeline city-events"
+  }
+}
