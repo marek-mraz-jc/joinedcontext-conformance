@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Settings for a conformance run against the `dev` cluster (T-0784, TS-05, TS-09, TS-19).
 #
-#   . tests/dev.env.sh [security|mcp|e2e|etsi|ogc|sta|ckan|dsp|budgets|schemathesis|portal]
+#   . tests/dev.env.sh [security|mcp|e2e|etsi|ogc|sta|ckan|dsp|budgets|authz|schemathesis|portal]
 #
 # Source it, never run it: it exports the variables the suites read and it takes a suite name
 # because two suites read the same name for different subjects (`SPACE_URL` is the narrowed
@@ -278,6 +278,24 @@ budgets)
 	fi
 	_jc_note "JC_K6_RATE: 20 a second is over the seeded endpoints' limits (600 a minute), so the endpoint budget needs a test endpoint that allows it"
 	;;
+authz)
+	# The authorization matrix, live (T-2797): one demo person per role of the taxonomy. On dev
+	# demo.steward is both steward and org-admin, so it stands for the org-admin, the wider of
+	# the two; no person of another project and no ServiceAccount with the Portal's audience is
+	# seeded, so those columns are not measured.
+	export PORTAL_URL="$JC_DEV_PORTAL" AUTHZ_PROJECT="helsinki"
+	for _jc_role in viewer editor approver; do
+		_jc_token=$(_jc_token_person "demo.$_jc_role")
+		if [ -n "$_jc_token" ]; then
+			export "AUTHZ_TOKEN_${_jc_role^^}=$_jc_token"
+		else
+			_jc_note "AUTHZ_TOKEN_${_jc_role^^}: no password grant for demo.$_jc_role"
+		fi
+	done
+	[ -n "$JC_DEV_TOKEN_PERSON" ] && export AUTHZ_TOKEN_ORG_ADMIN="$JC_DEV_TOKEN_PERSON"
+	unset _jc_role _jc_token
+	_jc_note "AUTHZ_TOKEN_STEWARD, AUTHZ_TOKEN_OTHER_MEMBER, AUTHZ_TOKEN_SERVICE_ACCOUNT: no person of only that role, of another project, or ServiceAccount with the Portal's audience on dev"
+	;;
 schemathesis)
 	export PORTAL_URL="$JC_DEV_PORTAL"
 	export PORTAL_TOKEN="$JC_DEV_TOKEN_PERSON"
@@ -302,7 +320,7 @@ portal)
 	_jc_note "PORTAL_INVITE_URL, PORTAL_DRIFTED_FLOW, PORTAL_PUBLIC_DASHBOARD_URL: each names something produced out of band (those cases skip)"
 	;;
 *)
-	echo "tests/dev.env.sh: unknown suite '$_jc_suite' (security|mcp|e2e|etsi|ogc|sta|ckan|dsp|budgets|schemathesis|portal)" >&2
+	echo "tests/dev.env.sh: unknown suite '$_jc_suite' (security|mcp|e2e|etsi|ogc|sta|ckan|dsp|budgets|authz|schemathesis|portal)" >&2
 	;;
 esac
 
