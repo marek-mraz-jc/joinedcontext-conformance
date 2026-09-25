@@ -116,9 +116,9 @@ def entity_ids(response: requests.Response) -> list[str]:
 #
 # The configuration repository lives in a forge that is reachable by every signed-in person.
 # `test_forge_side_door.py` plays the attack with a reader's own token, so the probes below
-# need nothing an administrator holds; the two cases that read the branch protection rule and
-# the one that plays a leaked platform credential ask for FORGE_PLATFORM_TOKEN and skip without
-# it. Never point these at dev: the suite writes, and a throwaway forge is what it is for.
+# need nothing an administrator holds; the case that reads the branch protection rule asks for
+# FORGE_ADMIN_TOKEN, and the one that plays a leaked platform credential for FORGE_PLATFORM_TOKEN,
+# and each skips without it. Never point these at dev: the suite writes, and a throwaway forge is what it is for.
 
 
 @pytest.fixture(scope="session")
@@ -137,6 +137,13 @@ def forge_reader_token() -> str:
 def forge_platform_token() -> typing.Optional[str]:
     """The Portal's own forge credential, played here as one that has leaked."""
     return os.getenv("FORGE_PLATFORM_TOKEN") or None
+
+
+@pytest.fixture(scope="session")
+def forge_admin_token() -> typing.Optional[str]:
+    """A read-only token of the forge's administrator: the rule on the branch is readable only
+    by a credential that administers the repository, which the Portal's identity does not."""
+    return os.getenv("FORGE_ADMIN_TOKEN") or None
 
 
 @pytest.fixture(scope="session")
