@@ -48,7 +48,7 @@ HARDENED_PROTECTION: dict[str, Any] = {
     "push_whitelist_deploy_keys": False,
     "enable_merge_whitelist": True,
     "merge_whitelist_usernames": ["jc-portal"],
-    # The Verdict is the Portal's (PF-104): a forge approval would be it approving itself.
+    # The Verdict is the Portal's (PF-105): a forge approval would be it approving itself.
     "required_approvals": 0,
     "enable_approvals_whitelist": False,
     "dismiss_stale_approvals": True,
@@ -172,7 +172,7 @@ class StubForgeHandler(BaseHTTPRequestHandler):
         })
 
     def _branch_protections(self) -> None:
-        # The Portal's identity writes the repository and does not administer it (PF-105).
+        # The Portal's identity writes the repository and does not administer it (PF-106).
         if not self._is_admin():
             self._refuse(403, "the caller does not administer this repository")
             return
