@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Settings for a conformance run against the `dev` cluster (T-0784, TS-05, TS-09, TS-19).
 #
-#   . tests/dev.env.sh [security|mcp|e2e|etsi|ogc|sta|ckan|dsp|schemathesis|portal]
+#   . tests/dev.env.sh [security|mcp|e2e|etsi|ogc|sta|ckan|dsp|budgets|schemathesis|portal]
 #
 # Source it, never run it: it exports the variables the suites read and it takes a suite name
 # because two suites read the same name for different subjects (`SPACE_URL` is the narrowed
@@ -261,6 +261,23 @@ ckan)
 dsp)
 	_jc_note "DSP_URL, DSP_BASE_URL, DSP_PARTICIPANT_ID: dev runs no dataspace connector, so the TCK has no target"
 	;;
+budgets)
+	# The nightly budgets (T-2800): the endpoint and the canonical surface of the conformance
+	# space, and the Portal pages as the read-only demo viewer.
+	[ -n "$JC_DEV_SLUG_AIR" ] && export ENDPOINT_URL="$JC_DEV_BASE/api/endpoint/$JC_DEV_SLUG_AIR/ngsi-ld/v1"
+	export SPACE_URL="$JC_DEV_BASE/cs/ovzdusie/ngsi-ld/v1"
+	export BUDGET_TYPE="AirQualityObserved"
+	export BUDGET_TOKEN="$JC_DEV_TOKEN_GATEWAY"
+	export JC_DEV_NS BASE_URL="$JC_DEV_PORTAL" PORTAL_PROJECT="helsinki"
+	export PORTAL_VIEWER_USER="demo.viewer@$JC_DEV_ORG"
+	PORTAL_VIEWER_PASSWORD=$(_jc_user_password demo.viewer)
+	if [ -n "$PORTAL_VIEWER_PASSWORD" ]; then
+		export PORTAL_VIEWER_PASSWORD
+	else
+		_jc_note "PORTAL_VIEWER_PASSWORD: no seeded password for demo.viewer, so no page is measured"
+	fi
+	_jc_note "JC_K6_RATE: 20 a second is over the seeded endpoints' limits (600 a minute), so the endpoint budget needs a test endpoint that allows it"
+	;;
 schemathesis)
 	export PORTAL_URL="$JC_DEV_PORTAL"
 	export PORTAL_TOKEN="$JC_DEV_TOKEN_PERSON"
@@ -285,7 +302,7 @@ portal)
 	_jc_note "PORTAL_INVITE_URL, PORTAL_DRIFTED_FLOW, PORTAL_PUBLIC_DASHBOARD_URL: each names something produced out of band (those cases skip)"
 	;;
 *)
-	echo "tests/dev.env.sh: unknown suite '$_jc_suite' (security|mcp|e2e|etsi|ogc|sta|ckan|dsp|schemathesis|portal)" >&2
+	echo "tests/dev.env.sh: unknown suite '$_jc_suite' (security|mcp|e2e|etsi|ogc|sta|ckan|dsp|budgets|schemathesis|portal)" >&2
 	;;
 esac
 

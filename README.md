@@ -111,6 +111,12 @@ writes JUnit into `reports/scheduled/<suite>/`, and each case becomes one result
 `<suite>/<case>`. A suite without a subject is not left out: it reports that it measured nothing,
 which files one task until the subject exists.
 
+The performance budgets run nightly through `scripts/budgets-dev.py --out <summary.json>` (T-2800):
+`tests/k6/dev-budgets.js` on the endpoint surfaces, only while every node is under 85 % memory;
+`e2e/budgets/pages.spec.ts` for the Portal pages, cold, as the demo viewer; and the assistant's
+answer histogram from the Portal's `/metrics`. One night over a budget is recorded, two nights
+in a row file a task, and `reports/budgets-history.json` keeps the trend.
+
 | Suite | On `dev` |
 |---|---|
 | `etsi` | **`smoke.robot` only**, through the one endpoint bound to a writing service account: `scripts/etsi-smoke-dev.sh`. |
