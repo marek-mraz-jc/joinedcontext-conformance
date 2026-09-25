@@ -75,8 +75,11 @@ def test_ep69_the_record_declares_its_access_rights(record: dict[str, Any]) -> N
     rights = str(record.get("dct:accessRights", ""))
     assert rights.endswith("/PUBLIC") or rights.endswith("/RESTRICTED"), rights
     if rights.endswith("/RESTRICTED"):
-        # A connector dereferences this to build an offer (DS-08).
-        assert str(record.get("odrl:hasPolicy", "")).endswith("/access"), record
+        # A connector dereferences this to build an offer (DS-08); a licensed endpoint lists
+        # its offer beside it (EP-79).
+        policies = record.get("odrl:hasPolicy", "")
+        policies = policies if isinstance(policies, list) else [policies]
+        assert any(str(p).endswith("/access") for p in policies if isinstance(p, str)), record
 
 
 def test_ep68_every_schema_artifact_is_listed_with_its_formalism(record: dict[str, Any]) -> None:
@@ -101,7 +104,10 @@ def test_ep68_each_artifact_answers_with_the_declared_type_and_digest(
     problems: list[str] = []
     for distribution in _schema_distributions(record):
         url = distribution["dcat:accessURL"]
-        declared_type = str(distribution.get("dcat:mediaType", ""))
+        # The record names the IANA IRI of the media type (EP-78); the header names the type.
+        declared_type = str(distribution.get("dcat:mediaType", "")).removeprefix(
+            "https://www.iana.org/assignments/media-types/"
+        )
         declared_sha = str(distribution.get("spdx:checksum", {}).get("spdx:checksumValue", ""))
 
         answer = session.get(url, timeout=TIMEOUT)
