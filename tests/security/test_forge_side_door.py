@@ -150,7 +150,7 @@ def test_pf51_the_protection_rule_pins_the_pusher_and_drops_an_approval_a_new_co
     forge_admin_token: typing.Optional[str],
     forge_platform_token: typing.Optional[str],
 ):
-    """PF-104, PF-51, CC-41 — the rule itself, read with a credential that administers the
+    """PF-105, PF-51, CC-41 — the rule itself, read with a credential that administers the
     repository (the Portal's identity writes it and may not read its rules). The whitelists name
     the Portal's identity alone, so nobody else moves the branch; `dismiss_stale_approvals`, so
     a commit pushed after the Verdict does not inherit it; `block_on_outdated_branch`, so a
@@ -191,7 +191,7 @@ def test_pf51_the_protection_rule_pins_the_pusher_and_drops_an_approval_a_new_co
             f"the whitelist names {pushers}, not the Portal's identity"
         )
     assert rule.get("required_approvals") == 0, (
-        "the forge asks for an approval the Portal can never give its own pull request (PF-104)"
+        "the forge asks for an approval the Portal can never give its own pull request (PF-105)"
     )
     assert rule.get("dismiss_stale_approvals") is True, (
         "a commit pushed after the Verdict keeps the approval it was never given"
