@@ -104,6 +104,7 @@ jobs:
             specs: >-
               smoke.spec.ts
               accessibility/wcag.spec.ts
+              journeys/19-login-theme.spec.ts
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
@@ -118,6 +119,8 @@ jobs:
           PORTAL_VIEWER_PASSWORD: ${{ secrets.PORTAL_VIEWER_PASSWORD }}
           PORTAL_INVITE_URL: ${{ secrets.PORTAL_INVITE_URL }}
           PORTAL_INVITE_PASSWORD: ${{ secrets.PORTAL_INVITE_PASSWORD }}
+          PORTAL_TEMP_USER: ${{ secrets.PORTAL_TEMP_USER }}
+          PORTAL_TEMP_PASSWORD: ${{ secrets.PORTAL_TEMP_PASSWORD }}
           PORTAL_APPROVER_USER: ${{ secrets.PORTAL_APPROVER_USER }}
           PORTAL_APPROVER_PASSWORD: ${{ secrets.PORTAL_APPROVER_PASSWORD }}
           PORTAL_BLUEPRINT: ${{ vars.PORTAL_BLUEPRINT }}
