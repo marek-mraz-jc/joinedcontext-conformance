@@ -14,9 +14,6 @@ import pytest
 
 from conftest import McpClient
 
-# urn:ngsi-ld:{Type}:{orgDomain}:{space}:{localId} — the space is the fourth segment (PF-42)
-URN_SPACE_SEGMENT = 4
-
 
 def space_of(url: str) -> str:
     """The space a per-space MCP URL serves: `https://host/cs/{space}/mcp`."""
@@ -84,18 +81,17 @@ def test_ag05_sp14_a_space_argument_never_moves_the_caller(
         f"{other_space_mcp_url} returned no entity, so 'the argument did not reach it' proves nothing"
     )
 
+    # An entity's URN names no space (ADR-N-041), so the proof is by what the caller's own space
+    # answers: the argument either is refused or changes nothing about the answer.
     for argument in ({"space": foreign}, {"tenant": foreign}, {"space": foreign, "type": "Device"}):
         frame = mcp.tool_call(tool, {"limit": 10, **argument})
         if refused(frame):
             continue
-        for entity in entities_of(frame["result"]):
-            identifier = str(entity.get("id", ""))
-            segments = identifier.split(":")
-            assert foreign not in segments, f"AG-05: {argument} reached {foreign} — {identifier}"
-            if len(segments) > URN_SPACE_SEGMENT:
-                assert segments[URN_SPACE_SEGMENT] == own, (
-                    f"AG-05: {argument} returned {identifier}, which lives in {segments[URN_SPACE_SEGMENT]}, not {own}"
-                )
+        rest = {key: value for key, value in argument.items() if key not in ("space", "tenant")}
+        baseline = mcp.tool_call(tool, {"limit": 10, **rest})
+        answered = {str(entity.get("id", "")) for entity in entities_of(frame["result"])}
+        own_ids = {str(entity.get("id", "")) for entity in entities_of(baseline["result"])}
+        assert answered == own_ids, f"AG-05: {argument} changed the answer of {own}: {sorted(answered ^ own_ids)}"
 
 
 def test_sp20_a_cross_space_probe_is_byte_identical_to_a_miss(
@@ -113,10 +109,16 @@ def test_sp20_a_cross_space_probe_is_byte_identical_to_a_miss(
 
     other = make_mcp_client(other_space_mcp_url, mcp_token)
     other.initialize()
-    found = entities_of(other.tool_call(query_tool(other), {"limit": 1, **other_space_query})["result"])
+    found = entities_of(other.tool_call(query_tool(other), {"limit": 20, **other_space_query})["result"])
     assert found, f"{other_space_mcp_url} holds no entity to probe for, the comparison would be vacuous"
-    foreign_id = found[0]["id"]
-    assert foreign_id.split(":")[URN_SPACE_SEGMENT] != own, f"the probe id {foreign_id} belongs to the caller's own space"
+    # The same URN may live in both spaces (ADR-N-041), and a probe for one the caller's space holds
+    # too finds the caller's own entity. The probe takes an id the caller's space does not answer,
+    # learnt from what that space holds, never read off the URN.
+    held = {str(e.get("id")) for e in entities_of(mcp.tool_call(query_tool(mcp), {"limit": 100, **other_space_query})["result"])}
+    candidates = [str(entity["id"]) for entity in found if str(entity["id"]) not in held]
+    if not candidates:
+        pytest.skip(f"every entity of {foreign} found is held by {own} under the same URN")
+    foreign_id = candidates[0]
 
     invented_id = f"urn:ngsi-ld:Device:joinedcontext.com:{foreign}:probe-{'9' * 12}"
     # the same request id in both, so only the server's own words can differ
