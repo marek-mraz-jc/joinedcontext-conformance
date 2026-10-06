@@ -49,6 +49,26 @@ CKAN_URL=https://data.example.org CKAN_DATASET=kvalita-ovzdusia \
 jc-conformance ckan
 ```
 
+## Is every DataStore table complete, correct and current? (T-3112…T-3120)
+
+`completeness.py` holds each DataStore table of a published dataset (one per entity type, T-3012)
+to the Endpoint behind it: its rows equal the type's count (`count=true`), every attribute the
+type's class declares in `model.schema.json` has a column, 20 sampled rows equal the broker's
+entities attribute by attribute (a value the broker observed again since is counted as moved on,
+not wrong), and its newest timestamp is within the age its pipeline's schedule allows; a table
+with no time attribute is current while it equals the broker. Then every other resource answers
+(200, or 401 for a restricted Endpoint) with content of its kind and a name of its own, and the
+dataset page carries its title, description, licence, organisation, tags, publisher and frequency.
+
+```bash
+python3 tests/ckan/completeness.py https://data.dev.joinedcontext.com helsinki-bikes bbsk-registre \
+  --max-age helsinki-bikes=1 --max-age bbsk-registre=336 --max-age banskabystrica-verejne:Event=48
+```
+
+prints a table per dataset and exits 1 on any FAIL. `CKAN_URL` and `CKAN_DATASETS` (comma-separated,
+`CKAN_MAX_AGE_HOURS` for the age) run the same check under pytest; `test_completeness.py` holds the
+check itself offline. `JC_GATEWAY_TOKEN` reads a restricted Endpoint.
+
 ## Self-test
 
 Proves that the harness goes red on negative cases (a record with no access rights, a
