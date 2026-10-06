@@ -32,11 +32,12 @@ import requests
 import yaml
 
 from journey import (
+    URN,
     entity_ids,
     feature_ids,
     get_json,
+    invalid_ids,
     leaked,
-    misplaced_ids,
     relationship_targets,
     session,
     without_location,
@@ -51,8 +52,6 @@ sys.path.insert(0, str(HERE.parent / "ckan"))
 from ckan_api import Ckan, CkanError  # noqa: E402
 
 #: The organization and space the journey runs in (DEMO.md).
-ORGANIZATION = os.environ.get("JOURNEY_ORG", "hel.fi")
-SPACE = os.environ.get("JOURNEY_SPACE", "transport")
 ENTITY_TYPE = os.environ.get("JOURNEY_TYPE", "Vehicle")
 #: The HFP pipeline is capped at thirty buses (T-0295), so thirty is what a healthy run holds.
 EXPECTED = int(os.environ.get("EXPECTED_VEHICLES", "30"))
@@ -150,10 +149,10 @@ def endpoint_geojson(endpoint: str, gateway: requests.Session) -> dict[str, Any]
 # --- 1. the feed became entities (PL-01) -----------------------------------------------
 
 
-def test_every_committed_entity_belongs_to_its_organization_and_space(
+def test_every_committed_entity_id_is_an_ngsi_ld_urn_of_its_type(
     committed_entities: list[dict[str, Any]]
 ) -> None:
-    assert misplaced_ids(committed_entities, ORGANIZATION, SPACE) == []
+    assert invalid_ids(committed_entities) == []
 
 
 def test_every_committed_entity_can_be_drawn_on_a_map(
@@ -170,10 +169,10 @@ def test_pl01_the_pipeline_left_a_full_set_of_vehicles(
     assert len(served_entities) >= EXPECTED, f"{len(served_entities)} entities, expected {EXPECTED}"
 
 
-def test_sp09_no_entity_in_the_space_was_minted_under_a_foreign_prefix(
+def test_pf43_every_entity_id_is_an_ngsi_ld_urn_of_its_type(
     served_entities: list[dict[str, Any]]
 ) -> None:
-    assert misplaced_ids(served_entities, ORGANIZATION, SPACE) == []
+    assert invalid_ids(served_entities) == []
 
 
 def test_every_served_entity_can_be_drawn_on_a_map(
@@ -364,8 +363,8 @@ def test_every_committed_entity_points_back_at_what_ingested_it(
         targets = relationship_targets(entity, attribute)
         assert targets, f"{entity['id']} carries no {attribute}"
         for target in targets:
-            assert target.startswith("urn:ngsi-ld:"), target
-            assert f":{ORGANIZATION}:" in target, f"{target} leaves the organization"
+            # A target is an NGSI-LD URN; its segments name no organization or space (ADR-N-041).
+            assert URN.match(target), target
 
 
 def test_every_served_entity_points_back_at_what_ingested_it(

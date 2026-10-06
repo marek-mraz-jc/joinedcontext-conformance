@@ -18,9 +18,9 @@ them, asserting at every hand-off that it is still the same set.
 - **PL-01** — the pipeline left a *full* set. The HFP pipeline caps at thirty buses (T-0295),
   so fewer than thirty is a run that started and stopped, which looks identical to a healthy
   one in a message counter.
-- **SP-09** — every id in the space carries this organization's and this space's prefix. An id
-  minted under a foreign prefix inside a tenant surface is the tenancy failing, so it is
-  checked on every entity rather than on a sample.
+- **PF-43** — every id in the space is an NGSI-LD URN of its entity's type, checked on every
+  entity rather than on a sample. The prefix is optional since ADR-N-041; that the same URN in
+  two spaces is two entities is `test_urn_scope.py`'s claim.
 - **EP-01** — the Endpoint's two representations describe the same entities, and the Endpoint
   narrows its space rather than widening it. A GeoJSON carrying an entity the NGSI-LD
   representation does not is a second answer to the same question.
@@ -54,9 +54,9 @@ Each names one stage. Without it that stage is reported as skipped, never as pas
   ContextSourceRegistration.
 - `APP_MANIFEST`: the `app.yaml` of the app that renders the journey. Without it the App rules
   are checked against `fixtures/app.yaml`.
-- `JOURNEY_ORG`, `JOURNEY_SPACE`, `JOURNEY_TYPE`, `EXPECTED_VEHICLES`,
-  `GRAPH_LINK_ATTRIBUTE`: the demo values (`hel.fi`, `transport`, `Vehicle`, `30`,
-  `refDataSource`) unless an installation uses others.
+- `JOURNEY_TYPE`, `EXPECTED_VEHICLES`, `GRAPH_LINK_ATTRIBUTE`: the demo values (`Vehicle`,
+  `30`, `refDataSource`) unless an installation uses others. The organization and space are no
+  longer read: an id names neither (ADR-N-041).
 
 ## Fixtures
 
