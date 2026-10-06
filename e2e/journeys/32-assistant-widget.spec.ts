@@ -81,3 +81,16 @@ test('a page on another site is refused before anything is spent (AG-100, AG-114
   });
   expect(refused.status()).toBe(403);
 });
+
+const CATALOGUE = (process.env.JC_CKAN_URL || 'https://data.dev.joinedcontext.com').replace(/\/$/, '');
+
+test('the catalogue offers its assistant, which opens by keyboard and frames the assistant host (AG-114)', async ({ page }) => {
+  await page.goto(`${CATALOGUE}/`);
+  const offer = page.locator('details.jc-assistant > summary');
+  await offer.focus();
+  await page.keyboard.press('Enter');
+  const frame = page.locator('details.jc-assistant > iframe');
+  await expect(frame).toBeVisible();
+  expect(await frame.getAttribute('src')).toMatch(new RegExp(`^${BASE.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}/d/[a-z0-9-]+/widget$`));
+  await expect(page.frameLocator('details.jc-assistant > iframe').getByRole('textbox', { name: 'Your question' })).toBeVisible();
+});
