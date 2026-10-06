@@ -15,10 +15,14 @@ import requests
 
 TIMEOUT = 30
 
-#: `urn:ngsi-ld:{Type}:{orgDomain}:{space}:{localId}` — the id shape every entity of this
-#: platform carries (DEMO.md, docs Architecture/03). The local id is whatever the pipeline
-#: minted and may itself contain colons, so it is the remainder and not one segment.
-URN = re.compile(r"^urn:ngsi-ld:(?P<type>[^:]+):(?P<org>[^:]+):(?P<space>[^:]+):(?P<local>.+)$")
+#: `urn:ngsi-ld:{Type}:{id}` — an NGSI-LD entity URN (PF-43, ADR-N-041): a type, then an RFC 8141
+#: namespace-specific string of at most 256 characters. The `{orgDomain}:{space}:{localId}` shape
+#: the platform mints by default is one valid id among others; it names no space.
+URN = re.compile(
+    r"^urn:ngsi-ld:(?P<type>[A-Z][A-Za-z0-9]{1,63}):"
+    r"(?P<id>(?=.{1,256}$)(?:[A-Za-z0-9._~!$&'()*+,;=:@-]|%[0-9A-Fa-f]{2})"
+    r"(?:[A-Za-z0-9._~!$&'()*+,;=:@/-]|%[0-9A-Fa-f]{2})*)$"
+)
 
 #: NGSI-LD keys that are not attributes, so a hidden-attribute check does not trip over them.
 RESERVED = frozenset({"id", "type", "@context", "createdAt", "modifiedAt", "observedAt"})
@@ -58,16 +62,17 @@ def feature_ids(collection: dict[str, Any]) -> set[str]:
     return found
 
 
-def misplaced_ids(entities: Iterable[dict[str, Any]], organization: str, space: str) -> list[str]:
-    """Ids that do not belong to this organization and space (SP-09).
+def invalid_ids(entities: Iterable[dict[str, Any]]) -> list[str]:
+    """Ids that are not an NGSI-LD URN of the entity's own type (PF-43).
 
-    An id minted under someone else's prefix in a tenant surface is the tenancy failing, which
-    is why this is checked on every entity and not on a sample.
+    Since ADR-N-041 an entity is its space and its URN, and the URN's segments name no space, so
+    the tenancy is proven by where an entity is read (`test_urn_scope.py`), not by its id. What
+    every id still has to be is checked on every entity, not on a sample.
     """
     wrong = []
     for entity in entities:
         match = URN.match(str(entity.get("id", "")))
-        if not match or match["org"] != organization or match["space"] != space:
+        if not match or match["type"] != entity.get("type"):
             wrong.append(str(entity.get("id")))
     return wrong
 

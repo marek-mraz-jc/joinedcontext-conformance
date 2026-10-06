@@ -7,7 +7,7 @@ second space federating the first, and a CKAN — and then serves it broken, one
 
      1. a coherent journey                          -> every test passes
      2. twenty-nine buses instead of thirty         -> the full-set test fails
-     3. an entity minted under a foreign prefix     -> the tenancy test fails
+     3. an entity whose id is no NGSI-LD URN        -> the id test fails
      4. an entity with no location                  -> the map test fails
      5. a GeoJSON missing one feature               -> the two-representations test fails
      6. a hidden attribute in the entities          -> the EP-61 representation test fails
@@ -61,8 +61,8 @@ def space_entities(case: str) -> list[dict]:
     fleet = copy.deepcopy(FLEET)
     if case == "short-run":
         return fleet[:-1]
-    if case == "foreign-prefix":
-        fleet[0]["id"] = "urn:ngsi-ld:Vehicle:elsewhere.example:transport:bus-1000"
+    if case == "not-a-urn":
+        fleet[0]["id"] = "bus-1000"
     if case == "no-location":
         fleet[1].pop("location")
     if case == "leaked-entity":
@@ -127,7 +127,7 @@ def federated(case: str) -> list[dict]:
 CASES: dict[str, set[str]] = {
     "good": set(),
     "short-run": {"test_pl01_the_pipeline_left_a_full_set_of_vehicles"},
-    "foreign-prefix": {"test_sp09_no_entity_in_the_space_was_minted_under_a_foreign_prefix"},
+    "not-a-urn": {"test_pf43_every_entity_id_is_an_ngsi_ld_urn_of_its_type"},
     "no-location": {"test_every_served_entity_can_be_drawn_on_a_map"},
     "geojson-short": {
         "test_ep01_the_two_representations_of_the_endpoint_describe_the_same_entities"
