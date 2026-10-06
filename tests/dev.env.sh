@@ -195,14 +195,15 @@ e2e)
 	# The journey follows the buses: the space the HFP pipeline writes into, the endpoint that
 	# serves them and the catalogue entry that publishes them.
 	export SPACE_URL="$JC_DEV_BASE/cs/helsinki/ngsi-ld/v1"
-	export JOURNEY_ORG="$JC_DEV_ORG"
-	export JOURNEY_SPACE="helsinki"
 	export JOURNEY_TYPE="Vehicle"
 	# The pipeline caps the fleet at thirty (PL-22) and the reaper drops a bus whose last fix is
 	# stale, so a live instance holds up to thirty and fewer off-peak. Ten is the floor that
 	# separates a feed that runs from one that stopped.
 	export EXPECTED_VEHICLES="10"
 	export GRAPH_LINK_ATTRIBUTE="refDataSource"
+	# T-3086: the same URN in two spaces of two projects. It writes, so it needs two scratch spaces
+	# with a Building write grant and their tokens; nothing on dev is seeded for it yet.
+	[ -n "${URN_SPACE_A_URL:-}" ] || _jc_note "URN_SPACE_A_URL / URN_SPACE_B_URL: two scratch spaces of two projects with a Building write grant (the URN-scope suite skips)"
 	export HIDDEN_ATTRIBUTES="contactPoint"
 	export CKAN_URL="$JC_DEV_CKAN"
 	export CKAN_DATASET="helsinki-transport"
