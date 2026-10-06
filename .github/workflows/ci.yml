@@ -33,7 +33,7 @@ jobs:
         # one invocation per suite: each folder has its own conftest, and the suites import from it
         run: |
           set -eu
-          for suite in security ogc sta mcp schemathesis models ckan e2e authz; do python3 -m pytest "tests/$suite" --collect-only -q; done
+          for suite in security ogc sta mcp schemathesis models ckan e2e authz assistant; do python3 -m pytest "tests/$suite" --collect-only -q; done
       - name: expected-failure checker logic (T-0054)
         run: python3 tests/etsi-ttf/check_expected_failures.py --selftest
       - name: gateway divergence fails the transparency comparison (T-0056)
