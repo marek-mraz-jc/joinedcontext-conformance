@@ -168,12 +168,23 @@ def test_main_writes_the_summary_file_failures_reads(tmp_path, monkeypatch):
     assert sd.main(["nightly", "--out", str(out)]) == 1
 
 
-SEED = {"data": {
-    "projects__a__spaces__s__endpoints__plain.yaml": "spec:\n  slug: plain1\n  enabledRepresentations: [ngsi-ld, geojson]\n",
-    "projects__a__spaces__s__endpoints__stations.yaml": "spec:\n  slug: stations1\n  enabledRepresentations: [ngsi-ld, csv]\n  # stations are not sta\n",
-    "projects__b__spaces__s__endpoints__sensors.yaml": "spec:\n  slug: sens1\n  enabledRepresentations: [ngsi-ld, sta, ogc-features]\n",
-    "projects__b__spaces__s__pipelines__p.yaml": "spec:\n  slug: notanendpoint\n  enabledRepresentations: [sta]\n",
-}}
+# The forge seed as the cluster holds it since deployment T-3180: one ConfigMap per project,
+# `gitea-bootstrap-seed-<project>`, listed by `kubectl get configmaps -o json`. Another ConfigMap of
+# the namespace holds an endpoint that sorts first and enables both surfaces; the profile reads
+# the seed's ConfigMaps alone, so it never targets that one.
+SEED = {"items": [
+    {"metadata": {"name": "aaa-unrelated"}, "data": {
+        "projects__a__spaces__s__endpoints__aaa.yaml": "spec:\n  slug: notseed1\n  enabledRepresentations: [sta, ogc-features]\n",
+    }},
+    {"metadata": {"name": "gitea-bootstrap-seed-a"}, "data": {
+        "projects__a__spaces__s__endpoints__plain.yaml": "spec:\n  slug: plain1\n  enabledRepresentations: [ngsi-ld, geojson]\n",
+        "projects__a__spaces__s__endpoints__stations.yaml": "spec:\n  slug: stations1\n  enabledRepresentations: [ngsi-ld, csv]\n  # stations are not sta\n",
+    }},
+    {"metadata": {"name": "gitea-bootstrap-seed-b"}, "data": {
+        "projects__b__spaces__s__endpoints__sensors.yaml": "spec:\n  slug: sens1\n  enabledRepresentations: [ngsi-ld, sta, ogc-features]\n",
+        "projects__b__spaces__s__pipelines__p.yaml": "spec:\n  slug: notanendpoint\n  enabledRepresentations: [sta]\n",
+    }},
+]}
 
 
 def profile(tmp_path, suite, seed):
@@ -196,5 +207,9 @@ def test_the_profile_finds_the_endpoint_that_enables_the_surface(tmp_path):
 
 
 def test_no_endpoint_with_the_surface_leaves_the_url_unset(tmp_path):
-    seed = {"data": {k: v for k, v in SEED["data"].items() if "sensors" not in k}}
+    # The unrelated ConfigMap stays: its endpoint enables the surface, and it is not the seed's.
+    seed = {"items": [
+        {**cm, "data": {k: v for k, v in cm["data"].items() if "sensors" not in k}}
+        for cm in SEED["items"]
+    ]}
     assert profile(tmp_path, "sta", seed) == "OGC= STA="
