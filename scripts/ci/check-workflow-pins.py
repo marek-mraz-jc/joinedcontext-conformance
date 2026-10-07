@@ -11,6 +11,10 @@ A tag is a reference somebody else owns: whoever moves one runs code in these wo
 image under the project's name and mint the identity that signs it. A workflow-level grant hands
 both to every job in the file, including one added later for something unrelated.
 
+A dispatch input, an event field or a branch name is text somebody else chose; written as
+`${{ }}` inside a `run:` script it becomes shell code before the shell sees it, so it may only
+reach a script through `env:` (T-3231).
+
 Line-based on purpose: the runner has no YAML library installed by default, and both rules are
 decidable from the text. A third rule, OPS-41: an image a workflow signs by digest also has a
 CycloneDX SBOM attested to that digest. Run it from anywhere: `python3 scripts/ci/check-workflow-pins.py`.
@@ -25,6 +29,24 @@ USES = re.compile(r"^\s*(?:- )?uses:\s*(\S+)")
 COMMIT = re.compile(r"@[0-9a-f]{40}$")
 PUBLISHES = ("packages: write", "id-token: write")
 EXPRESSION = re.compile(r"\$\{\{\s*(.*?)\s*\}\}")
+# What a caller chooses: a dispatch's inputs, the triggering event's text, a branch name.
+CHOSEN = re.compile(r"\$\{\{\s*(inputs\.|github\.event\.inputs\.|github\.event\.(issue|pull_request|comment|review|head_commit|commits|discussion|pages)|github\.head_ref)")
+
+
+def chosen_in_scripts(lines):
+    """Every line of a `run:` script that expands caller-chosen text with `${{ }}` (T-3231)."""
+    inside, indent = False, 0
+    for number, line in enumerate(lines, 1):
+        stripped = line.lstrip()
+        if inside and stripped and len(line) - len(stripped) <= indent:
+            inside = False
+        if re.match(r"(- )?run:", stripped):
+            inside, indent = True, len(line) - len(stripped)
+            if CHOSEN.search(stripped.split("run:", 1)[1]):
+                yield number
+            continue
+        if inside and CHOSEN.search(line.split("#", 1)[0]):
+            yield number
 
 
 def pushed_image(line: str):
@@ -53,6 +75,11 @@ def problems(path: Path):
         yield (
             f"{path.name}:{number}: {image} is signed and no CycloneDX SBOM is attested to it "
             "(`cosign attest --type cyclonedx`, OPS-41)"
+        )
+    for number in chosen_in_scripts(lines):
+        yield (
+            f"{path.name}:{number}: a run script expands caller-chosen text with ${{{{ }}}}; "
+            "pass it through `env:` and read the variable (T-3231)"
         )
     if not any(line.startswith("permissions:") for line in lines):
         yield f"{path.name}: no top-level `permissions:`; every job would get the repository default"

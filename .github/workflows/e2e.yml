@@ -144,12 +144,15 @@ jobs:
           # may do nothing else. Never an admin credential.
           JC_DRIFT_TOKEN: ${{ secrets.JC_DRIFT_TOKEN }}
           JC_REPORTS_DIR: ${{ github.workspace }}/reports/e2e
+          # The dispatch's spec is text the dispatcher typed: it reaches the script as a variable,
+          # never expanded into it (T-3231).
+          WANT_SPEC: ${{ inputs.spec }}
         # The `github` reporter turns every failure into an annotation naming the journey and the
         # step that failed, so a red run is readable without downloading the artifact first.
         run: |
           set -eu
           specs="${{ matrix.specs }}"
-          want="${{ inputs.spec }}"
+          want="$WANT_SPEC"
           # A dispatch that names one spec runs it in the shard that owns it, not in all four.
           if [ -n "$want" ]; then
             case " $specs " in
