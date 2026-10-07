@@ -187,22 +187,10 @@ SEED = {"items": [
 ]}
 
 
-def configmaps(seed):
-    """The seed as `kubectl get configmaps -o json` answers it since deployment T-3180: one
-    ConfigMap per project, beside one that is not the seed and must be ignored."""
-    projects = {}
-    for key, body in seed["data"].items():
-        projects.setdefault(key.split("__")[1], {})[key] = body
-    items = [{"metadata": {"name": f"gitea-bootstrap-seed-{p}"}, "data": d} for p, d in projects.items()]
-    other = {"metadata": {"name": "portal-branding"}, "data": {
-        "projects__z__spaces__s__endpoints__decoy.yaml": "spec:\n  slug: decoy\n  enabledRepresentations: [sta, ogc-features]\n"}}
-    return {"items": [other, *items]}
-
-
 def profile(tmp_path, suite, seed):
     stubs = tmp_path / "bin"
     stubs.mkdir(exist_ok=True)
-    (tmp_path / "seed.json").write_text(json.dumps(configmaps(seed)))
+    (tmp_path / "seed.json").write_text(json.dumps(seed))
     for name, body in {"kubectl": f'case "$*" in *"-o json"*) cat "{tmp_path}/seed.json";; esac\n', "curl": ""}.items():
         (stubs / name).write_text("#!/usr/bin/env bash\n" + body)
         (stubs / name).chmod(0o755)
