@@ -24,6 +24,7 @@ The suites talk to a deployed gateway; every variable they need names itself whe
 | `GRANTED_TYPE`, `FORBIDDEN_TYPE` | a type inside and a type outside the grant |
 | `GRANTED_ENTITY_ID`, `FORBIDDEN_ENTITY_ID` | an entity the caller may read, and one that exists but is outside every grant |
 | `HIDDEN_ATTR` | an attribute of `GRANTED_TYPE` the public grant does not include |
+| `FORM_URL`, `FORM_TYPE`, `FORM_FIELD` | a public form Endpoint's `…/ngsi-ld/v1`, its type and one of its fields, for the context-remap refusal (T-3287); `WRITE_FIELD` is the attribute an authenticated write remaps (default `name`) |
 | `MCP_URL` | live MCP streamable HTTP surface for parameter sanitization checks (AG-21) |
 | `MCP_TOOL` | MCP tool tested with hostile parameters (default: `query_entities`) |
 | `AGENT_RUNNER_URL` | deployed Agent Runner API endpoint for TS-25 autonomous containment |
