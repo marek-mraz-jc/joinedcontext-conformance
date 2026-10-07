@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Settings for a conformance run against the `dev` cluster (T-0784, TS-05, TS-09, TS-19).
 #
-#   . tests/dev.env.sh [security|mcp|e2e|etsi|ogc|sta|ckan|dsp|budgets|authz|schemathesis|portal]
+#   . tests/dev.env.sh [security|mcp|e2e|etsi|ogc|sta|ckan|assistant|dsp|budgets|authz|schemathesis|portal]
 #
 # Source it, never run it: it exports the variables the suites read and it takes a suite name
 # because two suites read the same name for different subjects (`SPACE_URL` is the narrowed
@@ -259,6 +259,12 @@ ckan)
 	[ -n "$JC_DEV_SLUG_TRANSPORT" ] && export ENDPOINT_URL="$JC_DEV_BASE/api/endpoint/$JC_DEV_SLUG_TRANSPORT"
 	_jc_note "CKAN_API_TOKEN: the catalogue is read anonymously here; a private dataset would need one"
 	;;
+assistant)
+	# The seeded public assistant (T-3055); anonymous, so nothing is minted. Each run costs a
+	# few thousand tokens of its 300,000 a day.
+	export JC_ASSISTANT_URL="${JC_ASSISTANT_URL:-https://assistant.dev.joinedcontext.com}"
+	export JC_ASSISTANT_PUBLIC_ID="${JC_ASSISTANT_PUBLIC_ID:-helsinki-public}"
+	;;
 dsp)
 	_jc_note "DSP_URL, DSP_BASE_URL, DSP_PARTICIPANT_ID: dev runs no dataspace connector, so the TCK has no target"
 	;;
@@ -321,7 +327,7 @@ portal)
 	_jc_note "PORTAL_INVITE_URL, PORTAL_DRIFTED_FLOW, PORTAL_PUBLIC_DASHBOARD_URL: each names something produced out of band (those cases skip)"
 	;;
 *)
-	echo "tests/dev.env.sh: unknown suite '$_jc_suite' (security|mcp|e2e|etsi|ogc|sta|ckan|dsp|budgets|authz|schemathesis|portal)" >&2
+	echo "tests/dev.env.sh: unknown suite '$_jc_suite' (security|mcp|e2e|etsi|ogc|sta|ckan|assistant|dsp|budgets|authz|schemathesis|portal)" >&2
 	;;
 esac
 
