@@ -180,7 +180,8 @@ def check(jsonld: dict[str, Any], turtle: str, shapes: str, languages: list[str]
 def seeded_endpoints(project: str, namespace: str) -> dict[str, str]:
     """Endpoint name → slug for every endpoint of the project in the forge's bootstrap seed."""
     raw = subprocess.run(
-        ["kubectl", "get", "configmap", "gitea-bootstrap-seed", "-n", namespace, "-o", "json"],
+        # One seed ConfigMap per project since deployment T-3180.
+        ["kubectl", "get", "configmap", f"gitea-bootstrap-seed-{project}", "-n", namespace, "-o", "json"],
         check=True,
         capture_output=True,
         text=True,

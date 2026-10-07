@@ -33,8 +33,12 @@ _jc_missing=""
 
 # A seed key is the repository path with `/` as `__`; the dot of the file name is escaped for
 # jsonpath. The same read `scripts/smoke.sh` does, for the same reason.
+# The seed is one ConfigMap per project, `gitea-bootstrap-seed-<project>` (deployment T-3180);
+# a `projects__<project>__…` key names its own.
 _jc_slug() {
-	kubectl get configmap gitea-bootstrap-seed -n "$JC_DEV_NS" \
+	local project="${1#projects__}"
+	project="${project%%__*}"
+	kubectl get configmap "gitea-bootstrap-seed-$project" -n "$JC_DEV_NS" \
 		-o "jsonpath={.data.$1\\.yaml}" 2>/dev/null | sed -n 's/^ *slug: *//p' | head -1
 }
 
@@ -83,9 +87,12 @@ _jc_first_id() {
 # The slug of the first seeded endpoint that enables a representation, so a suite of that
 # surface finds its target the day one is seeded, and says there is none until then.
 _jc_slug_serving() {
-	kubectl get configmap gitea-bootstrap-seed -n "$JC_DEV_NS" -o json 2>/dev/null |
+	kubectl get configmaps -n "$JC_DEV_NS" -o json 2>/dev/null |
 		python3 -c 'import json, re, sys
-data = json.load(sys.stdin).get("data") or {}
+data = {}
+for cm in json.load(sys.stdin).get("items") or []:
+    if cm["metadata"]["name"].startswith("gitea-bootstrap-seed"):
+        data.update(cm.get("data") or {})
 wanted = re.compile(r"^\s*enabledRepresentations:.*[\[ ,]" + re.escape(sys.argv[1]) + r"[\] ,]", re.M)
 for key in sorted(k for k in data if "__endpoints__" in k):
     slug = re.search(r"^\s*slug:\s*(\S+)", data[key], re.M)
