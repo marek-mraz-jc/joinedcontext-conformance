@@ -17,13 +17,16 @@ Setup Fixture Entities
     Open NGSI-LD Session
     ${id1}=    Random Entity Id    AirQualityObserved
     ${id2}=    Random Entity Id    AirQualityObserved
-    ${id_far}=    Random Entity Id    Device
+    # The third fixture is of the same type as the others, far from them and never named in the
+    # id list below: a space accepts only its model's classes (DM-61), and the dev space's model
+    # holds AirQualityObserved, so a Device was refused in setup and failed every case (T-3198).
+    ${id_far}=    Random Entity Id    AirQualityObserved
     Set Suite Variable    ${SETUP_ID_1}    ${id1}
     Set Suite Variable    ${SETUP_ID_2}    ${id2}
     Set Suite Variable    ${SETUP_ID_FAR}    ${id_far}
     ${e1}=    Build Sensor Entity    ${id1}    AirQualityObserved    19.146    48.736    25.5    Stanica Štadión
     ${e2}=    Build Sensor Entity    ${id2}    AirQualityObserved    19.152    48.742    42.0    Stanica Sásová
-    ${efar}=    Build Sensor Entity    ${id_far}    Device    21.250    48.716    12.0    Merač Košice
+    ${efar}=    Build Sensor Entity    ${id_far}    AirQualityObserved    21.250    48.716    12.0    Merač Košice
     ${r1}=    Create Entity In SUT    ${e1}
     Should Be Equal As Integers    ${r1.status_code}    201
     ${r2}=    Create Entity In SUT    ${e2}
@@ -197,8 +200,8 @@ CIM009 6.4.3.2 Query Entities By Type Returns Matching Array
 CIM009 6.4.3.2 Query Entities By Id List
     [Documentation]    Table 6.4.3.2-1: id takes a comma-separated list of entity identifiers, and
     ...                at least one among type, attrs, q or georel shall be present with it. The two
-    ...                fixture entities named come back and the third fixture entity, of another
-    ...                type and not named, does not.
+    ...                fixture entities named come back and the third fixture entity, of the same
+    ...                type and not named, does not: the id list narrows, not the type.
     ${response}=    Get From SUT    /entities    type=AirQualityObserved    id=${SETUP_ID_1},${SETUP_ID_2}
     Should Be Equal As Integers    ${response.status_code}    200
     ${items}=    Set Variable    ${response.json()}
