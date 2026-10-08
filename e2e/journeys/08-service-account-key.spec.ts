@@ -127,7 +127,7 @@ test.describe('Journey 8: a ServiceAccount key is shown once and then works (T-0
 /** The slug of the public endpoint, read out of the Endpoints view like journey 7 does. */
 async function publicEndpointSlug(page: import('@playwright/test').Page): Promise<string> {
   const name = process.env.PORTAL_ENDPOINT || 'public-air';
-  await openView(page, /endpoints|koncové body/i);
+  await openView(page, /endpoints|endpointy|koncové body/i);
   const row = page.getByRole('row').filter({ hasText: name }).first();
   await expect(row, `the Endpoints view must list ${name}`).toBeVisible({ timeout: 60_000 });
   const slug = (await row.innerText()).match(/\b[a-z2-7]{26}\b/)?.[0];

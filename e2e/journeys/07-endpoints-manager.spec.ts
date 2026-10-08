@@ -9,7 +9,7 @@ import { test, expect, openView } from '../fixtures/portal.js';
  * The slug is read out of the view after the change is applied, so a form that silently drops a
  * representation, or a slug the platform never publishes, fails here rather than in a later run.
  */
-const endpoints = /endpoints|koncové body/i;
+const endpoints = /endpoints|endpointy|koncové body/i;
 const NAME = 'public-air';
 
 /** The endpoint answers only once the change proposal has been approved and reconciled. */
@@ -39,7 +39,7 @@ test.describe('Journey 7: the Endpoints manager publishes every representation (
 
     const existing = page.getByRole('row').filter({ hasText: NAME });
     if ((await existing.count()) === 0) {
-      await page.getByRole('button', { name: /new endpoint|nový koncový bod/i }).first().click();
+      await page.getByRole('button', { name: /new endpoint|nový endpoint|nový koncový bod/i }).first().click();
 
       const form = page.getByRole('form').or(page.locator('form')).first();
       await expect(form, 'UI-04: the endpoint form must open in the app').toBeVisible({ timeout: 20_000 });

@@ -19,7 +19,7 @@ const locales = [
 
 const views: RegExp[] = [
   /context spaces|kontextové priestory/i,
-  /endpoints|koncové body/i,
+  /endpoints|endpointy|koncové body/i,
   /pipelines|kanály|toky/i,
   /approvals|schválenia/i,
 ];
@@ -83,7 +83,7 @@ test.describe('Journey 12: four locales, no raw key on screen (T-0357)', () => {
   test('UI-14 multi-language manifest metadata falls back instead of rendering empty', async ({ steward }) => {
     const { page } = steward;
     await switchLanguage(page, /deutsch|german|nemčina/i);
-    await openView(page, /endpoints|koncové body/i);
+    await openView(page, /endpoints|endpointy|koncové body/i);
 
     const rows = page.getByRole('row');
     const count = await rows.count();

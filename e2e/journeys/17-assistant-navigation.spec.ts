@@ -13,7 +13,7 @@ import { test, expect, openProject, openView } from '../fixtures/portal.js';
  * representation, all filled before the steward touched anything.
  */
 const applications = /^applications$|^aplikácie$|^anwendungen$/i;
-const endpoints = /^endpoints$|^koncové body$|^endpunkte$/i;
+const endpoints = /^endpoints$|^endpointy$|^koncové body$|^endpunkte$/i;
 const approvals = /^approvals$|^schválenia$|^freigaben$/i;
 const PROMPT = 'Help me create an endpoint for public air quality data.';
 

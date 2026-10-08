@@ -8,7 +8,7 @@ import { test, expect, openView } from '../fixtures/portal.js';
  * The endpoint of journey 7 gains the `csv` representation; the run puts it back afterwards, so
  * the demo cluster is in its pre-test shape whether the journey passes or fails.
  */
-const endpoints = /endpoints|koncové body/i;
+const endpoints = /endpoints|endpointy|koncové body/i;
 const approvals = /approvals|schválenia/i;
 const NAME = 'public-air';
 
