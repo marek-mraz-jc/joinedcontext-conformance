@@ -28,6 +28,7 @@ Browser end-to-end user journeys for the JoinedContext Portal UI (React 19 / axu
 - `PORTAL_APP_A` / `PORTAL_APP_B`: two published Apps journey 20 plays against each other (AP-135). A must ask for a login (visibility `project` or `roles`), so it has a session that could leak. Unset skips journey 20.
 - `PORTAL_APP_B_SLUG`: the slug of an endpoint B reads; journey 20 expects it to answer 404 on A's host.
 - `PORTAL_APPS_DOMAIN`: the apex every App's `{name}.apps.` host sits under (default: the `BASE_URL` host without `portal.`).
+- `PORTAL_USABILITY_PROJECT`: the project journey 33 measures its five tasks in (default `helsinki`, the DEMO.md data). The journey only reads; each task's clicks, page loads, views and seconds go to `$JC_REPORTS_DIR/usability/<task>.json`, and the slowest step of a task over a minute or ten clicks is the friction to file (T-3282).
 - `JC_REPORTS_DIR`: Target folder for JUnit, HTML, and artifact test reports.
 - `E2E_ALL_BROWSERS`: If set, runs Chromium, Firefox, and WebKit; otherwise runs Chromium only.
 
