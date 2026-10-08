@@ -14,7 +14,7 @@ const views: { name: string; open: RegExp | null }[] = [
   // T-0358: every view the demo walks through, not only the four the audit started with.
   { name: 'context spaces', open: /context spaces|kontextové priestory/i },
   { name: 'pipelines', open: /pipelines|kanály|toky/i },
-  { name: 'endpoints', open: /endpoints|koncové body/i },
+  { name: 'endpoints', open: /endpoints|endpointy|koncové body/i },
   { name: 'data access', open: /access|data access|prístup/i },
   { name: 'dashboards', open: /dashboards|nástenky|prehľady/i },
 ];
@@ -90,14 +90,14 @@ test.describe('WCAG 2.1 AA audit of the core portal views (T-0075)', () => {
       throw new Error(`UI-16: ${what} was never reached with the keyboard alone`);
     };
 
-    await tabUntil((label) => /endpoints|koncové body/i.test(label), 'the Endpoints navigation link');
+    await tabUntil((label) => /endpoints|endpointy|koncové body/i.test(label), 'the Endpoints navigation link');
     await page.keyboard.press('Enter');
     await expect(
-      page.getByRole('heading', { name: /endpoints|koncové body/i }).first(),
+      page.getByRole('heading', { name: /endpoints|endpointy|koncové body/i }).first(),
       'UI-16: Enter on the focused navigation link must open the view',
     ).toBeVisible({ timeout: 20_000 });
 
-    await tabUntil((label) => /new endpoint|nový koncový bod/i.test(label), 'the New endpoint button');
+    await tabUntil((label) => /new endpoint|nový endpoint|nový koncový bod/i.test(label), 'the New endpoint button');
     await page.keyboard.press('Enter');
     await expect(
       page.getByRole('form').or(page.locator('form')).first(),

@@ -11,9 +11,9 @@ import { test, expect, openView, signIn } from '../fixtures/portal.js';
  * Nothing here widens a grant: the only write attempted is one the role denies, and a 2xx there
  * is the failure.
  */
-const endpoints = /^endpoints$|^koncové body$|^endpunkte$/i;
+const endpoints = /^endpoints$|^endpointy$|^koncové body$|^endpunkte$/i;
 const pipelines = /^pipelines$|^kanály$|^toky$/i;
-const newEndpoint = /new endpoint|nové rozhranie|neuer endpunkt/i;
+const newEndpoint = /new endpoint|nový endpoint|nové rozhranie|neuer endpunkt/i;
 const newPipeline = /new pipeline|nová pipelina|neue pipeline/i;
 
 /** The wrapper the guard renders around a denied control: focusable, with the reason as its tooltip. */
