@@ -5,7 +5,9 @@ name: e2e
 # from repository secrets, never from this file.
 # On demand only for now (private repository, metered minutes, T-0402/T-0521). Put
 # `schedule: [{ cron: "17 2 * * *" }]` (02:17 UTC, off the hour so it does not queue behind the
-# other nightly lanes) back under `on:` when the minutes are back.
+# other nightly lanes) back under `on:` when the minutes are back. Until then the five usability
+# tasks (journey 33, T-3282) are rerun at least monthly by a dispatch with
+# `spec: journeys/33-usability-five-tasks.spec.ts`; the nightly schedule covers them once it is back.
 on:
   workflow_dispatch:
     inputs:
@@ -101,6 +103,7 @@ jobs:
               journeys/15-session.spec.ts
               journeys/16-role-permissions.spec.ts
               journeys/20-app-isolation.spec.ts
+              journeys/33-usability-five-tasks.spec.ts
           - shard: accessibility
             specs: >-
               smoke.spec.ts
