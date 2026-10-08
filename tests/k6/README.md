@@ -10,6 +10,7 @@ Tasks:
 - **T-0067**: Bulk export streaming benchmark (`bulk-export.js`)
 - **T-0332**: Sustained load on one endpoint's representations (`transport_endpoint_load.js`)
 - **T-2800**: The nightly dev budget, 100 entities at 20 requests a second, p95 under 300 ms, on an endpoint and its space's canonical surface (`dev-budgets.js`, run and judged by `scripts/budgets-dev.py`)
+- **T-3059**: The knowledge assistant under 20 concurrent public chats, every chat answered, p95 of a full answer recorded, RSS read with `kubectl top pod` against the 1 GB budget; bounded to `JC_K6_CHATS` chats (default 40, at most 200) because every chat spends the deployment's model budget (`assistant-chats.js`)
 
 ## Execution
 
@@ -17,6 +18,11 @@ Benchmarks execute via the `jc-conformance k6` command or `./run.sh`, selecting 
 with `JC_K6_SCRIPT`:
 
 ```bash
+# T-3059: 20 concurrent public chats on the assistant (spends model budget; at most 200 chats)
+JC_K6_SCRIPT=assistant-chats.js \
+JC_ASSISTANT_URL=https://assistant.dev.joinedcontext.com JC_ASSISTANT_PUBLIC_ID=helsinki-public JC_K6_CHATS=40 \
+jc-conformance k6
+
 # T-0065: Latency and throughput (default)
 GATEWAY_URL=https://host/cs/ovzdusie/ngsi-ld/v1 \
 BROKER_URL=http://broker:9090/ngsi-ld/v1 \
