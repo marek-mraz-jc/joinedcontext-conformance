@@ -76,8 +76,8 @@ COVERAGE = [
     ("platform", "/invoke", "platform crates/functions/tests/invoke_tests.rs"),
     ("platform", "/token", "platform crates/token-sidecar/tests/sidecar_tests.rs"),
     ("platform", "/apps/", "platform crates/wasm-host/tests/host_tests.rs"),
-    ("platform", "/jobs", "task:T-3857"),
-    ("platform", "crates/wasm-host/", "task:T-3857"),
+    # The admin port alone serves them; the apps port the edge reaches answers 404 (T-3857).
+    ("platform", "crates/wasm-host/", "platform crates/wasm-host/tests/host_tests.rs"),
     ("platform", "crates/context-gateway/", "task:T-3858"),
 ]
 
@@ -92,7 +92,7 @@ MOUNTS = {
 RUST_ROUTE = re.compile(r"\.(route|route_service|nest|nest_service)\(")
 METHOD = re.compile(r"(?<![A-Za-z0-9_])(get|post|put|patch|delete|head|options|any)(?:_service)?\(")
 FILTER = re.compile(r"MethodFilter::([A-Z]+)")
-HYPER = re.compile(r'path\s*==\s*"(/[^"]*)"|path\.strip_prefix\("(/[^"]+/)"\)')
+HYPER = re.compile(r'path\s*==\s*"(/[^"]*)"|path\.strip_prefix\("(/[^"]+/)"\)|^\s*"(/[^"]*)"\s*=>', re.M)
 TEST_MOD = re.compile(r"#\[cfg\((?:all\()?test\b[^\]]*\]\s*(?:#\[[^\]]*\]\s*)*mod\s")
 
 
@@ -195,8 +195,10 @@ def rust_routes(repo, root, crate_src, mount):
         if "axum" not in src:
             # A server on hyper alone matches the path by hand (wasm-host).
             for m in HYPER.finditer(src):
+                if m.group(3) and "hyper" not in src:
+                    continue  # a `"/x" =>` arm is a route only in a hyper server
                 line = src.count("\n", 0, m.start()) + 1
-                path = m.group(1) or m.group(2) + "{*rest}"
+                path = m.group(1) or m.group(3) or m.group(2) + "{*rest}"
                 rows.append([repo, "http", "*", mount + path, f"{rel}:{line}", ""])
             continue
         for m in RUST_ROUTE.finditer(src):

@@ -28,10 +28,20 @@ mod tests {
     fn t() { Router::new().route("/notify", post(x)); }
 }
 '''
-HYPER = '''pub async fn handle(path: &str) {
+HYPER = '''use hyper::body::Incoming;
+pub async fn handle(path: &str) {
     if path == "/jobs" { return; }
     let rest = path.strip_prefix("/apps/");
 }
+pub fn admin(path: &str) {
+    match path {
+        "/metrics" => (),
+        _ => (),
+    }
+}
+'''
+# A match on strings outside a hyper server is no route.
+NOT_A_SERVER = '''fn kind(s: &str) { match s { "/" => (), _ => () } }
 '''
 ANTARES_API = '''pub fn api_routes() -> Vec<(&'static str, MethodRouter<AppState>)> {
     vec![
@@ -78,6 +88,7 @@ def code(tmp_path):
         "joinedcontext-platform/crates/proxy/src/lib.rs": PLATFORM,
         "joinedcontext-platform/crates/context-gateway/src/mcp.rs": 'const TOOLS: &[Tool] = &[Tool { name: "query_entities", .. }];\n',
         "joinedcontext-platform/crates/host/src/server.rs": HYPER,
+        "joinedcontext-platform/crates/host/src/mapping.rs": NOT_A_SERVER,
         "AntaresBroker/crates/antares-api/src/lib.rs": ANTARES_API,
         "AntaresBroker/crates/antares-ws/src/lib.rs": ANTARES_WS,
         "AntaresBroker/crates/antares-mcp/src/tools.rs": ANTARES_TOOLS,
@@ -102,6 +113,7 @@ def test_every_route_and_tool_of_the_three_repositories_is_read(code):
         ("platform", "http", "DELETE", "/v1/hook"),
         ("platform", "http", "ANY", "/v1/{*rest}"),
         ("platform", "http", "*", "/jobs"),
+        ("platform", "http", "*", "/metrics"),
         ("platform", "http", "*", "/apps/{*rest}"),
         ("platform", "mcp-tool", "call", "query_entities"),
         ("antares", "http", "POST", "/ngsi-ld/v1/entities"),
