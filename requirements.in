@@ -11,3 +11,5 @@ paho-mqtt==1.6.1
 robotframework-mqttlibrary==0.7.1.post3
 # tests/ws: the WebSocket notification channel suite (Antares T-3518)
 websockets==17.1
+# tests/linkml: the LinkML surface suite (Antares T-3512); its generators and lint
+linkml==1.12.0
