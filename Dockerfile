@@ -35,7 +35,7 @@ ENV DEBIAN_FRONTEND=noninteractive \
 # and trivy fails the build on any fixed HIGH left in the layer.
 RUN apt-get update \
  && apt-get upgrade -y --no-install-recommends \
- && apt-get install -y --no-install-recommends ca-certificates curl git jq \
+ && apt-get install -y --no-install-recommends ca-certificates curl git jq libxml2-utils \
  && rm -rf /var/lib/apt/lists/*
 
 # node + npm grafted in from the pinned node image (same bookworm base)

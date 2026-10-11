@@ -26,6 +26,7 @@ selftest() {
   node --version || rc=1
   playwright --version || rc=1
   pyshacl --version || rc=1
+  xmllint --version || rc=1                    # tests/odata $metadata against edmx.xsd
   python3 -c 'import RequestsLibrary; print("robot RequestsLibrary ok")' || rc=1
   return $rc
 }
