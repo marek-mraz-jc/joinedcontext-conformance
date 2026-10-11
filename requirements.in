@@ -9,3 +9,5 @@ deepdiff==8.6.2   # 8.6.1 is what the TTF pins; CVE-2026-33155 (DoS) is fixed in
 prettydiff==0.1.0
 paho-mqtt==1.6.1
 robotframework-mqttlibrary==0.7.1.post3
+# tests/ws: the WebSocket notification channel suite (Antares T-3518)
+websockets==17.1

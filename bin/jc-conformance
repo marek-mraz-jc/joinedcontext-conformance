@@ -27,6 +27,7 @@ selftest() {
   playwright --version || rc=1
   pyshacl --version || rc=1
   xmllint --version || rc=1                    # tests/odata $metadata against edmx.xsd
+  python3 -c 'import websockets; print("websockets", websockets.__version__)' || rc=1  # tests/ws
   python3 -c 'import RequestsLibrary; print("robot RequestsLibrary ok")' || rc=1
   return $rc
 }
