@@ -53,6 +53,17 @@ MCP_URL=https://host/cs/ovzdusie/mcp jc-conformance mcp
 | `MCP_RESTRICTED_TYPE` | The entity type to ask for in that narrowed query (default `AirQualityObserved`) |
 | `MCP_NARROWED_TOKEN` | Bearer of a grant that sees less than `MCP_TOKEN`'s, for the read parity suite (falls back to `MCP_TOKEN`) |
 | `MCP_PARITY_CASES` | How many rows of the parity table to send; unset is the whole table, `5` is the dev smoke |
+| `MCP_SURFACE` | `broker`: the surface is the Antares broker's view MCP (`/x/views/{view}/mcp`): its own parity table, the type argument a list; run with `-m "not platform_only"` |
+| `MCP_NARROWED_URL` | A second MCP door that sees less, for the narrowed parity case (the broker narrows by view, not by token); defaults to `ENDPOINT_MCP_URL` |
+
+## Against the broker
+
+Antares runs these suites against its own `mcp` build (`.github/workflows/surfaces-conformance.yml`,
+job `mcp-suites`): `MCP_URL` and `ENDPOINT_MCP_URL` are view `all`, `MCP_NARROWED_URL` view
+`parity-restricted`, `OTHER_SPACE_MCP_URL` a view of another Tenant, with `MCP_SURFACE=broker` and
+`-m "not platform_only"`. The `platform_only` cases are platform behaviour the broker does not
+serve: sessions, RFC 9728 metadata, hubs, the configuration plane, `describe_schema` and the
+`restricted` flag.
 
 ## Self-test
 

@@ -16,6 +16,22 @@ import requests
 from rate_limit import RateLimitedSession
 
 
+#: The version `initialize` offers (the legacy handshake era).
+INITIALIZE_VERSION = "2025-11-25"
+
+#: `MCP_SURFACE=broker`: the surface under test is the broker's view MCP
+#: (`/x/views/{view}/mcp` of Antares), not the platform's: its own tool schemas and parity
+#: table, and the `platform_only` cases (sessions, RFC 9728, hubs, the configuration plane,
+#: platform-only tools) deselected with `-m "not platform_only"`.
+BROKER = os.getenv("MCP_SURFACE", "").strip() == "broker"
+
+
+def pytest_configure(config: pytest.Config) -> None:
+    config.addinivalue_line(
+        "markers", "platform_only: platform MCP behaviour the broker's view MCP does not serve"
+    )
+
+
 def _require_env(name: str) -> str:
     val = os.getenv(name)
     if not val:
@@ -95,6 +111,13 @@ def narrowed_token(mcp_token: str | None) -> str | None:
 
 
 @pytest.fixture(scope="session")
+def narrowed_mcp_url(endpoint_mcp_url: str) -> str:
+    """The MCP door the narrowed parity case reads through: a second view of the broker, which
+    narrows by view rather than by token; the endpoint under test where it is unset."""
+    return (os.getenv("MCP_NARROWED_URL") or endpoint_mcp_url).rstrip("/")
+
+
+@pytest.fixture(scope="session")
 def portal_mcp_url() -> str:
     """The Portal MCP server over the operation registry (T-0637, AG-60), `/api/v1/mcp`."""
     return _require_env("PORTAL_MCP_URL").rstrip("/")
@@ -117,7 +140,9 @@ def other_space_query() -> dict:
     space holds other types than this one, so the probe that proves a cross-space read is not
     vacuous needs a type of its own."""
     other = os.getenv("OTHER_SPACE_TYPE")
-    return {"type": other} if other else {}
+    if not other:
+        return {}
+    return {"type": [other] if BROKER else other}  # the broker's type is a list
 
 
 @pytest.fixture(scope="session")
@@ -281,7 +306,9 @@ class McpClient:
 
     def initialize(self) -> dict:
         req_id = self._next_id()
-        offered_version = "2026-07-28"
+        # The last revision that has `initialize`: 2026-07-28 dropped the handshake for
+        # per-request `_meta`, and a server of that era refuses it offered there.
+        offered_version = INITIALIZE_VERSION
         payload = {
             "jsonrpc": "2.0",
             "id": req_id,

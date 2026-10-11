@@ -20,7 +20,7 @@ import typing
 import pytest
 import requests
 
-from conftest import McpClient
+from conftest import BROKER, McpClient
 
 try:  # the conformance image pins rdflib through pyshacl; a bare checkout may not have it
     import rdflib
@@ -224,6 +224,86 @@ CASES: list[Case] = [
     Case("access", "describe_access", {"format": "permissions"}, None, {}),
 ]
 
+#: The broker's MCP surface (`/x/views/{view}/mcp` of Antares, `mcp-surface.md`): its own tool
+#: schemas (a type is a list, a page goes on with an opaque cursor), so its own table. The REST
+#: door is the view's NGSI-LD root, the same seeded `AirQualityObserved` Entities behind both.
+#: `{cursor}` is the cursor of the first one-Entity page, so its REST twin is `offset=1`.
+AQ = ["AirQualityObserved"]
+AFTER = {"timerel": "after", "timeAt": "2026-01-01T00:00:00Z"}
+BROKER_CASES: list[Case] = [
+    Case("type", "query_entities", {"type": AQ}, "entities", {"type": AQ[0]}),
+    Case("type+q", "query_entities", {"type": AQ, "q": "temperature>10"}, "entities", {"type": AQ[0], "q": "temperature>10"}),
+    Case(
+        "type+idPattern",
+        "query_entities",
+        {"type": AQ, "idPattern": "^urn:ngsi-ld:AirQualityObserved:bb-.*$"},
+        "entities",
+        {"type": AQ[0], "idPattern": "^urn:ngsi-ld:AirQualityObserved:bb-.*$"},
+    ),
+    Case("type+attrs", "query_entities", {"type": AQ, "attrs": ["temperature"]}, "entities", {"type": AQ[0], "attrs": "temperature"}),
+    Case("type+pick", "query_entities", {"type": AQ, "pick": ["temperature"]}, "entities", {"type": AQ[0], "pick": "temperature"}),
+    Case("type+omit", "query_entities", {"type": AQ, "omit": ["location"]}, "entities", {"type": AQ[0], "omit": "location"}),
+    Case("type+window", "query_entities", {"type": AQ, "limit": 1, "count": True}, "entities", {"type": AQ[0], "limit": "1", "count": "true"}),
+    Case("next page", "query_entities", {"type": AQ, "limit": 1, "cursor": "{cursor}"}, "entities", {"type": AQ[0], "limit": "1", "offset": "1"}),
+    Case("type+lang", "query_entities", {"type": AQ, "lang": "en"}, "entities", {"type": AQ[0], "lang": "en"}),
+    Case(
+        "geo",
+        "query_entities",
+        {"type": AQ, "georel": "near;maxDistance==20000", "geometry": "Point", "coordinates": [19.15, 48.73], "geoproperty": "location"},
+        "entities",
+        {"type": AQ[0], "georel": "near;maxDistance==20000", "geometry": "Point", "coordinates": "[19.15,48.73]", "geoproperty": "location"},
+    ),
+    Case("scope+local", "query_entities", {"type": AQ, "scopeQ": "/SK/BB", "local": True}, "entities", {"type": AQ[0], "scopeQ": "/SK/BB", "local": "true"}),
+    Case("by ids", "query_entities", {"id": ["{id}"], "type": AQ}, "entities", {"id": "{id}", "type": AQ[0]}),
+    Case("join", "query_entities", {"type": AQ, "join": "flat", "joinLevel": 1}, "entities", {"type": AQ[0], "join": "flat", "joinLevel": "1"}),
+    Case("types", "list_types", {}, "types", {}),
+    Case("type details", "list_type_details", {}, "types", {"details": "true"}),
+    Case("attributes", "list_attributes", {}, "attributes", {}),
+    Case("attribute details", "list_attribute_details", {}, "attributes", {"details": "true"}),
+    Case("one type", "get_type", {"type": AQ[0]}, f"types/{AQ[0]}", {}),
+    Case("one attribute", "get_attribute", {"attrId": "temperature"}, "attributes/temperature", {}),
+    Case("one entity", "get_entity", {"id": "{id}", "attrs": ["temperature"]}, "entities/{id}", {"attrs": "temperature"}),
+    Case("one entity's attribute", "get_attribute_value", {"id": "{id}", "attrId": "temperature"}, "entities/{id}/attrs/temperature", {}),
+    Case(
+        "batch",
+        "batch_query",
+        {"type": AQ, "attrs": ["temperature"]},
+        "entityOperations/query",
+        {},
+        "POST",
+        {"type": "Query", "entities": [{"type": AQ[0]}], "attrs": ["temperature"]},
+    ),
+    Case(
+        "batch temporal",
+        "batch_query_temporal",
+        {"type": AQ, **AFTER},
+        "temporal/entityOperations/query",
+        {},
+        "POST",
+        {"type": "Query", "entities": [{"type": AQ[0]}], "temporalQ": AFTER},
+    ),
+    Case("one history", "retrieve_temporal", {"id": "{id}", **AFTER, "attrs": ["temperature"]}, "temporal/entities/{id}", {**AFTER, "attrs": "temperature"}),
+    Case(
+        "history lastN",
+        "query_temporal",
+        {"type": AQ, **AFTER, "timeproperty": "observedAt", "lastN": 3},
+        "temporal/entities",
+        {"type": AQ[0], **AFTER, "timeproperty": "observedAt", "lastN": "3"},
+    ),
+    Case(
+        "history aggregated",
+        "query_temporal",
+        {"type": AQ, "timerel": "between", "timeAt": "2026-01-01T00:00:00Z", "endTimeAt": "2026-12-31T00:00:00Z", "aggrMethods": "avg", "aggrPeriodDuration": "PT1H"},
+        "temporal/entities",
+        {"type": AQ[0], "timerel": "between", "timeAt": "2026-01-01T00:00:00Z", "endTimeAt": "2026-12-31T00:00:00Z", "aggrMethods": "avg", "aggrPeriodDuration": "PT1H", "options": "aggregatedValues"},
+    ),
+    Case("one subscription", "get_subscription", {"id": "urn:ngsi-ld:Subscription:none"}, "subscriptions/urn:ngsi-ld:Subscription:none", {}),
+    Case("subscriptions", "list_subscriptions", {"limit": 5, "count": True}, "subscriptions", {"limit": "5", "count": "true"}),
+]
+
+#: `MCP_SURFACE=broker` runs the broker's table; unset is the platform's.
+TABLE = BROKER_CASES if BROKER else CASES
+
 #: Tools whose answer is not a list of entities, compared by their own document instead.
 DOCUMENT_TOOLS = {"describe_schema", "describe_access"}
 
@@ -239,6 +319,9 @@ def entities_of(payload: typing.Any) -> list[dict]:
         for key in ("entities", "results", "items", "features", "structuredContent"):
             if key in payload:
                 return entities_of(payload[key])
+        if "id" not in payload and len(payload) == 1:
+            # a structured result under the tool's own key (`attribute`, `entityTypes`)
+            return entities_of(next(iter(payload.values())))
         return [payload] if "id" in payload else []
     if isinstance(payload, list):
         return [item for item in payload if isinstance(item, dict)]
@@ -258,7 +341,9 @@ def fingerprint(payload: typing.Any) -> list[tuple]:
             for name, value in entity.items()
             if not name.startswith("jc:")
         )
-        printed.append((entity.get("id"), tuple(members)))
+        # a list document (EntityTypeList, AttributeList) gets a fresh id per answer
+        listed = str(entity.get("type", "")).endswith("List")
+        printed.append((None if listed else entity.get("id"), tuple(m for m in members if not (listed and m[0] == "id"))))
     return sorted(printed, key=lambda row: str(row[0]))
 
 
@@ -276,37 +361,45 @@ def refusal_words(frame: dict) -> str:
     return " ".join(part.get("text", "") for part in content if isinstance(part, dict))
 
 
-def filled(value: typing.Any, entity_id: str) -> typing.Any:
-    """`{id}` filled in, wherever the table wrote it."""
+def filled(value: typing.Any, found: dict[str, str]) -> typing.Any:
+    """`{id}` and `{cursor}` filled in, wherever the table wrote them."""
     if isinstance(value, str):
-        return value.replace("{id}", entity_id)
+        for placeholder, text in found.items():
+            value = value.replace(placeholder, text)
+        return value
     if isinstance(value, list):
-        return [filled(item, entity_id) for item in value]
+        return [filled(item, found) for item in value]
     if isinstance(value, dict):
-        return {key: filled(item, entity_id) for key, item in value.items()}
+        return {key: filled(item, found) for key, item in value.items()}
     return value
 
 
 def read_over_rest(
-    http: requests.Session, base: str, case: Case, token: str | None, entity_id: str
+    http: requests.Session, base: str, case: Case, token: str | None, found: dict[str, str]
 ) -> requests.Response:
     headers = {"Accept": "application/json"}
     if token:
         headers["Authorization"] = f"Bearer {token}"
-    url = f"{base}/{filled(case.path, entity_id)}"
+    url = f"{base}/{filled(case.path, found)}"
+    params = filled(case.params, found)
     if case.method == "POST":
         headers["Content-Type"] = "application/json"
-        return http.post(url, json=filled(case.body, entity_id), params=case.params, headers=headers, timeout=30)
-    return http.get(url, params=case.params, headers=headers, timeout=30)
+        return http.post(url, json=filled(case.body, found), params=params, headers=headers, timeout=30)
+    return http.get(url, params=params, headers=headers, timeout=30)
 
 
-def first_id(client: McpClient) -> str:
-    """An entity id this caller may read, so the by-id cases need none of their own."""
+def discovered(client: McpClient) -> dict[str, str]:
+    """An entity id this caller may read, so the by-id cases need none of their own, and the
+    cursor of the page after it. Empty where nothing is seeded."""
     if "query_entities" not in set(client.tool_names()):
-        return ""
-    frame = client.tool_call("query_entities", {"type": "AirQualityObserved", "limit": 1})
-    found = entities_of(frame.get("result", {}))
-    return str(found[0].get("id", "")) if found else ""
+        return {}
+    kind = AQ if BROKER else AQ[0]
+    result = client.tool_call("query_entities", {"type": kind, "limit": 1}).get("result", {})
+    entities = entities_of(result)
+    if not entities:
+        return {}
+    cursor = (result.get("structuredContent") or {}).get("nextCursor")
+    return {"{id}": str(entities[0].get("id", "")), **({"{cursor}": cursor} if cursor else {})}
 
 
 def wanted_cases() -> list[Case]:
@@ -317,8 +410,8 @@ def wanted_cases() -> list[Case]:
     """
     limit = os.getenv("MCP_PARITY_CASES", "").strip()
     if limit.isdigit() and int(limit) > 0:
-        return CASES[: int(limit)]
-    return CASES
+        return TABLE[: int(limit)]
+    return TABLE
 
 
 def parity_failures(
@@ -326,22 +419,22 @@ def parity_failures(
 ) -> tuple[list[str], int]:
     """Every case the server offers, sent twice. Returns what disagreed and how many ran."""
     listed = set(client.tool_names())
-    entity_id = first_id(client)
+    found = discovered(client)
     failures: list[str] = []
     ran = 0
     for case in wanted_cases():
         if case.tool not in listed:
             continue
-        if not entity_id and "{id}" in json.dumps([case.arguments, case.path]):
+        if any(p not in found and p in json.dumps([case.arguments, case.path]) for p in ("{id}", "{cursor}")):
             # Nothing seeded to read by id: the cases that need one cannot be sent, and a
             # case that was not sent is not a case that passed.
             continue
-        frame = client.tool_call(case.tool, filled(case.arguments, entity_id))
+        frame = client.tool_call(case.tool, filled(case.arguments, found))
         if case.path is None or case.tool in DOCUMENT_TOOLS:
             # A document rather than entities: its own parity case is below.
             ran += 1
             continue
-        answer = read_over_rest(http, base, case, token, entity_id)
+        answer = read_over_rest(http, base, case, token, found)
         ran += 1
 
         rest_refused = answer.status_code >= 400
@@ -354,6 +447,8 @@ def parity_failures(
         if rest_refused:
             problem = answer.json() if answer.content else {}
             detail = str(problem.get("detail") or problem.get("title") or "")
+            if BROKER:  # the broker's tool says status and title, never the detail (MC18)
+                detail = f"{problem.get('status', '')} {problem.get('title', '')}".strip()
             words = refusal_words(frame)
             if detail and detail not in words:
                 failures.append(
@@ -375,10 +470,10 @@ def test_the_matrix_is_covered(endpoint_mcp: McpClient):
     The matrix is read from the server's own `tools/list`, which is generated from the one
     shared parameter table, so a new argument arrives here the moment it is published.
     """
-    covered_tools = {case.tool for case in CASES}
+    covered_tools = {case.tool for case in TABLE}
     # By name rather than by (tool, name): the arguments are one shared table on the server
     # too, so an argument proved on the tool people send it to is proved (AG-84).
-    covered_arguments = {argument for case in CASES for argument in case.arguments}
+    covered_arguments = {argument for case in TABLE for argument in case.arguments}
     missing = []
     for tool in endpoint_mcp.call("tools/list").get("tools", []):
         name = tool["name"]
@@ -411,7 +506,7 @@ def test_every_read_answers_the_same_over_both_doors(
 
 
 def test_a_narrowed_grant_narrows_both_doors_the_same(
-    endpoint_mcp_url: str,
+    narrowed_mcp_url: str,
     http_session: requests.Session,
     narrowed_token: str | None,
     make_mcp_client: typing.Callable[..., McpClient],
@@ -422,15 +517,16 @@ def test_a_narrowed_grant_narrows_both_doors_the_same(
     the parity it asserts; a deployment that sets `MCP_NARROWED_TOKEN` proves it for a grant
     that is actually narrower, which is where a projection argument would show a difference.
     """
-    client = make_mcp_client(endpoint_mcp_url, narrowed_token)
+    client = make_mcp_client(narrowed_mcp_url, narrowed_token)
     client.initialize()
     failures, ran = parity_failures(
-        client, http_session, rest_base(endpoint_mcp_url), narrowed_token
+        client, http_session, rest_base(narrowed_mcp_url), narrowed_token
     )
     assert ran >= 3, f"only {ran} of the table's cases were offered by this server"
     assert not failures, "the two doors disagreed under the narrowed grant:\n" + "\n".join(failures)
 
 
+@pytest.mark.platform_only  # describe_schema is the platform's (EP-52)
 def test_a_document_tool_answers_what_its_rest_route_serves(
     endpoint_mcp: McpClient, endpoint_mcp_url: str, http_session: requests.Session, mcp_token: str | None
 ):

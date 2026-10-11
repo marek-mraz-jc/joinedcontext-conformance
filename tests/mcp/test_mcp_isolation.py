@@ -16,9 +16,13 @@ from conftest import McpClient
 
 
 def space_of(url: str) -> str:
-    """The space a per-space MCP URL serves: `https://host/cs/{space}/mcp`."""
+    """The space a per-space MCP URL serves: `https://host/cs/{space}/mcp`, or the view of the
+    broker's `https://host/x/views/{view}/mcp`, one Tenant each."""
     segments = url.rstrip("/").split("/")
-    return segments[segments.index("cs") + 1] if "cs" in segments[:-1] else ""
+    for marker in ("cs", "views"):
+        if marker in segments[:-1]:
+            return segments[segments.index(marker) + 1]
+    return ""
 
 
 def entities_of(result: dict) -> list[dict]:
@@ -135,6 +139,7 @@ def test_sp20_a_cross_space_probe_is_byte_identical_to_a_miss(
     )
 
 
+@pytest.mark.platform_only
 def test_ag06_the_configuration_mcp_writes_nothing_directly(config_mcp: McpClient, config_mcp_scratch: str | None):
     """AG-06 — no tool writes the broker, gateway or database; a change comes back as a merge request."""
     names = config_mcp.tool_names()
@@ -166,6 +171,7 @@ def test_ag06_the_configuration_mcp_writes_nothing_directly(config_mcp: McpClien
     )
 
 
+@pytest.mark.platform_only
 def test_ag11_an_agent_neither_approves_itself_nor_edits_the_lanes(agent_config_mcp: McpClient):
     """AG-11 — self-approval and lane configuration are refused for an agent identity (CC-70)."""
     names = agent_config_mcp.tool_names()
@@ -187,6 +193,7 @@ def test_ag11_an_agent_neither_approves_itself_nor_edits_the_lanes(agent_config_
     )
 
 
+@pytest.mark.platform_only  # `restricted: true` is the platform's (R20/R22)
 def test_ag13_a_narrowed_answer_says_so_and_leaks_nothing(
     mcp: McpClient, restricted_type: str, hidden_attr: str
 ):
