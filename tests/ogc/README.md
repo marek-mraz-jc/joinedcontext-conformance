@@ -3,7 +3,8 @@
 Two things run here (T-0057, T-0058):
 
 1. `test_cql2_filtering.py` — the query contract the platform owns: the exact set of conformance
-   classes it claims (EP-30), `bbox`, `datetime`, CQL2 comparison and its rejection of
+   classes the broker's OGC surface of the Endpoint's view serves (EP-30), collections that are
+   the view's entity types (EP-31), each with its CRS and never an `extent` (EP-32), `bbox`, `datetime`, CQL2 comparison and its rejection of
    unsupported constructs (EP-34, EP-35), pagination (EP-36), 404 on an unknown feature (EP-33)
    and 405 on every write (EP-39). Filters are derived from a feature that is really there, then
    asserted to exclude it and to include it again — a filter that returns everything fails.
