@@ -5,8 +5,9 @@
   `parity-restricted` offers no write);
 - `test_expand_skips_out_of_view_targets`: `$expand` of a Relationship whose target the view hides
   (ADR-0023 rule 6) reads like a dangling link, while view `all` expands it;
-- `test_deep_insert_and_ref_check_the_linked_entity`: a deep insert is 501, a bind or a `$ref` to a
-  target the view does not see is 404 like an absent one, and nothing is written.
+- `test_deep_insert_and_ref_check_the_linked_entity`: a deep insert is 501, a bind to a target the
+  view does not see is 400 like an absent one (the bind is the request body's, Protocol 11.4.2.1,
+  Antares T-3760), a `$ref` to it is 404, and nothing is written.
 """
 
 from __future__ import annotations
@@ -69,7 +70,7 @@ def test_deep_insert_and_ref_check_the_linked_entity(http, odata_url):
     new = "urn:ngsi-ld:AirQualityObserved:linked"
     for body, status in [
         ({"id": new, "nearest": {"id": ABSENT, "temperature": 1.0}}, 501),
-        ({"id": new, "nearest@odata.bind": f"{ENTITY_SET}('{ABSENT}')"}, 404),
+        ({"id": new, "nearest@odata.bind": f"{ENTITY_SET}('{ABSENT}')"}, 400),
     ]:
         resp = http.post(f"{odata_url}/{ENTITY_SET}", json=body)
         assert resp.status_code == status, f"{body}: {resp.status_code} {resp.text}"
