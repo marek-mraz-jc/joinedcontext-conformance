@@ -187,12 +187,12 @@ platform,http,GET,/healthz,crates/assistant/src/bin/jc-assistant.rs:224,"public:
 platform,http,GET,/healthz,crates/context-gateway/src/app.rs:474,"public: liveness probe, answers ok"
 platform,http,GET,/healthz,crates/functions/src/lib.rs:212,"public: liveness probe, answers ok"
 platform,http,GET,/healthz,crates/token-sidecar/src/lib.rs:106,"public: liveness probe, answers ok"
-platform,http,GET,/internal/v1/projects/{project}/knowledge/deployments/{deployment}/usage,crates/assistant/src/chat/admin.rs:68,task:T-3856
-platform,http,GET,/internal/v1/projects/{project}/knowledge/sources,crates/assistant/src/chat/admin.rs:40,task:T-3856
-platform,http,GET,/internal/v1/projects/{project}/knowledge/sources/{source}/documents,crates/assistant/src/chat/admin.rs:48,task:T-3856
-platform,http,GET,/internal/v1/projects/{project}/knowledge/sources/{source}/pages,crates/assistant/src/chat/admin.rs:44,task:T-3856
-platform,http,GET,/internal/v1/projects/{project}/knowledge/sources/{source}/pages/{page}/links,crates/assistant/src/chat/admin.rs:52,task:T-3856
-platform,http,GET,/internal/v1/projects/{project}/knowledge/sources/{source}/passages,crates/assistant/src/chat/admin.rs:56,task:T-3856
+platform,http,GET,/internal/v1/projects/{project}/knowledge/deployments/{deployment}/usage,crates/assistant/src/chat/admin.rs:68,platform crates/assistant/tests/admin_tests.rs
+platform,http,GET,/internal/v1/projects/{project}/knowledge/sources,crates/assistant/src/chat/admin.rs:40,platform crates/assistant/tests/admin_tests.rs
+platform,http,GET,/internal/v1/projects/{project}/knowledge/sources/{source}/documents,crates/assistant/src/chat/admin.rs:48,platform crates/assistant/tests/admin_tests.rs
+platform,http,GET,/internal/v1/projects/{project}/knowledge/sources/{source}/pages,crates/assistant/src/chat/admin.rs:44,platform crates/assistant/tests/admin_tests.rs
+platform,http,GET,/internal/v1/projects/{project}/knowledge/sources/{source}/pages/{page}/links,crates/assistant/src/chat/admin.rs:52,platform crates/assistant/tests/admin_tests.rs
+platform,http,GET,/internal/v1/projects/{project}/knowledge/sources/{source}/passages,crates/assistant/src/chat/admin.rs:56,platform crates/assistant/tests/admin_tests.rs
 platform,http,GET,/livez,crates/context-gateway/src/app.rs:475,task:T-3858
 platform,http,GET,/metrics,crates/context-gateway/src/app.rs:480,task:T-3858
 platform,http,GET,/readyz,crates/assistant/src/bin/jc-assistant.rs:225,"public: readiness probe, answers ok"
@@ -212,9 +212,9 @@ platform,http,POST,/api/v1/d/{public_id}/chat,crates/assistant/src/chat/mod.rs:1
 platform,http,POST,/cs/{space}/mcp,crates/context-gateway/src/app.rs:444,task:T-3858
 platform,http,POST,/internal/runs/{run}/data-credential,crates/agent-proxy/src/lib.rs:127,platform crates/agent-proxy/tests/edge_delegation_tests.rs
 platform,http,POST,/internal/runs/{run}/identity,crates/agent-proxy/src/lib.rs:123,platform crates/agent-proxy/tests/edge_delegation_tests.rs
-platform,http,POST,/internal/v1/projects/{project}/knowledge/deployments/{deployment}/chat,crates/assistant/src/chat/mod.rs:127,task:T-3856
-platform,http,POST,/internal/v1/projects/{project}/knowledge/sources/{source}/inclusion,crates/assistant/src/chat/admin.rs:60,task:T-3856
-platform,http,POST,/internal/v1/projects/{project}/knowledge/sources/{source}/recrawl,crates/assistant/src/chat/admin.rs:64,task:T-3856
+platform,http,POST,/internal/v1/projects/{project}/knowledge/deployments/{deployment}/chat,crates/assistant/src/chat/mod.rs:127,platform crates/assistant/tests/admin_tests.rs
+platform,http,POST,/internal/v1/projects/{project}/knowledge/sources/{source}/inclusion,crates/assistant/src/chat/admin.rs:60,platform crates/assistant/tests/admin_tests.rs
+platform,http,POST,/internal/v1/projects/{project}/knowledge/sources/{source}/recrawl,crates/assistant/src/chat/admin.rs:64,platform crates/assistant/tests/admin_tests.rs
 platform,http,POST,/invoke,crates/functions/src/lib.rs:211,platform crates/functions/tests/invoke_tests.rs
 platform,http,POST,/token,crates/token-sidecar/src/lib.rs:105,platform crates/token-sidecar/tests/sidecar_tests.rs
 platform,http,POST,/v1/llm/{*rest},crates/agent-proxy/src/lib.rs:111,platform crates/agent-proxy/tests/edge_routes_llm_handler_tests.rs
