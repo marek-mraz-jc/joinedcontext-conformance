@@ -1,4 +1,4 @@
-"""OGC query parameters and the CQL2 subset (T-0058, EP-29, EP-30, EP-33…EP-36, EP-39).
+"""OGC query parameters and the CQL2 subset (T-0058, EP-29…EP-36, EP-39).
 
 Each test is named after the requirement it holds the endpoint to, and each one can fail: the
 filters are derived from a feature that is really there, then asserted to exclude it and to
@@ -7,22 +7,49 @@ include it again.
 
 from __future__ import annotations
 
+import re
+
 import pytest
 
-# docs/Testing/02-conformance-tests.md §2: the classes the platform claims, and only those
+# The classes the broker's OGC surface of the Endpoint's view serves (EP-30, T-3752): Antares
+# `crates/antares-ogc/src/lib.rs` `CONFORMANCE` (Part 3 and CQL2 by T-3745), which the gateway
+# forwards as the broker answers it. Part 4 is the broker's too, but the gateway answers every
+# write 405 (EP-39), so a declared Part 4 class is a claim the Endpoint does not keep.
 CLAIMED = {
     "http://www.opengis.net/spec/ogcapi-features-1/1.0/conf/core",
-    "http://www.opengis.net/spec/ogcapi-features-1/1.0/conf/oas30",
     "http://www.opengis.net/spec/ogcapi-features-1/1.0/conf/geojson",
+    "http://www.opengis.net/spec/ogcapi-features-1/1.0/conf/oas30",
+    "http://www.opengis.net/spec/ogcapi-features-5/1.0/conf/schemas",
+    "http://www.opengis.net/spec/ogcapi-features-5/1.0/conf/core-roles-features",
+    "http://www.opengis.net/spec/ogcapi-features-5/1.0/conf/returnables-and-receivables",
+    "http://www.opengis.net/spec/ogcapi-features-5/1.0/conf/sortables",
+    "http://www.opengis.net/spec/ogcapi-features-5/1.0/conf/feature-references",
+    "http://www.opengis.net/spec/ogcapi-features-5/1.0/conf/profile-parameter",
+    "http://www.opengis.net/spec/ogcapi-features-5/1.0/conf/profile-references",
     "http://www.opengis.net/spec/ogcapi-features-2/1.0/conf/crs",
-    "http://www.opengis.net/spec/cql2/1.0/conf/basic-cql2",
-    "http://www.opengis.net/spec/cql2/1.0/conf/cql2-text",
-    "http://www.opengis.net/spec/cql2/1.0/conf/cql2-json",
+    "http://www.opengis.net/spec/ogcapi-features-3/1.0/conf/queryables",
+    "http://www.opengis.net/spec/ogcapi-features-3/1.0/conf/queryables-query-parameters",
     "http://www.opengis.net/spec/ogcapi-features-3/1.0/conf/filter",
     "http://www.opengis.net/spec/ogcapi-features-3/1.0/conf/features-filter",
+    "http://www.opengis.net/spec/cql2/1.0/conf/cql2-text",
+    "http://www.opengis.net/spec/cql2/1.0/conf/cql2-json",
+    "http://www.opengis.net/spec/cql2/1.0/conf/basic-cql2",
+    "http://www.opengis.net/spec/cql2/1.0/conf/advanced-comparison-operators",
+    "http://www.opengis.net/spec/cql2/1.0/conf/case-insensitive-comparison",
+    "http://www.opengis.net/spec/cql2/1.0/conf/accent-insensitive-comparison",
+    "http://www.opengis.net/spec/cql2/1.0/conf/basic-spatial-functions",
+    "http://www.opengis.net/spec/cql2/1.0/conf/basic-spatial-functions-plus",
+    "http://www.opengis.net/spec/cql2/1.0/conf/spatial-functions",
+    "http://www.opengis.net/spec/cql2/1.0/conf/temporal-functions",
+    "http://www.opengis.net/spec/cql2/1.0/conf/array-functions",
+    "http://www.opengis.net/spec/cql2/1.0/conf/property-property",
+    "http://www.opengis.net/spec/cql2/1.0/conf/functions",
+    "http://www.opengis.net/spec/cql2/1.0/conf/arithmetic",
 }
-# never claimed: HTML and Part 4 write access (EP-39)
+# never claimed: HTML, and Part 4 write access while EP-39 holds
 NEVER_CLAIMED = ("conf/html", "ogcapi-features-4")
+# OGC API - Features Part 1, /req/core/crs84: the default CRS, and the one with height.
+CRS84 = "http://www.opengis.net/def/crs/OGC/1.3/CRS84"
 
 
 def bbox_of(feature: dict) -> tuple[float, float]:
@@ -44,7 +71,7 @@ def test_ep29_landing_page_offers_the_core_resource_hierarchy(get):
 
 
 def test_ep30_conformance_declares_exactly_the_claimed_classes(get):
-    """EP-30 — Conformance classes claimed MUST be exactly Part 1 Core, OpenAPI 3.0, GeoJSON, Part 2 CRS, and basic CQL2 filtering."""
+    """EP-30 — Conformance classes claimed MUST be exactly those the broker's OGC surface of the Endpoint's view serves."""
     response = get("/conformance")
     assert response.status_code == 200
     declared = set(response.json().get("conformsTo", []))
@@ -55,6 +82,47 @@ def test_ep30_conformance_declares_exactly_the_claimed_classes(get):
     )
     for forbidden in NEVER_CLAIMED:
         assert not any(forbidden in item for item in declared), f"{forbidden} must not be declared"
+
+
+def collections_of(get) -> list[dict]:
+    response = get("/collections")
+    assert response.status_code == 200, f"GET /collections answered {response.status_code}"
+    collections = response.json().get("collections", [])
+    assert collections, "the endpoint advertises no collection"
+    return collections
+
+
+def test_ep31_a_collection_is_a_type_the_view_shows(get):
+    """EP-31 — Each collection identifier MUST equal the short name of an entity type the Endpoint's view shows; a type without a GeoProperty is a collection of null-geometry Features."""
+    for advertised in collections_of(get):
+        name = advertised.get("id", "")
+        assert re.fullmatch(r"[A-Za-z_][A-Za-z0-9_]*", name), (
+            f"collection id {name!r} is no entity type short name (an IRI, a URN or a path)"
+        )
+        page = get(f"/collections/{name}/items", limit=5)
+        assert page.status_code == 200, f"{name}: items answered {page.status_code}, a collection refuses"
+        collection = page.json()
+        assert collection.get("type") == "FeatureCollection", f"{name}: {collection.get('type')}"
+        for feature in collection.get("features", []):
+            geometry = feature.get("geometry")
+            assert geometry is None or "type" in geometry, f"{name}: {feature.get('id')} has {geometry!r}"
+            assert str(feature.get("id", "")).startswith("urn:"), f"{name}: feature id {feature.get('id')!r} is no entity URN (EP-33)"
+
+
+def test_ep32_a_collection_names_its_crs_and_never_an_extent(get):
+    """EP-32 — Each collection MUST advertise its coordinate reference systems and description, and MUST NOT advertise an extent (it would locate hidden Entities)."""
+    for advertised in collections_of(get):
+        name = advertised.get("id")
+        one = get(f"/collections/{name}")
+        assert one.status_code == 200, f"{name}: {one.status_code}"
+        for document in (advertised, one.json()):
+            assert CRS84 in document.get("crs", []), f"{name}: crs {document.get('crs')}"
+            assert document.get("storageCrs") == CRS84, f"{name}: storageCrs {document.get('storageCrs')}"
+            assert "extent" not in document, (
+                f"{name}: an extent over the store tells a caller where the Entities its grant hides are (M8)"
+            )
+            relations = {link.get("rel") for link in document.get("links", [])}
+            assert {"self", "items"} <= relations, f"{name}: links {sorted(relations)}"
 
 
 def test_ep34_bbox_excludes_a_feature_outside_it(get, collection, features):
