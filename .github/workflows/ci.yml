@@ -34,6 +34,11 @@ jobs:
         run: |
           set -eu
           for suite in security ogc sta mcp odata ws schemathesis models ckan e2e authz assistant; do python3 -m pytest "tests/$suite" --collect-only -q; done
+      - name: every route and MCP tool names its authorization test or the task that adds it (T-3832)
+        run: |
+          set -eu
+          python3 -m pytest security/test_routes.py -q
+          python3 security/routes.py --check
       - name: expected-failure checker logic (T-0054)
         run: python3 tests/etsi-ttf/check_expected_failures.py --selftest
       - name: gateway divergence fails the transparency comparison (T-0056)
