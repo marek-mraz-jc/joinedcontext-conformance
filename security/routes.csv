@@ -30,10 +30,10 @@ antares,http,DELETE,/ngsi-ld/v1/subscriptions/{id},crates/antares-api/src/lib.rs
 antares,http,DELETE,/ngsi-ld/v1/temporal/entities/{id},crates/antares-api/src/lib.rs:458,antares crates/antares-broker/tests/operation_matrix.rs
 antares,http,DELETE,/ngsi-ld/v1/temporal/entities/{id}/attrs/{attr},crates/antares-api/src/lib.rs:466,antares crates/antares-broker/tests/operation_matrix.rs
 antares,http,DELETE,/ngsi-ld/v1/temporal/entities/{id}/attrs/{attr}/{instance},crates/antares-api/src/lib.rs:470,antares crates/antares-broker/tests/operation_matrix.rs
-antares,http,DELETE,/q/grants/{target}/{source},crates/antares-icsr/src/grant.rs:130,task:T-3855
+antares,http,DELETE,/q/grants/{target}/{source},crates/antares-icsr/src/grant.rs:130,antares crates/antares-icsr/tests/q_admin_sweep.rs
 antares,http,DELETE,/q/policy/{tenant},crates/antares-ops/src/views/rule_documents.rs:139,antares crates/antares-ops/tests/policy_documents.rs
-antares,http,DELETE,/q/schemas/{tenant},crates/antares-ops/src/views.rs:625,task:T-3855
-antares,http,DELETE,/q/views/{id},crates/antares-ops/src/views.rs:642,task:T-3855
+antares,http,DELETE,/q/schemas/{tenant},crates/antares-ops/src/views.rs:625,antares crates/antares-icsr/tests/q_admin_sweep.rs
+antares,http,DELETE,/q/views/{id},crates/antares-ops/src/views.rs:642,antares crates/antares-icsr/tests/q_admin_sweep.rs
 antares,http,GET,/,crates/odata-axum/src/lib.rs:302,antares crates/antares-broker/tests/operation_matrix.rs
 antares,http,GET,/$metadata,crates/odata-axum/src/lib.rs:303,antares crates/antares-broker/tests/operation_matrix.rs
 antares,http,GET,/ngsi-ld/v1/attributes,crates/antares-api/src/lib.rs:481,antares crates/antares-broker/tests/operation_matrix.rs
@@ -59,13 +59,13 @@ antares,http,GET,/ngsi-ld/v1/temporal/entities/{id},crates/antares-api/src/lib.r
 antares,http,GET,/ngsi-ld/v1/temporal/entityMaps,crates/antares-api/src/lib.rs:414,antares crates/antares-broker/tests/operation_matrix.rs
 antares,http,GET,/ngsi-ld/v1/types,crates/antares-api/src/lib.rs:479,antares crates/antares-broker/tests/operation_matrix.rs
 antares,http,GET,/ngsi-ld/v1/types/{type},crates/antares-api/src/lib.rs:480,antares crates/antares-broker/tests/operation_matrix.rs
-antares,http,GET,/q/grants,crates/antares-icsr/src/grant.rs:120,task:T-3855
-antares,http,GET,/q/grants/{target}/{source},crates/antares-icsr/src/grant.rs:130,task:T-3855
+antares,http,GET,/q/grants,crates/antares-icsr/src/grant.rs:120,antares crates/antares-icsr/tests/q_admin_sweep.rs
+antares,http,GET,/q/grants/{target}/{source},crates/antares-icsr/src/grant.rs:130,antares crates/antares-icsr/tests/q_admin_sweep.rs
 antares,http,GET,/q/policy,crates/antares-ops/src/views/rule_documents.rs:128,antares crates/antares-ops/tests/policy_documents.rs
 antares,http,GET,/q/policy/{tenant},crates/antares-ops/src/views/rule_documents.rs:139,antares crates/antares-ops/tests/policy_documents.rs
-antares,http,GET,/q/schemas/{tenant},crates/antares-ops/src/views.rs:625,task:T-3855
-antares,http,GET,/q/views,crates/antares-ops/src/views.rs:634,task:T-3855
-antares,http,GET,/q/views/{id},crates/antares-ops/src/views.rs:642,task:T-3855
+antares,http,GET,/q/schemas/{tenant},crates/antares-ops/src/views.rs:625,antares crates/antares-icsr/tests/q_admin_sweep.rs
+antares,http,GET,/q/views,crates/antares-ops/src/views.rs:634,antares crates/antares-icsr/tests/q_admin_sweep.rs
+antares,http,GET,/q/views/{id},crates/antares-ops/src/views.rs:642,antares crates/antares-icsr/tests/q_admin_sweep.rs
 antares,http,GET,/x/views/{view}/access,addons/joinedcontext-policy/src/surface.rs:54,antares addons/joinedcontext-policy/tests/access.rs
 antares,http,GET,/x/views/{view}/ws,crates/antares-ws/src/lib.rs:161,antares crates/antares-broker/tests/operation_matrix.rs
 antares,http,GET,/x/ws/ngsi-ld/v1,crates/antares-ws/src/lib.rs:135,antares crates/antares-broker/tests/operation_matrix.rs
@@ -98,16 +98,16 @@ antares,http,POST,/ngsi-ld/v1/temporal/entities,crates/antares-api/src/lib.rs:45
 antares,http,POST,/ngsi-ld/v1/temporal/entities/{id}/attrs,crates/antares-api/src/lib.rs:462,antares crates/antares-broker/tests/operation_matrix.rs
 antares,http,POST,/ngsi-ld/v1/temporal/entityMaps,crates/antares-api/src/lib.rs:414,antares crates/antares-broker/tests/operation_matrix.rs
 antares,http,POST,/ngsi-ld/v1/temporal/entityOperations/query,crates/antares-api/src/lib.rs:474,antares crates/antares-broker/tests/operation_matrix.rs
-antares,http,POST,/q/views/{id}/preview,crates/antares-ops/src/views/preview.rs:26,task:T-3855
+antares,http,POST,/q/views/{id}/preview,crates/antares-ops/src/views/preview.rs:26,antares crates/antares-icsr/tests/q_admin_sweep.rs
 antares,http,POST,/x/views/{view}/access/check,addons/joinedcontext-policy/src/surface.rs:62,antares addons/joinedcontext-policy/tests/access.rs
 antares,http,PUT,/ngsi-ld/v1/entities,crates/antares-api/src/lib.rs:362,antares crates/antares-broker/tests/operation_matrix.rs
 antares,http,PUT,/ngsi-ld/v1/entities/{id},crates/antares-api/src/lib.rs:370,antares crates/antares-broker/tests/operation_matrix.rs
 antares,http,PUT,/ngsi-ld/v1/entities/{id}/attrs/{attr},crates/antares-api/src/lib.rs:382,antares crates/antares-broker/tests/operation_matrix.rs
 antares,http,PUT,/ngsi-ld/v1/entities/{id}/attrs/{attr}/value,crates/antares-api/src/lib.rs:392,antares crates/antares-broker/tests/operation_matrix.rs
-antares,http,PUT,/q/grants/{target}/{source},crates/antares-icsr/src/grant.rs:130,task:T-3855
+antares,http,PUT,/q/grants/{target}/{source},crates/antares-icsr/src/grant.rs:130,antares crates/antares-icsr/tests/q_admin_sweep.rs
 antares,http,PUT,/q/policy/{tenant},crates/antares-ops/src/views/rule_documents.rs:139,antares crates/antares-ops/tests/policy_documents.rs
-antares,http,PUT,/q/schemas/{tenant},crates/antares-ops/src/views.rs:625,task:T-3855
-antares,http,PUT,/q/views/{id},crates/antares-ops/src/views.rs:642,task:T-3855
+antares,http,PUT,/q/schemas/{tenant},crates/antares-ops/src/views.rs:625,antares crates/antares-icsr/tests/q_admin_sweep.rs
+antares,http,PUT,/q/views/{id},crates/antares-ops/src/views.rs:642,antares crates/antares-icsr/tests/q_admin_sweep.rs
 antares,mcp-tool,call,append_attributes,crates/antares-mcp/src/tools.rs:241,antares crates/antares-broker/tests/operation_matrix.rs
 antares,mcp-tool,call,batch_create,crates/antares-mcp/src/tools.rs:241,antares crates/antares-broker/tests/operation_matrix.rs
 antares,mcp-tool,call,batch_delete,crates/antares-mcp/src/tools.rs:241,antares crates/antares-broker/tests/operation_matrix.rs
