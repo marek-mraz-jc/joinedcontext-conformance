@@ -43,7 +43,7 @@ ROWS = [
     ),
 ]
 
-# mapped in the design, 501 in the build (Antares T-3685)
+# mapped in the design, 501 in the build (Antares T-3686)
 LATER = [
     ("F21", "temperature/@NgsiLd.observedAt ge 2026-05-01T08:30:00Z"),
     ("F29", "geo.intersects(location, geography'SRID=4326;POLYGON((19 48,20 48,20 49,19 49,19 48))')"),
