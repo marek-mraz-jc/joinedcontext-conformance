@@ -13,6 +13,8 @@ import typing
 import pytest
 import requests
 
+from conftest import INITIALIZE_VERSION
+
 try:
     from conftest import McpClient
 except ImportError:
@@ -25,8 +27,8 @@ def test_ag04_initialize_handshake_negotiates_protocol_and_capabilities(uninit_m
 
     assert "protocolVersion" in res, f"initialize result missing protocolVersion: {res}"
     negotiated = res["protocolVersion"]
-    # Offered version is "2026-07-28"; negotiated version must be <= offered version, never newer
-    assert negotiated <= "2026-07-28", f"Server negotiated a newer unknown protocol version: {negotiated}"
+    # negotiated version must be <= the offered one, never newer
+    assert negotiated <= INITIALIZE_VERSION, f"Server negotiated a newer unknown protocol version: {negotiated}"
 
     assert "serverInfo" in res, f"initialize result missing serverInfo: {res}"
     assert isinstance(res["serverInfo"].get("name"), str) and res["serverInfo"]["name"], (
@@ -172,6 +174,7 @@ def test_sp14_notification_has_no_response_body(mcp: McpClient):
     assert not body or body == "{}", f"Notification must produce empty body, got: {resp.text!r:.200}"
 
 
+@pytest.mark.platform_only  # the broker keeps no session (mcp-surface.md D-8)
 def test_sp20_session_lifecycle_and_protocol_version_header(uninit_mcp: McpClient):
     """SP-20 — Unknown Mcp-Session-Id answers 404; missing MCP-Protocol-Version answers 400."""
     init_res = uninit_mcp.initialize()
@@ -201,6 +204,7 @@ def test_sp20_session_lifecycle_and_protocol_version_header(uninit_mcp: McpClien
     )
 
 
+@pytest.mark.platform_only  # RFC 9728 is the gateway's (ADR-0020)
 def test_sp17_private_mcp_requires_rfc9728_auth(http_session: requests.Session, private_mcp_url: str):
     """SP-17 — Private MCP answers 401 with WWW-Authenticate referencing RFC 9728 resource metadata."""
     payload = {
@@ -259,6 +263,7 @@ def test_sp19_tools_list_remains_stable_under_fixed_grant(mcp: McpClient):
 # --- the hub: one MCP surface over several spaces (T-1209, EP-70, EP-71, AG-30) ---------
 
 
+@pytest.mark.platform_only
 def test_ep71_the_hub_says_what_it_federates_before_a_tool_is_called(
     hub_mcp: McpClient, hub_members: list[str]
 ):
@@ -275,6 +280,7 @@ def test_ep71_the_hub_says_what_it_federates_before_a_tool_is_called(
     assert "http://" not in instructions and "https://" not in instructions, instructions
 
 
+@pytest.mark.platform_only
 def test_ep71_a_hub_tool_result_names_the_sources_it_is_a_union_over(
     hub_mcp: McpClient, hub_members: list[str]
 ):
@@ -294,6 +300,7 @@ def test_ep71_a_hub_tool_result_names_the_sources_it_is_a_union_over(
     assert structured.get("entities"), "the union answered nothing at all"
 
 
+@pytest.mark.platform_only
 def test_pf48_the_hub_grants_no_more_than_its_own_policy_says(hub_mcp: McpClient):
     """PF-48: the hub's broker reads its members' tenants directly, so what a member's own
     Endpoint grants does not travel with the answer. The hub's tool set is therefore the hub's
