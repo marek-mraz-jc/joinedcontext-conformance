@@ -507,6 +507,7 @@ def test_every_read_answers_the_same_over_both_doors(
 
 def test_a_narrowed_grant_narrows_both_doors_the_same(
     narrowed_mcp_url: str,
+    endpoint_mcp_url: str,
     http_session: requests.Session,
     narrowed_token: str | None,
     make_mcp_client: typing.Callable[..., McpClient],
@@ -519,6 +520,13 @@ def test_a_narrowed_grant_narrows_both_doors_the_same(
     """
     client = make_mcp_client(narrowed_mcp_url, narrowed_token)
     client.initialize()
+    if narrowed_mcp_url != endpoint_mcp_url:
+        # a second door that sees what the first sees would make the case prove nothing
+        wide = make_mcp_client(endpoint_mcp_url, narrowed_token)
+        wide.initialize()
+        probe = {"type": AQ if BROKER else AQ[0], "limit": 100}
+        seen = [fingerprint(c.tool_call("query_entities", probe).get("result", {})) for c in (client, wide)]
+        assert seen[0] != seen[1], f"{narrowed_mcp_url} sees what {endpoint_mcp_url} sees"
     failures, ran = parity_failures(
         client, http_session, rest_base(narrowed_mcp_url), narrowed_token
     )
