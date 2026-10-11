@@ -8,7 +8,8 @@ rig's data can hold is asked through `/x/views/{view}/odata/v4` and through
 and checked to stay 501, so the row that starts working fails here until it moves into `ROWS`.
 Rejected rows answer 501 with the OData error object. Rows the rig holds no data for (string
 functions F9 and F15, complex paths F20, ListProperty F22, LanguageProperty F31, VocabProperty
-F32, the navigation hop F24) are the crate's own tests (Antares `filter_props.rs`, `odata_query.rs`).
+F32, the navigation hop F24) are the crate's own tests (Antares `filter_props.rs`, `odata_query.rs`,
+`odata_filter_rows.rs`).
 """
 
 from __future__ import annotations
@@ -41,13 +42,25 @@ ROWS = [
         "id in ('urn:ngsi-ld:AirQualityObserved:bb-1','urn:ngsi-ld:AirQualityObserved:ba-1') and NO2 gt 30",
         {"id": "urn:ngsi-ld:AirQualityObserved:bb-1,urn:ngsi-ld:AirQualityObserved:ba-1", "q": "NO2>30"},
     ),
+    (
+        "F21",
+        "temperature/@NgsiLd.observedAt ge 2026-05-01T08:30:00Z",
+        {"q": "temperature.observedAt>=2026-05-01T08:30:00Z"},
+    ),
+    (
+        "F29",
+        "geo.intersects(location, geography'SRID=4326;POLYGON((19 48,20 48,20 49,19 49,19 48))')",
+        {
+            "georel": "intersects",
+            "geometry": "Polygon",
+            "coordinates": "[[[19,48],[20,48],[20,49],[19,49],[19,48]]]",
+            "geoproperty": "location",
+        },
+    ),
 ]
 
-# mapped in the design, 501 in the build (Antares T-3686)
-LATER = [
-    ("F21", "temperature/@NgsiLd.observedAt ge 2026-05-01T08:30:00Z"),
-    ("F29", "geo.intersects(location, geography'SRID=4326;POLYGON((19 48,20 48,20 49,19 49,19 48))')"),
-]
+# mapped in the design, 501 in the build
+LATER: list[tuple[str, str]] = []
 
 REJECTED = [
     ("F11", "not (temperature gt 10)"),
