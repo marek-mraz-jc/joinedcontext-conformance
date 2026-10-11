@@ -141,10 +141,11 @@ antares,mcp-tool,call,update_attribute,crates/antares-mcp/src/tools.rs:241,antar
 antares,mcp-tool,call,update_attributes,crates/antares-mcp/src/tools.rs:241,antares crates/antares-broker/tests/operation_matrix.rs
 antares,mcp-tool,call,update_subscription,crates/antares-mcp/src/tools.rs:241,antares crates/antares-broker/tests/operation_matrix.rs
 antares,nest,*,"/x/views{format!(""/{id}/odata/v4"")}",crates/antares-odata/src/lib.rs:157,antares crates/antares-broker/tests/operation_matrix.rs
-platform,http,*,/apps/{*rest},crates/wasm-host/src/server.rs:68,platform crates/wasm-host/tests/host_tests.rs
-platform,http,*,/healthz,crates/wasm-host/src/server.rs:78,"public: liveness probe, answers ok"
-platform,http,*,/jobs,crates/wasm-host/src/server.rs:88,task:T-3857
-platform,http,*,/metrics,crates/wasm-host/src/server.rs:81,task:T-3857
+platform,http,*,/apps/{*rest},crates/wasm-host/src/server.rs:82,platform crates/wasm-host/tests/host_tests.rs
+platform,http,*,/healthz,crates/wasm-host/src/server.rs:122,"public: liveness probe, answers ok"
+platform,http,*,/healthz,crates/wasm-host/src/server.rs:143,"public: liveness probe, answers ok"
+platform,http,*,/jobs,crates/wasm-host/src/server.rs:128,platform crates/wasm-host/tests/host_tests.rs
+platform,http,*,/metrics,crates/wasm-host/src/server.rs:123,platform crates/wasm-host/tests/host_tests.rs
 platform,http,ANY,/api/endpoint/{slug}/ngsi-ld/v1/{*rest},crates/context-gateway/src/app.rs:391,task:T-3858
 platform,http,ANY,/api/endpoint/{slug}/ogc/features,crates/context-gateway/src/app.rs:428,task:T-3858
 platform,http,ANY,/api/endpoint/{slug}/ogc/features/,crates/context-gateway/src/app.rs:429,task:T-3858
