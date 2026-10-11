@@ -68,7 +68,8 @@ COVERAGE = [
     ("platform", "/v1/runs/events", AP + "edge_routes_events_handler_tests.rs"),
     ("platform", "/v1/runs/inbox", AP + "edge_routes_inbox_handler_tests.rs"),
     ("platform", "/internal/runs/", AP + "edge_delegation_tests.rs"),
-    ("platform", "/internal/v1/projects/", "task:T-3856"),
+    # Every /internal route read from the router source, each method, four kinds of stranger (T-3856).
+    ("platform", "/internal/v1/projects/", "platform crates/assistant/tests/admin_tests.rs"),
     ("platform", "/d/widget.", "public: the chat widget's script and style, the same for everyone"),
     ("platform", "/d/{public_id}/widget", "platform crates/assistant/tests/chat_tests.rs"),
     ("platform", "/api/v1/d/", "platform crates/assistant/tests/chat_tests.rs"),
