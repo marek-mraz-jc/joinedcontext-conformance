@@ -18,6 +18,17 @@ ODATA_RESTRICTED_URL=http://localhost:8080/x/views/parity-restricted/odata/v4 \
   tests/odata/run.sh -k "abnf or metadata" # the merge-request subset
 ```
 
+Two client checks read `$metadata` and one page of view `all`, then the restricted view and fail
+when its model holds `NO2`, the member that view hides (ADR-0024 decision 7):
+
+```sh
+clients/dotnet/run.sh   # Microsoft.OData.Client 9.0.0, .NET 10 SDK
+clients/sap/run.sh      # SAP Cloud SDK generator and odata-v4 4.9.1, Node 22
+```
+
+The service root is absolute (`ANTARES_PUBLIC_URL`, else the request's `Host`): Microsoft.OData.Core
+refuses a payload whose context URL is a path (Antares T-3688).
+
 `ODATA_PINS_DIR` keeps the OASIS files between runs; they are fetched at their pinned commits
 and checked against their SHA-256, never committed (OASIS IPR policy). The XML case needs
 `xmllint` (Debian `libxml2-utils`).
