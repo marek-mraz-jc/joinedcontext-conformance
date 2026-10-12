@@ -1,0 +1,4 @@
+pipeline:
+  processors:
+    - mapping: |
+        root = { "id": "urn:ngsi-ld:GtfsStop:%v".format(this.id), "type": "GtfsStop" }
