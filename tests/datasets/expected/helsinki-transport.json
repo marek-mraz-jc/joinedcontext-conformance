@@ -1,0 +1,12 @@
+{
+  "types": {
+    "Alert": {"maxAge": "30m"},
+    "GtfsAgency": {"maxAge": "2d"},
+    "GtfsRoute": {"maxAge": "2d"},
+    "GtfsStation": {"maxAge": "2d"},
+    "GtfsStop": {"maxAge": "15m", "emptyAllowed": ["departures"]},
+    "OffStreetParking": {"maxAge": "20m"},
+    "TransitRoute": {"maxAge": "8d"},
+    "Vehicle": {"maxAge": "10m"}
+  }
+}
