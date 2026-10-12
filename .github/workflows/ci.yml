@@ -33,7 +33,7 @@ jobs:
         # one invocation per suite: each folder has its own conftest, and the suites import from it
         run: |
           set -eu
-          for suite in security ogc sta mcp odata ws schemathesis models ckan e2e authz assistant; do python3 -m pytest "tests/$suite" --collect-only -q; done
+          for suite in security ogc sta mcp odata ws linkml schemathesis models ckan e2e authz assistant; do python3 -m pytest "tests/$suite" --collect-only -q; done
       - name: every route and MCP tool names its authorization test or the task that adds it (T-3832)
         run: |
           set -eu
