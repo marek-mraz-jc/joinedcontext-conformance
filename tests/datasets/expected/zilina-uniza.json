@@ -1,0 +1,4 @@
+{
+  "types": ["CreativeWork"],
+  "max_age": {"CreativeWork": "11d"}
+}
