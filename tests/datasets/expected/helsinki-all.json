@@ -1,0 +1,22 @@
+{
+  "types": {
+    "Alert": {"maxAge": "30m"},
+    "BikeHireDockingStation": {"maxAge": "15m"},
+    "CityDistrict": {"maxAge": "8d"},
+    "Event": {"maxAge": "1h"},
+    "GtfsAgency": {"maxAge": "2d"},
+    "GtfsRoute": {"maxAge": "2d"},
+    "GtfsStation": {"maxAge": "2d"},
+    "GtfsStop": {"maxAge": "15m", "emptyAllowed": ["departures"]},
+    "NewsArticle": {"maxAge": "1h"},
+    "OffStreetParking": {"maxAge": "20m"},
+    "ParkingArea": {"maxAge": "2d"},
+    "ParkingZone": {"maxAge": "8d"},
+    "PointOfInterest": {"maxAge": "2d"},
+    "PublicAreaPermit": {"maxAge": "9h"},
+    "TransitRoute": {"maxAge": "8d"},
+    "Vehicle": {"maxAge": "10m"},
+    "WaterQualityObserved": {"maxAge": "1h"},
+    "WeatherObserved": {"maxAge": "30m"}
+  }
+}
