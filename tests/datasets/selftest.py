@@ -13,7 +13,8 @@ one way at a time. Each case names the only checks that may FAIL:
 6. the newest write 3 h old          -> fresh.<Type> (a 5 min schedule)
 7. no notification while it changed  -> ws.notify
 8. the endpoint extra on another host and an entity missing from its source -> both lines
-9. a type of expected/<dataset>.json not served, or older than its maxAge -> expected.types, fresh.<Type>
+9. a type of expected/<dataset>.json not served, or older than its maxAge -> expected.types, fresh.<Type>;
+   an Attribute it names `numeric` holding text -> ngsi.<Type>.numeric
 
 Every committed expected/<dataset>.json is read too, so a typo in one fails here, not on dev.
 
@@ -184,6 +185,12 @@ CASES = {
     "ogc counted over its pages": (lambda s: s.update(ogc_paged=True), set()),
     "an expected type missing": (lambda s: s["expected"].update(GtfsStop={"maxAge": None}), {"expected.types"}),
     "older than expected": (lambda s: s["expected"][TYPE].update(maxAge="30s"), {f"fresh.{TYPE}"}),
+    "numbers held": (lambda s: s["expected"][TYPE].update(numeric=["totalSpotNumber"]), set()),
+    "a number written as text": (
+        lambda s: (s["expected"][TYPE].update(numeric=["totalSpotNumber"]),
+                   s["entities"][1]["totalSpotNumber"].update(value="not measured")),
+        {f"ngsi.{TYPE}.numeric"},
+    ),
     "empty value": (lambda s: s["entities"][1]["totalSpotNumber"].update(value=""), {f"ngsi.{TYPE}.values"}),
     "duplicate id": (lambda s: s["entities"][2].update(id=s["entities"][1]["id"]), {f"ngsi.{TYPE}.ids"}),
     "count mismatch": (lambda s: s.update(csv_rows=1), {f"rep.{TYPE}.csv"}),
