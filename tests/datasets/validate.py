@@ -576,9 +576,13 @@ def _type(http, base, org, typ, feeds, collections, datastore, resources, ckan_u
             n = ogc_walk(http, page)
         ok = isinstance(n, int) and abs(n - total) <= tolerance and r.secs <= EXPORT_SECONDS
         add(f"rep.{typ}.ogc", "PASS" if ok else "FAIL", f"{n} vs {total} in {r.secs:.1f}s", "" if r.status == 200 else f"HTTP {r.status}")
-        bare = [f.get("id") for f in page.get("features", []) if not f.get("geometry")]
-        add(f"ogc.{typ}.geometry", "FAIL" if bare else "PASS", f"{len(bare)} of {len(page.get('features', []))} without geometry",
-            ", ".join(map(str, bare[:3])))
+        features = page.get("features", [])
+        bare = [f.get("id") for f in features if not f.get("geometry")]
+        if features:
+            add(f"ogc.{typ}.geometry", "FAIL" if bare else "PASS", f"{len(bare)} of {len(features)} without geometry",
+                ", ".join(map(str, bare[:3])))
+        else:
+            add(f"ogc.{typ}.geometry", "SKIP", "no feature on the first page")
     elif q["located"]:
         add(f"ogc.{typ}.collection", "FAIL", "not in /collections", "a located type")
     if typ in datastore:
