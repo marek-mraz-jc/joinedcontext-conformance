@@ -69,6 +69,29 @@ prints a table per dataset and exits 1 on any FAIL. `CKAN_URL` and `CKAN_DATASET
 `CKAN_MAX_AGE_HOURS` for the age) run the same check under pytest; `test_completeness.py` holds the
 check itself offline. `JC_GATEWAY_TOKEN` reads a restricted Endpoint.
 
+## Does every Endpoint's dataset list every surface it serves? (T-3888, EP-108…EP-110)
+
+`surfaces.py` reads every Endpoint of the projects named from the Portal and holds each to its
+CKAN dataset: one resource per surface the Endpoint serves (its `enabledRepresentations`, or every
+standard but `sta` less `disabledRepresentations`), none for a surface it does not, each with a
+usage description and no credential in a URL or a text; an Endpoint without `spec.publish.ckan`
+has no dataset and a restricted one is never public. Then each surface answers over its own URL:
+`GET` 200 (401 restricted), a WebSocket upgrade whose `x-subscribe` answers 201, an MCP
+`initialize`. With `--write`, one probe entity written through a writable Endpoint of the
+conformance space measures the seconds until its DataStore row and the dataset's
+`metadata_modified` change, as p50 and p95 over `--samples` writes. The hourly batch runs it
+against dev (`PORTAL_TOKEN` from `tests/dev.env.sh`, read only; `JC_WRITER_TOKEN` only with
+`--write`):
+
+```bash
+python3 tests/ckan/surfaces.py --portal https://portal.dev.joinedcontext.com \
+  --ckan https://data.dev.joinedcontext.com helsinki banskabystrica
+```
+
+`test_surfaces.py` holds the comparison offline on a recorded `package_show`
+(`fixtures/package-show-surfaces.json`): a missing resource, an extra one, an internal Endpoint
+with a dataset, a credential in a URL or a usage text, each goes red.
+
 ## Self-test
 
 Proves that the harness goes red on negative cases (a record with no access rights, a
