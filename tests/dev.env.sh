@@ -33,13 +33,17 @@ _jc_missing=""
 
 # A seed key is the repository path with `/` as `__`; the dot of the file name is escaped for
 # jsonpath. The same read `scripts/smoke.sh` does, for the same reason.
-# The seed is one ConfigMap per project, `gitea-bootstrap-seed-<project>` (deployment T-3180);
-# a `projects__<project>__…` key names its own.
+# The seed is one ConfigMap per project, `gitea-seed-<project>` since deployment T-3998 and
+# `gitea-bootstrap-seed-<project>` before it (T-3180); a `projects__<project>__…` key names its own.
 _jc_slug() {
-	local project="${1#projects__}"
+	local project="${1#projects__}" cm
 	project="${project%%__*}"
-	kubectl get configmap "gitea-bootstrap-seed-$project" -n "$JC_DEV_NS" \
-		-o "jsonpath={.data.$1\\.yaml}" 2>/dev/null | sed -n 's/^ *slug: *//p' | head -1
+	for cm in "gitea-seed-$project" "gitea-bootstrap-seed-$project"; do
+		kubectl get configmap "$cm" -n "$JC_DEV_NS" >/dev/null 2>&1 || continue
+		kubectl get configmap "$cm" -n "$JC_DEV_NS" \
+			-o "jsonpath={.data.$1\\.yaml}" 2>/dev/null | sed -n 's/^ *slug: *//p' | head -1
+		return 0
+	done
 }
 
 _jc_client_secret() {
@@ -91,7 +95,7 @@ _jc_slug_serving() {
 		python3 -c 'import json, re, sys
 data = {}
 for cm in json.load(sys.stdin).get("items") or []:
-    if cm["metadata"]["name"].startswith("gitea-bootstrap-seed"):
+    if cm["metadata"]["name"].startswith(("gitea-bootstrap-seed", "gitea-seed-")):
         data.update(cm.get("data") or {})
 wanted = re.compile(r"^\s*enabledRepresentations:.*[\[ ,]" + re.escape(sys.argv[1]) + r"[\] ,]", re.M)
 for key in sorted(k for k in data if "__endpoints__" in k):
