@@ -49,6 +49,8 @@ from urllib.parse import quote, urlsplit
 
 from . import ws
 
+# A dataset's expected types and their freshness, one file per dataset (T-4088..T-4099).
+EXPECTED_DIR = Path(__file__).resolve().parent / "expected"
 SEED_DIR = Path(
     os.environ.get("SEED_DIR", "/workspace/joinedcontext-deployment/components/context-gateway/seed")
 )
@@ -400,21 +402,34 @@ def source_tokens(entity) -> set[str]:
 
 # ---- one dataset ----
 
+def load_expected(folder: Path, name: str) -> dict:
+    """`{type: {"maxAge": "20m" | null}}` from `<folder>/<name>.json`, or {} when it has none."""
+    path = folder / f"{name}.json"
+    if not path.is_file():
+        return {}
+    types = json.loads(path.read_text(encoding="utf-8"))["types"]
+    for typ, spec in types.items():
+        if spec.get("maxAge") is not None and duration_seconds(spec["maxAge"]) is None:
+            raise ValueError(f"{path}: {typ} maxAge {spec['maxAge']!r} is not <n>s|m|h|d")
+    return types
+
+
 def validate(http: Http, name: str, base_url: str, ckan_url: str, seed_root: Path = SEED_DIR,
-             ws_seconds: float = 60, now: dt.datetime | None = None) -> list[Check]:
+             ws_seconds: float = 60, now: dt.datetime | None = None, expected_dir: Path = EXPECTED_DIR) -> list[Check]:
     out: list[Check] = []
 
     def add(check, verdict, measured, detail=""):
         out.append(Check(name, check, verdict, str(measured), detail))
 
     try:
-        _validate(http, name, base_url.rstrip("/"), ckan_url.rstrip("/"), seed_root, ws_seconds, now, add)
+        expected = load_expected(expected_dir, name)
+        _validate(http, name, base_url.rstrip("/"), ckan_url.rstrip("/"), seed_root, ws_seconds, now, expected, add)
     except Exception as error:  # noqa: BLE001 - a crash is a red line, never a silent stop
         add("error", "FAIL", type(error).__name__, str(error)[:200])
     return out
 
 
-def _validate(http, name, base_url, ckan_url, seed_root, ws_seconds, now, add):
+def _validate(http, name, base_url, ckan_url, seed_root, ws_seconds, now, expected, add):
     r = http.fetch(f"{ckan_url}/api/3/action/package_show?id={quote(name)}", "application/json")
     if r.status != 200:
         add("ckan.package_show", "FAIL", f"HTTP {r.status}")
@@ -462,6 +477,10 @@ def _validate(http, name, base_url, ckan_url, seed_root, ws_seconds, now, add):
     types = listed or sorted(declared)
     # Without /types a type is only declared: one with no entity yet is a WARN, not a FAIL.
     declared_only = not listed
+    if expected:
+        absent = sorted(set(expected) - set(types))
+        add("expected.types", "FAIL" if absent else "PASS",
+            f"{len(expected) - len(absent)}/{len(expected)} expected types served", ", ".join(absent))
 
     feeds = load_feeds(seed_root, ORG_NAMESPACES.get(org, (org,))) if seed_root.is_dir() else {}
     live = [t for t in types if t in feeds and feeds[t].period <= LIVE_SECONDS]
@@ -475,7 +494,7 @@ def _validate(http, name, base_url, ckan_url, seed_root, ws_seconds, now, add):
         for typ in types:
             try:
                 _type(http, base, org, typ, feeds, collections, datastore, resources, ckan_url,
-                      seed_root, now, rng, source_cache, declared_only, add)
+                      seed_root, now, rng, source_cache, declared_only, expected.get(typ, {}), add)
             except Exception as error:  # noqa: BLE001 - one type's crash leaves the others checked
                 add(f"ngsi.{typ}", "FAIL", type(error).__name__, str(error)[:200])
         for line in ws_lines.result():
@@ -483,7 +502,7 @@ def _validate(http, name, base_url, ckan_url, seed_root, ws_seconds, now, add):
 
 
 def _type(http, base, org, typ, feeds, collections, datastore, resources, ckan_url, seed_root, now, rng, cache,
-          declared_only, add):
+          declared_only, expect, add):
     items, total, error = scan(http, base, typ)
     if error:
         add(f"ngsi.{typ}.entities", "FAIL", error)
@@ -514,8 +533,13 @@ def _type(http, base, org, typ, feeds, collections, datastore, resources, ckan_u
     feed = feeds.get(typ)
     newest = max((t for t in map(newest_write, items) if t), default=None)
     age = (now - newest).total_seconds() if newest else None
+    max_age = duration_seconds(expect.get("maxAge"))
     if newest is None:
-        add(f"fresh.{typ}", "SKIP", "no time attribute")
+        add(f"fresh.{typ}", "FAIL" if max_age else "SKIP", "no time attribute",
+            f"expected within {expect['maxAge']}" if max_age else "")
+    elif max_age:
+        add(f"fresh.{typ}", "PASS" if age <= max_age else "FAIL", f"newest {hours(age)} ago",
+            f"expected within {expect['maxAge']} (tests/datasets/expected)")
     elif feed is None:
         reason = "no Pipeline in the seed writes it" if seed_root.is_dir() else f"no seed at {seed_root}"
         add(f"fresh.{typ}", "SKIP", f"newest {hours(age)} ago", reason)
@@ -649,7 +673,7 @@ def _websocket(http, base, types, live, seconds) -> list[tuple]:
     elif notes:
         lines.append(("ws.notify", "PASS", f"{notes} notifications in {seconds:.0f}s", probe_type))
     elif status == 201:
-        items, _, error = scan(http, base, probe_type, cap=1000)
+        items, _, error = scan(http, base, probe_type)
         newest = max((t for t in map(newest_write, items) if t), default=None)
         if not error and newest and newest >= started:
             lines.append(("ws.notify", "FAIL", f"0 notifications in {seconds:.0f}s",
