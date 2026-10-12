@@ -50,9 +50,9 @@ COVERAGE = [
     ("antares", "crates/antares-linkml/", "task:T-3777"),
     ("antares", "addons/joinedcontext-policy/", "antares addons/joinedcontext-policy/tests/access.rs"),
     ("antares", "/q/policy", "antares crates/antares-ops/tests/policy_documents.rs"),
-    ("antares", "/q/views", "task:T-3855"),
-    ("antares", "/q/schemas", "task:T-3855"),
-    ("antares", "/q/grants", "task:T-3855"),
+    ("antares", "/q/views", "antares crates/antares-icsr/tests/q_admin_sweep.rs"),
+    ("antares", "/q/schemas", "antares crates/antares-icsr/tests/q_admin_sweep.rs"),
+    ("antares", "/q/grants", "antares crates/antares-icsr/tests/q_admin_sweep.rs"),
     ("antares", "/q/", "antares crates/antares-api/tests/admin_auth.rs"),
     # Peer-facing, its one credential the mapped subscriptionId (operation-matrix.yaml).
     ("antares", "/ex/v1/remote-notify", "task:T-3588"),

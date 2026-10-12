@@ -143,6 +143,6 @@ def test_a_served_route_without_a_row_and_a_row_nobody_serves_fail(code):
 
 def test_the_first_coverage_rule_that_matches_decides():
     row = ["antares", "http", "GET", "/q/views", "crates/antares-ops/src/views.rs:1", ""]
-    assert routes.authz(row) == "task:T-3855"
+    assert routes.authz(row) == "antares crates/antares-icsr/tests/q_admin_sweep.rs"
     row[3] = "/q/tenants"
     assert routes.authz(row) == "antares crates/antares-api/tests/admin_auth.rs"
