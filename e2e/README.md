@@ -29,6 +29,8 @@ Browser end-to-end user journeys for the JoinedContext Portal UI (React 19 / axu
 - `PORTAL_APP_B_SLUG`: the slug of an endpoint B reads; journey 20 expects it to answer 404 on A's host.
 - `PORTAL_APPS_DOMAIN`: the apex every App's `{name}.apps.` host sits under (default: the `BASE_URL` host without `portal.`).
 - `PORTAL_USABILITY_PROJECT`: the project journey 33 measures its five tasks in (default `helsinki`, the DEMO.md data). The journey only reads; each task's clicks, page loads, views and seconds go to `$JC_REPORTS_DIR/usability/<task>.json`, and the slowest step of a task over a minute or ten clicks is the friction to file (T-3282).
+- `JC_CAMERA_SIM` / `JC_PLATFORM_IMAGE`: the camera simulator journey 34 runs: a `jc-camera-sim` binary, or else the platform image by digest, run through docker with the run's key dir mounted read-only. One of them must be set; journey 34 fails naming both otherwise.
+- `CAMERA_SPACE` (default `helsinki`), `CAMERA_OWNER` (default `PORTAL_USER`), `CAMERA_FRAMES` (default `5`), `JC_ORG_DOMAIN` (default `hel.fi`), `IDM_URL` and `KEYCLOAK_REALM` (default `dev`): journey 34's space, accountable person, frames per run, the organization domain of the Device URN and the realm whose token endpoint the camera signs in at. It works in `PORTAL_PROJECT` (default `helsinki`), writes its screenshots to `$JC_REPORTS_DIR/journey-34/` and removes the broker, ServiceAccounts, DataSource, Pipeline and Endpoint it made, all named `*-NNNN` for the smoke janitor (T-4047).
 - `JC_REPORTS_DIR`: Target folder for JUnit, HTML, and artifact test reports.
 - `E2E_ALL_BROWSERS`: If set, runs Chromium, Firefox, and WebKit; otherwise runs Chromium only.
 
