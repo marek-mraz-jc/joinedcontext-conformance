@@ -42,7 +42,9 @@ BEHIND_S = 30.0
 IN_FLIGHT_S = 10.0
 COMPLETENESS = 0.95
 WS_P95_S = 1.0
-TOPICS = [f"/hfp/v2/journey/ongoing/vp/bus/+/+/{route}/#" for route in ("2510", "2550", "4560", "4570")]
+# The hsl-hfp DataSource's fixed list (T-3893): four bus trunk lines, every tram, metro, train, ferry.
+TOPICS = [f"/hfp/v2/journey/ongoing/vp/bus/+/+/{route}/#" for route in ("2510", "2550", "4560", "4570")] + [
+    f"/hfp/v2/journey/ongoing/vp/{mode}/#" for mode in ("tram", "metro", "train", "ferry")]
 
 
 def epoch(stamp: str) -> float:
