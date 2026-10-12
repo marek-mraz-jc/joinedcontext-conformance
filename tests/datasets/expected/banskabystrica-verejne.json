@@ -1,0 +1,7 @@
+{
+  "types": {
+    "AirQualityObserved": {"maxAge": "2h"},
+    "Event": {"maxAge": "2d"},
+    "School": {"maxAge": "8d"}
+  }
+}

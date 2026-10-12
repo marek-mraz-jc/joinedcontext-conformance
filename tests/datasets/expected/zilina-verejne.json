@@ -1,0 +1,7 @@
+{
+  "types": {
+    "AirQualityObserved": {"maxAge": "2h"},
+    "GtfsStop": {"maxAge": "36h"},
+    "PointOfInterest": {"maxAge": "11d"}
+  }
+}

@@ -404,7 +404,9 @@ def source_tokens(entity) -> set[str]:
 # ---- one dataset ----
 
 def load_expected(folder: Path, name: str) -> dict:
-    """`{type: {"maxAge": "20m" | null, "emptyAllowed": [attr]}}` from `<folder>/<name>.json`, or {}."""
+    """`{type: {"maxAge": "20m" | null, "numeric": [attr], "emptyAllowed": [attr]}}` from
+    `<folder>/<name>.json`, or {} when it has none. `numeric` names the Attributes whose value must be a
+    number on every entity; `emptyAllowed` the ones a type writes empty on purpose."""
     path = folder / f"{name}.json"
     if not path.is_file():
         return {}
@@ -414,6 +416,9 @@ def load_expected(folder: Path, name: str) -> dict:
             raise ValueError(f"{path}: {typ} emptyAllowed is not a list of attribute names")
         if spec.get("maxAge") is not None and duration_seconds(spec["maxAge"]) is None:
             raise ValueError(f"{path}: {typ} maxAge {spec['maxAge']!r} is not <n>s|m|h|d")
+        numeric = spec.get("numeric", [])
+        if not isinstance(numeric, list) or not all(isinstance(a, str) and a for a in numeric):
+            raise ValueError(f"{path}: {typ} numeric {numeric!r} is not a list of attribute names")
     return types
 
 
@@ -527,6 +532,16 @@ def _type(http, base, org, typ, feeds, collections, datastore, resources, ckan_u
         bad = sum(found[check].values())
         add(f"ngsi.{typ}.{check}", "FAIL" if bad else "PASS", f"{bad} problems in {len(items)}",
             summary(found[check], example, check))
+    # A value the expectations say is a number: a dataset of "not measured" texts is not one (T-4081).
+    numeric = expect.get("numeric", [])
+    if numeric:
+        def number(e, a):
+            v = e.get(a)
+            v = v.get("value") if isinstance(v, dict) else v
+            return isinstance(v, (int, float)) and not isinstance(v, bool)
+        bad = [f"{e.get('id')} {a}" for e in items for a in numeric if not number(e, a)]
+        add(f"ngsi.{typ}.numeric", "FAIL" if bad else "PASS", f"{len(bad)} not a number in {len(items)}",
+            ", ".join(bad[:3]))
     if not q["located"]:
         add(f"ngsi.{typ}.location", "SKIP", "no location")
     elif found["location"]:
@@ -585,9 +600,13 @@ def _type(http, base, org, typ, feeds, collections, datastore, resources, ckan_u
             n = ogc_walk(http, page)
         ok = isinstance(n, int) and abs(n - total) <= tolerance and r.secs <= EXPORT_SECONDS
         add(f"rep.{typ}.ogc", "PASS" if ok else "FAIL", f"{n} vs {total} in {r.secs:.1f}s", "" if r.status == 200 else f"HTTP {r.status}")
-        bare = [f.get("id") for f in page.get("features", []) if not f.get("geometry")]
-        add(f"ogc.{typ}.geometry", "FAIL" if bare else "PASS", f"{len(bare)} of {len(page.get('features', []))} without geometry",
-            ", ".join(map(str, bare[:3])))
+        features = page.get("features", [])
+        bare = [f.get("id") for f in features if not f.get("geometry")]
+        if features:
+            add(f"ogc.{typ}.geometry", "FAIL" if bare else "PASS", f"{len(bare)} of {len(features)} without geometry",
+                ", ".join(map(str, bare[:3])))
+        else:
+            add(f"ogc.{typ}.geometry", "SKIP", "no feature on the first page")
     elif q["located"]:
         add(f"ogc.{typ}.collection", "FAIL", "not in /collections", "a located type")
     if typ in datastore:

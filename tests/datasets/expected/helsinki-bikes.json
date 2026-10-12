@@ -1,0 +1,5 @@
+{
+  "types": {
+    "BikeHireDockingStation": {"maxAge": "20m"}
+  }
+}
