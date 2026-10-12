@@ -1,4 +1,5 @@
 {
-  "types": ["CreativeWork"],
-  "max_age": {"CreativeWork": "11d"}
+  "types": {
+    "CreativeWork": {"maxAge": "11d"}
+  }
 }
