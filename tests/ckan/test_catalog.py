@@ -8,11 +8,13 @@ from __future__ import annotations
 
 import copy
 import json
+import subprocess
 from pathlib import Path
 
 import pytest
 
-from catalog import check, licence_code, main, offer, offer_mismatches, themes, uncatalogued
+import catalog
+from catalog import check, licence_code, main, offer, offer_mismatches, seeded_endpoints, themes, uncatalogued
 
 FIXTURES = Path(__file__).resolve().parent / "fixtures"
 CORE_SHAPES = (FIXTURES / "dcat-ap-3.0.core.shapes.ttl").read_text(encoding="utf-8")
@@ -113,3 +115,25 @@ def test_the_runner_refuses_shapes_that_are_not_the_pinned_release(tmp_path, mon
 def test_the_runner_refuses_a_base_that_is_not_https() -> None:
     with pytest.raises(SystemExit, match="https"):
         main(["helsinki", "--base", "http://dev.joinedcontext.com"])
+
+
+def test_the_seed_is_read_under_its_new_name_and_its_old_one(monkeypatch):
+    """Deployment T-3998 renamed gitea-bootstrap-seed-<project> to gitea-seed-<project>; a
+    cluster holds one or the other while the change rolls out."""
+    seed = {"data": {"projects__p__spaces__s__endpoints__air.yaml": "spec:\n  slug: air1\n",
+                     "projects__p__spaces__s__space.yaml": "spec: {}\n"}}
+    asked = []
+
+    def kubectl(args, **_):
+        asked.append(args[3])
+        found = args[3] in held
+        return subprocess.CompletedProcess(args, 0 if found else 1, json.dumps(seed) if found else "", "" if found else "NotFound")
+
+    monkeypatch.setattr(catalog.subprocess, "run", kubectl)
+    for held in ({"gitea-seed-p"}, {"gitea-bootstrap-seed-p"}):
+        asked.clear()
+        assert seeded_endpoints("p", "dev") == {"air": "air1"}
+    assert asked == ["gitea-seed-p", "gitea-bootstrap-seed-p"]
+    held = set()
+    with pytest.raises(subprocess.CalledProcessError):
+        seeded_endpoints("p", "dev")
