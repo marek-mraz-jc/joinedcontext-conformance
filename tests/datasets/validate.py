@@ -650,11 +650,13 @@ def _type(http, base, org, typ, feeds, collections, datastore, resources, ckan_u
         add(f"source.{typ}", "SKIP", "not probed", "; ".join(sorted(set(reasons))) or "no DataSource")
         return
     sample = rng.sample(items, min(5, len(items)))
-    hits = sum(1 for e in sample if any(tok in body for body in bodies for tok in source_tokens(e)))
+    missing = [e for e in sample if not any(tok in body for body in bodies for tok in source_tokens(e))]
+    hits = len(sample) - len(missing)
     ok = bool(sample) and hits >= math.ceil(len(sample) * 0.6)
     # An entity may come from a source that was not probed: only a full probe can fail.
     verdict = "PASS" if ok else ("SKIP" if reasons else "FAIL")
-    detail = "" if ok else ", ".join(str(e.get("id")) for e in sample[:3])
+    # The ones not found, never the sample's first: a found entity named here reads as a stray.
+    detail = "" if ok else ", ".join(str(e.get("id")) for e in missing[:3])
     if reasons and not ok:
         detail = f"not probed: {'; '.join(sorted(set(reasons)))}; missing: {detail}"
     add(f"source.{typ}", verdict, f"{hits}/{len(sample)} entities found in the source", detail)

@@ -213,6 +213,13 @@ CASES = {
 }
 
 
+def run(state):
+    with tempfile.TemporaryDirectory() as folder:
+        Path(folder, "fixture.json").write_text(json.dumps({"types": state["expected"]}), encoding="utf-8")
+        return validate(Recorded(state), "fixture", BASE_URL, CKAN_URL, SEED, ws_seconds=0, expected_dir=Path(folder),
+                        whole_exports=state["whole_exports"])
+
+
 def main() -> int:
     # The seed reading the checks rest on: periods, crons, and a type named only in a mapping.
     assert duration_seconds("5m") == 300 and duration_seconds("168h") == 604800 and duration_seconds("") is None
@@ -231,10 +238,7 @@ def main() -> int:
     for case, (breaks, expected) in CASES.items():
         state = good()
         breaks(state)
-        with tempfile.TemporaryDirectory() as folder:
-            Path(folder, "fixture.json").write_text(json.dumps({"types": state["expected"]}), encoding="utf-8")
-            checks = validate(Recorded(state), "fixture", BASE_URL, CKAN_URL, SEED, ws_seconds=0, expected_dir=Path(folder),
-                              whole_exports=state["whole_exports"])
+        checks = run(state)
         failed = {c.check for c in checks if c.verdict == "FAIL"}
         verdict = "ok" if failed == expected else "WRONG"
         failures += failed != expected
@@ -242,6 +246,11 @@ def main() -> int:
         if failed != expected:
             for c in checks:
                 print(f"        {c.verdict} {c.check} {c.measured} {c.detail}")
+    # T-4109: a source FAIL names the entities it did not find, not the sample's first three.
+    state = good()
+    state.update(source='{"id": "pr-0", "name": "P+R Station 0"}')
+    named = next(c.detail for c in run(state) if c.check == f"source.{TYPE}")
+    assert named and ":pr-0" not in named and ":pr-1" in named and ":pr-2" in named, named
     print(f"{len(CASES) - failures}/{len(CASES)} cases held")
     return 1 if failures else 0
 
