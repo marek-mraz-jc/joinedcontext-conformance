@@ -53,6 +53,8 @@ jobs:
         run: python3 tests/mcp/selftest.py
       - name: the DCAT-AP record and the CKAN publication go red when they are wrong (T-0320)
         run: python3 tests/ckan/selftest.py
+      - name: the dataset validator goes red on every break it checks, from recorded fixtures (T-4087)
+        run: python3 tests/datasets/selftest.py
       - name: the committed record conforms to the DCAT-AP core shapes with nothing configured
         run: python3 -m pytest tests/ckan -q
       - name: the pipeline runner's and each App pod's egress, and per-project isolation (T-1701, T-1702, T-2839)

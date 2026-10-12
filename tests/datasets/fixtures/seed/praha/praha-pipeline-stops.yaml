@@ -1,0 +1,11 @@
+# A Pipeline with no output.type: its type is read from the mapping beside it.
+apiVersion: joinedcontext.com/v1alpha1
+kind: Pipeline
+metadata:
+  name: stops
+  namespace: praha
+spec:
+  class: auto
+  schedule: "20 4 * * 1"
+  source:
+    dataSourceRef: { kind: DataSource, name: parking-occupancy }
