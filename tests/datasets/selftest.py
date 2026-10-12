@@ -31,7 +31,9 @@ from urllib.parse import parse_qs, urlsplit
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
-from tests.datasets.validate import Http, Resp, cron_seconds, duration_seconds, load_feeds, validate  # noqa: E402
+from tests.datasets.validate import (  # noqa: E402
+    EXPECTED_DIR, Http, Resp, cron_seconds, duration_seconds, load_expected, load_feeds, validate,
+)
 
 HERE = Path(__file__).resolve().parent
 SEED = HERE / "fixtures" / "seed"
@@ -181,6 +183,11 @@ CASES = {
     "403 export": (lambda s: s.update(json_status=403), {f"rep.{TYPE}.json", "ckan.resource JSON"}),
     "stale type": (lambda s: s.update(written_ago=dt.timedelta(hours=3)), {f"fresh.{TYPE}"}),
     "ws silence": (lambda s: s.update(notifications=0, written_ago=dt.timedelta(0)), {"ws.notify"}),
+    "expected type absent": (lambda s: s.update(expected={"types": [TYPE, "GtfsStop"]}), {"expected.types"}),
+    "older than expected": (
+        lambda s: s.update(expected={"types": [TYPE], "max_age": {TYPE: "1m"}}, written_ago=dt.timedelta(minutes=5)),
+        {f"fresh.{TYPE}"},
+    ),
     "wrong host, not in source": (
         lambda s: s.update(endpoint_host="https://portal.dev.example.test", source="{}"),
         {"ckan.endpoint_host", f"source.{TYPE}"},
@@ -198,12 +205,19 @@ def main() -> int:
     assert feeds[TYPE].period == 300 and feeds[TYPE].sources[0]["http"]["url"].endswith("parking.json"), feeds
     assert feeds["GtfsStop"].period == 604800, feeds
     assert load_feeds(SEED, ("nowhere",)) == {}
+    # Every committed expectation reads, names types, and spells its ages as durations.
+    for path in sorted(EXPECTED_DIR.glob("*.json")):
+        wanted = load_expected(path.stem)
+        assert wanted.get("types") and all(isinstance(t, str) for t in wanted["types"]), path
+        for typ, age in wanted.get("max_age", {}).items():
+            assert typ in wanted["types"] and duration_seconds(age), (path, typ, age)
 
     failures = 0
     for case, (breaks, expected) in CASES.items():
         state = good()
         breaks(state)
-        checks = validate(Recorded(state), "fixture", BASE_URL, CKAN_URL, SEED, ws_seconds=0)
+        checks = validate(Recorded(state), "fixture", BASE_URL, CKAN_URL, SEED, ws_seconds=0,
+                          expected=state.get("expected", {}))
         failed = {c.check for c in checks if c.verdict == "FAIL"}
         verdict = "ok" if failed == expected else "WRONG"
         failures += failed != expected

@@ -24,6 +24,14 @@ attribute, no live type, a source that needs a key) say what was not held agains
   to the `BASE_URL` host, only after an anonymous 401/403, never across a redirect, and never
   printed or written.
 
+## Expectations per dataset
+
+`expected/<dataset>.json` holds what the dataset's validation task wrote down: `types`, every
+type the dataset must serve (`expected.types` FAILs on one that is absent), and `max_age`, per
+type, the oldest its newest write may be (`"2h"`, `"36h"`, `"11d"`), which `fresh.<Type>` holds
+instead of the seed's schedule. One file per dataset, so the per-dataset tasks never edit the
+same file; the selftest reads every file.
+
 ## What a line means
 
 - `fresh.<Type>`: the newest `modifiedAt`/`observedAt`/`dateObserved` against 1.5 times the

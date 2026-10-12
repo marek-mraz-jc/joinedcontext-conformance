@@ -148,6 +148,17 @@ class Feed:
     sources: list  # DataSource specs
 
 
+EXPECTED_DIR = Path(__file__).resolve().parent / "expected"
+
+
+def load_expected(name: str, root: Path = EXPECTED_DIR) -> dict:
+    """What a dataset's validation task wrote down for it (T-4089): `types`, every type the
+    dataset must serve, and `max_age`, per type, the oldest its newest write may be ("2h").
+    A dataset without a file expects nothing beyond what its seed says."""
+    path = root / f"{name}.json"
+    return json.loads(path.read_text()) if path.is_file() else {}
+
+
 def duration_seconds(text) -> float | None:
     m = re.fullmatch(r"(\d+)\s*([smhd])", str(text or "").strip())
     return int(m[1]) * {"s": 1, "m": 60, "h": 3600, "d": 86400}[m[2]] if m else None
@@ -401,20 +412,22 @@ def source_tokens(entity) -> set[str]:
 # ---- one dataset ----
 
 def validate(http: Http, name: str, base_url: str, ckan_url: str, seed_root: Path = SEED_DIR,
-             ws_seconds: float = 60, now: dt.datetime | None = None) -> list[Check]:
+             ws_seconds: float = 60, now: dt.datetime | None = None,
+             expected: dict | None = None) -> list[Check]:
     out: list[Check] = []
 
     def add(check, verdict, measured, detail=""):
         out.append(Check(name, check, verdict, str(measured), detail))
 
     try:
-        _validate(http, name, base_url.rstrip("/"), ckan_url.rstrip("/"), seed_root, ws_seconds, now, add)
+        _validate(http, name, base_url.rstrip("/"), ckan_url.rstrip("/"), seed_root, ws_seconds, now, add,
+                  load_expected(name) if expected is None else expected)
     except Exception as error:  # noqa: BLE001 - a crash is a red line, never a silent stop
         add("error", "FAIL", type(error).__name__, str(error)[:200])
     return out
 
 
-def _validate(http, name, base_url, ckan_url, seed_root, ws_seconds, now, add):
+def _validate(http, name, base_url, ckan_url, seed_root, ws_seconds, now, add, expected):
     r = http.fetch(f"{ckan_url}/api/3/action/package_show?id={quote(name)}", "application/json")
     if r.status != 200:
         add("ckan.package_show", "FAIL", f"HTTP {r.status}")
@@ -460,6 +473,11 @@ def _validate(http, name, base_url, ckan_url, seed_root, ws_seconds, now, add):
     if listed and missing:
         add("ngsi.types.declared", "WARN", f"{len(missing)} declared types not listed", ", ".join(missing))
     types = listed or sorted(declared)
+    if expected.get("types"):
+        absent = sorted(set(expected["types"]) - set(types))
+        add("expected.types", "FAIL" if absent else "PASS",
+            f"{len(expected['types']) - len(absent)} of {len(expected['types'])} expected types",
+            ", ".join(absent))
     # Without /types a type is only declared: one with no entity yet is a WARN, not a FAIL.
     declared_only = not listed
 
@@ -475,7 +493,8 @@ def _validate(http, name, base_url, ckan_url, seed_root, ws_seconds, now, add):
         for typ in types:
             try:
                 _type(http, base, org, typ, feeds, collections, datastore, resources, ckan_url,
-                      seed_root, now, rng, source_cache, declared_only, add)
+                      seed_root, now, rng, source_cache, declared_only, add,
+                      max_age=duration_seconds(expected.get("max_age", {}).get(typ)))
             except Exception as error:  # noqa: BLE001 - one type's crash leaves the others checked
                 add(f"ngsi.{typ}", "FAIL", type(error).__name__, str(error)[:200])
         for line in ws_lines.result():
@@ -483,7 +502,7 @@ def _validate(http, name, base_url, ckan_url, seed_root, ws_seconds, now, add):
 
 
 def _type(http, base, org, typ, feeds, collections, datastore, resources, ckan_url, seed_root, now, rng, cache,
-          declared_only, add):
+          declared_only, add, max_age=None):
     items, total, error = scan(http, base, typ)
     if error:
         add(f"ngsi.{typ}.entities", "FAIL", error)
@@ -516,6 +535,10 @@ def _type(http, base, org, typ, feeds, collections, datastore, resources, ckan_u
     age = (now - newest).total_seconds() if newest else None
     if newest is None:
         add(f"fresh.{typ}", "SKIP", "no time attribute")
+    elif max_age is not None:
+        # The dataset's own expectation wins over the schedule the seed implies.
+        add(f"fresh.{typ}", "PASS" if age <= max_age else "FAIL", f"newest {hours(age)} ago",
+            f"expected within {hours(max_age)}")
     elif feed is None:
         reason = "no Pipeline in the seed writes it" if seed_root.is_dir() else f"no seed at {seed_root}"
         add(f"fresh.{typ}", "SKIP", f"newest {hours(age)} ago", reason)
