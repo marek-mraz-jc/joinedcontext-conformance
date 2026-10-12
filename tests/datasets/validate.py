@@ -30,6 +30,7 @@ from __future__ import annotations
 
 import csv
 import datetime as dt
+import gzip
 import hashlib
 import io
 import json
@@ -274,7 +275,7 @@ def newest_write(entity) -> dt.datetime | None:
     return max((t for t in times if t), default=None)
 
 
-def quality(org: str, typ: str, items: list, now: dt.datetime) -> dict:
+def quality(org: str, typ: str, items: list, now: dt.datetime, empty_allowed=()) -> dict:
     """What is wrong with the type's entities: kind -> (count, an example id), per check."""
     ids = Counter(e.get("id") for e in items)
     found = {"ids": Counter(), "values": Counter(), "location": Counter(), "area": Counter()}
@@ -298,7 +299,7 @@ def quality(org: str, typ: str, items: list, now: dt.datetime) -> dict:
             if key in ("id", "type", "@context", "createdAt", "modifiedAt", "location"):
                 continue
             v = value(attr)
-            if v is None or v == "" or v == [] or v == {}:
+            if (v is None or v == "" or v == [] or v == {}) and key not in empty_allowed:
                 flag("values", f"empty {key}", eid)
             elif isinstance(v, str) and v.strip().lower() in ("null", "none", "nan", "undefined"):
                 flag("values", f"literal {v.strip()!r} in {key}", eid)
@@ -403,13 +404,16 @@ def source_tokens(entity) -> set[str]:
 # ---- one dataset ----
 
 def load_expected(folder: Path, name: str) -> dict:
-    """`{type: {"maxAge": "20m" | null, "numeric": [attribute, ...]}}` from `<folder>/<name>.json`, or {}
-    when it has none. `numeric` names the Attributes whose value must be a number on every entity."""
+    """`{type: {"maxAge": "20m" | null, "numeric": [attr], "emptyAllowed": [attr]}}` from
+    `<folder>/<name>.json`, or {} when it has none. `numeric` names the Attributes whose value must be a
+    number on every entity; `emptyAllowed` the ones a type writes empty on purpose."""
     path = folder / f"{name}.json"
     if not path.is_file():
         return {}
     types = json.loads(path.read_text(encoding="utf-8"))["types"]
     for typ, spec in types.items():
+        if not isinstance(spec.get("emptyAllowed", []), list):
+            raise ValueError(f"{path}: {typ} emptyAllowed is not a list of attribute names")
         if spec.get("maxAge") is not None and duration_seconds(spec["maxAge"]) is None:
             raise ValueError(f"{path}: {typ} maxAge {spec['maxAge']!r} is not <n>s|m|h|d")
         numeric = spec.get("numeric", [])
@@ -419,7 +423,8 @@ def load_expected(folder: Path, name: str) -> dict:
 
 
 def validate(http: Http, name: str, base_url: str, ckan_url: str, seed_root: Path = SEED_DIR,
-             ws_seconds: float = 60, now: dt.datetime | None = None, expected_dir: Path = EXPECTED_DIR) -> list[Check]:
+             ws_seconds: float = 60, now: dt.datetime | None = None, expected_dir: Path = EXPECTED_DIR,
+             whole_exports: bool = True) -> list[Check]:
     out: list[Check] = []
 
     def add(check, verdict, measured, detail=""):
@@ -427,13 +432,14 @@ def validate(http: Http, name: str, base_url: str, ckan_url: str, seed_root: Pat
 
     try:
         expected = load_expected(expected_dir, name)
-        _validate(http, name, base_url.rstrip("/"), ckan_url.rstrip("/"), seed_root, ws_seconds, now, expected, add)
+        _validate(http, name, base_url.rstrip("/"), ckan_url.rstrip("/"), seed_root, ws_seconds, now, expected,
+                  whole_exports, add)
     except Exception as error:  # noqa: BLE001 - a crash is a red line, never a silent stop
         add("error", "FAIL", type(error).__name__, str(error)[:200])
     return out
 
 
-def _validate(http, name, base_url, ckan_url, seed_root, ws_seconds, now, expected, add):
+def _validate(http, name, base_url, ckan_url, seed_root, ws_seconds, now, expected, whole_exports, add):
     r = http.fetch(f"{ckan_url}/api/3/action/package_show?id={quote(name)}", "application/json")
     if r.status != 200:
         add("ckan.package_show", "FAIL", f"HTTP {r.status}")
@@ -457,6 +463,10 @@ def _validate(http, name, base_url, ckan_url, seed_root, ws_seconds, now, expect
         label = f"ckan.resource {res.get('name') or fmt}"
         if url.rstrip("/").endswith("/ws"):
             continue  # the WebSocket is checked under ws
+        if not whole_exports and re.search(r"/file\.\w+$", url):
+            # T-4107: a whole-dataset XLSX took dev's gateway down; the per-type exports still run.
+            add(label, "SKIP", "not fetched", "--no-whole-exports")
+            continue
         if url.rstrip("/").endswith("/mcp"):
             r = http.fetch(url, "application/json, text/event-stream", "POST", MCP_INIT, limit=65536)
         else:
@@ -516,7 +526,7 @@ def _type(http, base, org, typ, feeds, collections, datastore, resources, ckan_u
     else:
         add(f"ngsi.{typ}.count", "WARN" if declared_only else "FAIL", 0,
             "a declared type with no entity" if declared_only else "a listed type with no entity")
-    q = quality(org, typ, items, now)
+    q = quality(org, typ, items, now, set(expect.get("emptyAllowed", [])))
     found, example = q["found"], q["example"]
     for check in ("ids", "values"):
         bad = sum(found[check].values())
@@ -622,7 +632,10 @@ def _type(http, base, org, typ, feeds, collections, datastore, resources, ckan_u
             url = http_spec.get("url", "")
             if url not in cache:
                 accept = (http_spec.get("headers") or {}).get("Accept", "*/*")
-                r = http.fetch(url, accept, limit=64 << 20, timeout=90)
+                # Digitraffic answers 406 to a client that does not take gzip.
+                r = http.fetch(url, accept, headers={"Accept-Encoding": "gzip"}, limit=64 << 20, timeout=90)
+                if r.headers.get("content-encoding") == "gzip":
+                    r.body = gzip.decompress(r.body)
                 if r.status != 200:
                     cache[url] = f"the source answered HTTP {r.status}: {url}"
                 elif r.body.startswith(b"PK\x03\x04"):

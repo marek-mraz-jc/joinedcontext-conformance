@@ -77,6 +77,7 @@ def good() -> dict:
         "csv_rows": 3,
         "expected": {TYPE: {"maxAge": "20m"}},
         "ogc_paged": False,
+        "whole_exports": True,
         "json_status": 200,
         "notifications": 1,
         "endpoint_host": BASE_URL,
@@ -185,6 +186,13 @@ CASES = {
     "ogc counted over its pages": (lambda s: s.update(ogc_paged=True), set()),
     "an expected type missing": (lambda s: s["expected"].update(GtfsStop={"maxAge": None}), {"expected.types"}),
     "older than expected": (lambda s: s["expected"][TYPE].update(maxAge="30s"), {f"fresh.{TYPE}"}),
+    # The whole-dataset JSON answers 403, but it is not fetched: only the per-type line fails.
+    "403 export, whole exports skipped": (lambda s: s.update(json_status=403, whole_exports=False), {f"rep.{TYPE}.json"}),
+    "an empty value the dataset declares": (
+        lambda s: (s["entities"][1]["totalSpotNumber"].update(value=""),
+                   s["expected"][TYPE].update(emptyAllowed=["totalSpotNumber"])),
+        set(),
+    ),
     "numbers held": (lambda s: s["expected"][TYPE].update(numeric=["totalSpotNumber"]), set()),
     "a number written as text": (
         lambda s: (s["expected"][TYPE].update(numeric=["totalSpotNumber"]),
@@ -225,7 +233,8 @@ def main() -> int:
         breaks(state)
         with tempfile.TemporaryDirectory() as folder:
             Path(folder, "fixture.json").write_text(json.dumps({"types": state["expected"]}), encoding="utf-8")
-            checks = validate(Recorded(state), "fixture", BASE_URL, CKAN_URL, SEED, ws_seconds=0, expected_dir=Path(folder))
+            checks = validate(Recorded(state), "fixture", BASE_URL, CKAN_URL, SEED, ws_seconds=0, expected_dir=Path(folder),
+                              whole_exports=state["whole_exports"])
         failed = {c.check for c in checks if c.verdict == "FAIL"}
         verdict = "ok" if failed == expected else "WRONG"
         failures += failed != expected

@@ -43,7 +43,8 @@ attribute, no live type, a source that needs a key) say what was not held agains
 
 With it, `expected.types` fails when one of them is not served, and `fresh.<Type>` holds the type
 to its `maxAge` (`<n>s|m|h|d`) instead of the seed's schedule; `"maxAge": null` only requires the
-type, its freshness then comes from the seed (a type without a time attribute is a SKIP). One file per dataset, so the dataset tasks (T-4088..T-4099) never edit the same
+type, its freshness then comes from the seed (a type without a time attribute is a SKIP). `"emptyAllowed": ["departures"]` lists the attributes a
+type writes empty on purpose (HSL departures: an empty list once the feed has none). One file per dataset, so the dataset tasks (T-4088..T-4099) never edit the same
 file. The selftest reads every committed file, so a typo fails in CI.
 
 `selftest.py` serves a recorded dataset from memory and breaks it one way at a time (empty value,

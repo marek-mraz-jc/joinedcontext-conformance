@@ -26,6 +26,8 @@ def main(argv=None) -> int:
     parser.add_argument("--all", action="store_true", help="every dataset of the catalogue")
     parser.add_argument("--json", action="store_true", help="print the checks as JSON instead of the table")
     parser.add_argument("--ws-seconds", type=float, default=60, help="how long to listen for a notification")
+    parser.add_argument("--no-whole-exports", action="store_true",
+                        help="skip the whole-dataset file.* downloads (T-4107: one took dev's gateway down)")
     parser.add_argument("--parallel", type=int, default=2, help="datasets checked at once (dev is one node)")
     args = parser.parse_args(argv)
     base_url = os.environ.get("BASE_URL", "https://dev.joinedcontext.com").rstrip("/")
@@ -45,7 +47,8 @@ def main(argv=None) -> int:
 
     start = time.monotonic()
     with ThreadPoolExecutor(max(1, args.parallel)) as pool:
-        reports = list(pool.map(lambda n: validate(http, n, base_url, ckan_url, Path(SEED_DIR), args.ws_seconds), names))
+        reports = list(pool.map(lambda n: validate(http, n, base_url, ckan_url, Path(SEED_DIR), args.ws_seconds,
+                                                   whole_exports=not args.no_whole_exports), names))
     checks = [c for report in reports for c in report]
     failed = sum(c.verdict == "FAIL" for c in checks)
     if args.json:
