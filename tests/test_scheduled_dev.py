@@ -168,8 +168,9 @@ def test_main_writes_the_summary_file_failures_reads(tmp_path, monkeypatch):
     assert sd.main(["nightly", "--out", str(out)]) == 1
 
 
-# The forge seed as the cluster holds it since deployment T-3180: one ConfigMap per project,
-# `gitea-bootstrap-seed-<project>`, listed by `kubectl get configmaps -o json`. Another ConfigMap of
+# The forge seed as the cluster holds it: one ConfigMap per project, `gitea-seed-<project>` since
+# deployment T-3998 and `gitea-bootstrap-seed-<project>` before it (T-3180), listed by
+# `kubectl get configmaps -o json`; both names are read while a cluster may hold either. Another ConfigMap of
 # the namespace holds an endpoint that sorts first and enables both surfaces; the profile reads
 # the seed's ConfigMaps alone, so it never targets that one.
 SEED = {"items": [
@@ -180,7 +181,7 @@ SEED = {"items": [
         "projects__a__spaces__s__endpoints__plain.yaml": "spec:\n  slug: plain1\n  enabledRepresentations: [ngsi-ld, geojson]\n",
         "projects__a__spaces__s__endpoints__stations.yaml": "spec:\n  slug: stations1\n  enabledRepresentations: [ngsi-ld, csv]\n  # stations are not sta\n",
     }},
-    {"metadata": {"name": "gitea-bootstrap-seed-b"}, "data": {
+    {"metadata": {"name": "gitea-seed-b"}, "data": {
         "projects__b__spaces__s__endpoints__sensors.yaml": "spec:\n  slug: sens1\n  enabledRepresentations: [ngsi-ld, sta, ogc-features]\n",
         "projects__b__spaces__s__pipelines__p.yaml": "spec:\n  slug: notanendpoint\n  enabledRepresentations: [sta]\n",
     }},

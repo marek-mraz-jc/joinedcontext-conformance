@@ -4,9 +4,11 @@
 Each row of the `$filter` mapping table (Antares `odata-linkml-mapping.md` section 5.2) that the
 rig's data can hold is asked through `/x/views/{view}/odata/v4` and through
 `/x/views/{view}/ngsi-ld/v1`; the two answer the same Entity ids, under view `all` and under view
-`parity-restricted`. Rows the design maps but the build still answers 501 are listed in `LATER`
+`parity-restricted`. Rows `q` cannot say that the residual serves (Antares ADR-0028, T-3749,
+T-3758) are in `RESIDUAL` with the ids the seed owes them. Rows the design maps but the build still answers 501 are listed in `LATER`
 and checked to stay 501, so the row that starts working fails here until it moves into `ROWS`.
-Rejected rows answer 501 with the OData error object. Rows the rig holds no data for (string
+Rejected rows answer 501 with the OData error object. A string literal writes `/` as `%2F`: the
+ABNF's `pchar-no-SQUOTE` has no `/`, and a raw one is the 400 of a URL that is not OData. Rows the rig holds no data for (string
 functions F9 and F15, complex paths F20, ListProperty F22, LanguageProperty F31, VocabProperty
 F32, the navigation hop F24) are the crate's own tests (Antares `filter_props.rs`, `odata_query.rs`,
 `odata_filter_rows.rs`).
@@ -14,6 +16,7 @@ F32, the navigation hop F24) are the crate's own tests (Antares `filter_props.rs
 
 from __future__ import annotations
 
+import re
 from urllib.parse import quote
 
 import pytest
@@ -34,7 +37,15 @@ ROWS = [
     ("F7", "temperature lt 10 or NO2 eq 40", {"q": "temperature<10|NO2==40"}),
     ("F8", "(temperature lt 10 or NO2 eq 40) and NO2 gt 30", {"q": "(temperature<10|NO2==40);NO2>30"}),
     ("F10", "not (NO2 eq null)", {"q": "NO2"}),
+    ("F11", "not (temperature gt 10)", {"q": "temperature<=10"}),
     ("F12", "NO2 in (22, 40)", {"q": "NO2==22,40"}),
+    ("F14", "NO2 add 1 gt 30", {"q": "NO2>29"}),
+    (
+        "F18",
+        "year(temperature/@NgsiLd.observedAt) eq 2026",
+        {"q": "temperature.observedAt>=2026-01-01T00:00:00Z;temperature.observedAt<2027-01-01T00:00:00Z"},
+    ),
+    ("F19", "round(temperature) eq 9", {"q": "temperature>=8.5;temperature<9.5"}),
     ("F26", "temperature eq 9.0", {"q": "temperature==9.0"}),
     ("F28", "id eq 'urn:ngsi-ld:AirQualityObserved:bb-1'", {"id": "urn:ngsi-ld:AirQualityObserved:bb-1"}),
     (
@@ -59,19 +70,25 @@ ROWS = [
     ),
 ]
 
+BB1, BB2, BA1 = (f"urn:ngsi-ld:AirQualityObserved:{n}" for n in ("bb-1", "bb-2", "ba-1"))
+
+# served by the residual, no `q` to compare with: the ids of the seed (Antares
+# `ci/views/seed/conformance.json`: NO2 22, 31, 40 above temperature 11.5, 9.0, 14.2)
+RESIDUAL = [
+    ("F25", "NO2 gt temperature", [BB1, BB2, BA1]),
+    ("F25", "temperature ge NO2", []),
+    ("F14 F25", "NO2 gt temperature mul 3", [BB2]),
+]
+
 # mapped in the design, 501 in the build
 LATER: list[tuple[str, str]] = []
 
 REJECTED = [
-    ("F11", "not (temperature gt 10)"),
     ("F13", "NO2 has 1"),
-    ("F14", "NO2 add 1 gt 2"),
     ("F16", "matchesPattern(id,'a')"),
     ("F17", "length(id) gt 1"),
-    ("F18", "year(temperature/@NgsiLd.observedAt) eq 2026"),
-    ("F19", "round(temperature) eq 9"),
+    # a lambda over `scope` (a base member, no ListProperty): F23 serves ListProperties only
     ("F23", "scope/all(s: s eq '/SK/BB')"),
-    ("F25", "temperature gt NO2"),
     ("F27", "NO2 eq duration'P1D'"),
     ("F30", "geo.distance(location, geography'SRID=4326;POINT(19 48)') lt 1"),
     ("F33", "createdAt gt 2026-01-01T00:00:00Z"),
@@ -81,6 +98,7 @@ REJECTED = [
 def filtered(http, service_root: str, expression: str):
     # `$` stays literal (`%24filter` is a custom option) and so does `=` (the ABNF's EQ is "=" only)
     encoded = quote(expression, safe="=;'(),:/@")
+    encoded = re.sub(r"'[^']*'", lambda literal: literal[0].replace("/", "%2F"), encoded)
     return http.get(f"{service_root}/{ENTITY_SET}?$filter={encoded}&$select=id")
 
 
@@ -109,6 +127,20 @@ def test_filter_parity_with_q(http, door, row, expression, params):
     via_odata = sorted(e["id"] for e in a.json()["value"])
     via_q = sorted(e["id"] for e in b.json())
     assert via_odata == via_q, row
+
+
+@pytest.mark.parametrize(("row", "expression", "owed"), RESIDUAL, ids=[f"{r[0]} {r[1]}" for r in RESIDUAL])
+def test_residual_rows_answer_the_seed(http, door, row, expression, owed):
+    door, hidden = door
+    a = filtered(http, door, expression)
+    if any(name in expression for name in hidden):
+        assert a.status_code == 400, f"{row}: {a.status_code} {a.text}"
+        assert is_odata_error(a), a.text
+        return
+    assert a.status_code == 200, f"{row}: {a.text}"
+    # the view's own Entities: `parity-restricted` answers scope /SK/BB only
+    shown = {e["id"] for e in http.get(f"{ngsild_of(door)}/entities", params={"type": ENTITY_SET}).json()}
+    assert sorted(e["id"] for e in a.json()["value"]) == sorted(set(owed) & shown), row
 
 
 def test_parity_rows_select_something(http, odata_url):

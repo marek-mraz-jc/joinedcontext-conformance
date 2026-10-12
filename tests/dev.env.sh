@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Settings for a conformance run against the `dev` cluster (T-0784, TS-05, TS-09, TS-19).
 #
-#   . tests/dev.env.sh [security|mcp|e2e|etsi|ogc|sta|ckan|assistant|dsp|budgets|authz|schemathesis|portal]
+#   . tests/dev.env.sh [security|mcp|e2e|etsi|ogc|sta|ckan|assistant|dsp|budgets|authz|schemathesis|portal|helsinki-live]
 #
 # Source it, never run it: it exports the variables the suites read and it takes a suite name
 # because two suites read the same name for different subjects (`SPACE_URL` is the narrowed
@@ -33,13 +33,17 @@ _jc_missing=""
 
 # A seed key is the repository path with `/` as `__`; the dot of the file name is escaped for
 # jsonpath. The same read `scripts/smoke.sh` does, for the same reason.
-# The seed is one ConfigMap per project, `gitea-bootstrap-seed-<project>` (deployment T-3180);
-# a `projects__<project>__…` key names its own.
+# The seed is one ConfigMap per project, `gitea-seed-<project>` since deployment T-3998 and
+# `gitea-bootstrap-seed-<project>` before it (T-3180); a `projects__<project>__…` key names its own.
 _jc_slug() {
-	local project="${1#projects__}"
+	local project="${1#projects__}" cm
 	project="${project%%__*}"
-	kubectl get configmap "gitea-bootstrap-seed-$project" -n "$JC_DEV_NS" \
-		-o "jsonpath={.data.$1\\.yaml}" 2>/dev/null | sed -n 's/^ *slug: *//p' | head -1
+	for cm in "gitea-seed-$project" "gitea-bootstrap-seed-$project"; do
+		kubectl get configmap "$cm" -n "$JC_DEV_NS" >/dev/null 2>&1 || continue
+		kubectl get configmap "$cm" -n "$JC_DEV_NS" \
+			-o "jsonpath={.data.$1\\.yaml}" 2>/dev/null | sed -n 's/^ *slug: *//p' | head -1
+		return 0
+	done
 }
 
 _jc_client_secret() {
@@ -91,7 +95,7 @@ _jc_slug_serving() {
 		python3 -c 'import json, re, sys
 data = {}
 for cm in json.load(sys.stdin).get("items") or []:
-    if cm["metadata"]["name"].startswith("gitea-bootstrap-seed"):
+    if cm["metadata"]["name"].startswith(("gitea-bootstrap-seed", "gitea-seed-")):
         data.update(cm.get("data") or {})
 wanted = re.compile(r"^\s*enabledRepresentations:.*[\[ ,]" + re.escape(sys.argv[1]) + r"[\] ,]", re.M)
 for key in sorted(k for k in data if "__endpoints__" in k):
@@ -317,6 +321,16 @@ schemathesis)
 	export GATEWAY_TOKEN="$JC_DEV_TOKEN_GATEWAY"
 	[ -n "$JC_DEV_SLUG_AIR" ] && export ENDPOINT_SLUG="$JC_DEV_SLUG_AIR"
 	;;
+helsinki-live)
+	# T-3907: the buses on the transport endpoint against HSL's feed. The agent proxy's client is
+	# a ServiceAccount whose audience names every seeded endpoint; it only reads.
+	if [ -n "$JC_DEV_SLUG_TRANSPORT" ]; then
+		export HELSINKI_ENDPOINT_URL="$JC_DEV_BASE/api/endpoint/$JC_DEV_SLUG_TRANSPORT"
+	else
+		_jc_note "HELSINKI_ENDPOINT_URL: no helsinki-transport endpoint in the seed"
+	fi
+	export HELSINKI_TOKEN="$JC_DEV_TOKEN_GATEWAY"
+	;;
 portal)
 	# The browser journeys. The Portal has a host of its own behind the edge login, and the
 	# demo people are the ones the development profile seeds.
@@ -334,7 +348,7 @@ portal)
 	_jc_note "PORTAL_INVITE_URL, PORTAL_DRIFTED_FLOW, PORTAL_PUBLIC_DASHBOARD_URL: each names something produced out of band (those cases skip)"
 	;;
 *)
-	echo "tests/dev.env.sh: unknown suite '$_jc_suite' (security|mcp|e2e|etsi|ogc|sta|ckan|assistant|dsp|budgets|authz|schemathesis|portal)" >&2
+	echo "tests/dev.env.sh: unknown suite '$_jc_suite' (security|mcp|e2e|etsi|ogc|sta|ckan|assistant|dsp|budgets|authz|schemathesis|portal|helsinki-live)" >&2
 	;;
 esac
 

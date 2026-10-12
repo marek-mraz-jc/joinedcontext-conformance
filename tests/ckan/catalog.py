@@ -179,13 +179,19 @@ def check(jsonld: dict[str, Any], turtle: str, shapes: str, languages: list[str]
 
 def seeded_endpoints(project: str, namespace: str) -> dict[str, str]:
     """Endpoint name → slug for every endpoint of the project in the forge's bootstrap seed."""
-    raw = subprocess.run(
-        # One seed ConfigMap per project since deployment T-3180.
-        ["kubectl", "get", "configmap", f"gitea-bootstrap-seed-{project}", "-n", namespace, "-o", "json"],
-        check=True,
-        capture_output=True,
-        text=True,
-    ).stdout
+    # One seed ConfigMap per project: `gitea-seed-{project}` since deployment T-3998,
+    # `gitea-bootstrap-seed-{project}` before it (T-3180).
+    for name in (f"gitea-seed-{project}", f"gitea-bootstrap-seed-{project}"):
+        read = subprocess.run(
+            ["kubectl", "get", "configmap", name, "-n", namespace, "-o", "json"],
+            capture_output=True,
+            text=True,
+        )
+        if read.returncode == 0:
+            raw = read.stdout
+            break
+    else:
+        raise subprocess.CalledProcessError(read.returncode, read.args, read.stdout, read.stderr)
     found: dict[str, str] = {}
     prefix = f"projects__{project}__spaces__"
     for key, body in json.loads(raw).get("data", {}).items():

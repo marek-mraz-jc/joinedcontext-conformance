@@ -1,0 +1,148 @@
+{
+ "help": "recorded shape of package_show for a default public Endpoint, as jcctl publish ckan writes it (T-3886)",
+ "success": true,
+ "result": {
+  "id": "pkg-hki-air",
+  "name": "hki-air",
+  "title": "Helsinki air quality",
+  "private": false,
+  "state": "active",
+  "metadata_modified": "2026-10-12T00:40:00.000000",
+  "organization": {
+   "name": "helsinki"
+  },
+  "resources": [
+   {
+    "id": "res-00",
+    "name": "NGSI-LD API",
+    "url": "https://dev.joinedcontext.com/api/endpoint/k7m2q4hkiair/ngsi-ld/v1/",
+    "format": "NGSI-LD",
+    "mimetype": "application/ld+json",
+    "description": "The NGSI-LD API (ETSI GS CIM 009) of this dataset: query, filter and page its entities. The first ten of a type:\n\n    curl -H 'Accept: application/ld+json' 'https://dev.joinedcontext.com/api/endpoint/k7m2q4hkiair/ngsi-ld/v1/entities?type=<Type>&limit=10'\n\nAlways live: the catalogue holds this link, never a copy. Open to anyone, with no sign-in.",
+    "hash": "",
+    "state": "active"
+   },
+   {
+    "id": "res-01",
+    "name": "Live updates over WebSocket",
+    "url": "https://dev.joinedcontext.com/api/endpoint/k7m2q4hkiair/ws",
+    "format": "WebSocket",
+    "mimetype": "application/json",
+    "description": "Live updates: open one WebSocket, subscribe to the entities you want, and each change arrives as a message, with no server of your own. With websocat, then type the subscription:\n\n    websocat 'wss://dev.joinedcontext.com/api/endpoint/k7m2q4hkiair/ws'\n    {\"metadata\":{\"x-op\":\"x-subscribe\",\"x-id\":\"s1\"},\"body\":{\"type\":\"Subscription\",\"entities\":[{\"type\":\"<Type>\"}]}}\n\nAlways live: the catalogue holds this link, never a copy. Open to anyone, with no sign-in.",
+    "hash": "",
+    "state": "active"
+   },
+   {
+    "id": "res-02",
+    "name": "Model Context Protocol",
+    "url": "https://dev.joinedcontext.com/api/endpoint/k7m2q4hkiair/mcp",
+    "format": "MCP",
+    "mimetype": "application/json",
+    "description": "For AI assistants: a Model Context Protocol server over this dataset's endpoint https://dev.joinedcontext.com/api/endpoint/k7m2q4hkiair. It answers anyone, with no sign-in, what the endpoint serves the public.",
+    "hash": "",
+    "state": "active"
+   },
+   {
+    "id": "res-03",
+    "name": "OGC API - Features",
+    "url": "https://dev.joinedcontext.com/api/endpoint/k7m2q4hkiair/ogc/features/",
+    "format": "OGCFEAT",
+    "mimetype": "application/geo+json",
+    "description": "OGC API - Features, read-only: Part 1 (Core: collections and items), Part 2 (coordinate reference systems by reference) and Part 3 (Filtering with CQL2).",
+    "hash": "",
+    "state": "active"
+   },
+   {
+    "id": "res-04",
+    "name": "OData v4",
+    "url": "https://dev.joinedcontext.com/api/endpoint/k7m2q4hkiair/odata/v4/",
+    "format": "OData",
+    "mimetype": "application/json",
+    "description": "OData v4, read-only. In Excel: Data, Get Data, From Other Sources, From OData Feed. In Power BI: Get data, OData feed.",
+    "hash": "",
+    "state": "active"
+   },
+   {
+    "id": "res-05",
+    "name": "GeoJSON",
+    "url": "https://dev.joinedcontext.com/api/endpoint/k7m2q4hkiair/file.geojson",
+    "format": "GeoJSON",
+    "mimetype": "application/geo+json",
+    "description": "A GeoJSON feature collection that opens in QGIS, generated on each download from the endpoint's live data.",
+    "hash": "",
+    "state": "active"
+   },
+   {
+    "id": "res-06",
+    "name": "CSV",
+    "url": "https://dev.joinedcontext.com/api/endpoint/k7m2q4hkiair/file.csv",
+    "format": "CSV",
+    "mimetype": "text/csv",
+    "description": "A CSV table, generated on each download from the endpoint's live data.",
+    "hash": "",
+    "state": "active"
+   },
+   {
+    "id": "res-07",
+    "name": "Excel spreadsheet",
+    "url": "https://dev.joinedcontext.com/api/endpoint/k7m2q4hkiair/file.xlsx",
+    "format": "XLSX",
+    "mimetype": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    "description": "An Excel spreadsheet that opens in Excel or LibreOffice, generated on each download from the endpoint's live data.",
+    "hash": "",
+    "state": "active"
+   },
+   {
+    "id": "res-08",
+    "name": "JSON",
+    "url": "https://dev.joinedcontext.com/api/endpoint/k7m2q4hkiair/file.json",
+    "format": "JSON",
+    "mimetype": "application/json",
+    "description": "The entities as one JSON document, generated on each download from the endpoint's live data.",
+    "hash": "",
+    "state": "active"
+   },
+   {
+    "id": "res-09",
+    "name": "Export bundle",
+    "url": "https://dev.joinedcontext.com/api/endpoint/k7m2q4hkiair/file.zip",
+    "format": "ZIP",
+    "mimetype": "application/zip",
+    "description": "Every file format of this dataset in one ZIP archive, generated on each download from the endpoint's live data.",
+    "hash": "",
+    "state": "active"
+   },
+   {
+    "id": "res-10",
+    "name": "Schema artifacts",
+    "url": "https://dev.joinedcontext.com/api/endpoint/k7m2q4hkiair/schema/index.json",
+    "format": "JSON",
+    "mimetype": "application/json",
+    "description": "The data model in every formalism, for every model version, each artifact with its sha256 (EP-68).",
+    "hash": "",
+    "state": "active"
+   },
+   {
+    "id": "res-11",
+    "name": "hki-air model.linkml.yaml",
+    "url": "https://dev.joinedcontext.com/api/endpoint/k7m2q4hkiair/schema/v1/model.linkml.yaml",
+    "format": "LinkML",
+    "mimetype": "application/yaml",
+    "description": "The data model as LinkML; sha256 3f1c.",
+    "hash": "",
+    "state": "active"
+   },
+   {
+    "id": "res-table",
+    "name": "AirQualityObserved",
+    "url": "https://data.dev.joinedcontext.com/datastore/dump/res-table",
+    "format": "",
+    "url_type": "datastore",
+    "datastore_active": true,
+    "description": "",
+    "rows_sha256": "9a0e",
+    "last_modified": "2026-10-12T00:40:00.000000"
+   }
+  ]
+ }
+}
