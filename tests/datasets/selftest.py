@@ -13,6 +13,9 @@ one way at a time. Each case names the only checks that may FAIL:
 6. the newest write 3 h old          -> fresh.<Type> (a 5 min schedule)
 7. no notification while it changed  -> ws.notify
 8. the endpoint extra on another host and an entity missing from its source -> both lines
+9. a type of expected/<dataset>.json not served, or older than its maxAge -> expected.types, fresh.<Type>
+
+Every committed expected/<dataset>.json is read too, so a typo in one fails here, not on dev.
 
     python3 tests/datasets/selftest.py
 """
@@ -25,13 +28,16 @@ import hashlib
 import io
 import json
 import sys
+import tempfile
 import zipfile
 from pathlib import Path
 from urllib.parse import parse_qs, urlsplit
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
-from tests.datasets.validate import Http, Resp, cron_seconds, duration_seconds, load_feeds, validate  # noqa: E402
+from tests.datasets.validate import (  # noqa: E402
+    EXPECTED_DIR, Http, Resp, cron_seconds, duration_seconds, load_expected, load_feeds, validate,
+)
 
 HERE = Path(__file__).resolve().parent
 SEED = HERE / "fixtures" / "seed"
@@ -68,6 +74,7 @@ def good() -> dict:
         "entities": copy.deepcopy(ENTITIES),
         "written_ago": dt.timedelta(minutes=1),
         "csv_rows": 3,
+        "expected": {TYPE: {"maxAge": "20m"}},
         "ogc_paged": False,
         "json_status": 200,
         "notifications": 1,
@@ -175,11 +182,14 @@ class Recorded(Http):
 CASES = {
     "good": (lambda s: None, set()),
     "ogc counted over its pages": (lambda s: s.update(ogc_paged=True), set()),
+    "an expected type missing": (lambda s: s["expected"].update(GtfsStop={"maxAge": None}), {"expected.types"}),
+    "older than expected": (lambda s: s["expected"][TYPE].update(maxAge="30s"), {f"fresh.{TYPE}"}),
     "empty value": (lambda s: s["entities"][1]["totalSpotNumber"].update(value=""), {f"ngsi.{TYPE}.values"}),
     "duplicate id": (lambda s: s["entities"][2].update(id=s["entities"][1]["id"]), {f"ngsi.{TYPE}.ids"}),
     "count mismatch": (lambda s: s.update(csv_rows=1), {f"rep.{TYPE}.csv"}),
     "403 export": (lambda s: s.update(json_status=403), {f"rep.{TYPE}.json", "ckan.resource JSON"}),
-    "stale type": (lambda s: s.update(written_ago=dt.timedelta(hours=3)), {f"fresh.{TYPE}"}),
+    # No expectation: the bound comes from the seed Pipeline's 5 min period.
+    "stale type": (lambda s: s.update(written_ago=dt.timedelta(hours=3), expected={}), {f"fresh.{TYPE}"}),
     "ws silence": (lambda s: s.update(notifications=0, written_ago=dt.timedelta(0)), {"ws.notify"}),
     "wrong host, not in source": (
         lambda s: s.update(endpoint_host="https://portal.dev.example.test", source="{}"),
@@ -199,11 +209,16 @@ def main() -> int:
     assert feeds["GtfsStop"].period == 604800, feeds
     assert load_feeds(SEED, ("nowhere",)) == {}
 
+    for path in sorted(EXPECTED_DIR.glob("*.json")):
+        assert load_expected(EXPECTED_DIR, path.stem), f"{path} names no type"
+
     failures = 0
     for case, (breaks, expected) in CASES.items():
         state = good()
         breaks(state)
-        checks = validate(Recorded(state), "fixture", BASE_URL, CKAN_URL, SEED, ws_seconds=0)
+        with tempfile.TemporaryDirectory() as folder:
+            Path(folder, "fixture.json").write_text(json.dumps({"types": state["expected"]}), encoding="utf-8")
+            checks = validate(Recorded(state), "fixture", BASE_URL, CKAN_URL, SEED, ws_seconds=0, expected_dir=Path(folder))
         failed = {c.check for c in checks if c.verdict == "FAIL"}
         verdict = "ok" if failed == expected else "WRONG"
         failures += failed != expected
