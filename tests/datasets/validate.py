@@ -403,7 +403,8 @@ def source_tokens(entity) -> set[str]:
 # ---- one dataset ----
 
 def load_expected(folder: Path, name: str) -> dict:
-    """`{type: {"maxAge": "20m" | null}}` from `<folder>/<name>.json`, or {} when it has none."""
+    """`{type: {"maxAge": "20m" | null, "numeric": [attribute, ...]}}` from `<folder>/<name>.json`, or {}
+    when it has none. `numeric` names the Attributes whose value must be a number on every entity."""
     path = folder / f"{name}.json"
     if not path.is_file():
         return {}
@@ -411,6 +412,9 @@ def load_expected(folder: Path, name: str) -> dict:
     for typ, spec in types.items():
         if spec.get("maxAge") is not None and duration_seconds(spec["maxAge"]) is None:
             raise ValueError(f"{path}: {typ} maxAge {spec['maxAge']!r} is not <n>s|m|h|d")
+        numeric = spec.get("numeric", [])
+        if not isinstance(numeric, list) or not all(isinstance(a, str) and a for a in numeric):
+            raise ValueError(f"{path}: {typ} numeric {numeric!r} is not a list of attribute names")
     return types
 
 
@@ -518,6 +522,16 @@ def _type(http, base, org, typ, feeds, collections, datastore, resources, ckan_u
         bad = sum(found[check].values())
         add(f"ngsi.{typ}.{check}", "FAIL" if bad else "PASS", f"{bad} problems in {len(items)}",
             summary(found[check], example, check))
+    # A value the expectations say is a number: a dataset of "not measured" texts is not one (T-4081).
+    numeric = expect.get("numeric", [])
+    if numeric:
+        def number(e, a):
+            v = e.get(a)
+            v = v.get("value") if isinstance(v, dict) else v
+            return isinstance(v, (int, float)) and not isinstance(v, bool)
+        bad = [f"{e.get('id')} {a}" for e in items for a in numeric if not number(e, a)]
+        add(f"ngsi.{typ}.numeric", "FAIL" if bad else "PASS", f"{len(bad)} not a number in {len(items)}",
+            ", ".join(bad[:3]))
     if not q["located"]:
         add(f"ngsi.{typ}.location", "SKIP", "no location")
     elif found["location"]:
