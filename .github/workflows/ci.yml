@@ -61,6 +61,8 @@ jobs:
         run: |
           python3 -m pytest tests/security/test_pipeline_escape.py \
             tests/security/test_pipeline_project_isolation.py tests/security/test_app_egress.py -q
+      - name: the Helsinki live matcher goes red on every mismatch and on no data (T-3907)
+        run: python3 -m pytest tests/helsinki-live -q
       - name: the platform journey goes red at each stage that can break (T-0331)
         run: python3 tests/e2e/selftest.py
       - name: the URN-scope suite tells (space, URN) from URN alone (T-3086, ADR-N-041)
