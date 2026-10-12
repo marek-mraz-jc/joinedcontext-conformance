@@ -24,14 +24,6 @@ attribute, no live type, a source that needs a key) say what was not held agains
   to the `BASE_URL` host, only after an anonymous 401/403, never across a redirect, and never
   printed or written.
 
-## Expectations per dataset
-
-`expected/<dataset>.json` holds what the dataset's validation task wrote down: `types`, every
-type the dataset must serve (`expected.types` FAILs on one that is absent), and `max_age`, per
-type, the oldest its newest write may be (`"2h"`, `"36h"`, `"11d"`), which `fresh.<Type>` holds
-instead of the seed's schedule. One file per dataset, so the per-dataset tasks never edit the
-same file; the selftest reads every file.
-
 ## What a line means
 
 - `fresh.<Type>`: the newest `modifiedAt`/`observedAt`/`dateObserved` against 1.5 times the
@@ -42,6 +34,17 @@ same file; the selftest reads every file.
   characters in the body of the source the DataSource names. FAIL below 3 of 5.
 - `ws.notify`: a live type (written at least every 10 minutes) that changed during the window
   but sent no `x-notification` is a FAIL; one that did not change is a SKIP.
+
+## Expectations per dataset
+
+`expected/<dataset>.json` names the types a dataset must serve and how old each may be:
+
+    {"types": {"BikeHireDockingStation": {"maxAge": "20m"}, "CityDistrict": {"maxAge": "8d"}}}
+
+With it, `expected.types` fails when one of them is not served, and `fresh.<Type>` holds the type
+to its `maxAge` (`<n>s|m|h|d`) instead of the seed's schedule; `"maxAge": null` only requires the
+type, its freshness then comes from the seed (a type without a time attribute is a SKIP). One file per dataset, so the dataset tasks (T-4088..T-4099) never edit the same
+file. The selftest reads every committed file, so a typo fails in CI.
 
 `selftest.py` serves a recorded dataset from memory and breaks it one way at a time (empty value,
 duplicate id, count mismatch, 403 export, stale type, WebSocket silence, wrong host, entity not
