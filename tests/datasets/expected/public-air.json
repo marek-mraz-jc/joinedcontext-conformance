@@ -1,0 +1,5 @@
+{
+  "types": {
+    "AirQualityObserved": {"maxAge": "2h"}
+  }
+}
