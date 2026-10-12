@@ -1,5 +1,5 @@
 {
   "types": {
-    "KeyPerformanceIndicator": {"maxAge": "2d"}
+    "KeyPerformanceIndicator": {"maxAge": "2d", "numeric": ["currentValue"]}
   }
 }
