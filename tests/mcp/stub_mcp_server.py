@@ -317,6 +317,9 @@ class StubMcpHandler(BaseHTTPRequestHandler):
                     tool for tool in tools
                     if tool.get("annotations", {}).get("readOnlyHint") is True
                 ]
+            if path == "/api/mcp" and self.server.mode == "broken" and tools:
+                # EP-112 / defect: the connector lists one tool under a name of its own.
+                tools = [dict(tools[0], name=tools[0]["name"] + "_v0")] + tools[1:]
             self._send_json_rpc(req_id, result={"tools": tools})
             return
 

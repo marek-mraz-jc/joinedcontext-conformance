@@ -35,6 +35,8 @@ REQUIRED_FAILURES = [
     # whole point of reading both doors with one token.
     "test_every_read_answers_the_same_over_both_doors",
     "test_a_narrowed_grant_narrows_both_doors_the_same",
+    # T-4115: the broken connector lists a tool by another name than the Endpoint does.
+    "test_ep112_every_surface_lists_the_endpoint_s_tools[CONNECTOR_MCP_URL]",
 ]
 
 
@@ -55,6 +57,9 @@ def make_env(port: int) -> dict[str, str]:
             "HUB_MCP_URL": f"http://127.0.0.1:{port}/cs/hub/mcp",
             "HUB_MEMBERS": "indicators,transport",
             "HUB_TYPE": "AirQualityObserved",
+            # The connector and a named server (T-4115, EP-112): one catalogue with the Endpoint's.
+            "CONNECTOR_MCP_URL": f"http://127.0.0.1:{port}/api/mcp",
+            "NAMED_MCP_URL": f"http://127.0.0.1:{port}/api/mcp/ovzdusie/air",
         }
     )
     return env
