@@ -86,3 +86,17 @@ answering fewer, and an entity with no ingest link:
 ```bash
 python3 tests/e2e/selftest.py
 ```
+
+## Request trace (T-3917)
+
+`test_request_trace.py` runs create entity, PATCH attribute, query with `q=`, subscribe and
+temporal read, one case per operation, three ways. A denying Endpoint must answer `403` and
+leave the store unchanged. A token of space A must reach nothing on space B's URL. A URN
+carrying B's prefix on A's URL must name nothing of B (ADR-N-041). The variables
+(`TRACE_A_URL`, `TRACE_B_URL`, `TRACE_B_PREFIX`, `TRACE_DENY_URL`, a `…_TOKEN` for each) are in
+its docstring. The code-graph side of the same claim is `dev/trace-request.py` in
+joinedcontext-platform.
+
+```bash
+python3 tests/e2e/request_trace_selftest.py   # correct passes; each of three defects fails its case
+```
