@@ -55,6 +55,8 @@ jobs:
         run: python3 tests/ckan/selftest.py
       - name: the dataset validator goes red on every break it checks, from recorded fixtures (T-4087)
         run: python3 tests/datasets/selftest.py
+      - name: the WebSocket fan-out smoke goes red on a notification outside its filter (T-4133)
+        run: python3 tests/ws/fanout_smoke.py --selftest
       - name: the committed record conforms to the DCAT-AP core shapes with nothing configured
         run: python3 -m pytest tests/ckan -q
       - name: the pipeline runner's and each App pod's egress, and per-project isolation (T-1701, T-1702, T-2839)

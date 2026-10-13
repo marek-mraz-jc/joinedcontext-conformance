@@ -36,3 +36,14 @@ The broker runs with `ANTARES_API_SURFACES=admin,views,ws,ws-views`, `ANTARES_WS
 `ANTARES_EGRESS_ALLOW_PRIVATE=true`, so it can POST the HTTP twin of a notification to the suite's
 loopback receiver (`WS_RECEIVER_HOST`, default `127.0.0.1`). A run takes about 80 s, most of it
 the lifetime and view-removed waits.
+
+## The fan-out smoke on dev (EP-115, T-4133)
+
+`fanout_smoke.py` holds ten anonymous sockets on dev's transport Endpoint with two filters each,
+one of every kind the gateway's fan-out serves (type, idPattern, q, geoQ, watchedAttributes,
+notification.attributes, throttling), for 60 s. Every filter must notify and nothing outside it
+may arrive; a gap, a close or a refused subscription fails it. Stdlib only.
+
+```sh
+python3 tests/ws/fanout_smoke.py wss://dev.joinedcontext.com/api/endpoint/ajaezssvx3bwqgejgepmq4ig3frgan4e/ws
+```
