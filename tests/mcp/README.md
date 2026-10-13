@@ -55,6 +55,8 @@ MCP_URL=https://host/cs/ovzdusie/mcp jc-conformance mcp
 | `MCP_PARITY_CASES` | How many rows of the parity table to send; unset is the whole table, `5` is the dev smoke |
 | `MCP_SURFACE` | `broker`: the surface is the Antares broker's view MCP (`/x/views/{view}/mcp`): its own parity table, the type argument a list; run with `-m "not platform_only"` |
 | `MCP_NARROWED_URL` | A second MCP door that sees less, for the narrowed parity case (the broker narrows by view, not by token); defaults to `ENDPOINT_MCP_URL` |
+| `CONNECTOR_MCP_URL` | The portal's one connector, `https://host/api/mcp` (T-4115, EP-112): `test_mcp_catalogue.py` diffs its `tools/list` against `ENDPOINT_MCP_URL`'s; it may add only `list_endpoints` and `endpoint` |
+| `NAMED_MCP_URL` | A named server, `https://host/api/mcp/{project}/{name}`, diffed the same way |
 
 ## Against the broker
 
