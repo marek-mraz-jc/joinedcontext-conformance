@@ -78,7 +78,8 @@ COVERAGE = [
     ("platform", "/apps/", "platform crates/wasm-host/tests/host_tests.rs"),
     # The admin port alone serves them; the apps port the edge reaches answers 404 (T-3857).
     ("platform", "crates/wasm-host/", "platform crates/wasm-host/tests/host_tests.rs"),
-    ("platform", "crates/context-gateway/", "task:T-3858"),
+    # Every route read from app.rs and every catalogue tool, five kinds of caller (T-3858).
+    ("platform", "crates/context-gateway/", "platform crates/context-gateway/tests/route_authz_sweep_tests.rs"),
 ]
 
 # Files whose routes another file nests, where the crate states no prefix of its own.
@@ -86,6 +87,8 @@ MOUNTS = {
     "crates/antares-ops/src/views.rs": "/q",
     "crates/antares-ops/src/views/preview.rs": "/q",
     "crates/antares-ops/src/views/rule_documents.rs": "/q",
+    "crates/antares-ops/src/views/quality.rs": "/q",
+    "crates/antares-ops/src/views/retention.rs": "/q",
     "crates/antares-icsr/src/grant.rs": "/q",
 }
 
@@ -281,7 +284,7 @@ def collect(code):
         if (crate / "src").is_dir():
             rows += rust_routes("platform", platform, crate / "src", "")
     gateway = platform / "crates/context-gateway/src"
-    rows += tools("platform", platform, r'Tool\s*\{\s*name:\s*"([a-z_]+)"', sorted(gateway.rglob("*.rs")))
+    rows += tools("platform", platform, r'(?:Tool\s*\{\s*name:|broker\()\s*"([a-z_]+)"', sorted(gateway.rglob("*.rs")))
 
     rows += antares_api(antares)
     for crate in sorted([*(antares / "crates").iterdir(), *(antares / "addons").iterdir()]):

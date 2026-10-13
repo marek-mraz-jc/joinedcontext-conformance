@@ -1,113 +1,125 @@
 repo,kind,method,route,source,authz
-antares,http,*,/q/dead-letters,crates/antares-api/src/lib.rs:233,antares crates/antares-api/tests/admin_auth.rs
-antares,http,*,/q/dead-letters/{id},crates/antares-api/src/lib.rs:233,antares crates/antares-api/tests/admin_auth.rs
-antares,http,*,/q/dead-letters/{id}/replay,crates/antares-api/src/lib.rs:233,antares crates/antares-api/tests/admin_auth.rs
-antares,http,*,/q/health,crates/antares-api/src/lib.rs:233,antares crates/antares-api/tests/admin_auth.rs
-antares,http,*,/q/metrics,crates/antares-api/src/lib.rs:233,antares crates/antares-api/tests/admin_auth.rs
-antares,http,*,/q/ready,crates/antares-api/src/lib.rs:233,antares crates/antares-api/tests/admin_auth.rs
-antares,http,*,/q/tenants,crates/antares-api/src/lib.rs:233,antares crates/antares-api/tests/admin_auth.rs
-antares,http,*,/q/tenants/{tenant},crates/antares-api/src/lib.rs:233,antares crates/antares-api/tests/admin_auth.rs
-antares,http,*,/x/views/{view}/odata/v4,crates/antares-odata/src/lib.rs:85,antares crates/antares-broker/tests/operation_matrix.rs
-antares,http,*,/x/views/{view}/odata/v4/,crates/antares-odata/src/lib.rs:86,antares crates/antares-broker/tests/operation_matrix.rs
-antares,http,*,/x/views/{view}/odata/v4/{*rest},crates/antares-odata/src/lib.rs:87,antares crates/antares-broker/tests/operation_matrix.rs
-antares,http,*,/x/views/{view}/ogc/features,crates/antares-ogc/src/lib.rs:97,task:T-3777
-antares,http,*,/x/views/{view}/ogc/features/,crates/antares-ogc/src/lib.rs:98,task:T-3777
-antares,http,*,/x/views/{view}/ogc/features/{*rest},crates/antares-ogc/src/lib.rs:99,task:T-3777
+antares,http,*,/q/dead-letters,crates/antares-api/src/lib.rs:251,antares crates/antares-api/tests/admin_auth.rs
+antares,http,*,/q/dead-letters/{id},crates/antares-api/src/lib.rs:251,antares crates/antares-api/tests/admin_auth.rs
+antares,http,*,/q/dead-letters/{id}/replay,crates/antares-api/src/lib.rs:251,antares crates/antares-api/tests/admin_auth.rs
+antares,http,*,/q/health,crates/antares-api/src/lib.rs:251,antares crates/antares-api/tests/admin_auth.rs
+antares,http,*,/q/metrics,crates/antares-api/src/lib.rs:251,antares crates/antares-api/tests/admin_auth.rs
+antares,http,*,/q/ready,crates/antares-api/src/lib.rs:251,antares crates/antares-api/tests/admin_auth.rs
+antares,http,*,/q/tenants,crates/antares-api/src/lib.rs:251,antares crates/antares-api/tests/admin_auth.rs
+antares,http,*,/q/tenants/{tenant},crates/antares-api/src/lib.rs:251,antares crates/antares-api/tests/admin_auth.rs
+antares,http,*,/q/tenants/{tenant}/digest,crates/antares-api/src/lib.rs:251,antares crates/antares-api/tests/admin_auth.rs
+antares,http,*,/q/tenants/{tenant}/export,crates/antares-api/src/lib.rs:251,antares crates/antares-api/tests/admin_auth.rs
+antares,http,*,/q/tenants/{tenant}/import,crates/antares-api/src/lib.rs:251,antares crates/antares-api/tests/admin_auth.rs
+antares,http,*,/x/views/{view}/odata/v4,crates/antares-odata/src/lib.rs:86,antares crates/antares-broker/tests/operation_matrix.rs
+antares,http,*,/x/views/{view}/odata/v4/,crates/antares-odata/src/lib.rs:87,antares crates/antares-broker/tests/operation_matrix.rs
+antares,http,*,/x/views/{view}/odata/v4/{*rest},crates/antares-odata/src/lib.rs:88,antares crates/antares-broker/tests/operation_matrix.rs
+antares,http,*,/x/views/{view}/ogc/features,crates/antares-ogc/src/lib.rs:152,task:T-3777
+antares,http,*,/x/views/{view}/ogc/features/,crates/antares-ogc/src/lib.rs:153,task:T-3777
+antares,http,*,/x/views/{view}/ogc/features/{*rest},crates/antares-ogc/src/lib.rs:154,task:T-3777
 antares,http,ANY,/x/views/{view}/linkml,crates/antares-linkml/src/lib.rs:82,task:T-3777
 antares,http,ANY,/x/views/{view}/linkml/{*rest},crates/antares-linkml/src/lib.rs:81,task:T-3777
-antares,http,ANY,/x/views/{view}/mcp,crates/antares-mcp/src/lib.rs:83,antares crates/antares-broker/tests/operation_matrix.rs
+antares,http,ANY,/x/views/{view}/mcp,crates/antares-mcp/src/lib.rs:92,antares crates/antares-broker/tests/operation_matrix.rs
 antares,http,ANY,/x/views/{view}/ngsi-ld/v1/{*rest},crates/antares-views/src/lib.rs:114,antares crates/antares-broker/tests/operation_matrix.rs
-antares,http,DELETE,/ngsi-ld/v1/csourceRegistrations/{id},crates/antares-api/src/lib.rs:435,antares crates/antares-broker/tests/operation_matrix.rs
-antares,http,DELETE,/ngsi-ld/v1/csourceSubscriptions/{id},crates/antares-api/src/lib.rs:447,antares crates/antares-broker/tests/operation_matrix.rs
-antares,http,DELETE,/ngsi-ld/v1/entities,crates/antares-api/src/lib.rs:362,antares crates/antares-broker/tests/operation_matrix.rs
-antares,http,DELETE,/ngsi-ld/v1/entities/{id},crates/antares-api/src/lib.rs:370,antares crates/antares-broker/tests/operation_matrix.rs
-antares,http,DELETE,/ngsi-ld/v1/entities/{id}/attrs/{attr},crates/antares-api/src/lib.rs:382,antares crates/antares-broker/tests/operation_matrix.rs
-antares,http,DELETE,/ngsi-ld/v1/entityMaps/{id},crates/antares-api/src/lib.rs:408,antares crates/antares-broker/tests/operation_matrix.rs
-antares,http,DELETE,/ngsi-ld/v1/jsonldContexts/{id},crates/antares-api/src/lib.rs:488,antares crates/antares-broker/tests/operation_matrix.rs
-antares,http,DELETE,/ngsi-ld/v1/snapshots,crates/antares-api/src/lib.rs:493,antares crates/antares-broker/tests/operation_matrix.rs
-antares,http,DELETE,/ngsi-ld/v1/snapshots/{id},crates/antares-api/src/lib.rs:497,antares crates/antares-broker/tests/operation_matrix.rs
-antares,http,DELETE,/ngsi-ld/v1/subscriptions/{id},crates/antares-api/src/lib.rs:424,antares crates/antares-broker/tests/operation_matrix.rs
-antares,http,DELETE,/ngsi-ld/v1/temporal/entities/{id},crates/antares-api/src/lib.rs:458,antares crates/antares-broker/tests/operation_matrix.rs
-antares,http,DELETE,/ngsi-ld/v1/temporal/entities/{id}/attrs/{attr},crates/antares-api/src/lib.rs:466,antares crates/antares-broker/tests/operation_matrix.rs
-antares,http,DELETE,/ngsi-ld/v1/temporal/entities/{id}/attrs/{attr}/{instance},crates/antares-api/src/lib.rs:470,antares crates/antares-broker/tests/operation_matrix.rs
+antares,http,DELETE,/ngsi-ld/v1/csourceRegistrations/{id},crates/antares-api/src/lib.rs:462,antares crates/antares-broker/tests/operation_matrix.rs
+antares,http,DELETE,/ngsi-ld/v1/csourceSubscriptions/{id},crates/antares-api/src/lib.rs:474,antares crates/antares-broker/tests/operation_matrix.rs
+antares,http,DELETE,/ngsi-ld/v1/entities,crates/antares-api/src/lib.rs:389,antares crates/antares-broker/tests/operation_matrix.rs
+antares,http,DELETE,/ngsi-ld/v1/entities/{id},crates/antares-api/src/lib.rs:397,antares crates/antares-broker/tests/operation_matrix.rs
+antares,http,DELETE,/ngsi-ld/v1/entities/{id}/attrs/{attr},crates/antares-api/src/lib.rs:409,antares crates/antares-broker/tests/operation_matrix.rs
+antares,http,DELETE,/ngsi-ld/v1/entityMaps/{id},crates/antares-api/src/lib.rs:435,antares crates/antares-broker/tests/operation_matrix.rs
+antares,http,DELETE,/ngsi-ld/v1/jsonldContexts/{id},crates/antares-api/src/lib.rs:515,antares crates/antares-broker/tests/operation_matrix.rs
+antares,http,DELETE,/ngsi-ld/v1/snapshots,crates/antares-api/src/lib.rs:520,antares crates/antares-broker/tests/operation_matrix.rs
+antares,http,DELETE,/ngsi-ld/v1/snapshots/{id},crates/antares-api/src/lib.rs:524,antares crates/antares-broker/tests/operation_matrix.rs
+antares,http,DELETE,/ngsi-ld/v1/subscriptions/{id},crates/antares-api/src/lib.rs:451,antares crates/antares-broker/tests/operation_matrix.rs
+antares,http,DELETE,/ngsi-ld/v1/temporal/entities/{id},crates/antares-api/src/lib.rs:485,antares crates/antares-broker/tests/operation_matrix.rs
+antares,http,DELETE,/ngsi-ld/v1/temporal/entities/{id}/attrs/{attr},crates/antares-api/src/lib.rs:493,antares crates/antares-broker/tests/operation_matrix.rs
+antares,http,DELETE,/ngsi-ld/v1/temporal/entities/{id}/attrs/{attr}/{instance},crates/antares-api/src/lib.rs:497,antares crates/antares-broker/tests/operation_matrix.rs
 antares,http,DELETE,/q/grants/{target}/{source},crates/antares-icsr/src/grant.rs:130,antares crates/antares-icsr/tests/q_admin_sweep.rs
 antares,http,DELETE,/q/policy/{tenant},crates/antares-ops/src/views/rule_documents.rs:139,antares crates/antares-ops/tests/policy_documents.rs
-antares,http,DELETE,/q/schemas/{tenant},crates/antares-ops/src/views.rs:625,antares crates/antares-icsr/tests/q_admin_sweep.rs
-antares,http,DELETE,/q/views/{id},crates/antares-ops/src/views.rs:642,antares crates/antares-icsr/tests/q_admin_sweep.rs
-antares,http,GET,/,crates/odata-axum/src/lib.rs:302,antares crates/antares-broker/tests/operation_matrix.rs
-antares,http,GET,/$metadata,crates/odata-axum/src/lib.rs:303,antares crates/antares-broker/tests/operation_matrix.rs
-antares,http,GET,/ngsi-ld/v1/attributes,crates/antares-api/src/lib.rs:481,antares crates/antares-broker/tests/operation_matrix.rs
-antares,http,GET,/ngsi-ld/v1/attributes/{attr},crates/antares-api/src/lib.rs:482,antares crates/antares-broker/tests/operation_matrix.rs
-antares,http,GET,/ngsi-ld/v1/csourceRegistrations,crates/antares-api/src/lib.rs:431,antares crates/antares-broker/tests/operation_matrix.rs
-antares,http,GET,/ngsi-ld/v1/csourceRegistrations/{id},crates/antares-api/src/lib.rs:435,antares crates/antares-broker/tests/operation_matrix.rs
-antares,http,GET,/ngsi-ld/v1/csourceSubscriptions,crates/antares-api/src/lib.rs:442,antares crates/antares-broker/tests/operation_matrix.rs
-antares,http,GET,/ngsi-ld/v1/csourceSubscriptions/{id},crates/antares-api/src/lib.rs:447,antares crates/antares-broker/tests/operation_matrix.rs
-antares,http,GET,/ngsi-ld/v1/entities,crates/antares-api/src/lib.rs:362,antares crates/antares-broker/tests/operation_matrix.rs
-antares,http,GET,/ngsi-ld/v1/entities/{id},crates/antares-api/src/lib.rs:370,antares crates/antares-broker/tests/operation_matrix.rs
-antares,http,GET,/ngsi-ld/v1/entities/{id}/attrs/{attr},crates/antares-api/src/lib.rs:382,antares crates/antares-broker/tests/operation_matrix.rs
-antares,http,GET,/ngsi-ld/v1/entities/{id}/attrs/{attr}/value,crates/antares-api/src/lib.rs:392,antares crates/antares-broker/tests/operation_matrix.rs
-antares,http,GET,/ngsi-ld/v1/entityMaps,crates/antares-api/src/lib.rs:404,antares crates/antares-broker/tests/operation_matrix.rs
-antares,http,GET,/ngsi-ld/v1/entityMaps/{id},crates/antares-api/src/lib.rs:408,antares crates/antares-broker/tests/operation_matrix.rs
-antares,http,GET,/ngsi-ld/v1/info/sourceIdentity,crates/antares-api/src/lib.rs:505,antares crates/antares-broker/tests/operation_matrix.rs
-antares,http,GET,/ngsi-ld/v1/jsonldContexts,crates/antares-api/src/lib.rs:484,antares crates/antares-broker/tests/operation_matrix.rs
-antares,http,GET,/ngsi-ld/v1/jsonldContexts/{id},crates/antares-api/src/lib.rs:488,antares crates/antares-broker/tests/operation_matrix.rs
-antares,http,GET,/ngsi-ld/v1/snapshots/{id},crates/antares-api/src/lib.rs:497,antares crates/antares-broker/tests/operation_matrix.rs
-antares,http,GET,/ngsi-ld/v1/subscriptions,crates/antares-api/src/lib.rs:420,antares crates/antares-broker/tests/operation_matrix.rs
-antares,http,GET,/ngsi-ld/v1/subscriptions/{id},crates/antares-api/src/lib.rs:424,antares crates/antares-broker/tests/operation_matrix.rs
-antares,http,GET,/ngsi-ld/v1/temporal/entities,crates/antares-api/src/lib.rs:454,antares crates/antares-broker/tests/operation_matrix.rs
-antares,http,GET,/ngsi-ld/v1/temporal/entities/{id},crates/antares-api/src/lib.rs:458,antares crates/antares-broker/tests/operation_matrix.rs
-antares,http,GET,/ngsi-ld/v1/temporal/entityMaps,crates/antares-api/src/lib.rs:414,antares crates/antares-broker/tests/operation_matrix.rs
-antares,http,GET,/ngsi-ld/v1/types,crates/antares-api/src/lib.rs:479,antares crates/antares-broker/tests/operation_matrix.rs
-antares,http,GET,/ngsi-ld/v1/types/{type},crates/antares-api/src/lib.rs:480,antares crates/antares-broker/tests/operation_matrix.rs
+antares,http,DELETE,/q/quality/{tenant},crates/antares-ops/src/views/quality.rs:388,antares crates/antares-api/tests/admin_auth.rs
+antares,http,DELETE,/q/retention/{tenant},crates/antares-ops/src/views/retention.rs:356,antares crates/antares-api/tests/admin_auth.rs
+antares,http,DELETE,/q/schemas/{tenant},crates/antares-ops/src/views.rs:716,antares crates/antares-icsr/tests/q_admin_sweep.rs
+antares,http,DELETE,/q/views/{id},crates/antares-ops/src/views.rs:733,antares crates/antares-icsr/tests/q_admin_sweep.rs
+antares,http,GET,/,crates/odata-axum/src/lib.rs:317,antares crates/antares-broker/tests/operation_matrix.rs
+antares,http,GET,/$metadata,crates/odata-axum/src/lib.rs:318,antares crates/antares-broker/tests/operation_matrix.rs
+antares,http,GET,/ngsi-ld/v1/attributes,crates/antares-api/src/lib.rs:508,antares crates/antares-broker/tests/operation_matrix.rs
+antares,http,GET,/ngsi-ld/v1/attributes/{attr},crates/antares-api/src/lib.rs:509,antares crates/antares-broker/tests/operation_matrix.rs
+antares,http,GET,/ngsi-ld/v1/csourceRegistrations,crates/antares-api/src/lib.rs:458,antares crates/antares-broker/tests/operation_matrix.rs
+antares,http,GET,/ngsi-ld/v1/csourceRegistrations/{id},crates/antares-api/src/lib.rs:462,antares crates/antares-broker/tests/operation_matrix.rs
+antares,http,GET,/ngsi-ld/v1/csourceSubscriptions,crates/antares-api/src/lib.rs:469,antares crates/antares-broker/tests/operation_matrix.rs
+antares,http,GET,/ngsi-ld/v1/csourceSubscriptions/{id},crates/antares-api/src/lib.rs:474,antares crates/antares-broker/tests/operation_matrix.rs
+antares,http,GET,/ngsi-ld/v1/entities,crates/antares-api/src/lib.rs:389,antares crates/antares-broker/tests/operation_matrix.rs
+antares,http,GET,/ngsi-ld/v1/entities/{id},crates/antares-api/src/lib.rs:397,antares crates/antares-broker/tests/operation_matrix.rs
+antares,http,GET,/ngsi-ld/v1/entities/{id}/attrs/{attr},crates/antares-api/src/lib.rs:409,antares crates/antares-broker/tests/operation_matrix.rs
+antares,http,GET,/ngsi-ld/v1/entities/{id}/attrs/{attr}/value,crates/antares-api/src/lib.rs:419,antares crates/antares-broker/tests/operation_matrix.rs
+antares,http,GET,/ngsi-ld/v1/entityMaps,crates/antares-api/src/lib.rs:431,antares crates/antares-broker/tests/operation_matrix.rs
+antares,http,GET,/ngsi-ld/v1/entityMaps/{id},crates/antares-api/src/lib.rs:435,antares crates/antares-broker/tests/operation_matrix.rs
+antares,http,GET,/ngsi-ld/v1/info/sourceIdentity,crates/antares-api/src/lib.rs:532,antares crates/antares-broker/tests/operation_matrix.rs
+antares,http,GET,/ngsi-ld/v1/jsonldContexts,crates/antares-api/src/lib.rs:511,antares crates/antares-broker/tests/operation_matrix.rs
+antares,http,GET,/ngsi-ld/v1/jsonldContexts/{id},crates/antares-api/src/lib.rs:515,antares crates/antares-broker/tests/operation_matrix.rs
+antares,http,GET,/ngsi-ld/v1/snapshots/{id},crates/antares-api/src/lib.rs:524,antares crates/antares-broker/tests/operation_matrix.rs
+antares,http,GET,/ngsi-ld/v1/subscriptions,crates/antares-api/src/lib.rs:447,antares crates/antares-broker/tests/operation_matrix.rs
+antares,http,GET,/ngsi-ld/v1/subscriptions/{id},crates/antares-api/src/lib.rs:451,antares crates/antares-broker/tests/operation_matrix.rs
+antares,http,GET,/ngsi-ld/v1/temporal/entities,crates/antares-api/src/lib.rs:481,antares crates/antares-broker/tests/operation_matrix.rs
+antares,http,GET,/ngsi-ld/v1/temporal/entities/{id},crates/antares-api/src/lib.rs:485,antares crates/antares-broker/tests/operation_matrix.rs
+antares,http,GET,/ngsi-ld/v1/temporal/entityMaps,crates/antares-api/src/lib.rs:441,antares crates/antares-broker/tests/operation_matrix.rs
+antares,http,GET,/ngsi-ld/v1/types,crates/antares-api/src/lib.rs:506,antares crates/antares-broker/tests/operation_matrix.rs
+antares,http,GET,/ngsi-ld/v1/types/{type},crates/antares-api/src/lib.rs:507,antares crates/antares-broker/tests/operation_matrix.rs
 antares,http,GET,/q/grants,crates/antares-icsr/src/grant.rs:120,antares crates/antares-icsr/tests/q_admin_sweep.rs
 antares,http,GET,/q/grants/{target}/{source},crates/antares-icsr/src/grant.rs:130,antares crates/antares-icsr/tests/q_admin_sweep.rs
 antares,http,GET,/q/policy,crates/antares-ops/src/views/rule_documents.rs:128,antares crates/antares-ops/tests/policy_documents.rs
 antares,http,GET,/q/policy/{tenant},crates/antares-ops/src/views/rule_documents.rs:139,antares crates/antares-ops/tests/policy_documents.rs
-antares,http,GET,/q/schemas/{tenant},crates/antares-ops/src/views.rs:625,antares crates/antares-icsr/tests/q_admin_sweep.rs
-antares,http,GET,/q/views,crates/antares-ops/src/views.rs:634,antares crates/antares-icsr/tests/q_admin_sweep.rs
-antares,http,GET,/q/views/{id},crates/antares-ops/src/views.rs:642,antares crates/antares-icsr/tests/q_admin_sweep.rs
-antares,http,GET,/x/views/{view}/access,addons/joinedcontext-policy/src/surface.rs:54,antares addons/joinedcontext-policy/tests/access.rs
+antares,http,GET,/q/quality/{tenant},crates/antares-ops/src/views/quality.rs:388,antares crates/antares-api/tests/admin_auth.rs
+antares,http,GET,/q/retention/{tenant},crates/antares-ops/src/views/retention.rs:356,antares crates/antares-api/tests/admin_auth.rs
+antares,http,GET,/q/retention/{tenant}/deleted,crates/antares-ops/src/views/retention.rs:350,antares crates/antares-api/tests/admin_auth.rs
+antares,http,GET,/q/schemas/{tenant},crates/antares-ops/src/views.rs:716,antares crates/antares-icsr/tests/q_admin_sweep.rs
+antares,http,GET,/q/views,crates/antares-ops/src/views.rs:725,antares crates/antares-icsr/tests/q_admin_sweep.rs
+antares,http,GET,/q/views/{id},crates/antares-ops/src/views.rs:733,antares crates/antares-icsr/tests/q_admin_sweep.rs
+antares,http,GET,/x/views/{view}/access,addons/joinedcontext-policy/src/surface.rs:59,antares addons/joinedcontext-policy/tests/access.rs
 antares,http,GET,/x/views/{view}/ws,crates/antares-ws/src/lib.rs:161,antares crates/antares-broker/tests/operation_matrix.rs
 antares,http,GET,/x/ws/ngsi-ld/v1,crates/antares-ws/src/lib.rs:135,antares crates/antares-broker/tests/operation_matrix.rs
-antares,http,PATCH,/ngsi-ld/v1/csourceRegistrations/{id},crates/antares-api/src/lib.rs:435,antares crates/antares-broker/tests/operation_matrix.rs
-antares,http,PATCH,/ngsi-ld/v1/csourceSubscriptions/{id},crates/antares-api/src/lib.rs:447,antares crates/antares-broker/tests/operation_matrix.rs
-antares,http,PATCH,/ngsi-ld/v1/entities,crates/antares-api/src/lib.rs:362,antares crates/antares-broker/tests/operation_matrix.rs
-antares,http,PATCH,/ngsi-ld/v1/entities/{id},crates/antares-api/src/lib.rs:370,antares crates/antares-broker/tests/operation_matrix.rs
-antares,http,PATCH,/ngsi-ld/v1/entities/{id}/attrs,crates/antares-api/src/lib.rs:378,antares crates/antares-broker/tests/operation_matrix.rs
-antares,http,PATCH,/ngsi-ld/v1/entities/{id}/attrs/{attr},crates/antares-api/src/lib.rs:382,antares crates/antares-broker/tests/operation_matrix.rs
-antares,http,PATCH,/ngsi-ld/v1/entityMaps/{id},crates/antares-api/src/lib.rs:408,antares crates/antares-broker/tests/operation_matrix.rs
-antares,http,PATCH,/ngsi-ld/v1/snapshots/{id},crates/antares-api/src/lib.rs:497,antares crates/antares-broker/tests/operation_matrix.rs
-antares,http,PATCH,/ngsi-ld/v1/subscriptions/{id},crates/antares-api/src/lib.rs:424,antares crates/antares-broker/tests/operation_matrix.rs
-antares,http,PATCH,/ngsi-ld/v1/temporal/entities/{id}/attrs/{attr}/{instance},crates/antares-api/src/lib.rs:470,antares crates/antares-broker/tests/operation_matrix.rs
-antares,http,POST,/ngsi-ld/v1/csourceRegistrations,crates/antares-api/src/lib.rs:431,antares crates/antares-broker/tests/operation_matrix.rs
-antares,http,POST,/ngsi-ld/v1/csourceSubscriptions,crates/antares-api/src/lib.rs:442,antares crates/antares-broker/tests/operation_matrix.rs
-antares,http,POST,/ngsi-ld/v1/entities,crates/antares-api/src/lib.rs:362,antares crates/antares-broker/tests/operation_matrix.rs
-antares,http,POST,/ngsi-ld/v1/entities/{id}/attrs,crates/antares-api/src/lib.rs:378,antares crates/antares-broker/tests/operation_matrix.rs
-antares,http,POST,/ngsi-ld/v1/entityMaps,crates/antares-api/src/lib.rs:404,antares crates/antares-broker/tests/operation_matrix.rs
-antares,http,POST,/ngsi-ld/v1/entityOperations/create,crates/antares-api/src/lib.rs:397,antares crates/antares-broker/tests/operation_matrix.rs
-antares,http,POST,/ngsi-ld/v1/entityOperations/delete,crates/antares-api/src/lib.rs:400,antares crates/antares-broker/tests/operation_matrix.rs
-antares,http,POST,/ngsi-ld/v1/entityOperations/merge,crates/antares-api/src/lib.rs:401,antares crates/antares-broker/tests/operation_matrix.rs
-antares,http,POST,/ngsi-ld/v1/entityOperations/query,crates/antares-api/src/lib.rs:402,antares crates/antares-broker/tests/operation_matrix.rs
-antares,http,POST,/ngsi-ld/v1/entityOperations/update,crates/antares-api/src/lib.rs:399,antares crates/antares-broker/tests/operation_matrix.rs
-antares,http,POST,/ngsi-ld/v1/entityOperations/upsert,crates/antares-api/src/lib.rs:398,antares crates/antares-broker/tests/operation_matrix.rs
-antares,http,POST,/ngsi-ld/v1/jsonldContexts,crates/antares-api/src/lib.rs:484,antares crates/antares-broker/tests/operation_matrix.rs
-antares,http,POST,/ngsi-ld/v1/snapshots,crates/antares-api/src/lib.rs:493,antares crates/antares-broker/tests/operation_matrix.rs
-antares,http,POST,/ngsi-ld/v1/snapshots/{id}/clone,crates/antares-api/src/lib.rs:503,antares crates/antares-broker/tests/operation_matrix.rs
-antares,http,POST,/ngsi-ld/v1/subscriptions,crates/antares-api/src/lib.rs:420,antares crates/antares-broker/tests/operation_matrix.rs
-antares,http,POST,/ngsi-ld/v1/temporal/entities,crates/antares-api/src/lib.rs:454,antares crates/antares-broker/tests/operation_matrix.rs
-antares,http,POST,/ngsi-ld/v1/temporal/entities/{id}/attrs,crates/antares-api/src/lib.rs:462,antares crates/antares-broker/tests/operation_matrix.rs
-antares,http,POST,/ngsi-ld/v1/temporal/entityMaps,crates/antares-api/src/lib.rs:414,antares crates/antares-broker/tests/operation_matrix.rs
-antares,http,POST,/ngsi-ld/v1/temporal/entityOperations/query,crates/antares-api/src/lib.rs:474,antares crates/antares-broker/tests/operation_matrix.rs
-antares,http,POST,/q/views/{id}/preview,crates/antares-ops/src/views/preview.rs:26,antares crates/antares-icsr/tests/q_admin_sweep.rs
-antares,http,POST,/x/views/{view}/access/check,addons/joinedcontext-policy/src/surface.rs:62,antares addons/joinedcontext-policy/tests/access.rs
-antares,http,PUT,/ngsi-ld/v1/entities,crates/antares-api/src/lib.rs:362,antares crates/antares-broker/tests/operation_matrix.rs
-antares,http,PUT,/ngsi-ld/v1/entities/{id},crates/antares-api/src/lib.rs:370,antares crates/antares-broker/tests/operation_matrix.rs
-antares,http,PUT,/ngsi-ld/v1/entities/{id}/attrs/{attr},crates/antares-api/src/lib.rs:382,antares crates/antares-broker/tests/operation_matrix.rs
-antares,http,PUT,/ngsi-ld/v1/entities/{id}/attrs/{attr}/value,crates/antares-api/src/lib.rs:392,antares crates/antares-broker/tests/operation_matrix.rs
+antares,http,PATCH,/ngsi-ld/v1/csourceRegistrations/{id},crates/antares-api/src/lib.rs:462,antares crates/antares-broker/tests/operation_matrix.rs
+antares,http,PATCH,/ngsi-ld/v1/csourceSubscriptions/{id},crates/antares-api/src/lib.rs:474,antares crates/antares-broker/tests/operation_matrix.rs
+antares,http,PATCH,/ngsi-ld/v1/entities,crates/antares-api/src/lib.rs:389,antares crates/antares-broker/tests/operation_matrix.rs
+antares,http,PATCH,/ngsi-ld/v1/entities/{id},crates/antares-api/src/lib.rs:397,antares crates/antares-broker/tests/operation_matrix.rs
+antares,http,PATCH,/ngsi-ld/v1/entities/{id}/attrs,crates/antares-api/src/lib.rs:405,antares crates/antares-broker/tests/operation_matrix.rs
+antares,http,PATCH,/ngsi-ld/v1/entities/{id}/attrs/{attr},crates/antares-api/src/lib.rs:409,antares crates/antares-broker/tests/operation_matrix.rs
+antares,http,PATCH,/ngsi-ld/v1/entityMaps/{id},crates/antares-api/src/lib.rs:435,antares crates/antares-broker/tests/operation_matrix.rs
+antares,http,PATCH,/ngsi-ld/v1/snapshots/{id},crates/antares-api/src/lib.rs:524,antares crates/antares-broker/tests/operation_matrix.rs
+antares,http,PATCH,/ngsi-ld/v1/subscriptions/{id},crates/antares-api/src/lib.rs:451,antares crates/antares-broker/tests/operation_matrix.rs
+antares,http,PATCH,/ngsi-ld/v1/temporal/entities/{id}/attrs/{attr}/{instance},crates/antares-api/src/lib.rs:497,antares crates/antares-broker/tests/operation_matrix.rs
+antares,http,POST,/ngsi-ld/v1/csourceRegistrations,crates/antares-api/src/lib.rs:458,antares crates/antares-broker/tests/operation_matrix.rs
+antares,http,POST,/ngsi-ld/v1/csourceSubscriptions,crates/antares-api/src/lib.rs:469,antares crates/antares-broker/tests/operation_matrix.rs
+antares,http,POST,/ngsi-ld/v1/entities,crates/antares-api/src/lib.rs:389,antares crates/antares-broker/tests/operation_matrix.rs
+antares,http,POST,/ngsi-ld/v1/entities/{id}/attrs,crates/antares-api/src/lib.rs:405,antares crates/antares-broker/tests/operation_matrix.rs
+antares,http,POST,/ngsi-ld/v1/entityMaps,crates/antares-api/src/lib.rs:431,antares crates/antares-broker/tests/operation_matrix.rs
+antares,http,POST,/ngsi-ld/v1/entityOperations/create,crates/antares-api/src/lib.rs:424,antares crates/antares-broker/tests/operation_matrix.rs
+antares,http,POST,/ngsi-ld/v1/entityOperations/delete,crates/antares-api/src/lib.rs:427,antares crates/antares-broker/tests/operation_matrix.rs
+antares,http,POST,/ngsi-ld/v1/entityOperations/merge,crates/antares-api/src/lib.rs:428,antares crates/antares-broker/tests/operation_matrix.rs
+antares,http,POST,/ngsi-ld/v1/entityOperations/query,crates/antares-api/src/lib.rs:429,antares crates/antares-broker/tests/operation_matrix.rs
+antares,http,POST,/ngsi-ld/v1/entityOperations/update,crates/antares-api/src/lib.rs:426,antares crates/antares-broker/tests/operation_matrix.rs
+antares,http,POST,/ngsi-ld/v1/entityOperations/upsert,crates/antares-api/src/lib.rs:425,antares crates/antares-broker/tests/operation_matrix.rs
+antares,http,POST,/ngsi-ld/v1/jsonldContexts,crates/antares-api/src/lib.rs:511,antares crates/antares-broker/tests/operation_matrix.rs
+antares,http,POST,/ngsi-ld/v1/snapshots,crates/antares-api/src/lib.rs:520,antares crates/antares-broker/tests/operation_matrix.rs
+antares,http,POST,/ngsi-ld/v1/snapshots/{id}/clone,crates/antares-api/src/lib.rs:530,antares crates/antares-broker/tests/operation_matrix.rs
+antares,http,POST,/ngsi-ld/v1/subscriptions,crates/antares-api/src/lib.rs:447,antares crates/antares-broker/tests/operation_matrix.rs
+antares,http,POST,/ngsi-ld/v1/temporal/entities,crates/antares-api/src/lib.rs:481,antares crates/antares-broker/tests/operation_matrix.rs
+antares,http,POST,/ngsi-ld/v1/temporal/entities/{id}/attrs,crates/antares-api/src/lib.rs:489,antares crates/antares-broker/tests/operation_matrix.rs
+antares,http,POST,/ngsi-ld/v1/temporal/entityMaps,crates/antares-api/src/lib.rs:441,antares crates/antares-broker/tests/operation_matrix.rs
+antares,http,POST,/ngsi-ld/v1/temporal/entityOperations/query,crates/antares-api/src/lib.rs:501,antares crates/antares-broker/tests/operation_matrix.rs
+antares,http,POST,/q/retention/{tenant}/preview,crates/antares-ops/src/views/retention.rs:344,antares crates/antares-api/tests/admin_auth.rs
+antares,http,POST,/q/views/{id}/preview,crates/antares-ops/src/views/preview.rs:28,antares crates/antares-icsr/tests/q_admin_sweep.rs
+antares,http,POST,/x/views/{view}/access/check,addons/joinedcontext-policy/src/surface.rs:67,antares addons/joinedcontext-policy/tests/access.rs
+antares,http,POST,/x/views/{view}/access/explain,addons/joinedcontext-policy/src/surface.rs:76,antares addons/joinedcontext-policy/tests/access.rs
+antares,http,PUT,/ngsi-ld/v1/entities,crates/antares-api/src/lib.rs:389,antares crates/antares-broker/tests/operation_matrix.rs
+antares,http,PUT,/ngsi-ld/v1/entities/{id},crates/antares-api/src/lib.rs:397,antares crates/antares-broker/tests/operation_matrix.rs
+antares,http,PUT,/ngsi-ld/v1/entities/{id}/attrs/{attr},crates/antares-api/src/lib.rs:409,antares crates/antares-broker/tests/operation_matrix.rs
+antares,http,PUT,/ngsi-ld/v1/entities/{id}/attrs/{attr}/value,crates/antares-api/src/lib.rs:419,antares crates/antares-broker/tests/operation_matrix.rs
 antares,http,PUT,/q/grants/{target}/{source},crates/antares-icsr/src/grant.rs:130,antares crates/antares-icsr/tests/q_admin_sweep.rs
 antares,http,PUT,/q/policy/{tenant},crates/antares-ops/src/views/rule_documents.rs:139,antares crates/antares-ops/tests/policy_documents.rs
-antares,http,PUT,/q/schemas/{tenant},crates/antares-ops/src/views.rs:625,antares crates/antares-icsr/tests/q_admin_sweep.rs
-antares,http,PUT,/q/views/{id},crates/antares-ops/src/views.rs:642,antares crates/antares-icsr/tests/q_admin_sweep.rs
+antares,http,PUT,/q/quality/{tenant},crates/antares-ops/src/views/quality.rs:388,antares crates/antares-api/tests/admin_auth.rs
+antares,http,PUT,/q/retention/{tenant},crates/antares-ops/src/views/retention.rs:356,antares crates/antares-api/tests/admin_auth.rs
+antares,http,PUT,/q/schemas/{tenant},crates/antares-ops/src/views.rs:716,antares crates/antares-icsr/tests/q_admin_sweep.rs
+antares,http,PUT,/q/views/{id},crates/antares-ops/src/views.rs:733,antares crates/antares-icsr/tests/q_admin_sweep.rs
 antares,mcp-tool,call,append_attributes,crates/antares-mcp/src/tools.rs:241,antares crates/antares-broker/tests/operation_matrix.rs
 antares,mcp-tool,call,batch_create,crates/antares-mcp/src/tools.rs:241,antares crates/antares-broker/tests/operation_matrix.rs
 antares,mcp-tool,call,batch_delete,crates/antares-mcp/src/tools.rs:241,antares crates/antares-broker/tests/operation_matrix.rs
@@ -140,52 +152,57 @@ antares,mcp-tool,call,retrieve_temporal,crates/antares-mcp/src/tools.rs:241,anta
 antares,mcp-tool,call,update_attribute,crates/antares-mcp/src/tools.rs:241,antares crates/antares-broker/tests/operation_matrix.rs
 antares,mcp-tool,call,update_attributes,crates/antares-mcp/src/tools.rs:241,antares crates/antares-broker/tests/operation_matrix.rs
 antares,mcp-tool,call,update_subscription,crates/antares-mcp/src/tools.rs:241,antares crates/antares-broker/tests/operation_matrix.rs
-antares,nest,*,"/x/views{format!(""/{id}/odata/v4"")}",crates/antares-odata/src/lib.rs:157,antares crates/antares-broker/tests/operation_matrix.rs
+antares,nest,*,"/x/views{format!(""/{id}/odata/v4"")}",crates/antares-odata/src/lib.rs:162,antares crates/antares-broker/tests/operation_matrix.rs
 platform,http,*,/apps/{*rest},crates/wasm-host/src/server.rs:82,platform crates/wasm-host/tests/host_tests.rs
 platform,http,*,/healthz,crates/wasm-host/src/server.rs:122,"public: liveness probe, answers ok"
 platform,http,*,/healthz,crates/wasm-host/src/server.rs:143,"public: liveness probe, answers ok"
 platform,http,*,/jobs,crates/wasm-host/src/server.rs:128,platform crates/wasm-host/tests/host_tests.rs
 platform,http,*,/metrics,crates/wasm-host/src/server.rs:123,platform crates/wasm-host/tests/host_tests.rs
-platform,http,ANY,/api/endpoint/{slug}/ngsi-ld/v1/{*rest},crates/context-gateway/src/app.rs:391,task:T-3858
-platform,http,ANY,/api/endpoint/{slug}/ogc/features,crates/context-gateway/src/app.rs:428,task:T-3858
-platform,http,ANY,/api/endpoint/{slug}/ogc/features/,crates/context-gateway/src/app.rs:429,task:T-3858
-platform,http,ANY,/api/endpoint/{slug}/ogc/features/{*rest},crates/context-gateway/src/app.rs:434,task:T-3858
-platform,http,ANY,/api/endpoint/{slug}/sta/v1.1,crates/context-gateway/src/app.rs:431,task:T-3858
-platform,http,ANY,/api/endpoint/{slug}/sta/v1.1/,crates/context-gateway/src/app.rs:432,task:T-3858
-platform,http,ANY,/api/endpoint/{slug}/sta/v1.1/{*rest},crates/context-gateway/src/app.rs:433,task:T-3858
-platform,http,ANY,/cs/{space}/ngsi-ld/v1/{*rest},crates/context-gateway/src/app.rs:443,task:T-3858
+platform,http,ANY,/api/endpoint/{slug}/ngsi-ld/v1/{*rest},crates/context-gateway/src/app.rs:480,platform crates/context-gateway/tests/route_authz_sweep_tests.rs
+platform,http,ANY,/api/endpoint/{slug}/odata/v4,crates/context-gateway/src/app.rs:525,platform crates/context-gateway/tests/route_authz_sweep_tests.rs
+platform,http,ANY,/api/endpoint/{slug}/odata/v4/,crates/context-gateway/src/app.rs:526,platform crates/context-gateway/tests/route_authz_sweep_tests.rs
+platform,http,ANY,/api/endpoint/{slug}/odata/v4/{*rest},crates/context-gateway/src/app.rs:527,platform crates/context-gateway/tests/route_authz_sweep_tests.rs
+platform,http,ANY,/api/endpoint/{slug}/ogc/features,crates/context-gateway/src/app.rs:509,platform crates/context-gateway/tests/route_authz_sweep_tests.rs
+platform,http,ANY,/api/endpoint/{slug}/ogc/features/,crates/context-gateway/src/app.rs:510,platform crates/context-gateway/tests/route_authz_sweep_tests.rs
+platform,http,ANY,/api/endpoint/{slug}/ogc/features/{*rest},crates/context-gateway/src/app.rs:520,platform crates/context-gateway/tests/route_authz_sweep_tests.rs
+platform,http,ANY,/api/endpoint/{slug}/sta/v1.1,crates/context-gateway/src/app.rs:517,platform crates/context-gateway/tests/route_authz_sweep_tests.rs
+platform,http,ANY,/api/endpoint/{slug}/sta/v1.1/,crates/context-gateway/src/app.rs:518,platform crates/context-gateway/tests/route_authz_sweep_tests.rs
+platform,http,ANY,/api/endpoint/{slug}/sta/v1.1/{*rest},crates/context-gateway/src/app.rs:519,platform crates/context-gateway/tests/route_authz_sweep_tests.rs
+platform,http,ANY,/cs/{space}/ngsi-ld/v1/{*rest},crates/context-gateway/src/app.rs:533,platform crates/context-gateway/tests/route_authz_sweep_tests.rs
 platform,http,ANY,/v1/data/endpoints/{slug}/{*rest},crates/agent-proxy/src/lib.rs:98,platform crates/agent-proxy/tests/edge_routes_data_handler_tests.rs
 platform,http,ANY,/v1/data/{*rest},crates/agent-proxy/src/lib.rs:102,platform crates/agent-proxy/tests/edge_routes_data_handler_tests.rs
 platform,http,ANY,/v1/forge/{*rest},crates/agent-proxy/src/lib.rs:106,platform crates/agent-proxy/tests/edge_routes_forge_handler_tests.rs
-platform,http,GET,/api/endpoint/{slug},crates/context-gateway/src/app.rs:386,task:T-3858
-platform,http,GET,/api/endpoint/{slug}/,crates/context-gateway/src/app.rs:387,task:T-3858
-platform,http,GET,/api/endpoint/{slug}/.well-known/oauth-protected-resource,crates/context-gateway/src/app.rs:454,task:T-3858
-platform,http,GET,/api/endpoint/{slug}/access,crates/context-gateway/src/app.rs:392,task:T-3858
-platform,http,GET,/api/endpoint/{slug}/file.csv,crates/context-gateway/src/app.rs:423,task:T-3858
-platform,http,GET,/api/endpoint/{slug}/file.geojson,crates/context-gateway/src/app.rs:421,task:T-3858
-platform,http,GET,/api/endpoint/{slug}/file.json,crates/context-gateway/src/app.rs:422,task:T-3858
-platform,http,GET,/api/endpoint/{slug}/file.xlsx,crates/context-gateway/src/app.rs:424,task:T-3858
-platform,http,GET,/api/endpoint/{slug}/file.zip,crates/context-gateway/src/app.rs:425,task:T-3858
-platform,http,GET,/api/endpoint/{slug}/ngsi-ld/v1,crates/context-gateway/src/app.rs:389,task:T-3858
-platform,http,GET,/api/endpoint/{slug}/ngsi-ld/v1/,crates/context-gateway/src/app.rs:390,task:T-3858
-platform,http,GET,/api/endpoint/{slug}/openapi.json,crates/context-gateway/src/app.rs:460,task:T-3858
-platform,http,GET,/api/endpoint/{slug}/schema/index.json,crates/context-gateway/src/app.rs:458,task:T-3858
-platform,http,GET,/api/endpoint/{slug}/schema/{version}/{artifact},crates/context-gateway/src/app.rs:464,task:T-3858
-platform,http,GET,/api/mcp/.well-known/oauth-protected-resource,crates/context-gateway/src/app.rs:396,task:T-3858
-platform,http,GET,/api/mcp/{project}/{name}/.well-known/oauth-protected-resource,crates/context-gateway/src/app.rs:402,task:T-3858
-platform,http,GET,/catalog.jsonld,crates/context-gateway/src/app.rs:439,task:T-3858
-platform,http,GET,/catalog.ttl,crates/context-gateway/src/app.rs:440,task:T-3858
-platform,http,GET,/cs,crates/context-gateway/src/app.rs:441,task:T-3858
-platform,http,GET,/cs/{space},crates/context-gateway/src/app.rs:442,task:T-3858
-platform,http,GET,/cs/{space}/dump/,crates/context-gateway/src/app.rs:449,task:T-3858
-platform,http,GET,/cs/{space}/schema/index.json,crates/context-gateway/src/app.rs:448,task:T-3858
-platform,http,GET,/cs/{space}/schema/{version}/{artifact},crates/context-gateway/src/app.rs:450,task:T-3858
+platform,http,GET,/api/endpoint/{slug},crates/context-gateway/src/app.rs:475,platform crates/context-gateway/tests/route_authz_sweep_tests.rs
+platform,http,GET,/api/endpoint/{slug}/,crates/context-gateway/src/app.rs:476,platform crates/context-gateway/tests/route_authz_sweep_tests.rs
+platform,http,GET,/api/endpoint/{slug}/.well-known/oauth-protected-resource,crates/context-gateway/src/app.rs:544,platform crates/context-gateway/tests/route_authz_sweep_tests.rs
+platform,http,GET,/api/endpoint/{slug}/access,crates/context-gateway/src/app.rs:481,platform crates/context-gateway/tests/route_authz_sweep_tests.rs
+platform,http,GET,/api/endpoint/{slug}/file.csv,crates/context-gateway/src/app.rs:503,platform crates/context-gateway/tests/route_authz_sweep_tests.rs
+platform,http,GET,/api/endpoint/{slug}/file.geojson,crates/context-gateway/src/app.rs:501,platform crates/context-gateway/tests/route_authz_sweep_tests.rs
+platform,http,GET,/api/endpoint/{slug}/file.json,crates/context-gateway/src/app.rs:502,platform crates/context-gateway/tests/route_authz_sweep_tests.rs
+platform,http,GET,/api/endpoint/{slug}/file.xlsx,crates/context-gateway/src/app.rs:504,platform crates/context-gateway/tests/route_authz_sweep_tests.rs
+platform,http,GET,/api/endpoint/{slug}/file.zip,crates/context-gateway/src/app.rs:505,platform crates/context-gateway/tests/route_authz_sweep_tests.rs
+platform,http,GET,/api/endpoint/{slug}/ngsi-ld/v1,crates/context-gateway/src/app.rs:478,platform crates/context-gateway/tests/route_authz_sweep_tests.rs
+platform,http,GET,/api/endpoint/{slug}/ngsi-ld/v1/,crates/context-gateway/src/app.rs:479,platform crates/context-gateway/tests/route_authz_sweep_tests.rs
+platform,http,GET,/api/endpoint/{slug}/openapi.json,crates/context-gateway/src/app.rs:550,platform crates/context-gateway/tests/route_authz_sweep_tests.rs
+platform,http,GET,/api/endpoint/{slug}/schema/index.json,crates/context-gateway/src/app.rs:548,platform crates/context-gateway/tests/route_authz_sweep_tests.rs
+platform,http,GET,/api/endpoint/{slug}/schema/{version}/{artifact},crates/context-gateway/src/app.rs:554,platform crates/context-gateway/tests/route_authz_sweep_tests.rs
+platform,http,GET,/api/endpoint/{slug}/ws,crates/context-gateway/src/app.rs:513,platform crates/context-gateway/tests/route_authz_sweep_tests.rs
+platform,http,GET,/api/endpoints,crates/context-gateway/src/app.rs:485,platform crates/context-gateway/tests/route_authz_sweep_tests.rs
+platform,http,GET,/api/mcp/.well-known/oauth-protected-resource,crates/context-gateway/src/app.rs:486,platform crates/context-gateway/tests/route_authz_sweep_tests.rs
+platform,http,GET,/api/mcp/{project}/{name}/.well-known/oauth-protected-resource,crates/context-gateway/src/app.rs:492,platform crates/context-gateway/tests/route_authz_sweep_tests.rs
+platform,http,GET,/catalog.jsonld,crates/context-gateway/src/app.rs:529,platform crates/context-gateway/tests/route_authz_sweep_tests.rs
+platform,http,GET,/catalog.ttl,crates/context-gateway/src/app.rs:530,platform crates/context-gateway/tests/route_authz_sweep_tests.rs
+platform,http,GET,/cs,crates/context-gateway/src/app.rs:531,platform crates/context-gateway/tests/route_authz_sweep_tests.rs
+platform,http,GET,/cs/{space},crates/context-gateway/src/app.rs:532,platform crates/context-gateway/tests/route_authz_sweep_tests.rs
+platform,http,GET,/cs/{space}/dump/,crates/context-gateway/src/app.rs:539,platform crates/context-gateway/tests/route_authz_sweep_tests.rs
+platform,http,GET,/cs/{space}/schema/index.json,crates/context-gateway/src/app.rs:538,platform crates/context-gateway/tests/route_authz_sweep_tests.rs
+platform,http,GET,/cs/{space}/schema/{version}/{artifact},crates/context-gateway/src/app.rs:540,platform crates/context-gateway/tests/route_authz_sweep_tests.rs
 platform,http,GET,/d/widget.css,crates/assistant/src/chat/widget.rs:27,"public: the chat widget's script and style, the same for everyone"
 platform,http,GET,/d/widget.js,crates/assistant/src/chat/widget.rs:26,"public: the chat widget's script and style, the same for everyone"
 platform,http,GET,/d/{public_id}/widget,crates/assistant/src/chat/widget.rs:28,platform crates/assistant/tests/chat_tests.rs
 platform,http,GET,/healthz,crates/agent-proxy/src/lib.rs:97,"public: liveness probe, answers ok"
 platform,http,GET,/healthz,crates/assistant/src/bin/jc-assistant.rs:224,"public: liveness probe, answers ok"
-platform,http,GET,/healthz,crates/context-gateway/src/app.rs:474,"public: liveness probe, answers ok"
+platform,http,GET,/healthz,crates/context-gateway/src/app.rs:564,"public: liveness probe, answers ok"
 platform,http,GET,/healthz,crates/functions/src/lib.rs:212,"public: liveness probe, answers ok"
 platform,http,GET,/healthz,crates/token-sidecar/src/lib.rs:106,"public: liveness probe, answers ok"
 platform,http,GET,/internal/v1/projects/{project}/knowledge/deployments/{deployment}/usage,crates/assistant/src/chat/admin.rs:68,platform crates/assistant/tests/admin_tests.rs
@@ -194,23 +211,22 @@ platform,http,GET,/internal/v1/projects/{project}/knowledge/sources/{source}/doc
 platform,http,GET,/internal/v1/projects/{project}/knowledge/sources/{source}/pages,crates/assistant/src/chat/admin.rs:44,platform crates/assistant/tests/admin_tests.rs
 platform,http,GET,/internal/v1/projects/{project}/knowledge/sources/{source}/pages/{page}/links,crates/assistant/src/chat/admin.rs:52,platform crates/assistant/tests/admin_tests.rs
 platform,http,GET,/internal/v1/projects/{project}/knowledge/sources/{source}/passages,crates/assistant/src/chat/admin.rs:56,platform crates/assistant/tests/admin_tests.rs
-platform,http,GET,/livez,crates/context-gateway/src/app.rs:475,task:T-3858
-platform,http,GET,/metrics,crates/context-gateway/src/app.rs:480,task:T-3858
+platform,http,GET,/livez,crates/context-gateway/src/app.rs:565,platform crates/context-gateway/tests/route_authz_sweep_tests.rs
+platform,http,GET,/metrics,crates/context-gateway/src/app.rs:570,platform crates/context-gateway/tests/route_authz_sweep_tests.rs
 platform,http,GET,/readyz,crates/assistant/src/bin/jc-assistant.rs:225,"public: readiness probe, answers ok"
 platform,http,GET,/v1/diagnostics/{component}/{id},crates/agent-proxy/src/lib.rs:116,platform crates/agent-proxy/tests/edge_routes_diagnostics_handler_tests.rs
 platform,http,GET,/v1/fetch,crates/agent-proxy/src/lib.rs:110,platform crates/agent-proxy/tests/edge_routes_fetch_handler_tests.rs
 platform,http,GET,/v1/packages/{host}/{*rest},crates/agent-proxy/src/lib.rs:112,platform crates/agent-proxy/tests/edge_routes_packages_handler_tests.rs
 platform,http,GET,/v1/runs/inbox,crates/agent-proxy/src/lib.rs:122,platform crates/agent-proxy/tests/edge_routes_inbox_handler_tests.rs
 platform,http,OPTIONS,/api/v1/d/{public_id}/chat,crates/assistant/src/chat/mod.rs:126,platform crates/assistant/tests/chat_tests.rs
-platform,http,POST,/api/endpoint/{slug}/access/check,crates/context-gateway/src/app.rs:406,task:T-3858
-platform,http,POST,/api/endpoint/{slug}/access/simulate,crates/context-gateway/src/app.rs:407,task:T-3858
-platform,http,POST,/api/endpoint/{slug}/egress/notifications,crates/context-gateway/src/app.rs:417,task:T-3858
-platform,http,POST,/api/endpoint/{slug}/mcp,crates/context-gateway/src/app.rs:393,task:T-3858
-platform,http,POST,/api/endpoint/{slug}/preview,crates/context-gateway/src/app.rs:411,task:T-3858
-platform,http,POST,/api/mcp,crates/context-gateway/src/app.rs:395,task:T-3858
-platform,http,POST,/api/mcp/{project}/{name},crates/context-gateway/src/app.rs:401,task:T-3858
+platform,http,POST,/api/endpoint/{slug}/access/check,crates/context-gateway/src/app.rs:496,platform crates/context-gateway/tests/route_authz_sweep_tests.rs
+platform,http,POST,/api/endpoint/{slug}/access/simulate,crates/context-gateway/src/app.rs:497,platform crates/context-gateway/tests/route_authz_sweep_tests.rs
+platform,http,POST,/api/endpoint/{slug}/mcp,crates/context-gateway/src/app.rs:482,platform crates/context-gateway/tests/route_authz_sweep_tests.rs
+platform,http,POST,/api/mcp,crates/context-gateway/src/app.rs:484,platform crates/context-gateway/tests/route_authz_sweep_tests.rs
+platform,http,POST,/api/mcp/{project}/{name},crates/context-gateway/src/app.rs:491,platform crates/context-gateway/tests/route_authz_sweep_tests.rs
 platform,http,POST,/api/v1/d/{public_id}/chat,crates/assistant/src/chat/mod.rs:126,platform crates/assistant/tests/chat_tests.rs
-platform,http,POST,/cs/{space}/mcp,crates/context-gateway/src/app.rs:444,task:T-3858
+platform,http,POST,/cs/{space}/mcp,crates/context-gateway/src/app.rs:534,platform crates/context-gateway/tests/route_authz_sweep_tests.rs
+platform,http,POST,/internal/mqtt/auth,crates/context-gateway/src/mqtt.rs:304,platform crates/context-gateway/tests/route_authz_sweep_tests.rs
 platform,http,POST,/internal/runs/{run}/data-credential,crates/agent-proxy/src/lib.rs:127,platform crates/agent-proxy/tests/edge_delegation_tests.rs
 platform,http,POST,/internal/runs/{run}/identity,crates/agent-proxy/src/lib.rs:123,platform crates/agent-proxy/tests/edge_delegation_tests.rs
 platform,http,POST,/internal/v1/projects/{project}/knowledge/deployments/{deployment}/chat,crates/assistant/src/chat/mod.rs:127,platform crates/assistant/tests/admin_tests.rs
@@ -221,40 +237,60 @@ platform,http,POST,/token,crates/token-sidecar/src/lib.rs:105,platform crates/to
 platform,http,POST,/v1/llm/{*rest},crates/agent-proxy/src/lib.rs:111,platform crates/agent-proxy/tests/edge_routes_llm_handler_tests.rs
 platform,http,POST,/v1/mcp,crates/agent-proxy/src/lib.rs:120,platform crates/agent-proxy/tests/edge_routes_mcp_handler_tests.rs
 platform,http,POST,/v1/runs/events,crates/agent-proxy/src/lib.rs:121,platform crates/agent-proxy/tests/edge_routes_events_handler_tests.rs
-platform,mcp-tool,call,batch_query,crates/context-gateway/src/mcp/endpoint_facade.rs:204,task:T-3858
-platform,mcp-tool,call,batch_query_temporal,crates/context-gateway/src/mcp/endpoint_facade.rs:328,task:T-3858
-platform,mcp-tool,call,create_subscription,crates/context-gateway/src/mcp/endpoint_facade.rs:403,task:T-3858
-platform,mcp-tool,call,describe_access,crates/context-gateway/src/mcp/endpoint_facade.rs:249,task:T-3858
-platform,mcp-tool,call,describe_schema,crates/context-gateway/src/mcp/endpoint_facade.rs:267,task:T-3858
-platform,mcp-tool,call,get_attribute,crates/context-gateway/src/mcp/endpoint_facade.rs:363,task:T-3858
-platform,mcp-tool,call,get_entity,crates/context-gateway/src/mcp/endpoint_facade.rs:128,task:T-3858
-platform,mcp-tool,call,get_subscription,crates/context-gateway/src/mcp/endpoint_facade.rs:383,task:T-3858
-platform,mcp-tool,call,get_type,crates/context-gateway/src/mcp/endpoint_facade.rs:346,task:T-3858
-platform,mcp-tool,call,list_attributes,crates/context-gateway/src/mcp/endpoint_facade.rs:164,task:T-3858
-platform,mcp-tool,call,list_subscriptions,crates/context-gateway/src/mcp/endpoint_facade.rs:230,task:T-3858
-platform,mcp-tool,call,list_types,crates/context-gateway/src/mcp/endpoint_facade.rs:146,task:T-3858
-platform,mcp-tool,call,query_entities,crates/context-gateway/src/mcp/endpoint_facade.rs:102,task:T-3858
-platform,mcp-tool,call,query_temporal,crates/context-gateway/src/mcp/endpoint_facade.rs:182,task:T-3858
-platform,mcp-tool,call,retrieve_temporal,crates/context-gateway/src/mcp/endpoint_facade.rs:189,task:T-3858
-platform,mcp-tool,call,upsert_entity,crates/context-gateway/src/mcp/endpoint_facade.rs:312,task:T-3858
-portal,http,DELETE,/alerts/{id},tests/authz_matrix.yaml:380,joinedcontext-portal tests/authz_matrix_tests.rs
+platform,mcp-tool,call,append_attributes,crates/context-gateway/src/mcp/tools.rs:415,platform crates/context-gateway/tests/route_authz_sweep_tests.rs
+platform,mcp-tool,call,batch_create,crates/context-gateway/src/mcp/tools.rs:422,platform crates/context-gateway/tests/route_authz_sweep_tests.rs
+platform,mcp-tool,call,batch_delete,crates/context-gateway/src/mcp/tools.rs:429,platform crates/context-gateway/tests/route_authz_sweep_tests.rs
+platform,mcp-tool,call,batch_merge,crates/context-gateway/src/mcp/tools.rs:436,platform crates/context-gateway/tests/route_authz_sweep_tests.rs
+platform,mcp-tool,call,batch_query,crates/context-gateway/src/mcp/tools.rs:443,platform crates/context-gateway/tests/route_authz_sweep_tests.rs
+platform,mcp-tool,call,batch_query_temporal,crates/context-gateway/src/mcp/tools.rs:450,platform crates/context-gateway/tests/route_authz_sweep_tests.rs
+platform,mcp-tool,call,batch_update,crates/context-gateway/src/mcp/tools.rs:457,platform crates/context-gateway/tests/route_authz_sweep_tests.rs
+platform,mcp-tool,call,batch_upsert,crates/context-gateway/src/mcp/tools.rs:464,platform crates/context-gateway/tests/route_authz_sweep_tests.rs
+platform,mcp-tool,call,create_entity,crates/context-gateway/src/mcp/tools.rs:471,platform crates/context-gateway/tests/route_authz_sweep_tests.rs
+platform,mcp-tool,call,create_subscription,crates/context-gateway/src/mcp/tools.rs:478,platform crates/context-gateway/tests/route_authz_sweep_tests.rs
+platform,mcp-tool,call,delete_attribute,crates/context-gateway/src/mcp/tools.rs:485,platform crates/context-gateway/tests/route_authz_sweep_tests.rs
+platform,mcp-tool,call,delete_entity,crates/context-gateway/src/mcp/tools.rs:492,platform crates/context-gateway/tests/route_authz_sweep_tests.rs
+platform,mcp-tool,call,delete_subscription,crates/context-gateway/src/mcp/tools.rs:499,platform crates/context-gateway/tests/route_authz_sweep_tests.rs
+platform,mcp-tool,call,describe_access,crates/context-gateway/src/mcp/tools.rs:639,platform crates/context-gateway/tests/route_authz_sweep_tests.rs
+platform,mcp-tool,call,describe_schema,crates/context-gateway/src/mcp/tools.rs:657,platform crates/context-gateway/tests/route_authz_sweep_tests.rs
+platform,mcp-tool,call,get_attribute,crates/context-gateway/src/mcp/tools.rs:506,platform crates/context-gateway/tests/route_authz_sweep_tests.rs
+platform,mcp-tool,call,get_attribute_value,crates/context-gateway/src/mcp/tools.rs:513,platform crates/context-gateway/tests/route_authz_sweep_tests.rs
+platform,mcp-tool,call,get_entity,crates/context-gateway/src/mcp/tools.rs:520,platform crates/context-gateway/tests/route_authz_sweep_tests.rs
+platform,mcp-tool,call,get_subscription,crates/context-gateway/src/mcp/tools.rs:527,platform crates/context-gateway/tests/route_authz_sweep_tests.rs
+platform,mcp-tool,call,get_type,crates/context-gateway/src/mcp/tools.rs:534,platform crates/context-gateway/tests/route_authz_sweep_tests.rs
+platform,mcp-tool,call,list_attribute_details,crates/context-gateway/src/mcp/tools.rs:541,platform crates/context-gateway/tests/route_authz_sweep_tests.rs
+platform,mcp-tool,call,list_attributes,crates/context-gateway/src/mcp/tools.rs:548,platform crates/context-gateway/tests/route_authz_sweep_tests.rs
+platform,mcp-tool,call,list_subscriptions,crates/context-gateway/src/mcp/tools.rs:555,platform crates/context-gateway/tests/route_authz_sweep_tests.rs
+platform,mcp-tool,call,list_type_details,crates/context-gateway/src/mcp/tools.rs:562,platform crates/context-gateway/tests/route_authz_sweep_tests.rs
+platform,mcp-tool,call,list_types,crates/context-gateway/src/mcp/tools.rs:569,platform crates/context-gateway/tests/route_authz_sweep_tests.rs
+platform,mcp-tool,call,merge_entity,crates/context-gateway/src/mcp/tools.rs:576,platform crates/context-gateway/tests/route_authz_sweep_tests.rs
+platform,mcp-tool,call,query_entities,crates/context-gateway/src/mcp/tools.rs:583,platform crates/context-gateway/tests/route_authz_sweep_tests.rs
+platform,mcp-tool,call,query_temporal,crates/context-gateway/src/mcp/tools.rs:590,platform crates/context-gateway/tests/route_authz_sweep_tests.rs
+platform,mcp-tool,call,replace_attribute,crates/context-gateway/src/mcp/tools.rs:597,platform crates/context-gateway/tests/route_authz_sweep_tests.rs
+platform,mcp-tool,call,replace_entity,crates/context-gateway/src/mcp/tools.rs:604,platform crates/context-gateway/tests/route_authz_sweep_tests.rs
+platform,mcp-tool,call,retrieve_temporal,crates/context-gateway/src/mcp/tools.rs:611,platform crates/context-gateway/tests/route_authz_sweep_tests.rs
+platform,mcp-tool,call,update_attribute,crates/context-gateway/src/mcp/tools.rs:618,platform crates/context-gateway/tests/route_authz_sweep_tests.rs
+platform,mcp-tool,call,update_attributes,crates/context-gateway/src/mcp/tools.rs:625,platform crates/context-gateway/tests/route_authz_sweep_tests.rs
+platform,mcp-tool,call,update_subscription,crates/context-gateway/src/mcp/tools.rs:632,platform crates/context-gateway/tests/route_authz_sweep_tests.rs
+portal,http,DELETE,/alerts/{id},tests/authz_matrix.yaml:426,joinedcontext-portal tests/authz_matrix_tests.rs
 portal,http,DELETE,/apps/{name}/api/services/files/{*path},tests/authz_matrix.yaml:64,joinedcontext-portal tests/authz_matrix_tests.rs
-portal,http,DELETE,/organization/people/{id},tests/authz_matrix.yaml:222,joinedcontext-portal tests/authz_matrix_tests.rs
-portal,http,DELETE,/projects/{project},tests/authz_matrix.yaml:271,joinedcontext-portal tests/authz_matrix_tests.rs
-portal,http,DELETE,/projects/{project}/drafts/{kind}/{name},tests/authz_matrix.yaml:584,joinedcontext-portal tests/authz_matrix_tests.rs
-portal,http,DELETE,/projects/{project}/serviceaccounts/{name}/keys/{keyId},tests/authz_matrix.yaml:650,joinedcontext-portal tests/authz_matrix_tests.rs
-portal,http,DELETE,/projects/{project}/spaces/{space}/comments/{id},tests/authz_matrix.yaml:361,joinedcontext-portal tests/authz_matrix_tests.rs
-portal,http,DELETE,/projects/{project}/spaces/{space}/trash/{id},tests/authz_matrix.yaml:349,joinedcontext-portal tests/authz_matrix_tests.rs
-portal,http,DELETE,/projects/{project}/spaces/{space}/views/{id},tests/authz_matrix.yaml:331,joinedcontext-portal tests/authz_matrix_tests.rs
-portal,http,DELETE,/projects/{project}/workspaces/{name},tests/authz_matrix.yaml:691,joinedcontext-portal tests/authz_matrix_tests.rs
-portal,http,DELETE,/projects/{project}/workspaces/{name}/preview,tests/authz_matrix.yaml:715,joinedcontext-portal tests/authz_matrix_tests.rs
-portal,http,DELETE,/projects/{project}/{plural}/{name},tests/authz_matrix.yaml:737,joinedcontext-portal tests/authz_matrix_tests.rs
+portal,http,DELETE,/organization/people/{id},tests/authz_matrix.yaml:243,joinedcontext-portal tests/authz_matrix_tests.rs
+portal,http,DELETE,/organization/people/{id}/consents/{client},tests/authz_matrix.yaml:264,joinedcontext-portal tests/authz_matrix_tests.rs
+portal,http,DELETE,/projects/{project},tests/authz_matrix.yaml:296,joinedcontext-portal tests/authz_matrix_tests.rs
+portal,http,DELETE,/projects/{project}/drafts/{kind}/{name},tests/authz_matrix.yaml:644,joinedcontext-portal tests/authz_matrix_tests.rs
+portal,http,DELETE,/projects/{project}/pipelinetemplates/{id},tests/authz_matrix.yaml:593,joinedcontext-portal tests/authz_matrix_tests.rs
+portal,http,DELETE,/projects/{project}/serviceaccounts/{name}/keys/{keyId},tests/authz_matrix.yaml:720,joinedcontext-portal tests/authz_matrix_tests.rs
+portal,http,DELETE,/projects/{project}/spaces/{space}/comments/{id},tests/authz_matrix.yaml:407,joinedcontext-portal tests/authz_matrix_tests.rs
+portal,http,DELETE,/projects/{project}/spaces/{space}/trash/{id},tests/authz_matrix.yaml:395,joinedcontext-portal tests/authz_matrix_tests.rs
+portal,http,DELETE,/projects/{project}/spaces/{space}/views/{id},tests/authz_matrix.yaml:377,joinedcontext-portal tests/authz_matrix_tests.rs
+portal,http,DELETE,/projects/{project}/workspaces/{name},tests/authz_matrix.yaml:761,joinedcontext-portal tests/authz_matrix_tests.rs
+portal,http,DELETE,/projects/{project}/workspaces/{name}/preview,tests/authz_matrix.yaml:785,joinedcontext-portal tests/authz_matrix_tests.rs
+portal,http,DELETE,/projects/{project}/{plural}/{name},tests/authz_matrix.yaml:807,joinedcontext-portal tests/authz_matrix_tests.rs
 portal,http,GET,/.well-known/oauth-protected-resource,tests/authz_matrix.yaml:13,joinedcontext-portal tests/authz_matrix_tests.rs
 portal,http,GET,/.well-known/oauth-protected-resource/api/v1/mcp,tests/authz_matrix.yaml:16,joinedcontext-portal tests/authz_matrix_tests.rs
-portal,http,GET,/alerts,tests/authz_matrix.yaml:372,joinedcontext-portal tests/authz_matrix_tests.rs
-portal,http,GET,/alerts/notices,tests/authz_matrix.yaml:389,joinedcontext-portal tests/authz_matrix_tests.rs
-portal,http,GET,/app-templates,tests/authz_matrix.yaml:246,joinedcontext-portal tests/authz_matrix_tests.rs
-portal,http,GET,/app-templates/{name}/screenshot/{width},tests/authz_matrix.yaml:249,joinedcontext-portal tests/authz_matrix_tests.rs
+portal,http,GET,/alerts,tests/authz_matrix.yaml:418,joinedcontext-portal tests/authz_matrix_tests.rs
+portal,http,GET,/alerts/notices,tests/authz_matrix.yaml:435,joinedcontext-portal tests/authz_matrix_tests.rs
+portal,http,GET,/app-templates,tests/authz_matrix.yaml:271,joinedcontext-portal tests/authz_matrix_tests.rs
+portal,http,GET,/app-templates/{name}/screenshot/{width},tests/authz_matrix.yaml:274,joinedcontext-portal tests/authz_matrix_tests.rs
 portal,http,GET,/apps/{name}/,tests/authz_matrix.yaml:22,joinedcontext-portal tests/authz_matrix_tests.rs
 portal,http,GET,/apps/{name}/api/services/files,tests/authz_matrix.yaml:52,joinedcontext-portal tests/authz_matrix_tests.rs
 portal,http,GET,/apps/{name}/api/services/files/{*path},tests/authz_matrix.yaml:56,joinedcontext-portal tests/authz_matrix_tests.rs
@@ -268,185 +304,201 @@ portal,http,GET,/auth/sso-check/done,tests/authz_matrix.yaml:92,joinedcontext-po
 portal,http,GET,/blueprints,tests/authz_matrix.yaml:95,joinedcontext-portal tests/authz_matrix_tests.rs
 portal,http,GET,/branding,tests/authz_matrix.yaml:98,joinedcontext-portal tests/authz_matrix_tests.rs
 portal,http,GET,/branding/{asset},tests/authz_matrix.yaml:101,joinedcontext-portal tests/authz_matrix_tests.rs
-portal,http,GET,/catalogue,tests/authz_matrix.yaml:169,joinedcontext-portal tests/authz_matrix_tests.rs
-portal,http,GET,/catalogue/datasets/{name},tests/authz_matrix.yaml:172,joinedcontext-portal tests/authz_matrix_tests.rs
-portal,http,GET,/catalogue/datasets/{name}/sample,tests/authz_matrix.yaml:176,joinedcontext-portal tests/authz_matrix_tests.rs
-portal,http,GET,/endpoints,tests/authz_matrix.yaml:258,joinedcontext-portal tests/authz_matrix_tests.rs
+portal,http,GET,/catalogue,tests/authz_matrix.yaml:176,joinedcontext-portal tests/authz_matrix_tests.rs
+portal,http,GET,/catalogue/datasets/{name},tests/authz_matrix.yaml:179,joinedcontext-portal tests/authz_matrix_tests.rs
+portal,http,GET,/catalogue/datasets/{name}/sample,tests/authz_matrix.yaml:183,joinedcontext-portal tests/authz_matrix_tests.rs
+portal,http,GET,/docs/{chapter}/{page},tests/authz_matrix.yaml:169,joinedcontext-portal tests/authz_matrix_tests.rs
+portal,http,GET,/endpoints,tests/authz_matrix.yaml:283,joinedcontext-portal tests/authz_matrix_tests.rs
 portal,http,GET,/forms,tests/authz_matrix.yaml:105,joinedcontext-portal tests/authz_matrix_tests.rs
 portal,http,GET,/health,tests/authz_matrix.yaml:108,joinedcontext-portal tests/authz_matrix_tests.rs
 portal,http,GET,/internal/agent-runs/{id},tests/authz_matrix.yaml:114,joinedcontext-portal tests/authz_matrix_tests.rs
 portal,http,GET,/internal/agent-runs/{id}/diagnostics/{component}/{name},tests/authz_matrix.yaml:117,joinedcontext-portal tests/authz_matrix_tests.rs
-portal,http,GET,/internal/agent-runs/{id}/inbox,tests/authz_matrix.yaml:129,joinedcontext-portal tests/authz_matrix_tests.rs
-portal,http,GET,/internal/domain-verifications,tests/authz_matrix.yaml:138,joinedcontext-portal tests/authz_matrix_tests.rs
-portal,http,GET,/internal/previews,tests/authz_matrix.yaml:141,joinedcontext-portal tests/authz_matrix_tests.rs
-portal,http,GET,/mail/unsubscribe,tests/authz_matrix.yaml:155,joinedcontext-portal tests/authz_matrix_tests.rs
-portal,http,GET,/mcp,tests/authz_matrix.yaml:144,joinedcontext-portal tests/authz_matrix_tests.rs
-portal,http,GET,/metrics,tests/authz_matrix.yaml:163,joinedcontext-portal tests/authz_matrix_tests.rs
-portal,http,GET,/notifications,tests/authz_matrix.yaml:365,joinedcontext-portal tests/authz_matrix_tests.rs
-portal,http,GET,/openapi.json,tests/authz_matrix.yaml:166,joinedcontext-portal tests/authz_matrix_tests.rs
-portal,http,GET,/organization/datamodels,tests/authz_matrix.yaml:558,joinedcontext-portal tests/authz_matrix_tests.rs
-portal,http,GET,/organization/feedback,tests/authz_matrix.yaml:188,joinedcontext-portal tests/authz_matrix_tests.rs
-portal,http,GET,/organization/feedback/{id}/screenshot,tests/authz_matrix.yaml:191,joinedcontext-portal tests/authz_matrix_tests.rs
-portal,http,GET,/organization/health,tests/authz_matrix.yaml:195,joinedcontext-portal tests/authz_matrix_tests.rs
-portal,http,GET,/organization/limits,tests/authz_matrix.yaml:198,joinedcontext-portal tests/authz_matrix_tests.rs
-portal,http,GET,/organization/people,tests/authz_matrix.yaml:210,joinedcontext-portal tests/authz_matrix_tests.rs
-portal,http,GET,/organization/people/{id},tests/authz_matrix.yaml:216,joinedcontext-portal tests/authz_matrix_tests.rs
-portal,http,GET,/organization/setup,tests/authz_matrix.yaml:202,joinedcontext-portal tests/authz_matrix_tests.rs
-portal,http,GET,/preferences,tests/authz_matrix.yaml:243,joinedcontext-portal tests/authz_matrix_tests.rs
-portal,http,GET,/projects,tests/authz_matrix.yaml:261,joinedcontext-portal tests/authz_matrix_tests.rs
-portal,http,GET,/projects/{project},tests/authz_matrix.yaml:268,joinedcontext-portal tests/authz_matrix_tests.rs
-portal,http,GET,/projects/{project}/activity,tests/authz_matrix.yaml:289,joinedcontext-portal tests/authz_matrix_tests.rs
-portal,http,GET,/projects/{project}/activity/stream,tests/authz_matrix.yaml:292,joinedcontext-portal tests/authz_matrix_tests.rs
-portal,http,GET,/projects/{project}/agent-runs,tests/authz_matrix.yaml:435,joinedcontext-portal tests/authz_matrix_tests.rs
-portal,http,GET,/projects/{project}/agent-runs/{id},tests/authz_matrix.yaml:442,joinedcontext-portal tests/authz_matrix_tests.rs
-portal,http,GET,/projects/{project}/agent-runs/{id}/events,tests/authz_matrix.yaml:455,joinedcontext-portal tests/authz_matrix_tests.rs
-portal,http,GET,/projects/{project}/agent-runs/{id}/preview,tests/authz_matrix.yaml:468,joinedcontext-portal tests/authz_matrix_tests.rs
-portal,http,GET,/projects/{project}/app-checks,tests/authz_matrix.yaml:306,joinedcontext-portal tests/authz_matrix_tests.rs
-portal,http,GET,/projects/{project}/apps/{name}/build,tests/authz_matrix.yaml:486,joinedcontext-portal tests/authz_matrix_tests.rs
-portal,http,GET,/projects/{project}/apps/{name}/builds,tests/authz_matrix.yaml:499,joinedcontext-portal tests/authz_matrix_tests.rs
-portal,http,GET,/projects/{project}/apps/{name}/export,tests/authz_matrix.yaml:591,joinedcontext-portal tests/authz_matrix_tests.rs
-portal,http,GET,/projects/{project}/apps/{name}/me,tests/authz_matrix.yaml:489,joinedcontext-portal tests/authz_matrix_tests.rs
-portal,http,GET,/projects/{project}/assistant/access,tests/authz_matrix.yaml:506,joinedcontext-portal tests/authz_matrix_tests.rs
-portal,http,GET,/projects/{project}/assistant/catalog,tests/authz_matrix.yaml:509,joinedcontext-portal tests/authz_matrix_tests.rs
-portal,http,GET,/projects/{project}/basemap/{style}/style.json,tests/authz_matrix.yaml:520,joinedcontext-portal tests/authz_matrix_tests.rs
-portal,http,GET,/projects/{project}/basemap/{style}/{z}/{x}/{tile},tests/authz_matrix.yaml:524,joinedcontext-portal tests/authz_matrix_tests.rs
-portal,http,GET,/projects/{project}/changes,tests/authz_matrix.yaml:528,joinedcontext-portal tests/authz_matrix_tests.rs
-portal,http,GET,/projects/{project}/changes/history,tests/authz_matrix.yaml:531,joinedcontext-portal tests/authz_matrix_tests.rs
-portal,http,GET,/projects/{project}/changes/{id},tests/authz_matrix.yaml:534,joinedcontext-portal tests/authz_matrix_tests.rs
-portal,http,GET,/projects/{project}/ckan/status,tests/authz_matrix.yaml:555,joinedcontext-portal tests/authz_matrix_tests.rs
-portal,http,GET,/projects/{project}/datamodels/{name}/source,tests/authz_matrix.yaml:561,joinedcontext-portal tests/authz_matrix_tests.rs
-portal,http,GET,/projects/{project}/drafts,tests/authz_matrix.yaml:570,joinedcontext-portal tests/authz_matrix_tests.rs
-portal,http,GET,/projects/{project}/drafts/events,tests/authz_matrix.yaml:573,joinedcontext-portal tests/authz_matrix_tests.rs
-portal,http,GET,/projects/{project}/drafts/{kind}/{name},tests/authz_matrix.yaml:576,joinedcontext-portal tests/authz_matrix_tests.rs
-portal,http,GET,/projects/{project}/drift,tests/authz_matrix.yaml:295,joinedcontext-portal tests/authz_matrix_tests.rs
-portal,http,GET,/projects/{project}/export,tests/authz_matrix.yaml:587,joinedcontext-portal tests/authz_matrix_tests.rs
-portal,http,GET,/projects/{project}/federation-graph,tests/authz_matrix.yaml:595,joinedcontext-portal tests/authz_matrix_tests.rs
-portal,http,GET,/projects/{project}/knowledge/deployments/{deployment}/usage,tests/authz_matrix.yaml:426,joinedcontext-portal tests/authz_matrix_tests.rs
-portal,http,GET,/projects/{project}/knowledge/sources,tests/authz_matrix.yaml:396,joinedcontext-portal tests/authz_matrix_tests.rs
-portal,http,GET,/projects/{project}/knowledge/sources/{source}/documents,tests/authz_matrix.yaml:404,joinedcontext-portal tests/authz_matrix_tests.rs
-portal,http,GET,/projects/{project}/knowledge/sources/{source}/pages,tests/authz_matrix.yaml:400,joinedcontext-portal tests/authz_matrix_tests.rs
-portal,http,GET,/projects/{project}/knowledge/sources/{source}/pages/{page}/links,tests/authz_matrix.yaml:408,joinedcontext-portal tests/authz_matrix_tests.rs
-portal,http,GET,/projects/{project}/knowledge/sources/{source}/passages,tests/authz_matrix.yaml:412,joinedcontext-portal tests/authz_matrix_tests.rs
-portal,http,GET,/projects/{project}/ops,tests/authz_matrix.yaml:607,joinedcontext-portal tests/authz_matrix_tests.rs
-portal,http,GET,/projects/{project}/permissions/me,tests/authz_matrix.yaml:615,joinedcontext-portal tests/authz_matrix_tests.rs
-portal,http,GET,/projects/{project}/pipelines/{name}/metrics,tests/authz_matrix.yaml:622,joinedcontext-portal tests/authz_matrix_tests.rs
-portal,http,GET,/projects/{project}/pipelines/{name}/rejected,tests/authz_matrix.yaml:625,joinedcontext-portal tests/authz_matrix_tests.rs
-portal,http,GET,/projects/{project}/pipelines/{name}/runs,tests/authz_matrix.yaml:632,joinedcontext-portal tests/authz_matrix_tests.rs
-portal,http,GET,/projects/{project}/pipelines/{name}/runs/{run}/log,tests/authz_matrix.yaml:635,joinedcontext-portal tests/authz_matrix_tests.rs
-portal,http,GET,/projects/{project}/registry,tests/authz_matrix.yaml:280,joinedcontext-portal tests/authz_matrix_tests.rs
-portal,http,GET,/projects/{project}/revisions,tests/authz_matrix.yaml:638,joinedcontext-portal tests/authz_matrix_tests.rs
-portal,http,GET,/projects/{project}/serviceaccounts/{name}/keys,tests/authz_matrix.yaml:642,joinedcontext-portal tests/authz_matrix_tests.rs
-portal,http,GET,/projects/{project}/serviceaccounts/{name}/keys/claims/{claimId},tests/authz_matrix.yaml:658,joinedcontext-portal tests/authz_matrix_tests.rs
-portal,http,GET,/projects/{project}/spaces/{space}/comments,tests/authz_matrix.yaml:353,joinedcontext-portal tests/authz_matrix_tests.rs
-portal,http,GET,/projects/{project}/spaces/{space}/live,tests/authz_matrix.yaml:338,joinedcontext-portal tests/authz_matrix_tests.rs
-portal,http,GET,/projects/{project}/spaces/{space}/quality,tests/authz_matrix.yaml:309,joinedcontext-portal tests/authz_matrix_tests.rs
-portal,http,GET,/projects/{project}/spaces/{space}/trash,tests/authz_matrix.yaml:342,joinedcontext-portal tests/authz_matrix_tests.rs
-portal,http,GET,/projects/{project}/spaces/{space}/types/{type}/attributes,tests/authz_matrix.yaml:335,joinedcontext-portal tests/authz_matrix_tests.rs
-portal,http,GET,/projects/{project}/spaces/{space}/usage,tests/authz_matrix.yaml:312,joinedcontext-portal tests/authz_matrix_tests.rs
-portal,http,GET,/projects/{project}/spaces/{space}/views,tests/authz_matrix.yaml:315,joinedcontext-portal tests/authz_matrix_tests.rs
-portal,http,GET,/projects/{project}/spaces/{space}/views/{id},tests/authz_matrix.yaml:322,joinedcontext-portal tests/authz_matrix_tests.rs
-portal,http,GET,/projects/{project}/syncsources/{name}/status,tests/authz_matrix.yaml:673,joinedcontext-portal tests/authz_matrix_tests.rs
-portal,http,GET,/projects/{project}/workspaces,tests/authz_matrix.yaml:679,joinedcontext-portal tests/authz_matrix_tests.rs
-portal,http,GET,/projects/{project}/workspaces/{name},tests/authz_matrix.yaml:687,joinedcontext-portal tests/authz_matrix_tests.rs
-portal,http,GET,/projects/{project}/workspaces/{name}/compare,tests/authz_matrix.yaml:695,joinedcontext-portal tests/authz_matrix_tests.rs
-portal,http,GET,/projects/{project}/workspaces/{name}/preview,tests/authz_matrix.yaml:711,joinedcontext-portal tests/authz_matrix_tests.rs
-portal,http,GET,/projects/{project}/{plural},tests/authz_matrix.yaml:719,joinedcontext-portal tests/authz_matrix_tests.rs
-portal,http,GET,/projects/{project}/{plural}/{name},tests/authz_matrix.yaml:726,joinedcontext-portal tests/authz_matrix_tests.rs
-portal,http,GET,/ready,tests/authz_matrix.yaml:742,joinedcontext-portal tests/authz_matrix_tests.rs
-portal,http,GET,/sync,tests/authz_matrix.yaml:745,joinedcontext-portal tests/authz_matrix_tests.rs
+portal,http,GET,/internal/agent-runs/{id}/inbox,tests/authz_matrix.yaml:132,joinedcontext-portal tests/authz_matrix_tests.rs
+portal,http,GET,/internal/domain-verifications,tests/authz_matrix.yaml:141,joinedcontext-portal tests/authz_matrix_tests.rs
+portal,http,GET,/internal/previews,tests/authz_matrix.yaml:144,joinedcontext-portal tests/authz_matrix_tests.rs
+portal,http,GET,/mail/unsubscribe,tests/authz_matrix.yaml:158,joinedcontext-portal tests/authz_matrix_tests.rs
+portal,http,GET,/mcp,tests/authz_matrix.yaml:147,joinedcontext-portal tests/authz_matrix_tests.rs
+portal,http,GET,/metrics,tests/authz_matrix.yaml:166,joinedcontext-portal tests/authz_matrix_tests.rs
+portal,http,GET,/notifications,tests/authz_matrix.yaml:411,joinedcontext-portal tests/authz_matrix_tests.rs
+portal,http,GET,/openapi.json,tests/authz_matrix.yaml:173,joinedcontext-portal tests/authz_matrix_tests.rs
+portal,http,GET,/organization/brokers,tests/authz_matrix.yaml:205,joinedcontext-portal tests/authz_matrix_tests.rs
+portal,http,GET,/organization/datamodels,tests/authz_matrix.yaml:618,joinedcontext-portal tests/authz_matrix_tests.rs
+portal,http,GET,/organization/feedback,tests/authz_matrix.yaml:195,joinedcontext-portal tests/authz_matrix_tests.rs
+portal,http,GET,/organization/feedback/{id}/screenshot,tests/authz_matrix.yaml:198,joinedcontext-portal tests/authz_matrix_tests.rs
+portal,http,GET,/organization/health,tests/authz_matrix.yaml:202,joinedcontext-portal tests/authz_matrix_tests.rs
+portal,http,GET,/organization/limits,tests/authz_matrix.yaml:209,joinedcontext-portal tests/authz_matrix_tests.rs
+portal,http,GET,/organization/people,tests/authz_matrix.yaml:231,joinedcontext-portal tests/authz_matrix_tests.rs
+portal,http,GET,/organization/people/{id},tests/authz_matrix.yaml:237,joinedcontext-portal tests/authz_matrix_tests.rs
+portal,http,GET,/organization/setup,tests/authz_matrix.yaml:213,joinedcontext-portal tests/authz_matrix_tests.rs
+portal,http,GET,/preferences,tests/authz_matrix.yaml:268,joinedcontext-portal tests/authz_matrix_tests.rs
+portal,http,GET,/projects,tests/authz_matrix.yaml:286,joinedcontext-portal tests/authz_matrix_tests.rs
+portal,http,GET,/projects/{project},tests/authz_matrix.yaml:293,joinedcontext-portal tests/authz_matrix_tests.rs
+portal,http,GET,/projects/{project}/activity,tests/authz_matrix.yaml:314,joinedcontext-portal tests/authz_matrix_tests.rs
+portal,http,GET,/projects/{project}/activity/stream,tests/authz_matrix.yaml:317,joinedcontext-portal tests/authz_matrix_tests.rs
+portal,http,GET,/projects/{project}/agent-runs,tests/authz_matrix.yaml:481,joinedcontext-portal tests/authz_matrix_tests.rs
+portal,http,GET,/projects/{project}/agent-runs/{id},tests/authz_matrix.yaml:488,joinedcontext-portal tests/authz_matrix_tests.rs
+portal,http,GET,/projects/{project}/agent-runs/{id}/events,tests/authz_matrix.yaml:501,joinedcontext-portal tests/authz_matrix_tests.rs
+portal,http,GET,/projects/{project}/agent-runs/{id}/preview,tests/authz_matrix.yaml:514,joinedcontext-portal tests/authz_matrix_tests.rs
+portal,http,GET,/projects/{project}/app-checks,tests/authz_matrix.yaml:331,joinedcontext-portal tests/authz_matrix_tests.rs
+portal,http,GET,/projects/{project}/apps/{name}/build,tests/authz_matrix.yaml:532,joinedcontext-portal tests/authz_matrix_tests.rs
+portal,http,GET,/projects/{project}/apps/{name}/builds,tests/authz_matrix.yaml:545,joinedcontext-portal tests/authz_matrix_tests.rs
+portal,http,GET,/projects/{project}/apps/{name}/export,tests/authz_matrix.yaml:651,joinedcontext-portal tests/authz_matrix_tests.rs
+portal,http,GET,/projects/{project}/apps/{name}/me,tests/authz_matrix.yaml:535,joinedcontext-portal tests/authz_matrix_tests.rs
+portal,http,GET,/projects/{project}/assistant/access,tests/authz_matrix.yaml:552,joinedcontext-portal tests/authz_matrix_tests.rs
+portal,http,GET,/projects/{project}/assistant/catalog,tests/authz_matrix.yaml:555,joinedcontext-portal tests/authz_matrix_tests.rs
+portal,http,GET,/projects/{project}/basemap/{style}/style.json,tests/authz_matrix.yaml:566,joinedcontext-portal tests/authz_matrix_tests.rs
+portal,http,GET,/projects/{project}/basemap/{style}/{z}/{x}/{tile},tests/authz_matrix.yaml:570,joinedcontext-portal tests/authz_matrix_tests.rs
+portal,http,GET,/projects/{project}/changes,tests/authz_matrix.yaml:574,joinedcontext-portal tests/authz_matrix_tests.rs
+portal,http,GET,/projects/{project}/changes/history,tests/authz_matrix.yaml:577,joinedcontext-portal tests/authz_matrix_tests.rs
+portal,http,GET,/projects/{project}/changes/{id},tests/authz_matrix.yaml:580,joinedcontext-portal tests/authz_matrix_tests.rs
+portal,http,GET,/projects/{project}/changes/{id}/manifests,tests/authz_matrix.yaml:583,joinedcontext-portal tests/authz_matrix_tests.rs
+portal,http,GET,/projects/{project}/ckan/status,tests/authz_matrix.yaml:615,joinedcontext-portal tests/authz_matrix_tests.rs
+portal,http,GET,/projects/{project}/datamodels/{name}/source,tests/authz_matrix.yaml:621,joinedcontext-portal tests/authz_matrix_tests.rs
+portal,http,GET,/projects/{project}/drafts,tests/authz_matrix.yaml:630,joinedcontext-portal tests/authz_matrix_tests.rs
+portal,http,GET,/projects/{project}/drafts/events,tests/authz_matrix.yaml:633,joinedcontext-portal tests/authz_matrix_tests.rs
+portal,http,GET,/projects/{project}/drafts/{kind}/{name},tests/authz_matrix.yaml:636,joinedcontext-portal tests/authz_matrix_tests.rs
+portal,http,GET,/projects/{project}/drift,tests/authz_matrix.yaml:320,joinedcontext-portal tests/authz_matrix_tests.rs
+portal,http,GET,/projects/{project}/export,tests/authz_matrix.yaml:647,joinedcontext-portal tests/authz_matrix_tests.rs
+portal,http,GET,/projects/{project}/federation-graph,tests/authz_matrix.yaml:655,joinedcontext-portal tests/authz_matrix_tests.rs
+portal,http,GET,/projects/{project}/knowledge/deployments/{deployment}/usage,tests/authz_matrix.yaml:472,joinedcontext-portal tests/authz_matrix_tests.rs
+portal,http,GET,/projects/{project}/knowledge/sources,tests/authz_matrix.yaml:442,joinedcontext-portal tests/authz_matrix_tests.rs
+portal,http,GET,/projects/{project}/knowledge/sources/{source}/documents,tests/authz_matrix.yaml:450,joinedcontext-portal tests/authz_matrix_tests.rs
+portal,http,GET,/projects/{project}/knowledge/sources/{source}/pages,tests/authz_matrix.yaml:446,joinedcontext-portal tests/authz_matrix_tests.rs
+portal,http,GET,/projects/{project}/knowledge/sources/{source}/pages/{page}/links,tests/authz_matrix.yaml:454,joinedcontext-portal tests/authz_matrix_tests.rs
+portal,http,GET,/projects/{project}/knowledge/sources/{source}/passages,tests/authz_matrix.yaml:458,joinedcontext-portal tests/authz_matrix_tests.rs
+portal,http,GET,/projects/{project}/mqttbrokers/{name}/measured,tests/authz_matrix.yaml:682,joinedcontext-portal tests/authz_matrix_tests.rs
+portal,http,GET,/projects/{project}/ops,tests/authz_matrix.yaml:667,joinedcontext-portal tests/authz_matrix_tests.rs
+portal,http,GET,/projects/{project}/permissions/me,tests/authz_matrix.yaml:675,joinedcontext-portal tests/authz_matrix_tests.rs
+portal,http,GET,/projects/{project}/pipelines/{name}/metrics,tests/authz_matrix.yaml:686,joinedcontext-portal tests/authz_matrix_tests.rs
+portal,http,GET,/projects/{project}/pipelines/{name}/rejected,tests/authz_matrix.yaml:695,joinedcontext-portal tests/authz_matrix_tests.rs
+portal,http,GET,/projects/{project}/pipelines/{name}/runs,tests/authz_matrix.yaml:702,joinedcontext-portal tests/authz_matrix_tests.rs
+portal,http,GET,/projects/{project}/pipelines/{name}/runs/{run}/log,tests/authz_matrix.yaml:705,joinedcontext-portal tests/authz_matrix_tests.rs
+portal,http,GET,/projects/{project}/pipelines/{name}/samples,tests/authz_matrix.yaml:689,joinedcontext-portal tests/authz_matrix_tests.rs
+portal,http,GET,/projects/{project}/pipelines/{name}/stats,tests/authz_matrix.yaml:692,joinedcontext-portal tests/authz_matrix_tests.rs
+portal,http,GET,/projects/{project}/pipelinetemplates,tests/authz_matrix.yaml:587,joinedcontext-portal tests/authz_matrix_tests.rs
+portal,http,GET,/projects/{project}/registry,tests/authz_matrix.yaml:305,joinedcontext-portal tests/authz_matrix_tests.rs
+portal,http,GET,/projects/{project}/revisions,tests/authz_matrix.yaml:708,joinedcontext-portal tests/authz_matrix_tests.rs
+portal,http,GET,/projects/{project}/serviceaccounts/{name}/keys,tests/authz_matrix.yaml:712,joinedcontext-portal tests/authz_matrix_tests.rs
+portal,http,GET,/projects/{project}/serviceaccounts/{name}/keys/claims/{claimId},tests/authz_matrix.yaml:728,joinedcontext-portal tests/authz_matrix_tests.rs
+portal,http,GET,/projects/{project}/spaces/{space}/comments,tests/authz_matrix.yaml:399,joinedcontext-portal tests/authz_matrix_tests.rs
+portal,http,GET,/projects/{project}/spaces/{space}/live,tests/authz_matrix.yaml:384,joinedcontext-portal tests/authz_matrix_tests.rs
+portal,http,GET,/projects/{project}/spaces/{space}/move,tests/authz_matrix.yaml:337,joinedcontext-portal tests/authz_matrix_tests.rs
+portal,http,GET,/projects/{project}/spaces/{space}/quality,tests/authz_matrix.yaml:334,joinedcontext-portal tests/authz_matrix_tests.rs
+portal,http,GET,/projects/{project}/spaces/{space}/quality/checks,tests/authz_matrix.yaml:346,joinedcontext-portal tests/authz_matrix_tests.rs
+portal,http,GET,/projects/{project}/spaces/{space}/retention/deleted,tests/authz_matrix.yaml:354,joinedcontext-portal tests/authz_matrix_tests.rs
+portal,http,GET,/projects/{project}/spaces/{space}/trash,tests/authz_matrix.yaml:388,joinedcontext-portal tests/authz_matrix_tests.rs
+portal,http,GET,/projects/{project}/spaces/{space}/types/{type}/attributes,tests/authz_matrix.yaml:381,joinedcontext-portal tests/authz_matrix_tests.rs
+portal,http,GET,/projects/{project}/spaces/{space}/usage,tests/authz_matrix.yaml:358,joinedcontext-portal tests/authz_matrix_tests.rs
+portal,http,GET,/projects/{project}/spaces/{space}/views,tests/authz_matrix.yaml:361,joinedcontext-portal tests/authz_matrix_tests.rs
+portal,http,GET,/projects/{project}/spaces/{space}/views/{id},tests/authz_matrix.yaml:368,joinedcontext-portal tests/authz_matrix_tests.rs
+portal,http,GET,/projects/{project}/syncsources/{name}/status,tests/authz_matrix.yaml:743,joinedcontext-portal tests/authz_matrix_tests.rs
+portal,http,GET,/projects/{project}/workspaces,tests/authz_matrix.yaml:749,joinedcontext-portal tests/authz_matrix_tests.rs
+portal,http,GET,/projects/{project}/workspaces/{name},tests/authz_matrix.yaml:757,joinedcontext-portal tests/authz_matrix_tests.rs
+portal,http,GET,/projects/{project}/workspaces/{name}/compare,tests/authz_matrix.yaml:765,joinedcontext-portal tests/authz_matrix_tests.rs
+portal,http,GET,/projects/{project}/workspaces/{name}/preview,tests/authz_matrix.yaml:781,joinedcontext-portal tests/authz_matrix_tests.rs
+portal,http,GET,/projects/{project}/{plural},tests/authz_matrix.yaml:789,joinedcontext-portal tests/authz_matrix_tests.rs
+portal,http,GET,/projects/{project}/{plural}/{name},tests/authz_matrix.yaml:796,joinedcontext-portal tests/authz_matrix_tests.rs
+portal,http,GET,/ready,tests/authz_matrix.yaml:812,joinedcontext-portal tests/authz_matrix_tests.rs
+portal,http,GET,/sync,tests/authz_matrix.yaml:815,joinedcontext-portal tests/authz_matrix_tests.rs
 portal,http,GET,/templates/assets/{file},tests/authz_matrix.yaml:34,joinedcontext-portal tests/authz_matrix_tests.rs
 portal,http,GET,/templates/{name},tests/authz_matrix.yaml:28,joinedcontext-portal tests/authz_matrix_tests.rs
 portal,http,GET,/templates/{name}/,tests/authz_matrix.yaml:31,joinedcontext-portal tests/authz_matrix_tests.rs
-portal,http,GET,/tools/sdm-catalog,tests/authz_matrix.yaml:759,joinedcontext-portal tests/authz_matrix_tests.rs
-portal,http,PATCH,/organization/people/{id},tests/authz_matrix.yaml:219,joinedcontext-portal tests/authz_matrix_tests.rs
-portal,http,PATCH,/projects/{project}/{plural}/{name},tests/authz_matrix.yaml:733,joinedcontext-portal tests/authz_matrix_tests.rs
+portal,http,GET,/tools/sdm-catalog,tests/authz_matrix.yaml:829,joinedcontext-portal tests/authz_matrix_tests.rs
+portal,http,PATCH,/organization/people/{id},tests/authz_matrix.yaml:240,joinedcontext-portal tests/authz_matrix_tests.rs
+portal,http,PATCH,/projects/{project}/{plural}/{name},tests/authz_matrix.yaml:803,joinedcontext-portal tests/authz_matrix_tests.rs
 portal,http,POST,/activity,tests/authz_matrix.yaml:19,joinedcontext-portal tests/authz_matrix_tests.rs
-portal,http,POST,/alerts/notices/{id}/read,tests/authz_matrix.yaml:392,joinedcontext-portal tests/authz_matrix_tests.rs
-portal,http,POST,/alerts/{id}/mute,tests/authz_matrix.yaml:384,joinedcontext-portal tests/authz_matrix_tests.rs
+portal,http,POST,/alerts/notices/{id}/read,tests/authz_matrix.yaml:438,joinedcontext-portal tests/authz_matrix_tests.rs
+portal,http,POST,/alerts/{id}/mute,tests/authz_matrix.yaml:430,joinedcontext-portal tests/authz_matrix_tests.rs
 portal,http,POST,/apps/{name}/api/functions/{fn},tests/authz_matrix.yaml:37,joinedcontext-portal tests/authz_matrix_tests.rs
 portal,http,POST,/apps/{name}/api/services/ai/complete,tests/authz_matrix.yaml:44,joinedcontext-portal tests/authz_matrix_tests.rs
 portal,http,POST,/apps/{name}/api/services/email/send,tests/authz_matrix.yaml:40,joinedcontext-portal tests/authz_matrix_tests.rs
 portal,http,POST,/apps/{name}/api/services/files/{*path},tests/authz_matrix.yaml:68,joinedcontext-portal tests/authz_matrix_tests.rs
 portal,http,POST,/auth/backchannel-logout,tests/authz_matrix.yaml:72,joinedcontext-portal tests/authz_matrix_tests.rs
 portal,http,POST,/auth/logout,tests/authz_matrix.yaml:83,joinedcontext-portal tests/authz_matrix_tests.rs
-portal,http,POST,/feedback,tests/authz_matrix.yaml:184,joinedcontext-portal tests/authz_matrix_tests.rs
+portal,http,POST,/feedback,tests/authz_matrix.yaml:191,joinedcontext-portal tests/authz_matrix_tests.rs
 portal,http,POST,/internal/agent-runs/events,tests/authz_matrix.yaml:111,joinedcontext-portal tests/authz_matrix_tests.rs
-portal,http,POST,/internal/agent-runs/{id}/mcp,tests/authz_matrix.yaml:132,joinedcontext-portal tests/authz_matrix_tests.rs
+portal,http,POST,/internal/agent-runs/{id}/mcp,tests/authz_matrix.yaml:135,joinedcontext-portal tests/authz_matrix_tests.rs
 portal,http,POST,/internal/model-key,tests/authz_matrix.yaml:120,joinedcontext-portal tests/authz_matrix_tests.rs
-portal,http,POST,/internal/pipeline-tests/{id},tests/authz_matrix.yaml:135,joinedcontext-portal tests/authz_matrix_tests.rs
+portal,http,POST,/internal/pipeline-tests/{id},tests/authz_matrix.yaml:138,joinedcontext-portal tests/authz_matrix_tests.rs
 portal,http,POST,/internal/pipelines/{project}/{name}/outcomes,tests/authz_matrix.yaml:123,joinedcontext-portal tests/authz_matrix_tests.rs
-portal,http,POST,/internal/pipelines/{project}/{name}/rejected,tests/authz_matrix.yaml:126,joinedcontext-portal tests/authz_matrix_tests.rs
-portal,http,POST,/live-notify/{key},tests/authz_matrix.yaml:150,joinedcontext-portal tests/authz_matrix_tests.rs
-portal,http,POST,/mail/unsubscribe,tests/authz_matrix.yaml:159,joinedcontext-portal tests/authz_matrix_tests.rs
-portal,http,POST,/mcp,tests/authz_matrix.yaml:147,joinedcontext-portal tests/authz_matrix_tests.rs
-portal,http,POST,/notifications/{id}/read,tests/authz_matrix.yaml:368,joinedcontext-portal tests/authz_matrix_tests.rs
-portal,http,POST,/organization/people,tests/authz_matrix.yaml:213,joinedcontext-portal tests/authz_matrix_tests.rs
-portal,http,POST,/organization/people/{id}/disable,tests/authz_matrix.yaml:225,joinedcontext-portal tests/authz_matrix_tests.rs
-portal,http,POST,/organization/people/{id}/enable,tests/authz_matrix.yaml:228,joinedcontext-portal tests/authz_matrix_tests.rs
-portal,http,POST,/organization/people/{id}/remove-second-factor,tests/authz_matrix.yaml:231,joinedcontext-portal tests/authz_matrix_tests.rs
-portal,http,POST,/organization/people/{id}/resend-invitation,tests/authz_matrix.yaml:237,joinedcontext-portal tests/authz_matrix_tests.rs
-portal,http,POST,/organization/people/{id}/reset-password,tests/authz_matrix.yaml:234,joinedcontext-portal tests/authz_matrix_tests.rs
-portal,http,POST,/organization/people/{id}/sign-out,tests/authz_matrix.yaml:240,joinedcontext-portal tests/authz_matrix_tests.rs
-portal,http,POST,/preferences/recent,tests/authz_matrix.yaml:255,joinedcontext-portal tests/authz_matrix_tests.rs
-portal,http,POST,/projects,tests/authz_matrix.yaml:264,joinedcontext-portal tests/authz_matrix_tests.rs
-portal,http,POST,/projects/{project}/agent-runs,tests/authz_matrix.yaml:438,joinedcontext-portal tests/authz_matrix_tests.rs
-portal,http,POST,/projects/{project}/agent-runs/{id}/answers,tests/authz_matrix.yaml:446,joinedcontext-portal tests/authz_matrix_tests.rs
-portal,http,POST,/projects/{project}/agent-runs/{id}/cancel,tests/authz_matrix.yaml:451,joinedcontext-portal tests/authz_matrix_tests.rs
-portal,http,POST,/projects/{project}/agent-runs/{id}/functions/{fn},tests/authz_matrix.yaml:459,joinedcontext-portal tests/authz_matrix_tests.rs
-portal,http,POST,/projects/{project}/agent-runs/{id}/messages,tests/authz_matrix.yaml:463,joinedcontext-portal tests/authz_matrix_tests.rs
-portal,http,POST,/projects/{project}/agent-runs/{id}/preview-errors,tests/authz_matrix.yaml:472,joinedcontext-portal tests/authz_matrix_tests.rs
-portal,http,POST,/projects/{project}/agent-runs/{id}/preview-observations,tests/authz_matrix.yaml:477,joinedcontext-portal tests/authz_matrix_tests.rs
-portal,http,POST,/projects/{project}/agent-runs/{id}/publish,tests/authz_matrix.yaml:482,joinedcontext-portal tests/authz_matrix_tests.rs
-portal,http,POST,/projects/{project}/apps/rename-shapes,tests/authz_matrix.yaml:492,joinedcontext-portal tests/authz_matrix_tests.rs
-portal,http,POST,/projects/{project}/apps/{name}/rebuild,tests/authz_matrix.yaml:496,joinedcontext-portal tests/authz_matrix_tests.rs
-portal,http,POST,/projects/{project}/apps/{name}/restore,tests/authz_matrix.yaml:502,joinedcontext-portal tests/authz_matrix_tests.rs
-portal,http,POST,/projects/{project}/assistant/conversations,tests/authz_matrix.yaml:513,joinedcontext-portal tests/authz_matrix_tests.rs
-portal,http,POST,/projects/{project}/assistant/propose-endpoint,tests/authz_matrix.yaml:516,joinedcontext-portal tests/authz_matrix_tests.rs
-portal,http,POST,/projects/{project}/catalogue/drafts,tests/authz_matrix.yaml:180,joinedcontext-portal tests/authz_matrix_tests.rs
-portal,http,POST,/projects/{project}/changes/{id}/approve,tests/authz_matrix.yaml:537,joinedcontext-portal tests/authz_matrix_tests.rs
-portal,http,POST,/projects/{project}/changes/{id}/reject,tests/authz_matrix.yaml:542,joinedcontext-portal tests/authz_matrix_tests.rs
-portal,http,POST,/projects/{project}/changes/{id}/restore,tests/authz_matrix.yaml:547,joinedcontext-portal tests/authz_matrix_tests.rs
-portal,http,POST,/projects/{project}/changes/{id}/undo,tests/authz_matrix.yaml:551,joinedcontext-portal tests/authz_matrix_tests.rs
-portal,http,POST,/projects/{project}/datamodels/{name}/share,tests/authz_matrix.yaml:567,joinedcontext-portal tests/authz_matrix_tests.rs
-portal,http,POST,/projects/{project}/drift/{space}/{id}/adopt,tests/authz_matrix.yaml:302,joinedcontext-portal tests/authz_matrix_tests.rs
-portal,http,POST,/projects/{project}/drift/{space}/{id}/revert,tests/authz_matrix.yaml:298,joinedcontext-portal tests/authz_matrix_tests.rs
-portal,http,POST,/projects/{project}/duplicate,tests/authz_matrix.yaml:275,joinedcontext-portal tests/authz_matrix_tests.rs
-portal,http,POST,/projects/{project}/endpoints/{name}/access/simulate,tests/authz_matrix.yaml:205,joinedcontext-portal tests/authz_matrix_tests.rs
-portal,http,POST,/projects/{project}/flows,tests/authz_matrix.yaml:598,joinedcontext-portal tests/authz_matrix_tests.rs
-portal,http,POST,/projects/{project}/import,tests/authz_matrix.yaml:603,joinedcontext-portal tests/authz_matrix_tests.rs
-portal,http,POST,/projects/{project}/knowledge/deployments/{deployment}/chat,tests/authz_matrix.yaml:430,joinedcontext-portal tests/authz_matrix_tests.rs
-portal,http,POST,/projects/{project}/knowledge/sources/{source}/inclusion,tests/authz_matrix.yaml:417,joinedcontext-portal tests/authz_matrix_tests.rs
-portal,http,POST,/projects/{project}/knowledge/sources/{source}/recrawl,tests/authz_matrix.yaml:422,joinedcontext-portal tests/authz_matrix_tests.rs
-portal,http,POST,/projects/{project}/ops/{name},tests/authz_matrix.yaml:610,joinedcontext-portal tests/authz_matrix_tests.rs
-portal,http,POST,/projects/{project}/pipelines/test,tests/authz_matrix.yaml:618,joinedcontext-portal tests/authz_matrix_tests.rs
-portal,http,POST,/projects/{project}/pipelines/{name}/rejected/retry,tests/authz_matrix.yaml:628,joinedcontext-portal tests/authz_matrix_tests.rs
-portal,http,POST,/projects/{project}/serviceaccounts/{name}/keys,tests/authz_matrix.yaml:646,joinedcontext-portal tests/authz_matrix_tests.rs
-portal,http,POST,/projects/{project}/serviceaccounts/{name}/keys/claims/{claimId},tests/authz_matrix.yaml:662,joinedcontext-portal tests/authz_matrix_tests.rs
-portal,http,POST,/projects/{project}/serviceaccounts/{name}/keys/{keyId}/rotate,tests/authz_matrix.yaml:654,joinedcontext-portal tests/authz_matrix_tests.rs
-portal,http,POST,/projects/{project}/spaces/{space}/comments,tests/authz_matrix.yaml:357,joinedcontext-portal tests/authz_matrix_tests.rs
-portal,http,POST,/projects/{project}/spaces/{space}/trash,tests/authz_matrix.yaml:345,joinedcontext-portal tests/authz_matrix_tests.rs
-portal,http,POST,/projects/{project}/spaces/{space}/views,tests/authz_matrix.yaml:318,joinedcontext-portal tests/authz_matrix_tests.rs
-portal,http,POST,/projects/{project}/syncsources/{name}/detach,tests/authz_matrix.yaml:666,joinedcontext-portal tests/authz_matrix_tests.rs
-portal,http,POST,/projects/{project}/syncsources/{name}/pause,tests/authz_matrix.yaml:669,joinedcontext-portal tests/authz_matrix_tests.rs
-portal,http,POST,/projects/{project}/syncsources/{name}/sync,tests/authz_matrix.yaml:676,joinedcontext-portal tests/authz_matrix_tests.rs
-portal,http,POST,/projects/{project}/workspaces,tests/authz_matrix.yaml:682,joinedcontext-portal tests/authz_matrix_tests.rs
-portal,http,POST,/projects/{project}/workspaces/{name}/preview,tests/authz_matrix.yaml:707,joinedcontext-portal tests/authz_matrix_tests.rs
-portal,http,POST,/projects/{project}/workspaces/{name}/propose,tests/authz_matrix.yaml:703,joinedcontext-portal tests/authz_matrix_tests.rs
-portal,http,POST,/projects/{project}/workspaces/{name}/update,tests/authz_matrix.yaml:699,joinedcontext-portal tests/authz_matrix_tests.rs
-portal,http,POST,/projects/{project}/{plural},tests/authz_matrix.yaml:722,joinedcontext-portal tests/authz_matrix_tests.rs
-portal,http,POST,/tools/generate,tests/authz_matrix.yaml:748,joinedcontext-portal tests/authz_matrix_tests.rs
-portal,http,POST,/tools/import-sdm,tests/authz_matrix.yaml:752,joinedcontext-portal tests/authz_matrix_tests.rs
-portal,http,POST,/tools/infer-schema,tests/authz_matrix.yaml:756,joinedcontext-portal tests/authz_matrix_tests.rs
-portal,http,POST,/webhooks/gitea,tests/authz_matrix.yaml:762,joinedcontext-portal tests/authz_matrix_tests.rs
-portal,http,POST,/webhooks/sync/{project}/{name},tests/authz_matrix.yaml:765,joinedcontext-portal tests/authz_matrix_tests.rs
-portal,http,PUT,/alerts,tests/authz_matrix.yaml:375,joinedcontext-portal tests/authz_matrix_tests.rs
+portal,http,POST,/internal/pipelines/{project}/{name}/rejected,tests/authz_matrix.yaml:129,joinedcontext-portal tests/authz_matrix_tests.rs
+portal,http,POST,/internal/pipelines/{project}/{name}/samples,tests/authz_matrix.yaml:126,joinedcontext-portal tests/authz_matrix_tests.rs
+portal,http,POST,/live-notify/{key},tests/authz_matrix.yaml:153,joinedcontext-portal tests/authz_matrix_tests.rs
+portal,http,POST,/mail/unsubscribe,tests/authz_matrix.yaml:162,joinedcontext-portal tests/authz_matrix_tests.rs
+portal,http,POST,/mcp,tests/authz_matrix.yaml:150,joinedcontext-portal tests/authz_matrix_tests.rs
+portal,http,POST,/notifications/{id}/read,tests/authz_matrix.yaml:414,joinedcontext-portal tests/authz_matrix_tests.rs
+portal,http,POST,/organization/people,tests/authz_matrix.yaml:234,joinedcontext-portal tests/authz_matrix_tests.rs
+portal,http,POST,/organization/people/{id}/disable,tests/authz_matrix.yaml:246,joinedcontext-portal tests/authz_matrix_tests.rs
+portal,http,POST,/organization/people/{id}/enable,tests/authz_matrix.yaml:249,joinedcontext-portal tests/authz_matrix_tests.rs
+portal,http,POST,/organization/people/{id}/remove-second-factor,tests/authz_matrix.yaml:252,joinedcontext-portal tests/authz_matrix_tests.rs
+portal,http,POST,/organization/people/{id}/resend-invitation,tests/authz_matrix.yaml:258,joinedcontext-portal tests/authz_matrix_tests.rs
+portal,http,POST,/organization/people/{id}/reset-password,tests/authz_matrix.yaml:255,joinedcontext-portal tests/authz_matrix_tests.rs
+portal,http,POST,/organization/people/{id}/sign-out,tests/authz_matrix.yaml:261,joinedcontext-portal tests/authz_matrix_tests.rs
+portal,http,POST,/preferences/recent,tests/authz_matrix.yaml:280,joinedcontext-portal tests/authz_matrix_tests.rs
+portal,http,POST,/projects,tests/authz_matrix.yaml:289,joinedcontext-portal tests/authz_matrix_tests.rs
+portal,http,POST,/projects/{project}/access/explore,tests/authz_matrix.yaml:221,joinedcontext-portal tests/authz_matrix_tests.rs
+portal,http,POST,/projects/{project}/agent-runs,tests/authz_matrix.yaml:484,joinedcontext-portal tests/authz_matrix_tests.rs
+portal,http,POST,/projects/{project}/agent-runs/{id}/answers,tests/authz_matrix.yaml:492,joinedcontext-portal tests/authz_matrix_tests.rs
+portal,http,POST,/projects/{project}/agent-runs/{id}/cancel,tests/authz_matrix.yaml:497,joinedcontext-portal tests/authz_matrix_tests.rs
+portal,http,POST,/projects/{project}/agent-runs/{id}/functions/{fn},tests/authz_matrix.yaml:505,joinedcontext-portal tests/authz_matrix_tests.rs
+portal,http,POST,/projects/{project}/agent-runs/{id}/messages,tests/authz_matrix.yaml:509,joinedcontext-portal tests/authz_matrix_tests.rs
+portal,http,POST,/projects/{project}/agent-runs/{id}/preview-errors,tests/authz_matrix.yaml:518,joinedcontext-portal tests/authz_matrix_tests.rs
+portal,http,POST,/projects/{project}/agent-runs/{id}/preview-observations,tests/authz_matrix.yaml:523,joinedcontext-portal tests/authz_matrix_tests.rs
+portal,http,POST,/projects/{project}/agent-runs/{id}/publish,tests/authz_matrix.yaml:528,joinedcontext-portal tests/authz_matrix_tests.rs
+portal,http,POST,/projects/{project}/apps/rename-shapes,tests/authz_matrix.yaml:538,joinedcontext-portal tests/authz_matrix_tests.rs
+portal,http,POST,/projects/{project}/apps/{name}/rebuild,tests/authz_matrix.yaml:542,joinedcontext-portal tests/authz_matrix_tests.rs
+portal,http,POST,/projects/{project}/apps/{name}/restore,tests/authz_matrix.yaml:548,joinedcontext-portal tests/authz_matrix_tests.rs
+portal,http,POST,/projects/{project}/assistant/conversations,tests/authz_matrix.yaml:559,joinedcontext-portal tests/authz_matrix_tests.rs
+portal,http,POST,/projects/{project}/assistant/propose-endpoint,tests/authz_matrix.yaml:562,joinedcontext-portal tests/authz_matrix_tests.rs
+portal,http,POST,/projects/{project}/catalogue/drafts,tests/authz_matrix.yaml:187,joinedcontext-portal tests/authz_matrix_tests.rs
+portal,http,POST,/projects/{project}/changes/{id}/approve,tests/authz_matrix.yaml:597,joinedcontext-portal tests/authz_matrix_tests.rs
+portal,http,POST,/projects/{project}/changes/{id}/reject,tests/authz_matrix.yaml:602,joinedcontext-portal tests/authz_matrix_tests.rs
+portal,http,POST,/projects/{project}/changes/{id}/restore,tests/authz_matrix.yaml:607,joinedcontext-portal tests/authz_matrix_tests.rs
+portal,http,POST,/projects/{project}/changes/{id}/undo,tests/authz_matrix.yaml:611,joinedcontext-portal tests/authz_matrix_tests.rs
+portal,http,POST,/projects/{project}/datamodels/{name}/share,tests/authz_matrix.yaml:627,joinedcontext-portal tests/authz_matrix_tests.rs
+portal,http,POST,/projects/{project}/drift/{space}/{id}/adopt,tests/authz_matrix.yaml:327,joinedcontext-portal tests/authz_matrix_tests.rs
+portal,http,POST,/projects/{project}/drift/{space}/{id}/revert,tests/authz_matrix.yaml:323,joinedcontext-portal tests/authz_matrix_tests.rs
+portal,http,POST,/projects/{project}/duplicate,tests/authz_matrix.yaml:300,joinedcontext-portal tests/authz_matrix_tests.rs
+portal,http,POST,/projects/{project}/endpoints/{name}/access/simulate,tests/authz_matrix.yaml:216,joinedcontext-portal tests/authz_matrix_tests.rs
+portal,http,POST,/projects/{project}/endpoints/{name}/preview,tests/authz_matrix.yaml:226,joinedcontext-portal tests/authz_matrix_tests.rs
+portal,http,POST,/projects/{project}/flows,tests/authz_matrix.yaml:658,joinedcontext-portal tests/authz_matrix_tests.rs
+portal,http,POST,/projects/{project}/import,tests/authz_matrix.yaml:663,joinedcontext-portal tests/authz_matrix_tests.rs
+portal,http,POST,/projects/{project}/knowledge/deployments/{deployment}/chat,tests/authz_matrix.yaml:476,joinedcontext-portal tests/authz_matrix_tests.rs
+portal,http,POST,/projects/{project}/knowledge/sources/{source}/inclusion,tests/authz_matrix.yaml:463,joinedcontext-portal tests/authz_matrix_tests.rs
+portal,http,POST,/projects/{project}/knowledge/sources/{source}/recrawl,tests/authz_matrix.yaml:468,joinedcontext-portal tests/authz_matrix_tests.rs
+portal,http,POST,/projects/{project}/ops/{name},tests/authz_matrix.yaml:670,joinedcontext-portal tests/authz_matrix_tests.rs
+portal,http,POST,/projects/{project}/pipelines/test,tests/authz_matrix.yaml:678,joinedcontext-portal tests/authz_matrix_tests.rs
+portal,http,POST,/projects/{project}/pipelines/{name}/rejected/retry,tests/authz_matrix.yaml:698,joinedcontext-portal tests/authz_matrix_tests.rs
+portal,http,POST,/projects/{project}/pipelinetemplates,tests/authz_matrix.yaml:590,joinedcontext-portal tests/authz_matrix_tests.rs
+portal,http,POST,/projects/{project}/serviceaccounts/{name}/keys,tests/authz_matrix.yaml:716,joinedcontext-portal tests/authz_matrix_tests.rs
+portal,http,POST,/projects/{project}/serviceaccounts/{name}/keys/claims/{claimId},tests/authz_matrix.yaml:732,joinedcontext-portal tests/authz_matrix_tests.rs
+portal,http,POST,/projects/{project}/serviceaccounts/{name}/keys/{keyId}/rotate,tests/authz_matrix.yaml:724,joinedcontext-portal tests/authz_matrix_tests.rs
+portal,http,POST,/projects/{project}/spaces/{space}/comments,tests/authz_matrix.yaml:403,joinedcontext-portal tests/authz_matrix_tests.rs
+portal,http,POST,/projects/{project}/spaces/{space}/move,tests/authz_matrix.yaml:341,joinedcontext-portal tests/authz_matrix_tests.rs
+portal,http,POST,/projects/{project}/spaces/{space}/retention/preview,tests/authz_matrix.yaml:349,joinedcontext-portal tests/authz_matrix_tests.rs
+portal,http,POST,/projects/{project}/spaces/{space}/trash,tests/authz_matrix.yaml:391,joinedcontext-portal tests/authz_matrix_tests.rs
+portal,http,POST,/projects/{project}/spaces/{space}/views,tests/authz_matrix.yaml:364,joinedcontext-portal tests/authz_matrix_tests.rs
+portal,http,POST,/projects/{project}/syncsources/{name}/detach,tests/authz_matrix.yaml:736,joinedcontext-portal tests/authz_matrix_tests.rs
+portal,http,POST,/projects/{project}/syncsources/{name}/pause,tests/authz_matrix.yaml:739,joinedcontext-portal tests/authz_matrix_tests.rs
+portal,http,POST,/projects/{project}/syncsources/{name}/sync,tests/authz_matrix.yaml:746,joinedcontext-portal tests/authz_matrix_tests.rs
+portal,http,POST,/projects/{project}/workspaces,tests/authz_matrix.yaml:752,joinedcontext-portal tests/authz_matrix_tests.rs
+portal,http,POST,/projects/{project}/workspaces/{name}/preview,tests/authz_matrix.yaml:777,joinedcontext-portal tests/authz_matrix_tests.rs
+portal,http,POST,/projects/{project}/workspaces/{name}/propose,tests/authz_matrix.yaml:773,joinedcontext-portal tests/authz_matrix_tests.rs
+portal,http,POST,/projects/{project}/workspaces/{name}/update,tests/authz_matrix.yaml:769,joinedcontext-portal tests/authz_matrix_tests.rs
+portal,http,POST,/projects/{project}/{plural},tests/authz_matrix.yaml:792,joinedcontext-portal tests/authz_matrix_tests.rs
+portal,http,POST,/tools/generate,tests/authz_matrix.yaml:818,joinedcontext-portal tests/authz_matrix_tests.rs
+portal,http,POST,/tools/import-sdm,tests/authz_matrix.yaml:822,joinedcontext-portal tests/authz_matrix_tests.rs
+portal,http,POST,/tools/infer-schema,tests/authz_matrix.yaml:826,joinedcontext-portal tests/authz_matrix_tests.rs
+portal,http,POST,/webhooks/gitea,tests/authz_matrix.yaml:832,joinedcontext-portal tests/authz_matrix_tests.rs
+portal,http,POST,/webhooks/sync/{project}/{name},tests/authz_matrix.yaml:835,joinedcontext-portal tests/authz_matrix_tests.rs
+portal,http,PUT,/alerts,tests/authz_matrix.yaml:421,joinedcontext-portal tests/authz_matrix_tests.rs
 portal,http,PUT,/apps/{name}/api/services/files/{*path},tests/authz_matrix.yaml:60,joinedcontext-portal tests/authz_matrix_tests.rs
-portal,http,PUT,/preferences,tests/authz_matrix.yaml:252,joinedcontext-portal tests/authz_matrix_tests.rs
-portal,http,PUT,/projects/{project}/datamodels/{name}/source,tests/authz_matrix.yaml:564,joinedcontext-portal tests/authz_matrix_tests.rs
-portal,http,PUT,/projects/{project}/drafts/{kind}/{name},tests/authz_matrix.yaml:580,joinedcontext-portal tests/authz_matrix_tests.rs
-portal,http,PUT,/projects/{project}/registry,tests/authz_matrix.yaml:284,joinedcontext-portal tests/authz_matrix_tests.rs
-portal,http,PUT,/projects/{project}/spaces/{space}/views/{id},tests/authz_matrix.yaml:326,joinedcontext-portal tests/authz_matrix_tests.rs
-portal,http,PUT,/projects/{project}/{plural}/{name},tests/authz_matrix.yaml:729,joinedcontext-portal tests/authz_matrix_tests.rs
+portal,http,PUT,/preferences,tests/authz_matrix.yaml:277,joinedcontext-portal tests/authz_matrix_tests.rs
+portal,http,PUT,/projects/{project}/datamodels/{name}/source,tests/authz_matrix.yaml:624,joinedcontext-portal tests/authz_matrix_tests.rs
+portal,http,PUT,/projects/{project}/drafts/{kind}/{name},tests/authz_matrix.yaml:640,joinedcontext-portal tests/authz_matrix_tests.rs
+portal,http,PUT,/projects/{project}/registry,tests/authz_matrix.yaml:309,joinedcontext-portal tests/authz_matrix_tests.rs
+portal,http,PUT,/projects/{project}/spaces/{space}/views/{id},tests/authz_matrix.yaml:372,joinedcontext-portal tests/authz_matrix_tests.rs
+portal,http,PUT,/projects/{project}/{plural}/{name},tests/authz_matrix.yaml:799,joinedcontext-portal tests/authz_matrix_tests.rs
 portal,mcp-tool,call,jc_activity_list,src/ops/views.rs:425,joinedcontext-portal tests/edge_ops_gate_tests.rs
 portal,mcp-tool,call,jc_app_services,src/ops/runs.rs:246,joinedcontext-portal tests/edge_ops_gate_tests.rs
 portal,mcp-tool,call,jc_catalog_search,src/ops/compute.rs:239,joinedcontext-portal tests/edge_ops_gate_tests.rs
@@ -505,7 +557,7 @@ portal,mcp-tool,call,jc_service_account_key_list,src/ops/views.rs:624,joinedcont
 portal,mcp-tool,call,jc_service_account_key_mint,src/ops/admin.rs:526,joinedcontext-portal tests/edge_ops_gate_tests.rs
 portal,mcp-tool,call,jc_service_account_key_revoke,src/ops/admin.rs:617,joinedcontext-portal tests/edge_ops_gate_tests.rs
 portal,mcp-tool,call,jc_service_account_key_rotate,src/ops/admin.rs:574,joinedcontext-portal tests/edge_ops_gate_tests.rs
-portal,mcp-tool,call,jc_space_complete,src/ops/space_complete.rs:1563,joinedcontext-portal tests/edge_ops_gate_tests.rs
+portal,mcp-tool,call,jc_space_complete,src/ops/space_complete.rs:1620,joinedcontext-portal tests/edge_ops_gate_tests.rs
 portal,mcp-tool,call,jc_space_propose,src/ops/proposals.rs:925,joinedcontext-portal tests/edge_ops_gate_tests.rs
 portal,mcp-tool,call,jc_syncsource_detach,src/ops/sync_sources.rs:195,joinedcontext-portal tests/edge_ops_gate_tests.rs
 portal,mcp-tool,call,jc_syncsource_pause,src/ops/sync_sources.rs:164,joinedcontext-portal tests/edge_ops_gate_tests.rs
