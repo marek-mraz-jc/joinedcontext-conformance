@@ -11,11 +11,11 @@ import time
 from urllib.parse import urlsplit
 
 
-def frame(text: str) -> bytes:
-    """One masked text frame, as RFC 6455 5.3 requires of a client."""
-    payload = text.encode()
+def frame(text: str | bytes, opcode: int = 0x1) -> bytes:
+    """One masked frame (text unless `opcode` says otherwise), as RFC 6455 5.3 requires of a client."""
+    payload = text.encode() if isinstance(text, str) else text
     size = len(payload)
-    head = bytes([0x81])
+    head = bytes([0x80 | opcode])
     if size < 126:
         head += bytes([0x80 | size])
     elif size < 1 << 16:
@@ -37,20 +37,26 @@ def _exactly(sock, n: int) -> bytes:
 
 
 def read_message(sock) -> tuple[int, bytes]:
-    """The next unfragmented frame: its opcode and payload (a server does not mask)."""
-    first, second = _exactly(sock, 2)
-    size = second & 0x7F
-    if size == 126:
-        (size,) = struct.unpack("!H", _exactly(sock, 2))
-    elif size == 127:
-        (size,) = struct.unpack("!Q", _exactly(sock, 8))
-    if size > 1 << 24:
-        raise ValueError(f"a frame of {size} bytes")
-    mask = _exactly(sock, 4) if second & 0x80 else b""
-    payload = _exactly(sock, size)
-    if mask:
-        payload = bytes(b ^ mask[i % 4] for i, b in enumerate(payload))
-    return first & 0x0F, payload
+    """The next unfragmented frame other than a ping: its opcode and payload (a server does not
+    mask). A ping is answered with its pong (RFC 6455 5.5.2) and not returned; a server that
+    pings and hears nothing closes the socket ("no pong")."""
+    while True:
+        first, second = _exactly(sock, 2)
+        size = second & 0x7F
+        if size == 126:
+            (size,) = struct.unpack("!H", _exactly(sock, 2))
+        elif size == 127:
+            (size,) = struct.unpack("!Q", _exactly(sock, 8))
+        if size > 1 << 24:
+            raise ValueError(f"a frame of {size} bytes")
+        mask = _exactly(sock, 4) if second & 0x80 else b""
+        payload = _exactly(sock, size)
+        if mask:
+            payload = bytes(b ^ mask[i % 4] for i, b in enumerate(payload))
+        if first & 0x0F == 0x9:
+            sock.sendall(frame(payload, 0xA))
+            continue
+        return first & 0x0F, payload
 
 
 def connect(url: str, timeout: float, token: str | None = None):

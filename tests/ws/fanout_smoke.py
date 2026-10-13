@@ -161,6 +161,16 @@ def selftest() -> None:
     assert outside("geoQ", far) and outside("attributes", far)
     assert outside("type", {"type": "Stop"})
     assert 1100 < metres([24.9414, 60.1710], [24.9614, 60.1710]) < 1120
+    # A server ping is answered with its pong and skipped: the gateway closes a socket that does
+    # not answer with 1000 "no pong" after a minute.
+    client, server = socket.socketpair()
+    with client, server:
+        server.sendall(bytes([0x89, 2]) + b"hi" + bytes([0x81, 2]) + b"ok")
+        assert ws.read_message(client) == (0x1, b"ok")
+        first, second = server.recv(2)
+        mask = server.recv(4)
+        assert first == 0x8A and second == 0x82
+        assert bytes(b ^ mask[i % 4] for i, b in enumerate(server.recv(2))) == b"hi"
     print("selftest ok")
 
 
