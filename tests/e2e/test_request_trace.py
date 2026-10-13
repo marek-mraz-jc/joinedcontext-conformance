@@ -24,13 +24,15 @@ Environment (a stage without its variables is skipped, never passed):
 - `TRACE_B_PREFIX`: B's URN prefix `{orgDomain}:{space}`, e.g. `example.org:space-b`.
 - `TRACE_DENY_URL`, `TRACE_DENY_TOKEN`: an Endpoint over space A whose Policy grants this caller
   none of the five operations.
-- `TRACE_TYPE` (default `Building`), `TRACE_RUN` (default the process id).
+- `TRACE_TYPE` (default `Building`), `TRACE_RUN` (default the process id), `TRACE_EXTRA`: a JSON
+  object of further attributes every seeded entity carries, for a space whose model requires them.
 
     pytest tests/e2e/test_request_trace.py
 """
 
 from __future__ import annotations
 
+import json
 import os
 from typing import Any, Iterator
 from urllib.parse import quote
@@ -41,8 +43,11 @@ import requests
 TIMEOUT = 30
 RUN = os.environ.get("TRACE_RUN", str(os.getpid()))
 TYPE = os.environ.get("TRACE_TYPE", "Building")
+EXTRA: dict[str, Any] = json.loads(os.environ.get("TRACE_EXTRA") or "{}")
 LD = "application/ld+json"
-CORE = "https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context.jsonld"
+# The versioned URL: Antares holds it built in and fetches the unversioned alias, which a
+# broker without egress answers 504 LdContextNotAvailable (T-3931).
+CORE = "https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context-v1.8.jsonld"
 
 
 def door(name: str) -> tuple[str, requests.Session]:
@@ -64,7 +69,8 @@ def b_prefix() -> str:
 
 
 def entity(urn: str, name: str) -> dict[str, Any]:
-    return {"id": urn, "type": TYPE, "name": {"type": "Property", "value": name}, "@context": CORE}
+    # A space whose model requires more than `name` takes the rest from TRACE_EXTRA (T-3931).
+    return {**EXTRA, "id": urn, "type": TYPE, "name": {"type": "Property", "value": name}, "@context": CORE}
 
 
 def subscription(urn: str) -> dict[str, Any]:
@@ -179,7 +185,10 @@ def test_a_urn_with_bs_prefix_on_as_url_names_nothing_of_b(seeded: dict, op: str
     """ADR-N-041: the prefix is part of the id, never a route; A's URL serves A alone. A create
     under B's prefix through A is A's entity, a subscription through A watches A."""
     answer = OPERATIONS[op](*seeded["A"], seeded["in_b"])
-    if op in ("PATCH attribute", "temporal read"):
+    if op == "PATCH attribute":
+        # A type-scoped Policy matches no entity A lacks: 403, the same for any missing id (T-3931).
+        assert answer.status_code in (403, 404), f"{op} of B's entity through A: {answer.status_code}"
+    elif op == "temporal read":
         assert answer.status_code == 404, f"{op} of B's entity through A: {answer.status_code}"
     elif op == "query with q=":
         assert answer.status_code == 200 and answer.json() == [], f"A found B's entity: {answer.text[:300]}"
