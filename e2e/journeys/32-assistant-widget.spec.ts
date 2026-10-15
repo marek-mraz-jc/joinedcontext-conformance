@@ -23,6 +23,7 @@ function stream(events: [string, unknown][]): string {
 
 const ANSWER = stream([
   ['conversation', { id: '6f1c0e9e-3b1a-4d7e-9b51-2c4f8f2a7c11' }],
+  ['stage', { stage: 'searching', topic: 'zber odpadu' }],
   ['data', {
     endpoint: 'ovzdusie-verejne',
     type: 'AirQualityObserved',
@@ -34,7 +35,10 @@ const ANSWER = stream([
   ['delta', { text: 'Zber odpadu je ' }],
   ['delta', { text: 'v utorok [1].' }],
   ['answer', { text: 'Zber odpadu je **v utorok** [1].' }],
-  ['citations', [{ n: 1, url: 'https://www.banskabystrica.sk/odpad', title: 'Odpad a zber' }]],
+  ['citations', [{
+    n: 1, url: 'https://www.banskabystrica.sk/odpad', title: 'Odpad a zber',
+    cards: [{ kind: 'contact', name: 'Oddelenie odpadov', phones: ['048/4330 111', 'volajte'], emails: ['odpad@example.org'] }],
+  }]],
   ['done', { tokens: 900 }],
 ]);
 
@@ -73,6 +77,12 @@ for (const [name, width, height] of [['phone', 375, 740], ['tablet', 768, 900], 
     // A download address that is not http(s) is never a link.
     await expect(log.getByRole('link', { name: 'Stiahnuť údaje' })).toHaveCount(0);
     await expect(log.getByRole('button', { name: 'Kopírovať' })).toBeVisible();
+    // The progress line is gone once the answer streams; the cited page's contact is a card (T-4155).
+    await expect(log.getByRole('status')).toHaveCount(0);
+    await expect(log.getByRole('link', { name: '048/4330 111' })).toHaveAttribute('href', 'tel:0484330111');
+    await expect(log.getByRole('link', { name: 'odpad@example.org' })).toHaveAttribute('href', 'mailto:odpad@example.org');
+    await expect(log.getByText('volajte', { exact: true })).toBeVisible();
+    await expect(log.getByRole('link', { name: 'volajte' })).toHaveCount(0);
     expect(asked()?.message).toBe('Kedy je zber odpadu?');
     await expect(question).toBeFocused();
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
@@ -111,6 +121,19 @@ test('the visitor can switch to English, and a stream cut short keeps what it sa
   await expect(page.locator('.jc-answer')).toHaveText('Waste is collected');
   await expect(page.getByRole('button', { name: 'Send' })).toBeVisible();
   await expect(page.getByRole('button', { name: 'Stop' })).toBeHidden();
+});
+
+test('a progress line says what the assistant searches until the answer starts (T-4155)', async ({ page }) => {
+  // The stream stops after its stage, so the line stays where a visitor would read it.
+  await answer(page, stream([
+    ['conversation', { id: 'c' }],
+    ['stage', { stage: 'understanding' }],
+    ['stage', { stage: 'searching', topic: 'otváracie hodiny knižnice' }],
+  ]));
+  await page.goto(PANEL);
+  await page.getByRole('textbox', { name: 'Napíšte otázku' }).fill('Kedy je otvorená knižnica?');
+  await page.getByRole('button', { name: 'Odoslať' }).click();
+  await expect(page.getByRole('status')).toHaveText('Hľadám v zdrojoch: „otváracie hodiny knižnice“…');
 });
 
 test('a refusal reaches the visitor as the sentence the service wrote', async ({ page }) => {
