@@ -37,6 +37,9 @@ REQUIRED_FAILURES = [
     "test_a_narrowed_grant_narrows_both_doors_the_same",
     # T-4115: the broken connector lists a tool by another name than the Endpoint does.
     "test_ep112_every_surface_lists_the_endpoint_s_tools[CONNECTOR_MCP_URL]",
+    # T-4168: the broken stub lists and runs its write tools for a caller without a token.
+    "test_an_anonymous_tool_list_holds_reads_only[MCP_URL]",
+    "test_an_anonymous_write_is_refused_before_it_reaches_the_broker[MCP_URL-create_subscription]",
 ]
 
 
