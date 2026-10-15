@@ -25,6 +25,8 @@ The suites talk to a deployed gateway; every variable they need names itself whe
 | `GRANTED_ENTITY_ID`, `FORBIDDEN_ENTITY_ID` | an entity the caller may read, and one that exists but is outside every grant |
 | `HIDDEN_ATTR` | an attribute of `GRANTED_TYPE` the public grant does not include |
 | `FORM_URL`, `FORM_TYPE`, `FORM_FIELD` | a public form Endpoint's `…/ngsi-ld/v1`, its type and one of its fields, for the context-remap refusal (T-3287); `WRITE_FIELD` is the attribute an authenticated write remaps (default `name`) |
+| `ASSISTANT_URL`, `ASSISTANT_PUBLIC_ID`, `ASSISTANT_ORIGIN`, `ASSISTANT_PER_CLIENT` | the assistant's public origin, one anonymous deployment, an origin it allows and its per-client limit, for `test_public_assistant_surfaces.py` (T-4147); defaults `helsinki-public`, `https://dev.joinedcontext.com`, `6` |
+| `MCP_HUB_URL`, `CKAN_URL` | the anonymous MCP hub (`https://portal.{domain}/api/mcp`) and the data portal, same suite |
 | `MCP_URL` | live MCP streamable HTTP surface for parameter sanitization checks (AG-21) |
 | `MCP_TOOL` | MCP tool tested with hostile parameters (default: `query_entities`) |
 | `AGENT_RUNNER_URL` | deployed Agent Runner API endpoint for TS-25 autonomous containment |
