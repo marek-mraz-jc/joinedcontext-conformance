@@ -77,6 +77,21 @@ ENTITIES_BY_SPACE = {
 }
 
 
+
+#: What a caller without a token may list and call (platform `mcp/tools.rs` ANONYMOUS_TOOLS, T-4168).
+ANONYMOUS_TOOLS = frozenset(
+    {
+        "list_endpoints",
+        "list_types",
+        "query_entities",
+        "get_entity",
+        "get_attribute_value",
+        "retrieve_temporal",
+        "describe_schema",
+        "describe_access",
+    }
+)
+
 class StubMcpHandler(BaseHTTPRequestHandler):
     protocol_version = "HTTP/1.1"
 
@@ -307,9 +322,18 @@ class StubMcpHandler(BaseHTTPRequestHandler):
             return
 
         is_config_plane = path == "/config/mcp"
+        # T-4168: a data-plane caller without a token lists and calls the read tools alone.
+        # Defect (broken mode): the write tools stay open to everyone.
+        anonymous = (
+            not is_config_plane
+            and self.server.mode != "broken"
+            and "Bearer " not in self.headers.get("Authorization", "")
+        )
 
         if method == "tools/list":
             tools = self._list_tools(is_config_plane)
+            if anonymous:
+                tools = [tool for tool in tools if tool["name"] in ANONYMOUS_TOOLS]
             if self._is_hub(path) and self.server.mode != "broken":
                 # A hub over registrations is a read: the write tools of an ordinary space
                 # have nothing to write to here (PF-48).
@@ -327,6 +351,12 @@ class StubMcpHandler(BaseHTTPRequestHandler):
             params = req.get("params") or {}
             tool_name = params.get("name", "")
             tool_args = params.get("arguments") or {}
+            if anonymous and tool_name not in ANONYMOUS_TOOLS:
+                self._send_json_rpc(
+                    req_id,
+                    error={"code": -32602, "message": f"{tool_name} cannot be called without a token"},
+                )
+                return
             invalid = self._schema_violation(tool_name, tool_args, is_config_plane)
             if invalid and self.server.mode != "broken":
                 # AG-21: parameters are validated against the published draft-07 schema before
