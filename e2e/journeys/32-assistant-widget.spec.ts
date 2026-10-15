@@ -23,6 +23,7 @@ function stream(events: [string, unknown][]): string {
 
 const ANSWER = stream([
   ['conversation', { id: '6f1c0e9e-3b1a-4d7e-9b51-2c4f8f2a7c11' }],
+  ['stage', { stage: 'searching', topic: 'zber odpadu' }],
   ['data', {
     endpoint: 'ovzdusie-verejne',
     type: 'AirQualityObserved',
@@ -34,7 +35,10 @@ const ANSWER = stream([
   ['delta', { text: 'Zber odpadu je ' }],
   ['delta', { text: 'v utorok [1].' }],
   ['answer', { text: 'Zber odpadu je **v utorok** [1].' }],
-  ['citations', [{ n: 1, url: 'https://www.banskabystrica.sk/odpad', title: 'Odpad a zber' }]],
+  ['citations', [{
+    n: 1, url: 'https://www.banskabystrica.sk/odpad', title: 'Odpad a zber',
+    cards: [{ kind: 'contact', name: 'Oddelenie odpadov', phones: ['048/4330 111', 'volajte'], emails: ['odpad@example.org'] }],
+  }]],
   ['done', { tokens: 900 }],
 ]);
 
@@ -73,6 +77,12 @@ for (const [name, width, height] of [['phone', 375, 740], ['tablet', 768, 900], 
     // A download address that is not http(s) is never a link.
     await expect(log.getByRole('link', { name: 'Stiahnuť údaje' })).toHaveCount(0);
     await expect(log.getByRole('button', { name: 'Kopírovať' })).toBeVisible();
+    // The progress line is gone once the answer streams; the cited page's contact is a card (T-4155).
+    await expect(log.getByRole('status')).toHaveCount(0);
+    await expect(log.getByRole('link', { name: '048/4330 111' })).toHaveAttribute('href', 'tel:0484330111');
+    await expect(log.getByRole('link', { name: 'odpad@example.org' })).toHaveAttribute('href', 'mailto:odpad@example.org');
+    await expect(log.getByText('volajte', { exact: true })).toBeVisible();
+    await expect(log.getByRole('link', { name: 'volajte' })).toHaveCount(0);
     expect(asked()?.message).toBe('Kedy je zber odpadu?');
     await expect(question).toBeFocused();
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
@@ -113,6 +123,19 @@ test('the visitor can switch to English, and a stream cut short keeps what it sa
   await expect(page.getByRole('button', { name: 'Stop' })).toBeHidden();
 });
 
+test('a progress line says what the assistant searches until the answer starts (T-4155)', async ({ page }) => {
+  // The stream stops after its stage, so the line stays where a visitor would read it.
+  await answer(page, stream([
+    ['conversation', { id: 'c' }],
+    ['stage', { stage: 'understanding' }],
+    ['stage', { stage: 'searching', topic: 'otváracie hodiny knižnice' }],
+  ]));
+  await page.goto(PANEL);
+  await page.getByRole('textbox', { name: 'Napíšte otázku' }).fill('Kedy je otvorená knižnica?');
+  await page.getByRole('button', { name: 'Odoslať' }).click();
+  await expect(page.getByRole('status')).toHaveText('Hľadám v zdrojoch: „otváracie hodiny knižnice“…');
+});
+
 test('a refusal reaches the visitor as the sentence the service wrote', async ({ page }) => {
   await answer(page, stream([
     ['conversation', { id: '6f1c0e9e-3b1a-4d7e-9b51-2c4f8f2a7c11' }],
@@ -148,6 +171,62 @@ test('one script tag on a city page opens the chat, Escape closes it and focus r
   await chat.getByRole('textbox', { name: 'Napíšte otázku' }).press('Escape');
   await expect(page.getByRole('button', { name: 'Otvoriť asistenta' })).toBeFocused();
   await expect(page.locator(`iframe[src^="${BASE}/d/${PUBLIC_ID}/widget"]`)).toBeHidden();
+});
+
+test('a thumbs down sends its note, a follow-up chip asks itself, and the conversation survives a page change (T-4174)', async ({ page }) => {
+  const id = '6f1c0e9e-3b1a-4d7e-9b51-2c4f8f2a7c11';
+  const asked: Record<string, unknown>[] = [];
+  await page.route(`${BASE}/api/v1/d/**/chat`, async (route) => {
+    asked.push(route.request().postDataJSON() as Record<string, unknown>);
+    await route.fulfill({
+      status: 200,
+      contentType: 'text/event-stream',
+      body: stream([
+        ['conversation', { id }],
+        ['answer', { text: `Odpoveď ${asked.length} [1].` }],
+        ['citations', [{ n: 1, url: 'https://www.banskabystrica.sk/odpad', title: 'Odpad a zber' }]],
+        ['followups', { questions: ['Kde je zberný dvor?', 'Čo patrí do bioodpadu?'] }],
+        ['done', { tokens: 900 }],
+      ]),
+    });
+  });
+  const verdicts: Record<string, unknown>[] = [];
+  await page.route(`${BASE}/api/v1/d/**/feedback`, async (route) => {
+    verdicts.push(route.request().postDataJSON() as Record<string, unknown>);
+    await route.fulfill({ status: 204 });
+  });
+  await page.goto(PANEL);
+  await page.getByRole('textbox', { name: 'Napíšte otázku' }).fill('Kedy je zber odpadu?');
+  await page.getByRole('button', { name: 'Odoslať' }).click();
+  await expect(page.locator('.jc-answer').first()).toHaveText('Odpoveď 1 1.');
+
+  const chips = page.getByRole('list', { name: 'Ďalšie otázky' }).getByRole('button');
+  await expect(chips).toHaveText(['Kde je zberný dvor?', 'Čo patrí do bioodpadu?']);
+  await chips.first().click();
+  await expect(page.locator('.jc-answer')).toHaveCount(2);
+  expect(asked[1].message).toBe('Kde je zberný dvor?');
+  expect(asked[1].conversation).toBe(id);
+  // One list of chips at a time: the latest answer's.
+  await expect(page.getByRole('list', { name: 'Ďalšie otázky' })).toHaveCount(1);
+
+  await page.getByRole('button', { name: 'Neužitočná odpoveď' }).last().click();
+  await page.getByRole('textbox', { name: 'Čo chýbalo? (nepovinné)' }).fill('Chýbala adresa zberného dvora.');
+  await page.locator('form.jc-note').getByRole('button', { name: 'Odoslať' }).click();
+  await expect(page.getByRole('status').filter({ hasText: 'Ďakujeme za hodnotenie.' })).toBeVisible();
+  expect(verdicts).toEqual([{ conversation: id, turn: 2, verdict: 'down', note: 'Chýbala adresa zberného dvora.' }]);
+
+  // A page change on the host site: the panel loads again and shows the open conversation.
+  await page.reload();
+  await expect(page.locator('.jc-answer')).toHaveText(['Odpoveď 1 1.', 'Odpoveď 2 1.']);
+  await page.getByRole('textbox', { name: 'Napíšte otázku' }).fill('A v sobotu?');
+  await page.getByRole('button', { name: 'Odoslať' }).click();
+  await expect(page.locator('.jc-answer')).toHaveCount(3);
+  expect(asked[2].conversation).toBe(id);
+  // "Nová konverzácia" forgets it, across a reload too.
+  await page.getByRole('button', { name: 'Nová konverzácia' }).click();
+  await page.reload();
+  await expect(page.locator('.jc-answer')).toHaveCount(0);
+  expect(await page.evaluate(() => Object.keys(sessionStorage))).toEqual([]);
 });
 
 test('a page on another site is refused before anything is spent (AG-100, AG-114)', async ({ request }) => {
