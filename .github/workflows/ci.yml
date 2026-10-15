@@ -53,6 +53,8 @@ jobs:
         run: python3 tests/mcp/selftest.py
       - name: the DCAT-AP record and the CKAN publication go red when they are wrong (T-0320)
         run: python3 tests/ckan/selftest.py
+      - name: the assistant eval grades, gates and picks a model offline (T-4144)
+        run: python3 tests/assistant/eval_bb.py --selftest
       - name: the dataset validator goes red on every break it checks, from recorded fixtures (T-4087)
         run: python3 tests/datasets/selftest.py
       - name: the WebSocket fan-out smoke goes red on a notification outside its filter (T-4133)
