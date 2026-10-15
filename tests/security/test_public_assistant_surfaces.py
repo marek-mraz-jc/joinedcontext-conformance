@@ -11,10 +11,18 @@ model is called. Each case skips when the variable naming its surface is not set
 | `ASSISTANT_ORIGIN` | an origin that deployment allows (default `https://dev.joinedcontext.com`) |
 | `ASSISTANT_PER_CLIENT` | its `rateLimit.perClientPerMinute` (default `6`) |
 | `MCP_HUB_URL` | the anonymous MCP hub, e.g. `https://portal.{domain}/api/mcp` |
+| `PUBLIC_MCP_URLS` | the public named MCP servers (T-4141), comma-separated |
 | `CKAN_URL` | the data portal, e.g. `https://data.{domain}` |
+
+T-4148 runs this file as the gate on the rebuilt assistant (chat page, launcher, widget, public
+MCP), beside T-4144's scope and injection gates:
+
+    ASSISTANT_URL=https://assistant.dev.joinedcontext.com ASSISTANT_PUBLIC_ID=… \
+      MCP_HUB_URL=… PUBLIC_MCP_URLS=… CKAN_URL=… pytest tests/security/test_public_assistant_surfaces.py
 """
 
 import os
+import re
 import time
 import uuid
 
@@ -84,6 +92,67 @@ def test_the_widget_page_may_be_framed_only_by_its_allowed_origins(
     assert "'unsafe-inline'" not in csp and "'unsafe-eval'" not in csp, csp
 
 
+# What a token, a key or a cluster address looks like in a shipped file (T-4148).
+SECRET_SHAPES = re.compile(
+    r"eyJ[A-Za-z0-9_-]{10,}\.|sk-[A-Za-z0-9]{16,}|Bearer [A-Za-z0-9._-]{16,}"
+    r"|\.svc\.cluster\.local|\b10\.\d+\.\d+\.\d+\b|/internal/v1/"
+)
+
+
+def _framed_only_by_its_origins(answer: requests.Response) -> None:
+    assert answer.status_code == 200, answer.status_code
+    csp = answer.headers.get("content-security-policy", "")
+    assert "frame-ancestors" in csp and "*" not in csp.split("frame-ancestors", 1)[1], csp
+    assert "'unsafe-inline'" not in csp and "'unsafe-eval'" not in csp, csp
+    assert answer.headers.get("cache-control") == "no-store", answer.headers
+    assert "set-cookie" not in {k.lower() for k in answer.headers}, answer.headers
+
+
+def test_the_full_page_is_held_as_the_panel(assistant: str, public_id: str) -> None:
+    """T-4138's full-page chat `/d/{publicId}`: the panel's policy, no cookie, no secret."""
+    answer = requests.get(f"{assistant}/d/{public_id}", headers=AGENT, timeout=TIMEOUT)
+    _framed_only_by_its_origins(answer)
+    assert not SECRET_SHAPES.search(answer.text), SECRET_SHAPES.search(answer.text)
+
+
+def test_the_launcher_and_scripts_carry_no_secret_and_no_other_host(
+    assistant: str, public_id: str
+) -> None:
+    """The one-line `embed.js` a site includes, and the scripts the page loads, name no token,
+    no cluster address and no host but their own."""
+    for path in [f"/d/{public_id}/embed.js", "/d/widget.js"]:
+        answer = requests.get(assistant + path, headers=AGENT, timeout=TIMEOUT)
+        assert answer.status_code == 200, f"{path}: {answer.status_code}"
+        assert answer.headers.get("x-content-type-options") == "nosniff", path
+        assert "javascript" in answer.headers.get("content-type", ""), path
+        found = SECRET_SHAPES.search(answer.text)
+        assert not found, f"{path} carries {found.group(0)[:12]}…"
+        hosts = set(re.findall(r"https?://([^/\"'\s`]+)", answer.text))
+        assert hosts <= {"www.w3.org"}, f"{path} names other hosts: {sorted(hosts)}"
+
+
+def test_an_unpublished_id_has_no_page_no_panel_and_no_launcher(assistant: str) -> None:
+    unknown = f"nobody-{uuid.uuid4().hex[:8]}"
+    for path in [f"/d/{unknown}", f"/d/{unknown}/widget", f"/d/{unknown}/embed.js"]:
+        answer = requests.get(assistant + path, headers=AGENT, timeout=TIMEOUT)
+        assert answer.status_code == 404, f"{path}: {answer.status_code}"
+
+
+def test_an_overlong_question_is_refused_before_anything_is_spent(
+    assistant: str, public_id: str, allowed_origin: str
+) -> None:
+    """Past the service's 4,000 characters (and any deployment's `budget.questionChars`) the
+    route refuses with a status, never with an answer stream (AG-98, T-4166)."""
+    answer = requests.post(
+        f"{assistant}/api/v1/d/{public_id}/chat",
+        headers={**AGENT, "Origin": allowed_origin},
+        json={"message": "a" * 4_001},
+        timeout=TIMEOUT,
+    )
+    assert answer.status_code in (400, 413, 422), answer.status_code
+    assert "text/event-stream" not in answer.headers.get("content-type", ""), answer.headers
+
+
 def test_a_forged_forwarded_for_buys_no_new_rate_window(
     assistant: str, public_id: str, allowed_origin: str
 ) -> None:
@@ -107,19 +176,47 @@ def test_a_forged_forwarded_for_buys_no_new_rate_window(
     assert 429 in codes[per_client:], f"a forged X-Forwarded-For bypassed the limit: {codes}"
 
 
+def _mcp_urls() -> list[str]:
+    urls = [os.getenv("MCP_HUB_URL", "")] + os.getenv("PUBLIC_MCP_URLS", "").split(",")
+    urls = [u.strip().rstrip("/") for u in urls if u.strip()]
+    if not urls:
+        pytest.skip("environment variables MCP_HUB_URL and PUBLIC_MCP_URLS not set")
+    return urls
+
+
 def test_anonymous_mcp_offers_read_only_tools() -> None:
-    """Public MCP is read-only (GOAL-assistant, Security); T-4168 builds it."""
-    hub = _env("MCP_HUB_URL")
-    answer = requests.post(
-        hub,
-        headers={**AGENT, "Accept": "application/json, text/event-stream"},
-        json={"jsonrpc": "2.0", "id": 1, "method": "tools/list"},
-        timeout=TIMEOUT,
-    )
-    assert answer.status_code == 200, answer.text[:300]
-    tools = answer.json()["result"]["tools"]
-    writes = [t["name"] for t in tools if not t.get("annotations", {}).get("readOnlyHint")]
-    assert writes == [], f"an anonymous caller is offered writing tools: {writes}"
+    """Public MCP is read-only (GOAL-assistant, Security): the hub (T-4168) and every public
+    named server (T-4141)."""
+    for url in _mcp_urls():
+        answer = requests.post(
+            url,
+            headers={**AGENT, "Accept": "application/json, text/event-stream"},
+            json={"jsonrpc": "2.0", "id": 1, "method": "tools/list"},
+            timeout=TIMEOUT,
+        )
+        assert answer.status_code == 200, f"{url}: {answer.text[:300]}"
+        tools = answer.json()["result"]["tools"]
+        writes = [t["name"] for t in tools if not t.get("annotations", {}).get("readOnlyHint")]
+        assert writes == [], f"{url} offers an anonymous caller writing tools: {writes}"
+
+
+def test_anonymous_mcp_refuses_a_write_it_does_not_offer() -> None:
+    """A write named anyway is refused before it reaches the broker (T-4168, T-4141)."""
+    for url in _mcp_urls():
+        answer = requests.post(
+            url,
+            headers={**AGENT, "Accept": "application/json, text/event-stream"},
+            json={
+                "jsonrpc": "2.0",
+                "id": 1,
+                "method": "tools/call",
+                "params": {"name": "delete_subscription", "arguments": {"id": "urn:ngsi-ld:Subscription:none"}},
+            },
+            timeout=TIMEOUT,
+        )
+        body = answer.text
+        refused = answer.status_code in (400, 401, 403, 404, 405) or '"error"' in body or '"isError":true' in body.replace(" ", "")
+        assert refused, f"{url}: {answer.status_code} {body[:300]}"
 
 
 def test_ckan_does_not_list_its_accounts_to_anyone() -> None:
