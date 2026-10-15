@@ -91,6 +91,32 @@ for (const [name, width, height] of [['phone', 375, 740], ['tablet', 768, 900], 
   });
 }
 
+test('a number over time is drawn as a small chart under its table, hidden from a screen reader (T-4198)', async ({ page }) => {
+  await answer(page, stream([
+    ['conversation', { id: '6f1c0e9e-3b1a-4d7e-9b51-2c4f8f2a7c11' }],
+    ['data', {
+      endpoint: 'ovzdusie-verejne',
+      type: 'AirQualityObserved',
+      columns: ['dateObserved', 'pm10'],
+      rows: [['2026-10-15T10:00:00Z', 21], ['2026-10-15T09:00:00Z', 18], ['2026-10-15T08:00:00Z', 'n/a']],
+    }],
+    ['answer', { text: 'PM10 je 21.' }],
+    ['done', { tokens: 9 }],
+  ]));
+  await page.goto(PAGE);
+  await page.getByRole('textbox', { name: 'Napíšte otázku' }).fill('Aké je PM10?');
+  await page.getByRole('textbox', { name: 'Napíšte otázku' }).press('Enter');
+  const log = page.getByRole('list', { name: 'Asistent' });
+  await expect(log.getByRole('cell', { name: '2026-10-15T10:00:00Z' })).toBeVisible();
+  const chart = log.locator('svg.jc-data-chart');
+  await expect(chart).toBeVisible();
+  await expect(chart).toHaveAttribute('aria-hidden', 'true');
+  // The row whose value is no number stays in the table and out of the line.
+  expect((await chart.locator('polyline').getAttribute('points'))?.split(' ')).toHaveLength(2);
+  const axe = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa']).analyze();
+  expect(axe.violations.map((v) => v.id)).toEqual([]);
+});
+
 test('a suggested question asks itself, and a new conversation starts empty (T-4138)', async ({ page }) => {
   const asked = await answer(page);
   await page.goto(PAGE);
