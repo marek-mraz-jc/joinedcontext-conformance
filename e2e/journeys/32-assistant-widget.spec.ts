@@ -249,3 +249,30 @@ test('the catalogue offers its assistant, which opens by keyboard and frames the
   expect(await frame.getAttribute('src')).toMatch(new RegExp(`^${BASE.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}/d/[a-z0-9-]+/widget$`));
   await expect(page.frameLocator('details.jc-assistant > iframe').getByRole('textbox', { name: /Napíšte otázku|Type your question/ })).toBeVisible();
 });
+
+test('on a phone the open assistant is the whole screen and the closed one covers no last line (T-4204, AG-114)', async ({ page }) => {
+  await page.setViewportSize({ width: 375, height: 740 });
+  await page.goto(`${CATALOGUE}/`);
+  const offer = page.locator('details.jc-assistant > summary');
+
+  // Closed: scrolled to the end, the page's last link is the element under its own centre.
+  await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight));
+  const last = page.locator('footer a:visible').last();
+  const box = await last.boundingBox();
+  expect(box).not.toBeNull();
+  const hit = await page.evaluate(
+    ([x, y]) => (document.elementFromPoint(x, y) as HTMLElement | null)?.closest('a')?.outerHTML ?? null,
+    [box!.x + box!.width / 2, box!.y + box!.height / 2],
+  );
+  expect(hit).toBe(await last.evaluate((a) => a.outerHTML));
+
+  // Open: the disclosure fills the viewport, the page behind is inert, Escape closes it.
+  await offer.focus();
+  await page.keyboard.press('Enter');
+  const panel = await page.locator('details.jc-assistant').boundingBox();
+  expect(panel).toEqual({ x: 0, y: 0, width: 375, height: 740 });
+  expect(await page.locator('header').first().evaluate((el) => el.closest('[inert]') !== null)).toBe(true);
+  await page.keyboard.press('Escape');
+  await expect(page.locator('details.jc-assistant')).not.toHaveAttribute('open', '');
+  await expect(offer).toBeFocused();
+});
