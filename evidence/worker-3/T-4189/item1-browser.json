@@ -1,0 +1,30 @@
+{
+ "phone": {
+  "suggestions": [
+   "Aké sú úradné hodiny klientskeho centra?",
+   "Kde nahlásim čiernu skládku?",
+   "Ako sa platí parkovanie v meste?",
+   "Aká je teraz kvalita ovzdušia?",
+   "Kde nájdem cestovné poriadky regionálnych autobusov?"
+  ],
+  "disclaimer": "Odpovede tvorí umelá inteligencia z webov mesta a kraja a z ich otvorených údajov. Môžu obsahovať chyby, overte si ich v uvedených zdrojoch. Nezadávajte osobné údaje.",
+  "noSideScroll": true,
+  "visitorSees": "The assistant's model did not answer. Try again in a minute.",
+  "english": "en",
+  "englishSuggestions": "cleared after the first question"
+ },
+ "desktop": {
+  "suggestions": [
+   "Aké sú úradné hodiny klientskeho centra?",
+   "Kde nahlásim čiernu skládku?",
+   "Ako sa platí parkovanie v meste?",
+   "Aká je teraz kvalita ovzdušia?",
+   "Kde nájdem cestovné poriadky regionálnych autobusov?"
+  ],
+  "disclaimer": "Odpovede tvorí umelá inteligencia z webov mesta a kraja a z ich otvorených údajov. Môžu obsahovať chyby, overte si ich v uvedených zdrojoch. Nezadávajte osobné údaje.",
+  "noSideScroll": true,
+  "visitorSees": "The assistant's model did not answer. Try again in a minute.",
+  "english": "en",
+  "englishSuggestions": "cleared after the first question"
+ }
+}

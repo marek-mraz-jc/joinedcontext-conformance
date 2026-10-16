@@ -1,0 +1,19 @@
+{
+  "/d/banskabystrica": {
+    "status": 200,
+    "csp": "default-src 'none'; script-src 'self'; style-src 'self'; connect-src 'self'; img-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors https://assistant.dev.joinedcontext.com https://dev.joinedcontext.com",
+    "set-cookie": null,
+    "config": "{\"linkHosts\":[\"assistant.dev.joinedcontext.com\",\"banskabystrica.sk\",\"bbsk.sk\",\"data.dev.joinedcontext.com\",\"data.gov.sk\",\"dev.joinedcontext.com\"],\"publicId\":\"banskabystrica\",\"greeting\":\"Dobrý deň! Opýtajte sa ma na služby mesta Banská Bystrica a Banskobystrického kraja alebo na ich otvorené údaje.\",\"color\":\"#1f5fae\",\"connectors\":[\"banskabystrica-verejne\"],\"languages\":[\"sk\",\"en\"],\"suggestions\":{\"en\":[\"When is the city&#39;s client centre open?\",\"How do I pay for parking in the city?\",\"What is the air quality right now?\",\"Where are the regional bus timetables?\"],\"sk\":[\"Aké sú úradné hodiny klientskeho centra?\",\"Kde nahlásim čiernu skládku?\",\"Ako sa platí parkovanie v meste?\",\"Aká je teraz kvalita ovzdušia?\",\"Kde nájdem cestovné poriadky regionálnych autobusov?\"]},\"disclaimer\":{\"en\":\"Answers are written by AI from the city&#39;s and the region&#39;s websites and open data. They may contain mistakes; check them in the linked sources. Do not enter personal data.\",\"sk\":\"Odpovede tvorí umelá inteligencia z webov mesta a kraja a z ich otvorených údajov. Môžu obsahovať chyby, overte si ich v uvedených zdrojoch. Nezadávajte osobné údaje.\"},\"enabled\":true,\"questionChars\":1000}"
+  },
+  "/d/banskabystrica/widget": {
+    "status": 200,
+    "csp": "default-src 'none'; script-src 'self'; style-src 'self'; connect-src 'self'; img-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors https://assistant.dev.joinedcontext.com https://dev.joinedcontext.com",
+    "set-cookie": null,
+    "config": "{\"linkHosts\":[\"assistant.dev.joinedcontext.com\",\"banskabystrica.sk\",\"bbsk.sk\",\"data.dev.joinedcontext.com\",\"data.gov.sk\",\"dev.joinedcontext.com\"],\"publicId\":\"banskabystrica\",\"greeting\":\"Dobrý deň! Opýtajte sa ma na služby mesta Banská Bystrica a Banskobystrického kraja alebo na ich otvorené údaje.\",\"color\":\"#1f5fae\",\"connectors\":[\"banskabystrica-verejne\"],\"languages\":[\"sk\",\"en\"],\"suggestions\":{\"en\":[\"When is the city&#39;s client centre open?\",\"How do I pay for parking in the city?\",\"What is the air quality right now?\",\"Where are the regional bus timetables?\"],\"sk\":[\"Aké sú úradné hodiny klientskeho centra?\",\"Kde nahlásim čiernu skládku?\",\"Ako sa platí parkovanie v meste?\",\"Aká je teraz kvalita ovzdušia?\",\"Kde nájdem cestovné poriadky regionálnych autobusov?\"]},\"disclaimer\":{\"en\":\"Answers are written by AI from the city&#39;s and the region&#39;s websites and open data. They may contain mistakes; check them in the linked sources. Do not enter personal data.\",\"sk\":\"Odpovede tvorí umelá inteligencia z webov mesta a kraja a z ich otvorených údajov. Môžu obsahovať chyby, overte si ich v uvedených zdrojoch. Nezadávajte osobné údaje.\"},\"enabled\":true,\"questionChars\":1000}"
+  },
+  "chat": {
+    "status": 200,
+    "content-type": "text/event-stream",
+    "body": "event: conversation\ndata: {\"id\":\"43e58c13-fd9f-49a8-8f4f-2df9ff11f745\"}\n\nevent: error\ndata: {\"status\":503,\"title\":\"Model Unavailable\",\"detail\":\"The assistant's model did not answer. Try again in a minute.\"}\n\nevent: done\ndata: {\"tokens\":0,\"tokensIn\":0,\"tokensOut\":0,\"modelCalls\":0,\"firstTokenMs\":null,\"totalMs\":3414,\"cached\":false}\n\n"
+  }
+}
