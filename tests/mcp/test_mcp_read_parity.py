@@ -246,6 +246,10 @@ BROKER_CASES: list[Case] = [
     Case("type+window", "query_entities", {"type": AQ, "limit": 1, "count": True}, "entities", {"type": AQ[0], "limit": "1", "count": "true"}),
     Case("next page", "query_entities", {"type": AQ, "limit": 1, "cursor": "{cursor}"}, "entities", {"type": AQ[0], "limit": "1", "offset": "1"}),
     Case("type+lang", "query_entities", {"type": AQ, "lang": "en"}, "entities", {"type": AQ[0], "lang": "en"}),
+    # T-4258: the representation arguments; `sysAttrs` is the standard's `options=sysAttrs`.
+    Case("type+format", "query_entities", {"type": AQ, "format": "keyValues"}, "entities", {"type": AQ[0], "format": "keyValues"}),
+    Case("type+sysAttrs", "query_entities", {"type": AQ, "sysAttrs": True}, "entities", {"type": AQ[0], "options": "sysAttrs"}),
+    Case("type+orderBy", "query_entities", {"type": AQ, "orderBy": "temperature"}, "entities", {"type": AQ[0], "orderBy": "temperature"}),
     Case(
         "geo",
         "query_entities",
