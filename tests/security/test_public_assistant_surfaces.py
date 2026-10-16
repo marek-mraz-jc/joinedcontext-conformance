@@ -224,6 +224,66 @@ def test_anonymous_mcp_refuses_a_write_it_does_not_offer() -> None:
         assert refused, f"{url}: {answer.status_code} {body[:300]}"
 
 
+def _call(url: str, name: str, arguments: dict) -> requests.Response:
+    return requests.post(
+        url,
+        headers={**AGENT, "Accept": "application/json, text/event-stream"},
+        json={
+            "jsonrpc": "2.0",
+            "id": 1,
+            "method": "tools/call",
+            "params": {"name": name, "arguments": arguments},
+        },
+        timeout=TIMEOUT,
+    )
+
+
+def _history(endpoint: str, entity_type: str, start: str, end: str, name: str) -> dict:
+    window = {"endpoint": endpoint, "timerel": "between", "timeAt": start, "endTimeAt": end}
+    if name == "retrieve_temporal":
+        return {**window, "id": f"urn:ngsi-ld:{entity_type}:none"}
+    return {**window, "type": [entity_type]}
+
+
+def _bounded(answer: requests.Response) -> bool:
+    """A tool error naming the window, or the tool not offered at all without a token."""
+    body = answer.json()
+    if "error" in body:
+        return "not offered without a token" in body["error"]["message"]
+    result = body["result"]
+    return result.get("isError") is True and "at most 31 days" in result["content"][0]["text"]
+
+
+def test_anonymous_history_reads_a_bounded_window() -> None:
+    """One anonymous history read makes the broker read a bounded amount (T-4261): two years
+    are refused by name before the broker sees them, a day is answered within 15 s."""
+    for url in _mcp_urls():
+        listed = _call(url, "list_endpoints", {}).json()["result"]["structuredContent"]["endpoints"]
+        rows = [row for row in listed if row.get("temporal") and row.get("types")]
+        if not rows:
+            continue
+        slug, entity_type = rows[0]["slug"], rows[0]["types"][0]
+        for name in ("query_temporal", "retrieve_temporal"):
+            years = _call(url, name, _history(slug, entity_type, "2024-10-01T00:00:00Z", "2026-10-01T00:00:00Z", name))
+            assert years.status_code == 200, f"{url} {name}: {years.status_code} {years.text[:300]}"
+            assert _bounded(years), f"{url} {name}: two years were not refused: {years.text[:300]}"
+            started = time.monotonic()
+            day = _call(url, name, _history(slug, entity_type, "2026-10-14T00:00:00Z", "2026-10-15T00:00:00Z", name))
+            assert day.status_code == 200, f"{url} {name}: {day.status_code} {day.text[:300]}"
+            assert time.monotonic() - started < 15, f"{url} {name}: a day of history took over 15 s"
+
+
+def test_anonymous_history_of_an_endpoint_not_offered_is_the_login_prompt() -> None:
+    """Another tenant's, an internal and an unknown Endpoint answer alike: 401 (SP-20, T-4114)."""
+    for url in _mcp_urls():
+        unknown = _history("zzzzzzzzzzzzzzzzzzzzzzzzzy", "AirQualityObserved", "2026-10-14T00:00:00Z", "2026-10-15T00:00:00Z", "query_temporal")
+        answer = _call(url, "query_temporal", unknown)
+        assert answer.status_code in (401, 200), f"{url}: {answer.status_code} {answer.text[:300]}"
+        if answer.status_code == 200:
+            body = answer.json()
+            assert "error" in body or body["result"].get("isError") is True, f"{url}: {answer.text[:300]}"
+
+
 def test_ckan_does_not_list_its_accounts_to_anyone() -> None:
     """`user_list` and `user_show` are for a signed-in person; an anonymous visitor learns no
     account name, no last activity and not which account is the sysadmin."""
