@@ -1,0 +1,254 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "The open-data question set of data.dev's assistant (T-4359)",
+  "type": "object",
+  "required": [
+    "about",
+    "canary",
+    "known",
+    "questions"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "about": {
+      "type": "string"
+    },
+    "canary": {
+      "type": "string",
+      "pattern": "^KANARIK-"
+    },
+    "questions": {
+      "type": "array",
+      "minItems": 20,
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "lang",
+          "kind",
+          "q",
+          "must"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^o[du]-[0-9]{2}$"
+          },
+          "lang": {
+            "enum": [
+              "sk",
+              "en",
+              "cs"
+            ]
+          },
+          "kind": {
+            "enum": [
+              "catalogue",
+              "count",
+              "value",
+              "location",
+              "temporal",
+              "absent",
+              "injection",
+              "scope",
+              "unknowable"
+            ]
+          },
+          "q": {
+            "type": "string",
+            "minLength": 10
+          },
+          "must": {
+            "type": "array",
+            "items": {
+              "type": "array",
+              "minItems": 1,
+              "items": {
+                "type": "string"
+              }
+            }
+          },
+          "history": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "role",
+                "text"
+              ]
+            }
+          },
+          "truth": {
+            "type": "object",
+            "required": [
+              "expect"
+            ],
+            "minProperties": 2,
+            "maxProperties": 2,
+            "properties": {
+              "expect": {
+                "enum": [
+                  "titles",
+                  "text",
+                  "number",
+                  "name",
+                  "none",
+                  "scope"
+                ]
+              },
+              "ckan": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "q": {
+                    "type": "string"
+                  },
+                  "fq": {
+                    "type": "string"
+                  }
+                }
+              },
+              "ckanShow": {
+                "type": "object",
+                "required": [
+                  "id",
+                  "fields"
+                ],
+                "additionalProperties": false,
+                "properties": {
+                  "id": {
+                    "type": "string"
+                  },
+                  "fields": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  }
+                }
+              },
+              "count": {
+                "$ref": "#/definitions/read"
+              },
+              "attr": {
+                "allOf": [
+                  {
+                    "$ref": "#/definitions/read"
+                  },
+                  {
+                    "required": [
+                      "attr"
+                    ]
+                  }
+                ]
+              },
+              "nearest": {
+                "allOf": [
+                  {
+                    "$ref": "#/definitions/read"
+                  },
+                  {
+                    "required": [
+                      "type",
+                      "point"
+                    ]
+                  }
+                ]
+              },
+              "temporalMax": {
+                "allOf": [
+                  {
+                    "$ref": "#/definitions/read"
+                  },
+                  {
+                    "required": [
+                      "id",
+                      "attr",
+                      "hours"
+                    ]
+                  }
+                ]
+              }
+            },
+            "additionalProperties": false
+          }
+        },
+        "if": {
+          "properties": {
+            "kind": {
+              "enum": [
+                "injection",
+                "unknowable"
+              ]
+            }
+          }
+        },
+        "then": {},
+        "else": {
+          "required": [
+            "truth"
+          ]
+        }
+      }
+    },
+    "known": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    }
+  },
+  "definitions": {
+    "read": {
+      "type": "object",
+      "required": [
+        "slug"
+      ],
+      "properties": {
+        "slug": {
+          "type": "string",
+          "pattern": "^[a-z0-9]{20,40}$"
+        },
+        "type": {
+          "type": "string"
+        },
+        "id": {
+          "type": "string",
+          "pattern": "^urn:ngsi-ld:"
+        },
+        "q": {
+          "type": "string"
+        },
+        "attr": {
+          "type": "string"
+        },
+        "point": {
+          "type": "array",
+          "items": {
+            "type": "number"
+          },
+          "minItems": 2,
+          "maxItems": 2
+        },
+        "hours": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 168
+        }
+      },
+      "anyOf": [
+        {
+          "required": [
+            "type"
+          ]
+        },
+        {
+          "required": [
+            "id"
+          ]
+        }
+      ]
+    }
+  }
+}
