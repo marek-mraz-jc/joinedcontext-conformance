@@ -69,7 +69,11 @@ QUESTIONS = HERE / "bb_questions.json"
 BBSK_INTERMEDIATE = HERE / "fixtures" / "GeoTrustTLSRSACAG1.crt"
 ABSTAIN = re.compile(
     r"neviem|nemám (k dispozícii )?(informáci|údaj)|nenašiel som|nenašla som|nemám k tomu|"
-    r"nie je (mi )?známe|nedokážem (odpovedať|povedať)|i don'?t know|no information",
+    r"nie je (mi )?známe|nedokážem (odpovedať|povedať)|i don'?t know|no information|"
+    # The ways all three models said it in the T-4183 run, each with the contact, graded wrong
+    # until here: "it cannot be found out", "the sources do not state / contain / hold it".
+    r"nie je možné (zistiť|určiť)|nemôžem (odpovedať|nájsť|povedať)|nie som schopn|"
+    r"(neuvádza|neobsahuj|nenachádza|nie je uveden)",
     re.I,
 )
 MAX_TTFT_MS = 1500
@@ -569,6 +573,13 @@ def selftest():
     said, contact = abstains("Neviem, obráťte sa na https://www.banskabystrica.sk/kontakty/.", spec["contacts"])
     assert said and contact
     assert abstains("Lístok bude stáť 1,20 €.", spec["contacts"]) == (False, False)
+    for said in ("Z poskytnutých materiálov nie je možné zistiť, koľko bude stáť lístok.",
+                 "V poskytnutých zdrojoch sa informácia o termíne otvorenia nenachádza.",
+                 "Zverejnené materiály to neuvádzajú [1].", "Poskytnuté zdroje túto informáciu neobsahujú.",
+                 "Na základe dostupných zdrojov nemôžem odpovedať.", "Nie som schopný nájsť informáciu.",
+                 "Heslo v poskytnutých zdrojoch nie je uvedené."):
+        assert abstains(said, spec["contacts"])[0], said
+    assert not abstains("Zimný štadión sa nachádza na Štiavničkách a otvorí sa v máji.", spec["contacts"])[0]
 
     assert scope_violations([("tool", {"name": "query_entities", "endpoint": "helsinki-weather"})], ["helsinki"])
     assert not scope_violations([("tool", {"name": "search", "status": "done"}), ("answer", {"text": "Helsinki nepoznám"})], ["helsinki"])
