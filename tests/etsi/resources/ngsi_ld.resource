@@ -121,17 +121,18 @@ Random Entity Id
     RETURN    urn:ngsi-ld:${type}:${ORG_DOMAIN}:${SPACE}:${suffix}
 
 Build Sensor Entity
-    [Documentation]    Build a JSON-LD AirQualityObserved entity with varied property types, geo location, and diacritics.
-    ...                It carries `dateObserved`, which the Smart Data Model AirQualityObserved, and so
-    ...                the ovzdusie space's model on dev, requires (T-4369).
-    [Arguments]    ${id}    ${type}=AirQualityObserved    ${lon}=19.15    ${lat}=48.74    ${pm10}=28.5    ${desc}=Banská Bystrica - Námestie SNP
+    [Documentation]    Build a JSON-LD AirQualityObserved entity: a date-time, a number and a geo location.
+    ...                It names only slots of the ovzdusie space's model (bb-air-quality, the Smart
+    ...                Data Model AirQualityObserved): `dateObserved`, which the model requires, `pm10`
+    ...                and `location`. The broker's view refuses a write naming any other attribute,
+    ...                and `pm25` is left out so a case can append it (T-4369).
+    [Arguments]    ${id}    ${type}=AirQualityObserved    ${lon}=19.15    ${lat}=48.74    ${pm10}=28.5
     ${observed}=    Get ISO Timestamp
     ${payload}=    Create Dictionary
     ...    id=${id}
     ...    type=${type}
     ...    dateObserved=${{ {'type': 'Property', 'value': '${observed}'} }}
     ...    pm10=${{ {'type': 'Property', 'value': ${pm10}} }}
-    ...    description=${{ {'type': 'Property', 'value': '${desc}'} }}
     ...    location=${{ {'type': 'GeoProperty', 'value': {'type': 'Point', 'coordinates': [${lon}, ${lat}]}} }}
     ...    @context=${CORE_CONTEXT}
     RETURN    ${payload}

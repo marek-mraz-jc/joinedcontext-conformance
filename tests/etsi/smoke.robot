@@ -24,9 +24,9 @@ Setup Fixture Entities
     Set Suite Variable    ${SETUP_ID_1}    ${id1}
     Set Suite Variable    ${SETUP_ID_2}    ${id2}
     Set Suite Variable    ${SETUP_ID_FAR}    ${id_far}
-    ${e1}=    Build Sensor Entity    ${id1}    AirQualityObserved    19.146    48.736    25.5    Stanica Štadión
-    ${e2}=    Build Sensor Entity    ${id2}    AirQualityObserved    19.152    48.742    42.0    Stanica Sásová
-    ${efar}=    Build Sensor Entity    ${id_far}    AirQualityObserved    21.250    48.716    12.0    Merač Košice
+    ${e1}=    Build Sensor Entity    ${id1}    AirQualityObserved    19.146    48.736    25.5
+    ${e2}=    Build Sensor Entity    ${id2}    AirQualityObserved    19.152    48.742    42.0
+    ${efar}=    Build Sensor Entity    ${id_far}    AirQualityObserved    21.250    48.716    12.0
     ${r1}=    Create Entity In SUT    ${e1}
     Should Be Equal As Integers    ${r1.status_code}    201
     ${r2}=    Create Entity In SUT    ${e2}
@@ -56,7 +56,7 @@ CIM009 6.4.3.1 Create Entity Returns 201 With Location Header
     [Documentation]    Clause 6.4.3.1: successful entity creation yields 201 Created and
     ...                HTTP header Location containing the URI of the created resource.
     ${id}=    Random Entity Id
-    ${payload}=    Build Sensor Entity    ${id}    AirQualityObserved    19.15    48.74    18.4    Centrum mesta Žilina
+    ${payload}=    Build Sensor Entity    ${id}    AirQualityObserved    19.15    48.74    18.4
     ${response}=    Create Entity In SUT    ${payload}
     Should Be Equal As Integers    ${response.status_code}    201
     Dictionary Should Contain Key    ${response.headers}    Location
@@ -85,10 +85,10 @@ CIM009 6.5.3.1 Retrieve Entity By Id Returns Normalized Entity
 CIM009 6.5.3.1 Retrieve Entity Single Attribute Projection
     [Documentation]    Clause 6.5.3.1: Query parameter attrs restricts returned representation
     ...                to the requested attribute list and entity metadata.
-    ${response}=    Get From SUT    /entities/${SETUP_ID_1}    attrs=description
+    ${response}=    Get From SUT    /entities/${SETUP_ID_1}    attrs=dateObserved
     Should Be Equal As Integers    ${response.status_code}    200
     ${body}=    Set Variable    ${response.json()}
-    Dictionary Should Contain Key    ${body}    description
+    Dictionary Should Contain Key    ${body}    dateObserved
     Dictionary Should Not Contain Key    ${body}    pm10
 
 CIM009 6.7.3.1 Partial Attribute Update Returns 204
@@ -104,32 +104,32 @@ CIM009 6.7.3.1 Partial Attribute Update Returns 204
 
 CIM009 6.6.3.1 Append Attributes Returns 204
     [Documentation]    Clause 6.6.3.1: POST /entities/{entityId}/attrs appends new attributes
-    ...                to an existing entity and returns 204 No Content.
-    ${rel_target}=    Random Entity Id    Station
+    ...                to an existing entity and returns 204 No Content. The appended `pm25` is a
+    ...                slot of the space's model the fixture does not carry yet (T-4369).
     ${attrs}=    Create Dictionary
-    ...    controlledBy=${{ {'type': 'Relationship', 'object': '${rel_target}'} }}
+    ...    pm25=${{ {'type': 'Property', 'value': 11.5} }}
     ...    @context=${CORE_CONTEXT}
     ${headers}=    NGSI-LD Headers    content_type=application/ld+json
     ${response}=    POST On Session    ${SESSION}    /entities/${SETUP_ID_1}/attrs
     ...    json=${attrs}    headers=${headers}    expected_status=any
     Should Be Equal As Integers    ${response.status_code}    204
     ${check}=    Get From SUT    /entities/${SETUP_ID_1}
-    Dictionary Should Contain Key    ${check.json()}    controlledBy
-    Should Be Equal As Strings    ${check.json()}[controlledBy][object]    ${rel_target}
+    Dictionary Should Contain Key    ${check.json()}    pm25
+    Should Be Equal As Numbers    ${check.json()}[pm25][value]    11.5
 
 CIM009 6.5.3.4 Merge Entity Returns 204
     [Documentation]    Clause 6.5.3.4: PATCH /entities/{entityId} performs a merge patch
     ...                on entity attributes and returns 204 No Content.
-    ${long_note}=    Generate Random String    120    [LETTERS]
+    ${observed}=    Get ISO Timestamp    offset_seconds=-3600
     ${fragment}=    Create Dictionary
-    ...    note=${{ {'type': 'Property', 'value': '${long_note}'} }}
+    ...    dateObserved=${{ {'type': 'Property', 'value': '${observed}'} }}
     ...    @context=${CORE_CONTEXT}
     ${headers}=    NGSI-LD Headers    content_type=application/ld+json
     ${response}=    PATCH On Session    ${SESSION}    /entities/${SETUP_ID_1}
     ...    json=${fragment}    headers=${headers}    expected_status=any
     Should Be Equal As Integers    ${response.status_code}    204
     ${check}=    Get From SUT    /entities/${SETUP_ID_1}
-    Should Be Equal As Strings    ${check.json()}[note][value]    ${long_note}
+    Should Be Equal As Strings    ${check.json()}[dateObserved][value]    ${observed}
 
 CIM009 6.5.3.3 Replace Entity Returns 204
     [Documentation]    Clause 6.5.3.3: PUT /entities/{entityId} replaces existing entity
@@ -140,25 +140,25 @@ CIM009 6.5.3.3 Replace Entity Returns 204
     ...    id=${SETUP_ID_2}
     ...    type=AirQualityObserved
     ...    dateObserved=${{ {'type': 'Property', 'value': '${observed}'} }}
-    ...    co2=${{ {'type': 'Property', 'value': 415.2} }}
+    ...    pm25=${{ {'type': 'Property', 'value': 41.5} }}
     ...    @context=${CORE_CONTEXT}
     ${headers}=    NGSI-LD Headers    content_type=application/ld+json
     ${response}=    PUT On Session    ${SESSION}    /entities/${SETUP_ID_2}
     ...    json=${replaced}    headers=${headers}    expected_status=any
     Should Be Equal As Integers    ${response.status_code}    204
     ${check}=    Get From SUT    /entities/${SETUP_ID_2}
-    Dictionary Should Contain Key    ${check.json()}    co2
-    Dictionary Should Not Contain Key    ${check.json()}    description
+    Dictionary Should Contain Key    ${check.json()}    pm25
+    Dictionary Should Not Contain Key    ${check.json()}    pm10
 
 CIM009 6.7.3.2 Attribute Deletion Returns 204
     [Documentation]    Clause 6.7.3.2: DELETE /entities/{entityId}/attrs/{attrId} deletes
     ...                the attribute and returns 204 No Content.
     ${headers}=    NGSI-LD Headers
-    ${response}=    DELETE On Session    ${SESSION}    /entities/${SETUP_ID_2}/attrs/co2
+    ${response}=    DELETE On Session    ${SESSION}    /entities/${SETUP_ID_2}/attrs/pm25
     ...    headers=${headers}    expected_status=any
     Should Be Equal As Integers    ${response.status_code}    204
     ${check}=    Get From SUT    /entities/${SETUP_ID_2}
-    Dictionary Should Not Contain Key    ${check.json()}    co2
+    Dictionary Should Not Contain Key    ${check.json()}    pm25
 
 CIM009 6.5.3.2 Entity Deletion Returns 204 And Follow-Up Retrieval Is 404
     [Documentation]    Clause 6.5.3.2: DELETE /entities/{entityId} removes the entity returning 204,
@@ -176,10 +176,11 @@ CIM009 6.5.3.2 Entity Deletion Returns 204 And Follow-Up Retrieval Is 404
 CIM009 6.14.3.1 Batch Entity Creation Returns 201
     [Documentation]    Clause 6.14.3.1: POST /entityOperations/create creates a batch of entities
     ...                and returns 201 Created with array of created entity ids.
-    ${b1}=    Random Entity Id    WeatherObserved
-    ${b2}=    Random Entity Id    WeatherObserved
-    ${e1}=    Build Sensor Entity    ${b1}    WeatherObserved    19.14    48.73    15.0    Zvolen
-    ${e2}=    Build Sensor Entity    ${b2}    WeatherObserved    19.16    48.75    17.5    Sliač
+    # The space accepts its model's classes alone (DM-61): WeatherObserved was refused (T-4369).
+    ${b1}=    Random Entity Id    AirQualityObserved
+    ${b2}=    Random Entity Id    AirQualityObserved
+    ${e1}=    Build Sensor Entity    ${b1}    AirQualityObserved    19.14    48.73    15.0
+    ${e2}=    Build Sensor Entity    ${b2}    AirQualityObserved    19.16    48.75    17.5
     ${batch}=    Create List    ${e1}    ${e2}
     ${headers}=    NGSI-LD Headers    content_type=application/ld+json
     ${response}=    POST On Session    ${SESSION}    /entityOperations/create
@@ -193,11 +194,12 @@ CIM009 6.14.3.1 Batch Entity Creation Returns 201
 
 CIM009 6.4.3.2 Query Entities By Type Returns Matching Array
     [Documentation]    Clause 6.4.3.2: GET /entities?type={typeName} queries entities by type.
-    ${response}=    Get From SUT    /entities    type=WeatherObserved
+    ${response}=    Get From SUT    /entities    type=AirQualityObserved
     Should Be Equal As Integers    ${response.status_code}    200
     ${items}=    Set Variable    ${response.json()}
+    Should Not Be Empty    ${items}
     FOR    ${item}    IN    @{items}
-        Should Be Equal As Strings    ${item}[type]    WeatherObserved
+        Should Be Equal As Strings    ${item}[type]    AirQualityObserved
     END
 
 CIM009 6.4.3.2 Query Entities By Id List
@@ -292,7 +294,7 @@ CIM009 6.3.7 Simplified Representation format Simplified
     ${body}=    Set Variable    ${response.json()}
     Should Be Equal As Strings    ${body}[id]    ${SETUP_ID_1}
     Should Be Equal As Numbers    ${body}[pm10]    ${normalized.json()}[pm10][value]
-    Should Be Equal As Strings    ${body}[description]    ${normalized.json()}[description][value]
+    Should Be Equal As Strings    ${body}[dateObserved]    ${normalized.json()}[dateObserved][value]
 
 CIM009 6.3.11 Include System Attributes options sysAttrs
     [Documentation]    Table 6.3.11-1: options=sysAttrs includes system-generated temporal
