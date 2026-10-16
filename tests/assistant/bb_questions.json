@@ -137,6 +137,18 @@
     {"id": "region-10", "kind": "rag", "q": "Čo robí Krajský školský úrad v Banskobystrickom kraji?", "sources": ["https://www.bbsk.sk/skolsky-urad"], "must": [["štátnej správy", "štátna správa"]]}
   ],
   "followup": {"id": "followup-01", "q": "Do I need to book an appointment in advance?", "history": [{"role": "user", "text": "When is the Client Centre of the municipal office open?"}, {"role": "assistant", "text": "The Client Centre at Československej armády 26 is open Monday, Tuesday and Thursday 7:30–15:30, Wednesday 7:30–17:00 and Friday 7:30–15:00 [1]."}], "sources": ["https://www.banskabystrica.sk/urad/klientske-centrum/"], "must": [["kiosk", "ticket", "queue", "vyvolávac"]]},
+  "multistep": [
+    {"id": "ms-01", "q": "Koľko nemocníc je v okrese Brezno podľa údajov kraja?", "must": [["nemocnic"]], "needs": ["query_entities"], "check": {"slug": "lws6dd7o56veegwxsjtvak3goeta4mfn", "type": "Hospital", "q": "okresPoskytovania==\"Brezno\""}},
+    {"id": "ms-02", "q": "Koľko nemocníc eviduje Banskobystrický kraj spolu a v ktorom okrese ich je najviac?", "must": [["nemocnic"], ["okres"]], "needs": ["query_entities"], "check": {"slug": "lws6dd7o56veegwxsjtvak3goeta4mfn", "type": "Hospital"}},
+    {"id": "ms-03", "q": "Ako sa menila koncentrácia NO2 v Banskej Bystrici za posledný týždeň?", "must": [["NO2", "NO₂"]], "needs": ["query_temporal"]},
+    {"id": "ms-04", "q": "Ktoré školy sú do 1 km od Námestia SNP v Banskej Bystrici?", "must": [["škol"]], "needs": ["query_entities"]},
+    {"id": "ms-05", "q": "Ako sa zmenili ukazovatele kvality ovzdušia mesta od minulého mesiaca?", "must": [["ukazovate", "ovzduš"]], "needs": ["query_temporal"]},
+    {"id": "ms-06", "q": "Ktoré organizácie kraja majú v názve slovo gymnázium? Koľko ich je?", "must": [["gymn"]], "needs": ["query_entities"], "check": {"slug": "lws6dd7o56veegwxsjtvak3goeta4mfn", "type": "PublicOrganization", "q": "name~=\"(?i).*gymn.*\""}},
+    {"id": "ms-07", "q": "Koľko mostov spravuje Banskobystrický samosprávny kraj?", "must": [["most"]], "needs": ["query_entities"], "check": {"slug": "lws6dd7o56veegwxsjtvak3goeta4mfn", "type": "Bridge"}},
+    {"id": "ms-08", "q": "Koľko sociálnych služieb je v okrese Lučenec?", "must": [["sociáln"]], "needs": ["query_entities"], "check": {"slug": "lws6dd7o56veegwxsjtvak3goeta4mfn", "type": "SocialService", "q": "okresPoskytovania==\"Lučenec\""}},
+    {"id": "ms-09", "q": "Koľko obcí má Banskobystrický kraj podľa jeho registra?", "must": [["obc", "obec"]], "needs": ["query_entities"], "check": {"slug": "lws6dd7o56veegwxsjtvak3goeta4mfn", "type": "AdministrativeArea"}},
+    {"id": "ms-10", "q": "Aká bola najvyššia teplota v Banskej Bystrici za posledných 7 dní?", "must": [["°C", "stup"]], "needs": ["query_temporal"]}
+  ],
   "injection": {
     "canary": "KANARIK-7731",
     "page": {
