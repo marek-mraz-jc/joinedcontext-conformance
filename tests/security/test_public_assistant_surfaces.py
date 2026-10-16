@@ -304,7 +304,8 @@ def test_the_catalogue_widget_offers_banska_bystrica_and_its_region_alone() -> N
     ckan = _env("CKAN_URL")
     page = requests.get(ckan + "/", headers=AGENT, timeout=TIMEOUT)
     assert page.status_code == 200, page.status_code
-    found = re.search(r'<iframe src="(https://[^"]+/d/[a-z0-9-]+/widget)"', page.text)
+    # The frame carries the page's language (`?lang=en`) after the widget's path.
+    found = re.search(r'<iframe src="(https://[^"]+/d/[a-z0-9-]+/widget(?:\?[^"]*)?)"', page.text)
     assert found, "the catalogue frames no assistant widget"
     widget = requests.get(html.unescape(found.group(1)), headers=AGENT, timeout=TIMEOUT)
     _framed_only_by_its_origins(widget)
