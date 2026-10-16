@@ -118,7 +118,13 @@ def unexplained(rows: list[dict]) -> list[str]:
     return [r["dataset"] for r in rows if not r["entities"] and not r["error"]]
 
 
-def markdown(rows: list[dict]) -> str:
+def hidden(mapping: dict) -> list[dict]:
+    """Every dataset the mapping does not convert, with its status and reason: data.dev shows none of
+    them (T-4317, T-4324)."""
+    return [d for d in mapping.get("datasets") or [] if d.get("status") not in ("mapped", "already-ngsi-ld")]
+
+
+def markdown(rows: list[dict], held_back: list[dict] = ()) -> str:
     lines = ["| dataset | type | entities | last run | error |", "|---|---|---:|---|---|"]
     for r in rows:
         entities = "?" if r["entities"] is None else str(r["entities"])
@@ -126,6 +132,9 @@ def markdown(rows: list[dict]) -> str:
     held = sum(1 for r in rows if r["entities"])
     lines.append("")
     lines.append(f"{held} of {len(rows)} mapped datasets have entities; {sum(r['entities'] or 0 for r in rows)} entities in all.")
+    if held_back:
+        lines += ["", "| hidden dataset | status | reason |", "|---|---|---|"]
+        lines += [f"| {d['name']} | {d['status']} | {str(d.get('reason', '')).replace('|', '/')} |" for d in held_back]
     return "\n".join(lines) + "\n"
 
 
@@ -206,6 +215,10 @@ def selftest() -> None:
         assert doors == {("bb", "bb-od"): "s1"}, doors
         assert found == {"https://c/dataset/a": ("bb", "od-a")}, found
     assert [d["name"] for d in mapped({"datasets": [{"name": "x", "status": "mapped"}, {"name": "y", "status": "not-ingestible"}]})] == ["x"]
+    some = {"datasets": [{"name": "x", "status": "mapped"}, {"name": "n", "status": "already-ngsi-ld"},
+                         {"name": "p", "status": "no-data-source", "reason": "a PDF map sheet"}]}
+    assert [d["name"] for d in hidden(some)] == ["p"]
+    assert "| p | no-data-source | a PDF map sheet |" in markdown([], hidden(some))
     print("coverage_bb selftest ok")
 
 
@@ -229,9 +242,10 @@ def main() -> int:
         print("no PORTAL_TOKEN: the last runs stay unknown", file=sys.stderr)
     doors, pipelines = seed_index(args.seed)
     get = http_get(token)
-    rows = [row_of(d, doors, pipelines, get, args.base.rstrip("/"), portal and portal.rstrip("/")) for d in mapped(yaml.safe_load(args.mapping.read_text()))]
+    mapping = yaml.safe_load(args.mapping.read_text())
+    rows = [row_of(d, doors, pipelines, get, args.base.rstrip("/"), portal and portal.rstrip("/")) for d in mapped(mapping)]
     args.out.with_suffix(".json").write_text(json.dumps(rows, ensure_ascii=False, indent=2) + "\n")
-    table = markdown(rows)
+    table = markdown(rows, hidden(mapping))
     args.out.with_suffix(".md").write_text(table)
     print(table)
     missing = unexplained(rows)
