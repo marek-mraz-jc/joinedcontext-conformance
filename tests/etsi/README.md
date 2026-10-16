@@ -9,6 +9,11 @@ gateway embedded, gateway standalone, endpoint slug path.
 - `temporal_projected.robot` — temporal reads through a ModelProjection (EP-30, MP-02).
 - `temporal_federated.robot` — federated temporal reads over registrations (EP-70).
 - the full Testing Task Force suite and its quarantine list live next door in `../etsi-ttf/`.
+- `expected_view_refusals.json` holds the 1190 TPs that pass at the root (E1) and are refused
+  through view `etsi-restricted` (E4). Each names the ADR-0023 rule or the threat that owes the
+  refusal. It is the `owed-refusals.json` of the Antares `surfaces-conformance.yml` job
+  `etsi-full-restricted`, nightly run 38337550740 on `dev` (2026-10-13, the first green one),
+  unchanged. `check_view_refusals.py` holds it to that shape (T-3928).
 
 Run: `NGSILD_URL=https://<host>/cs/<space>/ngsi-ld/v1 jc-conformance etsi`
 
