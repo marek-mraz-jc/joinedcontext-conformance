@@ -6,7 +6,7 @@
     "GtfsStation": {"maxAge": "2d"},
     "GtfsStop": {"maxAge": "15m", "emptyAllowed": ["departures"]},
     "OffStreetParking": {"maxAge": "20m"},
-    "TransitRoute": {"maxAge": "8d"},
+    "PublicTransportRoute": {"maxAge": "8d"},
     "Vehicle": {"maxAge": "10m"}
   }
 }
