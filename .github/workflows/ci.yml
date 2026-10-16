@@ -41,6 +41,8 @@ jobs:
           python3 security/routes.py --check
       - name: expected-failure checker logic (T-0054)
         run: python3 tests/etsi-ttf/check_expected_failures.py --selftest
+      - name: every owed view refusal names its ground (T-3928)
+        run: python3 tests/etsi/check_view_refusals.py --selftest && python3 tests/etsi/check_view_refusals.py
       - name: gateway divergence fails the transparency comparison (T-0056)
         run: python3 tests/etsi-ttf/compare_transparency.py --selftest
       - name: a failed OGC assertion fails the ATS verdict (T-0057)
