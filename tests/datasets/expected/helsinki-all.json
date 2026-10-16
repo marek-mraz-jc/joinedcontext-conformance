@@ -1,14 +1,14 @@
 {
   "types": {
+    "AdministrativeArea": {"maxAge": "8d"},
     "Alert": {"maxAge": "30m"},
+    "Article": {"maxAge": "1h"},
     "BikeHireDockingStation": {"maxAge": "15m"},
-    "CityDistrict": {"maxAge": "8d"},
     "Event": {"maxAge": "1h"},
     "GtfsAgency": {"maxAge": "2d"},
     "GtfsRoute": {"maxAge": "2d"},
     "GtfsStation": {"maxAge": "2d"},
     "GtfsStop": {"maxAge": "15m", "emptyAllowed": ["departures"]},
-    "NewsArticle": {"maxAge": "1h"},
     "OffStreetParking": {"maxAge": "20m"},
     "ParkingArea": {"maxAge": "2d"},
     "ParkingZone": {"maxAge": "8d"},
