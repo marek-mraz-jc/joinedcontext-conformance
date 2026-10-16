@@ -31,7 +31,10 @@ Where each number comes from (the task's "Data sources"):
   retrieval loop ran;
 - the region (T-4278): the `bbsk` questions are graded on their `must`, and `bbsk` counts the
   correct ones whose `citations` event names a page of www.bbsk.sk; the `followup` question is
-  asked with its `history` (the turn before it) and graded on its `must`.
+  asked with its `history` (the turn before it) and graded on its `must`;
+- latency per stage (T-4293): p50 and p95 by nearest rank of the uncached answers, from the
+  `done` event's `stagesMs` (`route`, `search`, `judge`, `answer`, the service's clock) beside
+  this runner's time to first token and total.
 
 Exit 0 when at least one model passes every gate; 1 otherwise; 2 on a usage error.
 `--selftest` checks the grading against canned answers with no network.
@@ -61,6 +64,7 @@ ABSTAIN = re.compile(
     re.I,
 )
 MAX_TTFT_MS = 1500
+STAGES = ("route", "search", "judge", "answer")
 
 
 def norm(text):
@@ -256,6 +260,7 @@ def record(item, events, ttft, total, model, prices):
         "ttftMs": ttft,
         "totalMs": total,
         "serverFirstTokenMs": done.get("firstTokenMs"),
+        "stagesMs": done.get("stagesMs") or {},
         "costUsd": usd,
         "costBasis": basis,
         "events": [[n, d] for n, d, *_ in events],
@@ -266,6 +271,27 @@ def on_bbsk(url):
     """Whether a cited address is a page of the region's site, www.bbsk.sk or bbsk.sk."""
     host = (re.match(r"https?://([^/?#:]+)", url or "") or [None, ""])[1].lower()
     return host in ("bbsk.sk", "www.bbsk.sk")
+
+
+def percentile(values, p):
+    """The nearest-rank percentile `p` (0-100) of `values`; None when there are none."""
+    ordered = sorted(values)
+    if not ordered:
+        return None
+    return ordered[max(1, -(-len(ordered) * p // 100)) - 1]
+
+
+def latency(rows):
+    """p50 and p95 per stage over the uncached answers: this runner's first token and total, and
+    each of the service's `stagesMs` (T-4293). A stage no answer ran has n 0."""
+    timed = [r for r in rows if not r["cached"]]
+    series = {
+        "firstToken": [r["ttftMs"] for r in timed if r["ttftMs"] is not None],
+        "total": [r["totalMs"] for r in timed if r["totalMs"] is not None],
+    }
+    for stage in STAGES:
+        series[stage] = [r["stagesMs"][stage] for r in timed if stage in r.get("stagesMs", {})]
+    return {name: {"p50": percentile(v, 50), "p95": percentile(v, 95), "n": len(v)} for name, v in series.items()}
 
 
 def english(spec):
@@ -358,6 +384,7 @@ def judge(spec, rows):
         "maxTotalMs": max(total) if total else None,
         "costPerAnswerUsd": statistics.mean(costs) if costs else None,
         "costBasis": sorted({r["costBasis"] for r in rows}),
+        "latency": latency(rows),
     }
     gates["ttft"] = summary["medianTtftMs"] is not None and summary["medianTtftMs"] <= MAX_TTFT_MS
     return summary, gates
@@ -391,6 +418,10 @@ def markdown(results, best):
         )
     lines.append("")
     lines.append(f"Winner: {best or 'none (no model passes every gate)'}")
+    lines += ["", "| model | stage | p50 ms | p95 ms | answers |", "|---|---|---|---|---|"]
+    for model, r in results.items():
+        for stage, t in r["summary"].get("latency", {}).items():
+            lines.append(f"| {model} | {stage} | {ms(t['p50'])} | {ms(t['p95'])} | {t['n']} |")
     return "\n".join(lines) + "\n"
 
 
@@ -544,6 +575,20 @@ def selftest():
     assert eval_deployment("bb-eval-haiku") and eval_deployment("eval-bb")
     for public in ("banskabystrica", "bbsk", "helsinki-public", "medieval", "evaluation-bb"):
         assert not eval_deployment(public), public
+
+    # Latency per stage over canned timings: 20 uncached answers that never judged, one cached.
+    assert percentile([], 50) is None and percentile([5], 95) == 5
+    timed = [{"cached": False, "ttftMs": 100.0 * i, "totalMs": 1000.0 + i,
+              "stagesMs": {"route": 400 + i, "search": 30, "answer": 1500 + 10 * i}} for i in range(1, 21)]
+    timed.append({"cached": True, "ttftMs": None, "totalMs": 5, "stagesMs": {}})
+    t = latency(timed)
+    assert t["route"] == {"p50": 410, "p95": 419, "n": 20}, t["route"]
+    assert t["answer"]["p95"] == 1690 and t["search"]["p50"] == 30, t
+    assert t["judge"] == {"p50": None, "p95": None, "n": 0}, "a stage no answer ran"
+    assert t["total"] == {"p50": 1010.0, "p95": 1019.0, "n": 20}, "the cached answer is left out"
+    assert t["firstToken"]["p50"] == 1000.0, t
+    table = markdown({"m": {"summary": {**results["good"]["summary"], "latency": t}, "gates": {}}}, None)
+    assert "| m | route | 410 | 419 | 20 |" in table and "| m | judge | – | – | 0 |" in table, table
     print("eval_bb selftest: ok")
     return 0
 
