@@ -3,7 +3,8 @@
 source, can be asked about, and names a Smart Data Model (T-4318, T-4319).
 
     python3 tests/assistant/publish_gate.py \
-        --mapping ../docs/Research/bb-bbsk-ngsi-ld-mapping.yaml --out evidence/publish-gate
+        --mapping ../docs/Research/bb-bbsk-ngsi-ld-mapping.yaml --out evidence/publish-gate \
+        --sdm ../joinedcontext-deployment/scripts/open-data/sdm
 
 Reads only public data: the catalogue, the hub's endpoint list, the broker's public Endpoints,
 the sources the mapping names, and an eval copy of the assistant (a publicId with an `eval`
@@ -18,7 +19,8 @@ Checks per catalogue package (the task's 1 to 4):
    the publisher's box; no source key twice among the sampled entities; a daily dataset's newest
    observedAt no older than a day.
 3. Queryable: the eval assistant answers "how many" with the entity count and cites an Endpoint.
-4. Smart Data Model: the mapping names one (validation itself is T-4319's).
+4. Smart Data Model: the mapping names one, and with `--sdm` (the deployment's vendored
+   schemas, T-4319) every sampled entity, as keyValues, validates against its schema.json.
 
 Verdict: `hide` when a check fails, `keep` when all four pass, `hold` when none fails but one
 could not run (no mapping, no eval copy for the publisher): a hold stays as it is and is listed.
@@ -42,6 +44,7 @@ import json
 import math
 import re
 import sys
+import tempfile
 import time
 import urllib.error
 import urllib.parse
@@ -68,6 +71,47 @@ BOXES = {
 DOMAINS = {"banskabystrica": "banskabystrica.sk", "bbsk": "bbsk.sk"}
 TAKEN = {"dataProvider", "source", "dataset", "location", "observedAt", "name"}
 PERIODS = {"P1D": dt.timedelta(days=1), "P1W": dt.timedelta(weeks=1), "P1M": dt.timedelta(days=31)}
+
+
+COMMON = ("https://smart-data-models.github.io/data-models/common-schema.json",
+          "https://raw.githubusercontent.com/smart-data-models/data-models/master/common-schema.json")
+
+
+def sdm_validators(folder):
+    """model -> a function from an entity to its schema errors, over the vendored schemas in
+    `folder` (`<Subject>/<Model>/schema.json` and `common-schema.json`); never the network."""
+    import jsonschema
+    from referencing import Registry, Resource
+    from referencing.jsonschema import DRAFT7
+
+    common = Resource.from_contents(json.loads((folder / "common-schema.json").read_text()), DRAFT7)
+    registry = Registry().with_resources((u, common) for u in COMMON)
+    cache = {}
+
+    def errors(model, entity):
+        if model not in cache:
+            path = folder / model.removeprefix("dataModel.") / "schema.json"
+            cache[model] = jsonschema.Draft7Validator(
+                json.loads(path.read_text()), registry=registry,
+                format_checker=jsonschema.Draft7Validator.FORMAT_CHECKER) if path.is_file() else None
+        if cache[model] is None:
+            return [f"no vendored schema for {model}"]
+        return [f"{'/'.join(map(str, e.absolute_path)) or '(entity)'}: {e.message}"
+                for e in cache[model].iter_errors(key_values(entity))]
+    return errors
+
+
+def key_values(entity):
+    """The entity as keyValues (joinedcontext-deployment tests/open_data.py)."""
+    out = {}
+    for name, a in entity.items():
+        if name == "@context":
+            continue
+        if not isinstance(a, dict) or "type" not in a:
+            out[name] = a
+        else:
+            out[name] = a.get({"Relationship": "object", "LanguageProperty": "languageMap", "JsonProperty": "json"}.get(a["type"], "value"))
+    return out
 
 
 # --- what the generator writes (kept in step with scripts/open-data/generate.py) ---------------
@@ -373,7 +417,7 @@ def find_entity(http, base, e, slug, row, dataset_q):
 
 # --- one package -------------------------------------------------------------------------------
 
-def gate(package, e, slug, spaces, http, ask, now, shared):
+def gate(package, e, slug, spaces, http, ask, now, shared, sdm=None):
     org = (package.get("organization") or {}).get("name")
     ngsi = [r["url"] for r in package.get("resources", []) if (r.get("format") or "").upper() == "NGSI-LD"]
     checks = {}
@@ -398,6 +442,7 @@ def gate(package, e, slug, spaces, http, ask, now, shared):
         return row | {"checks": checks, "verdict": verdict(checks)}
 
     row["type"] = e["type"]
+    sample = []
     doors = [d for d, types in spaces.get(e["space"], []) if e["type"] in types]
     dataset_q = f'dataset=="{e["dataset"]}"'
     if not doors:
@@ -446,7 +491,13 @@ def gate(package, e, slug, spaces, http, ask, now, shared):
         checks["accurate"] = check("fail", " | ".join(problems)) if problems else check("pass")
 
     model = e.get("smartDataModel")
-    sdm = check("pass") if model else check("fail", "the mapping names no Smart Data Model (T-4319)")
+    if not model:
+        sdm = check("fail", "the mapping names no Smart Data Model (T-4319)")
+    elif sdm is None or not sample:
+        sdm = check("pass")
+    else:
+        wrong = next(((x.get("id"), errs) for x in sample if (errs := sdm(model, x))), None)
+        sdm = check("fail", f"{wrong[0]} is not a valid {model}: " + "; ".join(wrong[1][:3])) if wrong else check("pass")
     if "fail" in (checks["ngsi-ld"]["state"], checks["accurate"]["state"], sdm["state"]):
         checks["queryable"] = check("not run", "asked only when checks 1, 2 and 4 pass (the eval copy's hourly limit)")
     elif org not in DOMAINS or ask is None:
@@ -463,14 +514,14 @@ def gate(package, e, slug, spaces, http, ask, now, shared):
 
 # --- the run -----------------------------------------------------------------------------------
 
-def run(packages, mapping, spaces, http, ask, now):
+def run(packages, mapping, spaces, http, ask, now, sdm=None):
     by_name = {e["name"]: e for e in mapping}
     names = slugs([e for e in mapping if e["status"] == "mapped"])
     shared = {}
     for e in mapping:
         if e["status"] == "mapped":
             shared[(e["space"], e["type"])] = shared.get((e["space"], e["type"]), 0) + 1
-    return [gate(p, by_name.get(p["name"]), names.get(p["name"]), spaces, http, ask, now, shared) for p in packages]
+    return [gate(p, by_name.get(p["name"]), names.get(p["name"]), spaces, http, ask, now, shared, sdm) for p in packages]
 
 
 def markdown(rows, when):
@@ -513,12 +564,13 @@ def main():
     parser.add_argument("--out", type=Path)
     parser.add_argument("--catalogue", default=CKAN)
     parser.add_argument("--eval", default=EVAL_ID, help="the eval copy's publicId; 'none' skips check 3")
+    parser.add_argument("--sdm", type=Path, help="the vendored Smart Data Models (deployment scripts/open-data/sdm)")
     parser.add_argument("--selftest", action="store_true")
     args = parser.parse_args()
     if args.selftest:
         selftest()
         return 0
-    if not args.mapping or not args.out:
+    if not args.mapping or not args.out or args.sdm and not (args.sdm / "common-schema.json").is_file():
         parser.print_usage()
         return 2
     http = Http()
@@ -529,7 +581,7 @@ def main():
     mapping = yaml.safe_load(args.mapping.read_text())["datasets"]
     ask = None if args.eval == "none" else eval_asker(GATEWAY, args.eval)
     now = dt.datetime.now(dt.timezone.utc)
-    rows = run(packages, mapping, endpoints(http), http, ask, now)
+    rows = run(packages, mapping, endpoints(http), http, ask, now, args.sdm and sdm_validators(args.sdm))
     when = now.strftime("%Y-%m-%dT%H:%MZ")
     args.out.parent.mkdir(parents=True, exist_ok=True)
     Path(f"{args.out}.json").write_text(json.dumps({"at": when, "rows": rows}, indent=1, ensure_ascii=False) + "\n")
@@ -545,7 +597,7 @@ def selftest():
     now = dt.datetime(2026, 10, 16, 12, tzinfo=dt.timezone.utc)
     base = "https://gw/api/endpoint/abc/"
     e = {"name": "bb-skoly", "org": "banskabystrica", "status": "mapped", "type": "School", "space": "bb-od",
-         "dataset": "https://cat/dataset/bb-skoly", "refresh": "P1D", "observedAt": "updated", "smartDataModel": "School",
+         "dataset": "https://cat/dataset/bb-skoly", "refresh": "P1D", "observedAt": "updated", "smartDataModel": "dataModel.Education/School",
          "entityId": {"keys": ["ID"]},
          "source": {"kind": "ckan-datastore", "resource": "r1", "url": "x", "rows": 3},
          "properties": {"sourceId": {"column": "ID", "range": "integer"}, "nazov": {"column": "Nazov", "range": "string"},
@@ -588,8 +640,15 @@ def selftest():
     spaces = {"bb-od": [(base, ["School"])]}
     right = lambda q: ("Je ich 3 [1].", [{"endpoint": "bb-od"}])
 
-    def verdict_of(http, ask=right, pkg=package, entry=e):
-        return gate(pkg, entry, slug, spaces, http, ask, now, {("bb-od", "School"): 1})
+    folder = Path(tempfile.mkdtemp())
+    (folder / "Education/School").mkdir(parents=True)
+    (folder / "common-schema.json").write_text(json.dumps({"definitions": {"Count": {"type": "integer", "minimum": 0}}}))
+    (folder / "Education/School/schema.json").write_text(json.dumps({"type": "object", "required": ["id", "type"], "properties": {
+        "type": {"enum": ["School"]}, "ziaci": {"$ref": COMMON[0] + "#/definitions/Count"}}}))
+    models = sdm_validators(folder)
+
+    def verdict_of(http, ask=right, pkg=package, entry=e, sdm=models):
+        return gate(pkg, entry, slug, spaces, http, ask, now, {("bb-od", "School"): 1}, sdm)
 
     clean = verdict_of(world())
     assert clean["verdict"] == "keep", clean
@@ -601,6 +660,8 @@ def selftest():
         "stale observedAt": verdict_of(world(entities=[entity_of(r, observedAt={"type": "Property", "value": "2026-10-10T08:00:00Z"}) for r in source])),
         "the wrong number": verdict_of(world(), ask=lambda q: ("Je ich 4 [1].", [{"endpoint": "bb-od"}])),
         "no Smart Data Model": verdict_of(world(), entry=dict(e, smartDataModel=None)),
+        "not valid in its model": verdict_of(world(), sdm=lambda m, x: models(m, dict(x, ziaci={"type": "Property", "value": -1}))),
+        "no vendored schema": verdict_of(world(), entry=dict(e, smartDataModel="dataModel.Education/Library")),
     }
     for name, result in cases.items():
         assert result["verdict"] == "hide", (name, result)
@@ -609,6 +670,9 @@ def selftest():
     assert "outside" in cases["outside the box"]["checks"]["accurate"]["reason"]
     assert "same" in cases["a duplicate id"]["checks"]["accurate"]["reason"]
     assert "older than a day" in cases["stale observedAt"]["checks"]["accurate"]["reason"]
+    assert "ziaci: -1 is less than the minimum of 0" in cases["not valid in its model"]["checks"]["smart-data-model"]["reason"], cases["not valid in its model"]
+    assert "no vendored schema" in cases["no vendored schema"]["checks"]["smart-data-model"]["reason"]
+    assert verdict_of(world(), sdm=None)["verdict"] == "keep"
     assert "does not state 3" in cases["the wrong number"]["checks"]["queryable"]["reason"]
     # Distributions are T-4324's: a package without an NGSI-LD link still passes check 1 here.
     assert verdict_of(world(), pkg=dict(package, resources=[{"format": "CSV", "url": "x"}]))["verdict"] == "keep"
