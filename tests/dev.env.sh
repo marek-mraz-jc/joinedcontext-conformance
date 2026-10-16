@@ -176,7 +176,7 @@ mcp)
 	export MCP_RESTRICTED_TYPE="AirQualityObserved"
 	# The other space holds other types, and a query tool takes one: without this the
 	# cross-space probes read nothing and prove nothing.
-	export OTHER_SPACE_TYPE="NewsArticle"
+	export OTHER_SPACE_TYPE="Article"
 	export MCP_HIDDEN_ATTR="reliability"
 	export MCP_TOKEN="$JC_DEV_TOKEN_GATEWAY"
 	[ -n "$JC_DEV_SLUG_AIR" ] && export ENDPOINT_MCP_URL="$JC_DEV_BASE/api/endpoint/$JC_DEV_SLUG_AIR/mcp"

@@ -39,7 +39,7 @@ attribute, no live type, a source that needs a key) say what was not held agains
 
 `expected/<dataset>.json` names the types a dataset must serve and how old each may be:
 
-    {"types": {"BikeHireDockingStation": {"maxAge": "20m"}, "CityDistrict": {"maxAge": "8d"}}}
+    {"types": {"BikeHireDockingStation": {"maxAge": "20m"}, "AdministrativeArea": {"maxAge": "8d"}}}
 
 With it, `expected.types` fails when one of them is not served, and `fresh.<Type>` holds the type
 to its `maxAge` (`<n>s|m|h|d`) instead of the seed's schedule; `"maxAge": null` only requires the

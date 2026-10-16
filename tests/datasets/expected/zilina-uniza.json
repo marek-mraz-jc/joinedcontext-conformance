@@ -1,5 +1,5 @@
 {
   "types": {
-    "CreativeWork": {"maxAge": "11d"}
+    "Article": {"maxAge": "11d"}
   }
 }

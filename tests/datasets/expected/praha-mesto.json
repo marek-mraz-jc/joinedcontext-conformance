@@ -1,9 +1,9 @@
 {
   "types": {
+    "AdministrativeArea": {"maxAge": "8d"},
     "AirQualityObserved": {"maxAge": "1h"},
     "BikeHireDockingStation": {"maxAge": "20m"},
     "BudgetLine": {"maxAge": "2d"},
-    "CityDistrict": {"maxAge": "8d"},
     "OffStreetParking": {"maxAge": "20m"},
     "PointOfInterest": {"maxAge": "2d"},
     "WasteContainer": {"maxAge": "2h"},
