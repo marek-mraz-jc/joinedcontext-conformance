@@ -302,6 +302,10 @@ test('on a phone the open assistant is the whole screen and the closed one cover
   await page.keyboard.press('Enter');
   const panel = await page.locator('details.jc-assistant').boundingBox();
   expect(panel).toEqual({ x: 0, y: 0, width: 375, height: 740 });
+  // The chat frame itself reaches the screen's end, not the browser's default 150 px (T-4248).
+  const chat = await page.locator('details.jc-assistant > iframe').boundingBox();
+  expect(chat!.y + chat!.height).toBe(740);
+  expect(chat!.height).toBeGreaterThan(740 / 2);
   expect(await page.locator('header').first().evaluate((el) => el.closest('[inert]') !== null)).toBe(true);
   await page.keyboard.press('Escape');
   await expect(page.locator('details.jc-assistant')).not.toHaveAttribute('open', '');
