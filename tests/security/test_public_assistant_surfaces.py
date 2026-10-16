@@ -21,6 +21,8 @@ MCP), beside T-4144's scope and injection gates:
       MCP_HUB_URL=… PUBLIC_MCP_URLS=… CKAN_URL=… pytest tests/security/test_public_assistant_surfaces.py
 """
 
+import html
+import json
 import os
 import re
 import time
@@ -229,3 +231,27 @@ def test_ckan_does_not_list_its_accounts_to_anyone() -> None:
     answer = requests.get(f"{ckan}/api/3/action/user_list", headers=AGENT, timeout=TIMEOUT)
     leaked = answer.status_code == 200 and answer.json().get("result")
     assert not leaked, f"user_list answers anonymously with {len(leaked)} accounts"
+
+
+# Words that name a body outside Banská Bystrica and its region, in an Endpoint or a greeting.
+ELSEWHERE = re.compile(r"helsin|hel-fi|praha|prague|prahy|zilin|žilin", re.IGNORECASE)
+
+
+def test_the_catalogue_widget_offers_banska_bystrica_and_its_region_alone() -> None:
+    """T-4252: every page of the shared catalogue frames the public assistant of Banská Bystrica
+    and BBSK. Its connectors are the only way to live rows, so none of them, and nothing in its
+    greeting, names another body; the widget is framed by the catalogue's own origin."""
+    ckan = _env("CKAN_URL")
+    page = requests.get(ckan + "/", headers=AGENT, timeout=TIMEOUT)
+    assert page.status_code == 200, page.status_code
+    found = re.search(r'<iframe src="(https://[^"]+/d/[a-z0-9-]+/widget)"', page.text)
+    assert found, "the catalogue frames no assistant widget"
+    widget = requests.get(html.unescape(found.group(1)), headers=AGENT, timeout=TIMEOUT)
+    _framed_only_by_its_origins(widget)
+    assert ckan in widget.headers["content-security-policy"].split("frame-ancestors", 1)[1]
+    config_attr = re.search(r'data-config="([^"]*)"', widget.text)
+    assert config_attr, "the widget page carries no config"
+    config = json.loads(html.unescape(config_attr.group(1)))
+    outside = [c for c in config["connectors"] if ELSEWHERE.search(c)]
+    assert not outside, f"connectors of another body: {outside}"
+    assert not ELSEWHERE.search(config.get("greeting") or ""), config.get("greeting")
