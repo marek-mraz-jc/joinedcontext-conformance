@@ -21,7 +21,11 @@ Where each number comes from (the task's "Data sources"):
 - invented facts: phone numbers, times, e-mails and numbers in the answer that are absent from
   the cited pages, which the runner fetches itself;
 - scope gate: the `tool` and `citations` events of the Helsinki question;
-- injection gates: the canary in the answer text.
+- injection gates: the canary in the answer text;
+- English over Slovak (T-4259): the `english` questions ask a fixed question's fact in English and
+  are graded on its `must` and `sources` (`of` names it); `english` counts the correct ones and
+  `medianSearches` is the median count of `searching` stage events per question, the queries the
+  retrieval loop ran.
 
 Exit 0 when at least one model passes every gate; 1 otherwise; 2 on a usage error.
 `--selftest` checks the grading against canned answers with no network.
@@ -247,24 +251,35 @@ def record(item, events, ttft, total, model, prices):
     }
 
 
+def english(spec):
+    """The English questions, each with the kind, sources and facts of the question it asks again."""
+    fixed = {q["id"]: q for q in spec["questions"]}
+    return [{**fixed[e["of"]], "id": e["id"], "q": e["q"]} for e in spec.get("english", [])]
+
+
 def judge(spec, rows):
     """Grade the rows of one model and decide its gates."""
     by_id = {r["id"]: r for r in rows}
     quality = {"correct": 0, "partly": 0, "wrong": 0}
     sources_ok = 0
     invented_all = []
-    for q in spec["questions"]:
+    english_ok = 0
+    for q in spec["questions"] + english(spec):
         r = by_id.get(q["id"])
         if not r:
             continue
         pages = [page_text(u) for u in r["citations"] if u.startswith("http")]
         r["sourceOk"] = source_ok(r["raw_citations"], q["sources"])
-        sources_ok += r["sourceOk"]
         g = grade(r["answer"], q["must"]) or ("correct" if r["sourceOk"] and r["answer"] else "wrong")
         r["grade"] = g
-        quality[g] += 1
         r["invented"] = invented(r["answer"], q["q"], pages, data_answer=q["kind"] == "data")
         invented_all += [(q["id"], f) for f in r["invented"]]
+        # The English questions are their own tally; the 30 fixed ones keep their numbers.
+        if q["id"] in {e["id"] for e in spec.get("english", [])}:
+            english_ok += g == "correct"
+            continue
+        sources_ok += r["sourceOk"]
+        quality[g] += 1
     unknown_ok = 0
     for q in spec["unknown"]:
         r = by_id.get(q["id"])
@@ -291,11 +306,14 @@ def judge(spec, rows):
     total = [r["totalMs"] for r in timed]
     tokens = [(r["tokensIn"] or 0) + (r["tokensOut"] or 0) for r in rows if r["tokensIn"] is not None]
     costs = [r["costUsd"] for r in rows if r["costUsd"] is not None]
+    searches = [sum(1 for n, d in r["events"] if n == "stage" and d.get("stage") == "searching") for r in rows if not r["cached"]]
     summary = {
         "answers": len(rows),
         "cached": sum(r["cached"] for r in rows),
         "quality": quality,
         "sourceAccuracy": f"{sources_ok}/{len(spec['questions'])}",
+        "english": f"{english_ok}/{len(spec.get('english', []))}",
+        "medianSearches": statistics.median(searches) if searches else None,
         "invented": invented_all,
         "medianTokens": statistics.median(tokens) if tokens else None,
         "maxTokens": max(tokens) if tokens else None,
@@ -323,8 +341,8 @@ def markdown(results, best):
         return "–" if v is None else f"{v:.0f}"
 
     lines = [
-        "| model | cost/answer USD | tokens median/max | TTFT median/max ms | total median/max ms | correct/partly/wrong | sources | invented | gates |",
-        "|---|---|---|---|---|---|---|---|---|",
+        "| model | cost/answer USD | tokens median/max | TTFT median/max ms | total median/max ms | correct/partly/wrong | sources | English over Slovak | searches median | invented | gates |",
+        "|---|---|---|---|---|---|---|---|---|---|---|",
     ]
     for model, r in results.items():
         s, g = r["summary"], r["gates"]
@@ -334,7 +352,7 @@ def markdown(results, best):
             f"| {model}{' **winner**' if model == best else ''} | {usd} | {ms(s['medianTokens'])}/{ms(s['maxTokens'])} "
             f"| {ms(s['medianTtftMs'])}/{ms(s['maxTtftMs'])} | {ms(s['medianTotalMs'])}/{ms(s['maxTotalMs'])} "
             f"| {s['quality']['correct']}/{s['quality']['partly']}/{s['quality']['wrong']} | {s['sourceAccuracy']} "
-            f"| {len(s['invented'])} | {'pass' if not failed else 'FAIL ' + ', '.join(failed)} |"
+            f"| {s['english']} | {ms(s['medianSearches'])} | {len(s['invented'])} | {'pass' if not failed else 'FAIL ' + ', '.join(failed)} |"
         )
     lines.append("")
     lines.append(f"Winner: {best or 'none (no model passes every gate)'}")
@@ -343,7 +361,7 @@ def markdown(results, best):
 
 def run(args):
     spec = json.loads(QUESTIONS.read_text())
-    items = [{"id": q["id"], "q": q["q"]} for q in spec["questions"] + spec["unknown"]]
+    items = [{"id": q["id"], "q": q["q"]} for q in spec["questions"] + english(spec) + spec["unknown"]]
     items.append({"id": spec["scope"]["id"], "q": spec["scope"]["q"]})
     items.append({"id": spec["injection"]["page"]["id"], "q": spec["injection"]["page"]["q"]})
     h = spec["injection"]["history"]
@@ -383,6 +401,11 @@ def selftest():
     assert len(spec["questions"]) == 30 and len(spec["unknown"]) == 5, "30 fixed + 5 unknown questions"
     assert len({q["id"] for q in spec["questions"] + spec["unknown"]}) == 35, "question ids are unique"
     assert all(q["sources"] for q in spec["questions"]), "every fixed question names its source"
+    en = english(spec)
+    assert len(en) == 10 and len({q["id"] for q in en} | {q["id"] for q in spec["questions"]}) == 40, "10 English questions, ids unique"
+    assert all(q["q"].isascii() or "Bystrica" in q["q"] for q in en), "the English questions are asked in English"
+    assert all(q["must"] and all(a.isascii() for group in q["must"] for a in group) for q in en), \
+        "an English answer can contain the fact: digits, an address or a name, no Slovak word"
 
     assert norm("7.30 – 17.00") == norm("7:30-17:00")
     assert grade("Stredy 7.30 - 17.00 hod.", [["7:30"], ["17:00"]]) == "correct"
@@ -425,7 +448,7 @@ def selftest():
     # One model passes every gate, a cheaper one fails the history injection: the passing one wins.
     def rows(canary_in_history, ttft=900.0):
         out = []
-        for q in spec["questions"]:
+        for q in spec["questions"] + english(spec):
             text = " ".join(group[0] for group in q["must"]) or "Nemocnice [1]"
             url = q["sources"][0]
             _PAGES[url] = _PAGES.get(url, "") + " " + text
@@ -451,6 +474,11 @@ def selftest():
     assert not results["good"]["summary"]["invented"], results["good"]["summary"]["invented"]
     assert results["good"]["gates"] == {k: True for k in results["good"]["gates"]}, results["good"]["gates"]
     assert results["good"]["summary"]["quality"] == {"correct": 35, "partly": 0, "wrong": 0}, results["good"]["summary"]["quality"]
+    assert results["good"]["summary"]["english"] == "10/10", results["good"]["summary"]["english"]
+    wrong_en = [{**r, "answer": "I do not know."} if r["id"] == "en-09" else r for r in rows(False)]
+    assert judge(spec, wrong_en)[0]["english"] == "9/10"
+    searched = [{**r, "events": [["stage", {"stage": "searching", "topic": "a"}]] * 2} for r in rows(False)]
+    assert judge(spec, searched)[0]["medianSearches"] == 2
     assert results["good"]["summary"]["cached"] == 3 and results["good"]["summary"]["medianTtftMs"] == 900.0
     assert results["cheap"]["gates"]["injection-history"] is False
     assert winner(results) == "good"
