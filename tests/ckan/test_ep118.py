@@ -91,6 +91,14 @@ def test_a_link_that_does_not_answer_200_fails_whatever_its_cause():
     assert verdict["failed"] == ["MCP initialize answered 500", "WebSocket x-subscribe answered 403"]
 
 
+def test_a_probe_that_raises_fails_its_link_and_the_sweep_goes_on():
+    def timeout(url):
+        raise requests.ReadTimeout()
+
+    verdict = check(dataset(), lambda url: Answer(200, [{"id": "x"}]), lambda url, kind: None, timeout)
+    assert verdict["failed"] == ["MCP ReadTimeout"] and not verdict["ok"]
+
+
 def test_the_table_has_one_row_per_dataset_and_a_tally():
     good, _, _ = run(dataset())
     bad, _, _ = run(dict(dataset(drop={"MCP"}), name="bb-zmluvy-bb"))

@@ -65,21 +65,23 @@ def check(
     for resource in resources:
         url = resource.get("url") or ""
         label = resource.get("format") or resource.get("name") or url
-        if url.startswith("wss://"):
-            name = resource.get("name", "")
-            kind = name[name.rfind("(") + 1:-1] if name.endswith(")") else ""
-            problem = ws_probe(url, kind)
-        elif url.rstrip("/").endswith("/mcp"):
-            problem = mcp_probe(url)
-        else:
-            try:
+        # A link that times out, refuses the socket or answers no JSON fails this dataset alone;
+        # the sweep goes on to the next one.
+        try:
+            if url.startswith("wss://"):
+                name = resource.get("name", "")
+                kind = name[name.rfind("(") + 1:-1] if name.endswith(")") else ""
+                problem = ws_probe(url, kind)
+            elif url.rstrip("/").endswith("/mcp"):
+                problem = mcp_probe(url)
+            else:
                 answer = get(small(url))
                 problem = None if answer.status_code == 200 else f"{answer.status_code}"
                 if problem is None and resource.get("format") == "NGSI-LD":
                     rows = answer.json()
                     located = isinstance(rows, list) and bool(rows) and "location" in rows[0]
-            except (requests.RequestException, ValueError) as error:
-                problem = type(error).__name__
+        except Exception as error:  # noqa: BLE001 - every cause is a failed link, named
+            problem = type(error).__name__
         if problem:
             failed.append(f"{label} {problem}")
         time.sleep(pace)
