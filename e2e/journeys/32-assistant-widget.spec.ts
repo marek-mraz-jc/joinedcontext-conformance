@@ -1,6 +1,7 @@
 import { test, expect } from '@playwright/test';
 import type { Page } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
+import { shot } from '../audit/shoot';
 
 /**
  * T-3058, T-4138 (API/05 §1.6, AG-114): the public assistant as a visitor meets it: the chat page
@@ -142,10 +143,11 @@ test('the visitor can switch to English, and a stream cut short keeps what it sa
   // The stream ends after its first characters, without an `answer` event.
   await answer(page, stream([['conversation', { id: 'c' }], ['delta', { text: 'Waste is collected' }]]));
   await page.goto(PAGE);
-  const english = page.getByRole('button', { name: 'EN', exact: true });
-  test.skip((await english.count()) === 0, `${PUBLIC_ID} offers one language only`);
-  await english.click();
-  await expect(english).toHaveAttribute('aria-pressed', 'true');
+  // One compact menu, so the header keeps to one row on a phone (T-4253).
+  const language = page.getByRole('combobox', { name: 'Jazyk' });
+  test.skip((await language.count()) === 0, `${PUBLIC_ID} offers one language only`);
+  await language.selectOption('en');
+  await expect(page.getByRole('combobox', { name: 'Language' })).toHaveValue('en');
   expect(await page.locator('html').getAttribute('lang')).toBe('en');
   await page.getByRole('textbox', { name: 'Type your question' }).fill('When is waste collected?');
   await page.getByRole('button', { name: 'Send' }).click();
@@ -167,18 +169,67 @@ test('a progress line says what the assistant searches until the answer starts (
   await expect(page.getByRole('status')).toHaveText('Hľadám v zdrojoch: „otváracie hodiny knižnice“…');
 });
 
-test('a refusal reaches the visitor as the sentence the service wrote', async ({ page }) => {
+test('a spent day is said in the widget words, with no Retry that could only fail (T-4253)', async ({ page }) => {
   await answer(page, stream([
     ['conversation', { id: '6f1c0e9e-3b1a-4d7e-9b51-2c4f8f2a7c11' }],
-    ['error', { status: 429, title: 'Budget Spent', detail: 'Dnešné odpovede tohto asistenta sú vyčerpané.' }],
+    ['error', { status: 429, title: 'Budget Spent', detail: 'The deployment budget is spent.' }],
     ['done', { tokens: 0 }],
   ]));
   await page.goto(PANEL);
   await page.getByRole('textbox', { name: 'Napíšte otázku' }).fill('Ahoj');
   await page.getByRole('button', { name: 'Odoslať' }).click();
-  await expect(page.getByRole('alert')).toHaveText('Dnešné odpovede tohto asistenta sú vyčerpané.');
+  await expect(page.getByRole('alert')).toHaveText('Dnešné odpovede tohto asistenta sú vyčerpané. Znova odpovedá po polnoci UTC.');
+  await expect(page.getByRole('button', { name: 'Skúsiť znova' })).toHaveCount(0);
   await expect(page.getByRole('button', { name: 'Odoslať' })).toBeEnabled();
 });
+
+for (const [width, height] of [[375, 740], [768, 900]] as const) {
+  test(`on a ${width} px screen a visitor sees no data-source picker, suggested questions, and a quiet error with Retry (T-4253)`, async ({ page }) => {
+    await page.setViewportSize({ width, height });
+    const asked: string[] = [];
+    let fails = true;
+    await page.route(`${BASE}/api/v1/d/**/chat`, async (route) => {
+      asked.push(String((route.request().postDataJSON() as { message?: string }).message));
+      if (fails) {
+        await route.fulfill({ status: 503, contentType: 'application/problem+json',
+          body: JSON.stringify({ status: 503, title: 'Model Unavailable', detail: 'proxy: connection refused' }) });
+      } else {
+        await route.fulfill({ status: 200, contentType: 'text/event-stream', body: ANSWER });
+      }
+    });
+    await page.goto(PANEL);
+    // Admin plumbing stays on the admin page: no picker and no Endpoint name for a visitor.
+    await expect(page.getByRole('checkbox')).toHaveCount(0);
+    await expect(page.locator('details.jc-tools')).toHaveCount(0);
+    // One row of header, and questions to start from even where the deployment set none.
+    expect((await page.locator('.jc-head').boundingBox())!.height).toBeLessThan(64);
+    const chips = page.getByRole('list', { name: 'Môžete sa opýtať' }).getByRole('button');
+    expect(await chips.count()).toBeGreaterThanOrEqual(3);
+    await shot(page, { area: 'assistant', route: `/d/${PUBLIC_ID}/widget`, state: 'empty', who: 'anonymous', lang: 'sk' });
+
+    const first = ((await chips.first().textContent()) ?? '').trim();
+    await chips.first().click();
+    const alert = page.getByRole('alert');
+    // The visitor's language, never the service's English detail.
+    await expect(alert).toHaveText('Asistent sa teraz nevie spojiť so svojím modelom. Skúste to o minútu znova.');
+    await shot(page, { area: 'assistant', route: `/d/${PUBLIC_ID}/widget`, state: 'error', who: 'anonymous', lang: 'sk' });
+    fails = false;
+    await page.getByRole('button', { name: 'Skúsiť znova' }).click();
+    await expect(page.locator('.jc-answer strong')).toHaveText('v utorok');
+    expect(asked).toEqual([first, first]);
+    // The failed turn is replaced, not repeated.
+    await expect(page.locator('.jc-you')).toHaveCount(1);
+    await expect(page.getByRole('alert')).toHaveCount(0);
+
+    await page.getByRole('combobox', { name: 'Jazyk' }).selectOption('en');
+    await page.getByRole('button', { name: 'New conversation' }).click();
+    await expect(page.getByRole('list', { name: 'You can ask' }).getByRole('button').first()).toBeVisible();
+    await shot(page, { area: 'assistant', route: `/d/${PUBLIC_ID}/widget`, state: 'empty', who: 'anonymous', lang: 'en' });
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+    const axe = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa']).analyze();
+    expect(axe.violations.map((v) => v.id)).toEqual([]);
+  });
+}
 
 test('one script tag on a city page opens the chat, Escape closes it and focus returns (T-4138)', async ({ page }) => {
   await answer(page);
@@ -277,8 +328,12 @@ test('the catalogue offers its assistant, which opens by keyboard and frames the
   await page.keyboard.press('Enter');
   const frame = page.locator('details.jc-assistant > iframe');
   await expect(frame).toBeVisible();
-  expect(await frame.getAttribute('src')).toMatch(new RegExp(`^${BASE.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}/d/[a-z0-9-]+/widget$`));
-  await expect(page.frameLocator('details.jc-assistant > iframe').getByRole('textbox', { name: /Napíšte otázku|Type your question/ })).toBeVisible();
+  const src = (await frame.getAttribute('src')) ?? '';
+  expect(src).toMatch(new RegExp(`^${BASE.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}/d/[a-z0-9-]+/widget\\?lang=[a-z_-]+$`));
+  // The chat speaks the catalogue page's language, the one its disclosure header is in (T-4253).
+  const lang = new URL(src).searchParams.get('lang') ?? '';
+  const ask = lang.startsWith('en') ? 'Type your question' : lang.startsWith('cs') ? 'Napište otázku' : 'Napíšte otázku';
+  await expect(page.frameLocator('details.jc-assistant > iframe').getByRole('textbox', { name: ask })).toBeVisible();
 });
 
 test('on a phone the open assistant is the whole screen and the closed one covers no last line (T-4204, AG-114)', async ({ page }) => {
