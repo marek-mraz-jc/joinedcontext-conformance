@@ -53,11 +53,36 @@ def run(package, answers=None, ws=None, mcp=None, rows=None):
 def test_a_conforming_dataset_passes_and_every_link_is_read_small():
     verdict, asked, socket = run(dataset())
     assert verdict["ok"], verdict
-    assert ROOT + "file.csv?type=Supplier&limit=1" in asked
+    assert ROOT + "file.csv?type=Supplier" in asked, "a file is read as listed: its route takes no limit"
+    assert ROOT + "ngsi-ld/v1/entities?type=Supplier&q=dataset%3D%3D%22d%22&limit=1" in asked
     assert ROOT + "schema/v1/model.schema.json" in asked, "a model artefact is read whole"
     assert socket == ["Supplier"]
     assert small(ROOT + "odata/v4/Supplier") == ROOT + "odata/v4/Supplier?$top=1"
+    assert small(ROOT + "ogc/features/collections/Supplier/items") == ROOT + "ogc/features/collections/Supplier/items?limit=1"
+    for root in ("ngsi-ld/v1/", "ogc/features/", "odata/v4/", "file.csv", "file.geojson"):
+        assert small(ROOT + root) == ROOT + root, root
     assert small("https://example.org/x.csv") == "https://example.org/x.csv"
+
+
+def test_a_published_endpoint_s_root_links_are_read_as_roots_and_its_first_type_tells_location():
+    """jcctl publishes an Endpoint's roots (`/ngsi-ld/v1/`, `https://…/ws`, `/ogc/features/`), not
+    one type's query: the socket is still opened as a socket and the location is read off the
+    first type's entities."""
+    package = {"name": "helsinki-bikes", "resources": [
+        {"format": "NGSI-LD", "url": ROOT + "ngsi-ld/v1/"},
+        {"format": "WebSocket", "name": "Live updates over WebSocket", "url": ROOT + "ws"},
+        {"format": "OGCFEAT", "url": ROOT + "ogc/features/"}]}
+    asked, socket = [], []
+
+    def get(url):
+        asked.append(url)
+        return Answer(200, [{"id": "x", "location": {}}] if "/entities?" in url else {})
+
+    verdict = check(package, get, lambda url, kind: socket.append((url, kind)), lambda url: None,
+                    first_type=lambda root: "BikeHireDockingStation" if root == ROOT.rstrip("/") else None)
+    assert socket == [(ROOT + "ws", "BikeHireDockingStation")], "an https socket link is not a GET"
+    assert ROOT + "ngsi-ld/v1/entities?type=BikeHireDockingStation&limit=1" in asked and ROOT + "ogc/features/" in asked
+    assert verdict["located"] and verdict["failed"] == []
 
 
 def test_a_missing_mandatory_distribution_fails_and_is_named():

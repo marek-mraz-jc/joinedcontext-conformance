@@ -37,12 +37,27 @@ BANNED = {"ZIP", "ESRI REST", "SHP", "SHAPEFILE"}
 
 
 def small(url: str) -> str:
-    """`url` asking for one row when it reads an Endpoint's rows; a model artefact stays whole."""
+    """`url` asking for one row when it pages an Endpoint's rows (NGSI-LD entities, OGC items, an
+    OData entity set); a service root, a file and a model artefact are read as listed, since a
+    file's gateway route answers 413 to a `limit` it does not take (dev, 2026-10-16)."""
     path = urlsplit(url).path
-    if "/api/endpoint/" not in path or "/schema/" in path:
+    if "/api/endpoint/" not in path:
         return url
     joiner = "&" if "?" in url else "?"
-    return url + joiner + ("$top=1" if "/odata/" in path else "limit=1")
+    if path.endswith("/entities") or path.endswith("/items"):
+        return url + joiner + "limit=1"
+    if "/odata/" in path and not path.endswith(("/odata/v4/", "/odata/v4", "/$metadata")):
+        return url + joiner + "$top=1"
+    return url
+
+
+def entities_of(url: str, first_type: Callable[[str], str | None]) -> str | None:
+    """The one-row entity read behind an NGSI-LD link: the link itself, or for an Endpoint's
+    `/ngsi-ld/v1/` root the entities of its first type; None when it has no type."""
+    if urlsplit(url).path.endswith("/entities"):
+        return url
+    kind = first_type(url.split("/ngsi-ld/")[0])
+    return f"{url.rstrip('/')}/entities?type={kind}" if kind else None
 
 
 def banned(resource: dict[str, Any]) -> bool:
@@ -56,6 +71,7 @@ def check(
     ws_probe: Callable[[str, str], str | None],
     mcp_probe: Callable[[str], str | None],
     pace: float = 0.0,
+    first_type: Callable[[str], str | None] = lambda root: None,
 ) -> dict[str, Any]:
     """The verdict of one dataset: which mandatory formats it lacks, what it lists that is banned,
     which links did not answer, and whether its rows carry a location."""
@@ -68,17 +84,18 @@ def check(
         # A link that times out, refuses the socket or answers no JSON fails this dataset alone;
         # the sweep goes on to the next one.
         try:
-            if url.startswith("wss://"):
+            if url.startswith("wss://") or resource.get("format") == "WebSocket" or url.rstrip("/").endswith("/ws"):
                 name = resource.get("name", "")
                 kind = name[name.rfind("(") + 1:-1] if name.endswith(")") else ""
-                problem = ws_probe(url, kind)
+                problem = ws_probe(url, kind or first_type(url.rstrip("/").removesuffix("/ws")) or "")
             elif url.rstrip("/").endswith("/mcp"):
                 problem = mcp_probe(url)
             else:
                 answer = get(small(url))
                 problem = None if answer.status_code == 200 else f"{answer.status_code}"
                 if problem is None and resource.get("format") == "NGSI-LD":
-                    rows = answer.json()
+                    one = entities_of(url, first_type)
+                    rows = get(small(one)).json() if one else []
                     located = isinstance(rows, list) and bool(rows) and "location" in rows[0]
         except Exception as error:  # noqa: BLE001 - every cause is a failed link, named
             problem = type(error).__name__
@@ -127,11 +144,18 @@ def main(argv: list[str]) -> int:
     parser.add_argument("--pace", type=float, default=0.3, help="seconds between calls")
     parser.add_argument("organizations", nargs="*")
     args = parser.parse_args(argv)
-    from surfaces import answers_mcp, answers_ws
+    from surfaces import answers_mcp, answers_ws, first_type
 
     reader = Reader(args.ckan)
-    verdicts = [check(p, lambda url: reader.http.get(url, timeout=TIMEOUT),
-                      lambda url, kind: answers_ws(reader, url, kind), answers_mcp, args.pace)
+    def get(url: str) -> requests.Response:
+        # Streamed and closed after the status: a file link is checked, never downloaded.
+        with reader.http.get(url, timeout=TIMEOUT, stream=True) as answer:
+            if "json" in answer.headers.get("content-type", "") and "/file." not in url:
+                answer.content  # noqa: B018 - an entity page is one row, read for its location
+            return answer
+
+    verdicts = [check(p, get, lambda url, kind: answers_ws(reader, url, kind), answers_mcp, args.pace,
+                      lambda root: first_type(reader, root))
                 for p in packages(reader, args.organizations)]
     print(table(verdicts))
     return 0 if verdicts and all(v["ok"] for v in verdicts) else 1
