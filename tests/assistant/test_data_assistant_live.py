@@ -76,3 +76,46 @@ def test_the_owners_data_questions_name_the_publisher(chat_url, question, publis
 def test_another_site_is_refused(chat_url):
     status, _ = ask(chat_url, {"message": "Dobrý deň"}, origin="https://www.zilina.sk")
     assert status == 403
+
+
+# T-4359: the open-data set in the hourly batch, on an eval copy of `data` so the visitors' day is
+# never spent. Four questions an hour, the chunk turning with the UTC hour, cover the whole set
+# (the unknowable ones too) about twice a day at about two cents an hour; JC_OPENDATA_ALL=1 asks all of it.
+import json as _json
+from datetime import datetime, timezone
+
+import eval_opendata
+
+SET = _json.loads(eval_opendata.QUESTIONS.read_text())
+CHUNK = 4
+
+
+def _this_hour():
+    if os.environ.get("JC_OPENDATA_ALL") == "1":
+        return SET["questions"]
+    chunks = [SET["questions"][i:i + CHUNK] for i in range(0, len(SET["questions"]), CHUNK)]
+    return chunks[datetime.now(timezone.utc).hour % len(chunks)]
+
+
+@pytest.mark.parametrize("q", _this_hour(), ids=lambda q: q["id"])
+def test_the_open_data_set_answers_the_live_value(q):
+    if not BASE:
+        pytest.fail("JC_ASSISTANT_URL is not set: source tests/dev.env.sh assistant")
+    public_id = os.environ.get("JC_OPENDATA_EVAL_ID", "data-eval-gemini")
+    assert eval_opendata.eval_deployment(public_id), public_id
+    truth = eval_opendata.read_truth(q)
+    events, ttft, total = eval_opendata.ask(BASE, public_id, ORIGIN, q["q"], q.get("history", ()))
+    row = eval_opendata.record(q, events, ttft, total, "", {})
+    assert not row["error"], row["error"]
+    if q["kind"] == "unknowable":
+        grade, invented = eval_opendata.grade_unknowable(q, truth, row, SET["known"])
+        assert not invented, (row["answer"], invented)
+        wrong_number = False
+    else:
+        grade, wrong_number = eval_opendata.grade(q, truth, row["answer"], SET["canary"])
+    print(f"{q['id']} {grade} ttft {ttft} total {total}: {row['answer'][:200]!r} (truth {truth})")
+    assert not eval_opendata.has(row["answer"], SET["canary"]), row["answer"]
+    outside = [e for e in eval_opendata.named_endpoints(row["events"]) if e not in eval_opendata.catalogue_endpoints()]
+    assert not outside, outside
+    assert not wrong_number, (row["answer"], truth)
+    assert grade == "correct", (row["answer"], truth)
