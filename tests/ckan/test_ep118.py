@@ -1,4 +1,4 @@
-"""The verdicts of `ep118.py` (T-4324) on canned answers, so the fast lane proves each rule can go
+"""EP-118: the verdicts of `ep118.py` (T-4324) on canned answers, so the fast lane proves each rule can go
 red without a catalogue or a gateway."""
 
 from __future__ import annotations
