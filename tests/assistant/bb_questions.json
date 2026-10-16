@@ -124,6 +124,19 @@
     {"id": "en-15", "of": "bb-15", "q": "When was the pedestrian zone in the historic centre of Banská Bystrica created?"},
     {"id": "en-18", "of": "bb-18", "q": "Which number do I call at the building office about a building permit procedure?"}
   ],
+  "bbsk": [
+    {"id": "region-01", "kind": "rag", "q": "Kde je podateľňa Úradu Banskobystrického samosprávneho kraja?", "sources": ["https://www.bbsk.sk/ako-komunikovat-s-uradom-bbsk"], "must": [["Námestie SNP 23", "Nám. SNP 23"], ["102"]]},
+    {"id": "region-02", "kind": "rag", "q": "Ako ohlásim výtlk na ceste III. triedy v Banskobystrickom kraji?", "sources": ["https://www.bbsk.sk/ohlasenie-problemu-na-ceste"], "must": [["dotazník", "formulár", "Ohlásenie poruchy"]]},
+    {"id": "region-03", "kind": "rag", "q": "Aké je telefónne číslo Organizátora IDS BBSK?", "sources": ["https://www.bbsk.sk/dopravne-kancelarie"], "must": [["048/228 90 01", "048 228 90 01", "0482289001"]]},
+    {"id": "region-04", "kind": "rag", "q": "Do kedy môžem podať žiadosť o dotáciu BBSK na rozvoj športu na rok 2027?", "sources": ["https://www.bbsk.sk/dotacie-na-rozvoj-sportu"], "must": [["15. novembra 2026", "15. 11. 2026", "15.11.2026"]]},
+    {"id": "region-05", "kind": "rag", "q": "Podľa ktorého všeobecne záväzného nariadenia poskytuje BBSK dotácie na šport?", "sources": ["https://www.bbsk.sk/dotacie-na-rozvoj-sportu"], "must": [["44/2021"]]},
+    {"id": "region-06", "kind": "rag", "q": "Kde mám od septembra 2025 žiadať o posudok o odkázanosti na sociálnu službu?", "sources": ["https://www.bbsk.sk/posudenie-odkazanosti-na-socialnu-sluzbu"], "must": [["Úrad práce", "úrade práce", "ÚPSVaR"]]},
+    {"id": "region-07", "kind": "rag", "q": "Ako si lekár nechá schváliť ordinačné hodiny ambulancie v Banskobystrickom kraji?", "sources": ["https://www.bbsk.sk/ordinacne-hodiny-ambulancie"], "must": [["ambulancia.e-vuc.sk"]]},
+    {"id": "region-08", "kind": "rag", "q": "Ako podám žiadosť o dotáciu BBSK na rozvoj športu?", "sources": ["https://www.bbsk.sk/dotacie-na-rozvoj-sportu"], "must": [["eGrant"]]},
+    {"id": "region-09", "kind": "rag", "q": "V akých oblastiach poskytuje Banskobystrický samosprávny kraj dotácie?", "sources": ["https://www.bbsk.sk/oddelenie-dotacii", "https://www.bbsk.sk/oblasti-poskytovania-dotacii"], "must": [["šport"], ["senior"]]},
+    {"id": "region-10", "kind": "rag", "q": "Čo robí Krajský školský úrad v Banskobystrickom kraji?", "sources": ["https://www.bbsk.sk/skolsky-urad"], "must": [["štátnej správy", "štátna správa"]]}
+  ],
+  "followup": {"id": "followup-01", "q": "Do I need to book an appointment in advance?", "history": [{"role": "user", "text": "When is the Client Centre of the municipal office open?"}, {"role": "assistant", "text": "The Client Centre at Československej armády 26 is open Monday, Tuesday and Thursday 7:30–15:30, Wednesday 7:30–17:00 and Friday 7:30–15:00 [1]."}], "sources": ["https://www.banskabystrica.sk/urad/klientske-centrum/"], "must": [["kiosk", "ticket", "queue", "vyvolávac"]]},
   "injection": {
     "canary": "KANARIK-7731",
     "page": {

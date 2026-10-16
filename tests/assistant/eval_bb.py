@@ -25,7 +25,10 @@ Where each number comes from (the task's "Data sources"):
 - English over Slovak (T-4259): the `english` questions ask a fixed question's fact in English and
   are graded on its `must` and `sources` (`of` names it); `english` counts the correct ones and
   `medianSearches` is the median count of `searching` stage events per question, the queries the
-  retrieval loop ran.
+  retrieval loop ran;
+- the region (T-4278): the `bbsk` questions are graded on their `must`, and `bbsk` counts the
+  correct ones whose `citations` event names a page of www.bbsk.sk; the `followup` question is
+  asked with its `history` (the turn before it) and graded on its `must`.
 
 Exit 0 when at least one model passes every gate; 1 otherwise; 2 on a usage error.
 `--selftest` checks the grading against canned answers with no network.
@@ -251,6 +254,12 @@ def record(item, events, ttft, total, model, prices):
     }
 
 
+def on_bbsk(url):
+    """Whether a cited address is a page of the region's site, www.bbsk.sk or bbsk.sk."""
+    host = (re.match(r"https?://([^/?#:]+)", url or "") or [None, ""])[1].lower()
+    return host in ("bbsk.sk", "www.bbsk.sk")
+
+
 def english(spec):
     """The English questions, each with the kind, sources and facts of the question it asks again."""
     fixed = {q["id"]: q for q in spec["questions"]}
@@ -280,6 +289,22 @@ def judge(spec, rows):
             continue
         sources_ok += r["sourceOk"]
         quality[g] += 1
+    # The region's own questions (T-4278): correct and backed by a page of bbsk.sk, their own tally.
+    bbsk_ok = 0
+    for q in spec.get("bbsk", []):
+        r = by_id.get(q["id"])
+        if not r:
+            continue
+        r["sourceOk"] = source_ok(r["raw_citations"], q["sources"])
+        r["grade"] = grade(r["answer"], q["must"])
+        bbsk_ok += r["grade"] == "correct" and any(on_bbsk(u) for u in r["citations"])
+    # A follow-up asked with the turn before it (T-4278): graded on its own facts.
+    f = spec.get("followup")
+    followup = None
+    if f and by_id.get(f["id"]):
+        r = by_id[f["id"]]
+        r["sourceOk"] = source_ok(r["raw_citations"], f["sources"])
+        followup = r["grade"] = grade(r["answer"], f["must"])
     unknown_ok = 0
     for q in spec["unknown"]:
         r = by_id.get(q["id"])
@@ -313,6 +338,8 @@ def judge(spec, rows):
         "quality": quality,
         "sourceAccuracy": f"{sources_ok}/{len(spec['questions'])}",
         "english": f"{english_ok}/{len(spec.get('english', []))}",
+        "bbsk": f"{bbsk_ok}/{len(spec.get('bbsk', []))}",
+        "followup": followup,
         "medianSearches": statistics.median(searches) if searches else None,
         "invented": invented_all,
         "medianTokens": statistics.median(tokens) if tokens else None,
@@ -341,8 +368,8 @@ def markdown(results, best):
         return "–" if v is None else f"{v:.0f}"
 
     lines = [
-        "| model | cost/answer USD | tokens median/max | TTFT median/max ms | total median/max ms | correct/partly/wrong | sources | English over Slovak | searches median | invented | gates |",
-        "|---|---|---|---|---|---|---|---|---|---|---|",
+        "| model | cost/answer USD | tokens median/max | TTFT median/max ms | total median/max ms | correct/partly/wrong | sources | English over Slovak | BBSK with bbsk.sk | follow-up | searches median | invented | gates |",
+        "|---|---|---|---|---|---|---|---|---|---|---|---|---|",
     ]
     for model, r in results.items():
         s, g = r["summary"], r["gates"]
@@ -352,7 +379,7 @@ def markdown(results, best):
             f"| {model}{' **winner**' if model == best else ''} | {usd} | {ms(s['medianTokens'])}/{ms(s['maxTokens'])} "
             f"| {ms(s['medianTtftMs'])}/{ms(s['maxTtftMs'])} | {ms(s['medianTotalMs'])}/{ms(s['maxTotalMs'])} "
             f"| {s['quality']['correct']}/{s['quality']['partly']}/{s['quality']['wrong']} | {s['sourceAccuracy']} "
-            f"| {s['english']} | {ms(s['medianSearches'])} | {len(s['invented'])} | {'pass' if not failed else 'FAIL ' + ', '.join(failed)} |"
+            f"| {s['english']} | {s['bbsk']} | {s['followup'] or '–'} | {ms(s['medianSearches'])} | {len(s['invented'])} | {'pass' if not failed else 'FAIL ' + ', '.join(failed)} |"
         )
     lines.append("")
     lines.append(f"Winner: {best or 'none (no model passes every gate)'}")
@@ -361,7 +388,10 @@ def markdown(results, best):
 
 def run(args):
     spec = json.loads(QUESTIONS.read_text())
-    items = [{"id": q["id"], "q": q["q"]} for q in spec["questions"] + english(spec) + spec["unknown"]]
+    items = [{"id": q["id"], "q": q["q"]} for q in spec["questions"] + english(spec) + spec.get("bbsk", []) + spec["unknown"]]
+    if spec.get("followup"):
+        f = spec["followup"]
+        items.append({"id": f["id"], "q": f["q"], "history": f["history"]})
     items.append({"id": spec["scope"]["id"], "q": spec["scope"]["q"]})
     items.append({"id": spec["injection"]["page"]["id"], "q": spec["injection"]["page"]["q"]})
     h = spec["injection"]["history"]
@@ -406,6 +436,14 @@ def selftest():
     assert all(q["q"].isascii() or "Bystrica" in q["q"] for q in en), "the English questions are asked in English"
     assert all(q["must"] and all(a.isascii() for group in q["must"] for a in group) for q in en), \
         "an English answer can contain the fact: digits, an address or a name, no Slovak word"
+    bbsk = spec["bbsk"]
+    assert len(bbsk) == 10 and all(q["must"] and q["sources"] and all(on_bbsk(u) for u in q["sources"]) for q in bbsk), \
+        "10 region questions, each with its facts and a bbsk.sk page"
+    ids = [q["id"] for q in spec["questions"] + en + bbsk + spec["unknown"]] + [spec["followup"]["id"]]
+    assert len(ids) == len(set(ids)), "question ids are unique"
+    assert [t["role"] for t in spec["followup"]["history"]] == ["user", "assistant"]
+    assert on_bbsk("https://www.bbsk.sk/dotacie") and on_bbsk("https://bbsk.sk/")
+    assert not on_bbsk("https://www.banskabystrica.sk/bbsk.sk/") and not on_bbsk("https://evil.bbsk.sk.example/") and not on_bbsk(None)
 
     assert norm("7.30 – 17.00") == norm("7:30-17:00")
     assert grade("Stredy 7.30 - 17.00 hod.", [["7:30"], ["17:00"]]) == "correct"
@@ -448,7 +486,7 @@ def selftest():
     # One model passes every gate, a cheaper one fails the history injection: the passing one wins.
     def rows(canary_in_history, ttft=900.0):
         out = []
-        for q in spec["questions"] + english(spec):
+        for q in spec["questions"] + english(spec) + spec["bbsk"] + [spec["followup"]]:
             text = " ".join(group[0] for group in q["must"]) or "Nemocnice [1]"
             url = q["sources"][0]
             _PAGES[url] = _PAGES.get(url, "") + " " + text
@@ -475,6 +513,12 @@ def selftest():
     assert results["good"]["gates"] == {k: True for k in results["good"]["gates"]}, results["good"]["gates"]
     assert results["good"]["summary"]["quality"] == {"correct": 35, "partly": 0, "wrong": 0}, results["good"]["summary"]["quality"]
     assert results["good"]["summary"]["english"] == "10/10", results["good"]["summary"]["english"]
+    assert results["good"]["summary"]["bbsk"] == "10/10" and results["good"]["summary"]["followup"] == "correct"
+    # A right region answer that cites the city's site alone does not count as the region's.
+    city = [{**r, "citations": ["https://www.banskabystrica.sk/"]} if r["id"] == "region-03" else r for r in rows(False)]
+    assert judge(spec, city)[0]["bbsk"] == "9/10"
+    lost = [{**r, "answer": "Neviem."} if r["id"] == "followup-01" else r for r in rows(False)]
+    assert judge(spec, lost)[0]["followup"] == "wrong"
     wrong_en = [{**r, "answer": "I do not know."} if r["id"] == "en-09" else r for r in rows(False)]
     assert judge(spec, wrong_en)[0]["english"] == "9/10"
     searched = [{**r, "events": [["stage", {"stage": "searching", "topic": "a"}]] * 2} for r in rows(False)]
