@@ -128,8 +128,9 @@ def test_the_launcher_and_scripts_carry_no_secret_and_no_other_host(
         found = SECRET_SHAPES.search(answer.text)
         assert not found, f"{path} carries {found.group(0)[:12]}…"
         # A hostname is letters, digits, dots and dashes: `assistant.{domain}` in the usage comment
-        # is a placeholder nobody can reach, and stays out; any real host is caught.
-        hosts = set(re.findall(r"https?://([A-Za-z0-9.-]+)(?![A-Za-z0-9.{-])", answer.text))
+        # is a placeholder nobody can reach, and stays out; any real host is caught, an IPv6
+        # literal as "[".
+        hosts = set(re.findall(r"https?://([A-Za-z0-9.\[-]+)(?![A-Za-z0-9.{\[-])", answer.text))
         assert hosts <= {"www.w3.org"}, f"{path} names other hosts: {sorted(hosts)}"
 
 
