@@ -12,8 +12,13 @@ import AxeBuilder from '@axe-core/playwright';
  */
 const BASE = (process.env.JC_ASSISTANT_URL || 'https://assistant.dev.joinedcontext.com').replace(/\/$/, '');
 const PUBLIC_ID = process.env.JC_ASSISTANT_PUBLIC_ID || 'banskabystrica';
-/** An origin the deployment lists in `allowedOrigins`: the launcher's host page is served from it. */
-const SITE = (process.env.JC_ASSISTANT_SITE || 'https://www.banskabystrica.sk').replace(/\/$/, '');
+/**
+ * An origin the seeded deployment lists in `allowedOrigins` (deployment seed
+ * banskabystrica-assistant-public.yaml): the launcher's host page is served from it, answered by
+ * `page.route`, so nothing reaches it. Any other origin is refused by the widget's
+ * `frame-ancestors` (T-4232).
+ */
+const SITE = (process.env.JC_ASSISTANT_SITE || 'https://dev.joinedcontext.com').replace(/\/$/, '');
 const PAGE = `${BASE}/d/${PUBLIC_ID}`;
 const PANEL = `${PAGE}/widget`;
 
