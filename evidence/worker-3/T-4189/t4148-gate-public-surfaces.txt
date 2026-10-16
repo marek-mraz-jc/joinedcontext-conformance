@@ -1,0 +1,48 @@
+============================= test session starts ==============================
+platform linux -- Python 3.11.2, pytest-9.1.1, pluggy-1.7.0 -- /usr/bin/python3
+rootdir: /workspace/agents/worker-3/joinedcontext-conformance
+collecting ... collected 11 items
+
+tests/security/test_public_assistant_surfaces.py::test_internal_paths_are_not_routed_from_outside PASSED [  9%]
+tests/security/test_public_assistant_surfaces.py::test_a_foreign_origin_is_refused_its_preflight PASSED [ 18%]
+tests/security/test_public_assistant_surfaces.py::test_the_widget_page_may_be_framed_only_by_its_allowed_origins PASSED [ 27%]
+tests/security/test_public_assistant_surfaces.py::test_the_full_page_is_held_as_the_panel PASSED [ 36%]
+tests/security/test_public_assistant_surfaces.py::test_the_launcher_and_scripts_carry_no_secret_and_no_other_host FAILED [ 45%]
+tests/security/test_public_assistant_surfaces.py::test_an_unpublished_id_has_no_page_no_panel_and_no_launcher PASSED [ 54%]
+tests/security/test_public_assistant_surfaces.py::test_an_overlong_question_is_refused_before_anything_is_spent PASSED [ 63%]
+tests/security/test_public_assistant_surfaces.py::test_a_forged_forwarded_for_buys_no_new_rate_window PASSED [ 72%]
+tests/security/test_public_assistant_surfaces.py::test_anonymous_mcp_offers_read_only_tools PASSED [ 81%]
+tests/security/test_public_assistant_surfaces.py::test_anonymous_mcp_refuses_a_write_it_does_not_offer PASSED [ 90%]
+tests/security/test_public_assistant_surfaces.py::test_ckan_does_not_list_its_accounts_to_anyone PASSED [100%]
+
+=================================== FAILURES ===================================
+_______ test_the_launcher_and_scripts_carry_no_secret_and_no_other_host ________
+
+assistant = 'https://assistant.dev.joinedcontext.com'
+public_id = 'banskabystrica'
+
+    def test_the_launcher_and_scripts_carry_no_secret_and_no_other_host(
+        assistant: str, public_id: str
+    ) -> None:
+        """The one-line `embed.js` a site includes, and the scripts the page loads, name no token,
+        no cluster address and no host but their own."""
+        for path in [f"/d/{public_id}/embed.js", "/d/widget.js"]:
+            answer = requests.get(assistant + path, headers=AGENT, timeout=TIMEOUT)
+            assert answer.status_code == 200, f"{path}: {answer.status_code}"
+            assert answer.headers.get("x-content-type-options") == "nosniff", path
+            assert "javascript" in answer.headers.get("content-type", ""), path
+            found = SECRET_SHAPES.search(answer.text)
+            assert not found, f"{path} carries {found.group(0)[:12]}…"
+            hosts = set(re.findall(r"https?://([^/\"'\s`]+)", answer.text))
+>           assert hosts <= {"www.w3.org"}, f"{path} names other hosts: {sorted(hosts)}"
+E           AssertionError: /d/banskabystrica/embed.js names other hosts: ['assistant.{domain}', 'www.w3.org']
+E           assert {'assistant.{... 'www.w3.org'} <= {'www.w3.org'}
+E             
+E             Extra items in the left set:
+E             'assistant.{domain}'
+
+tests/security/test_public_assistant_surfaces.py:131: AssertionError
+=========================== short test summary info ============================
+FAILED tests/security/test_public_assistant_surfaces.py::test_the_launcher_and_scripts_carry_no_secret_and_no_other_host
+=================== 1 failed, 10 passed in 65.25s (0:01:05) ====================
+1 passed in 0.34s

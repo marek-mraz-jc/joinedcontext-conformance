@@ -1,0 +1,157 @@
+{
+  "connect-banskabystrica": {
+    "status": 200,
+    "claudeCode": "claude mcp add --transport http banskabystrica-otvorene-data https://dev.joinedcontext.com/api/mcp/banskabystrica/otvorene-data",
+    "url": "https://dev.joinedcontext.com/api/mcp/banskabystrica/otvorene-data",
+    "chars": 4220
+  },
+  "connect-bbsk": {
+    "status": 200,
+    "claudeCode": "claude mcp add --transport http bbsk-otvorene-data https://dev.joinedcontext.com/api/mcp/bbsk/otvorene-data",
+    "url": "https://dev.joinedcontext.com/api/mcp/bbsk/otvorene-data",
+    "chars": 4257
+  },
+  "sources": {
+    "status": 200,
+    "body": {
+      "items": [
+        {
+          "ckanInstanceRef": null,
+          "contextSpaces": [],
+          "documents": 0,
+          "embedded": 24,
+          "exclude": [],
+          "failed": 0,
+          "include": [],
+          "job": {
+            "attempts": 0,
+            "error": null,
+            "finishedAt": "2026-10-16T01:07:13Z",
+            "startedAt": "2026-10-16T01:07:12Z",
+            "state": "done"
+          },
+          "lastCrawl": "2026-10-16T01:07:13Z",
+          "organizations": [],
+          "pages": 5,
+          "pagesIncluded": 5,
+          "passages": 24,
+          "pending": 0,
+          "schedule": "7 * * * *",
+          "source": "catalogue",
+          "startUrls": [],
+          "state": "crawled",
+          "type": "catalogue",
+          "visibility": "public"
+        },
+        {
+          "ckanInstanceRef": "banskabystrica",
+          "contextSpaces": [],
+          "documents": 0,
+          "embedded": 82,
+          "exclude": [],
+          "failed": 0,
+          "include": [],
+          "job": {
+            "attempts": 0,
+            "error": null,
+            "finishedAt": null,
+            "startedAt": "2026-10-15T21:08:09Z",
+            "state": "done"
+          },
+          "lastCrawl": "2026-10-15T21:08:09Z",
+          "organizations": [
+            "banskabystrica",
+            "bbsk"
+          ],
+          "pages": 12,
+          "pagesIncluded": 12,
+          "passages": 82,
+          "pending": 0,
+          "schedule": "40 3 * * *",
+          "source": "data-portal",
+          "startUrls": [],
+          "state": "crawled",
+          "type": "ckan",
+          "visibility": "public"
+        },
+        {
+          "ckanInstanceRef": null,
+          "contextSpaces": [],
+          "documents": 947,
+          "embedded": 1805,
+          "exclude": [],
+          "failed": 52,
+          "include": [],
+          "job": {
+            "attempts": 0,
+            "error": null,
+            "finishedAt": null,
+            "startedAt": "2026-10-11T03:00:32Z",
+            "state": "done"
+          },
+          "lastCrawl": "2026-10-11T03:14:14Z",
+          "organizations": [],
+          "pages": 666,
+          "pagesIncluded": 530,
+          "passages": 1805,
+          "pending": 0,
+          "schedule": "0 3 * * 0",
+          "source": "web",
+          "startUrls": [
+            "https://www.banskabystrica.sk/"
+          ],
+          "state": "crawled",
+          "type": "website",
+          "visibility": "public"
+        },
+        {
+          "ckanInstanceRef": null,
+          "contextSpaces": [],
+          "documents": 343,
+          "embedded": 709,
+          "exclude": [],
+          "failed": 10,
+          "include": [],
+          "job": {
+            "attempts": 0,
+            "error": null,
+            "finishedAt": null,
+            "startedAt": "2026-10-15T21:04:00Z",
+            "state": "running"
+          },
+          "lastCrawl": null,
+          "organizations": [],
+          "pages": 84,
+          "pagesIncluded": 82,
+          "passages": 709,
+          "pending": 0,
+          "schedule": "30 3 * * 0",
+          "source": "web-bbsk",
+          "startUrls": [
+            "https://www.bbsk.sk/"
+          ],
+          "state": "crawled",
+          "type": "website",
+          "visibility": "public"
+        }
+      ]
+    }
+  },
+  "usage": {
+    "status": 200,
+    "body": {
+      "items": [
+        {
+          "day": "2026-10-15",
+          "notes": 0,
+          "requests": 13,
+          "thumbsDown": 0,
+          "thumbsUp": 0,
+          "tokensIn": 0,
+          "tokensOut": 0
+        }
+      ]
+    }
+  },
+  "uploadRoute": 409
+}

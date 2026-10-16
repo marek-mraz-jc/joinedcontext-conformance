@@ -1,0 +1,12 @@
+{
+  "endpoint_url": "https://dev.joinedcontext.com/api/endpoint/rpfqszwlbp5bonvg7kckhdsne5qedjor/mcp",
+  "id": "urn:ngsi-ld:AirQualityObserved:hel.fi:banskabystrica-verejne:eea-SK0263A",
+  "list": {
+    "error": "ReadTimeout",
+    "s": 40.1
+  },
+  "call": {
+    "error": "ReadTimeout",
+    "s": 40.2
+  }
+}
