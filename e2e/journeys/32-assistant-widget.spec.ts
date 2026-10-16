@@ -91,6 +91,32 @@ for (const [name, width, height] of [['phone', 375, 740], ['tablet', 768, 900], 
   });
 }
 
+test('a number over time is drawn as a small chart under its table, hidden from a screen reader (T-4198)', async ({ page }) => {
+  await answer(page, stream([
+    ['conversation', { id: '6f1c0e9e-3b1a-4d7e-9b51-2c4f8f2a7c11' }],
+    ['data', {
+      endpoint: 'ovzdusie-verejne',
+      type: 'AirQualityObserved',
+      columns: ['dateObserved', 'pm10'],
+      rows: [['2026-10-15T10:00:00Z', 21], ['2026-10-15T09:00:00Z', 18], ['2026-10-15T08:00:00Z', 'n/a']],
+    }],
+    ['answer', { text: 'PM10 je 21.' }],
+    ['done', { tokens: 9 }],
+  ]));
+  await page.goto(PAGE);
+  await page.getByRole('textbox', { name: 'Napíšte otázku' }).fill('Aké je PM10?');
+  await page.getByRole('textbox', { name: 'Napíšte otázku' }).press('Enter');
+  const log = page.getByRole('list', { name: 'Asistent' });
+  await expect(log.getByRole('cell', { name: '2026-10-15T10:00:00Z' })).toBeVisible();
+  const chart = log.locator('svg.jc-data-chart');
+  await expect(chart).toBeVisible();
+  await expect(chart).toHaveAttribute('aria-hidden', 'true');
+  // The row whose value is no number stays in the table and out of the line.
+  expect((await chart.locator('polyline').getAttribute('points'))?.split(' ')).toHaveLength(2);
+  const axe = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa']).analyze();
+  expect(axe.violations.map((v) => v.id)).toEqual([]);
+});
+
 test('a suggested question asks itself, and a new conversation starts empty (T-4138)', async ({ page }) => {
   const asked = await answer(page);
   await page.goto(PAGE);
@@ -248,4 +274,31 @@ test('the catalogue offers its assistant, which opens by keyboard and frames the
   await expect(frame).toBeVisible();
   expect(await frame.getAttribute('src')).toMatch(new RegExp(`^${BASE.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}/d/[a-z0-9-]+/widget$`));
   await expect(page.frameLocator('details.jc-assistant > iframe').getByRole('textbox', { name: /Napíšte otázku|Type your question/ })).toBeVisible();
+});
+
+test('on a phone the open assistant is the whole screen and the closed one covers no last line (T-4204, AG-114)', async ({ page }) => {
+  await page.setViewportSize({ width: 375, height: 740 });
+  await page.goto(`${CATALOGUE}/`);
+  const offer = page.locator('details.jc-assistant > summary');
+
+  // Closed: scrolled to the end, the page's last link is the element under its own centre.
+  await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight));
+  const last = page.locator('footer a:visible').last();
+  const box = await last.boundingBox();
+  expect(box).not.toBeNull();
+  const hit = await page.evaluate(
+    ([x, y]) => (document.elementFromPoint(x, y) as HTMLElement | null)?.closest('a')?.outerHTML ?? null,
+    [box!.x + box!.width / 2, box!.y + box!.height / 2],
+  );
+  expect(hit).toBe(await last.evaluate((a) => a.outerHTML));
+
+  // Open: the disclosure fills the viewport, the page behind is inert, Escape closes it.
+  await offer.focus();
+  await page.keyboard.press('Enter');
+  const panel = await page.locator('details.jc-assistant').boundingBox();
+  expect(panel).toEqual({ x: 0, y: 0, width: 375, height: 740 });
+  expect(await page.locator('header').first().evaluate((el) => el.closest('[inert]') !== null)).toBe(true);
+  await page.keyboard.press('Escape');
+  await expect(page.locator('details.jc-assistant')).not.toHaveAttribute('open', '');
+  await expect(offer).toBeFocused();
 });
