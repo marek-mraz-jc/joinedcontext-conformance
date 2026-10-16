@@ -2,8 +2,7 @@
   "types": {
     "AdministrativeArea": {"maxAge": "11d"},
     "Bridge": {"maxAge": "11d"},
-    "Hospital": {"maxAge": "11d"},
-    "PublicOrganization": {"maxAge": "11d"},
-    "SocialService": {"maxAge": "11d"}
+    "PointOfInterest": {"maxAge": "11d"},
+    "PublicOrganization": {"maxAge": "11d"}
   }
 }
