@@ -122,10 +122,14 @@ Random Entity Id
 
 Build Sensor Entity
     [Documentation]    Build a JSON-LD AirQualityObserved entity with varied property types, geo location, and diacritics.
+    ...                It carries `dateObserved`, which the Smart Data Model AirQualityObserved, and so
+    ...                the ovzdusie space's model on dev, requires (T-4369).
     [Arguments]    ${id}    ${type}=AirQualityObserved    ${lon}=19.15    ${lat}=48.74    ${pm10}=28.5    ${desc}=Banská Bystrica - Námestie SNP
+    ${observed}=    Get ISO Timestamp
     ${payload}=    Create Dictionary
     ...    id=${id}
     ...    type=${type}
+    ...    dateObserved=${{ {'type': 'Property', 'value': '${observed}'} }}
     ...    pm10=${{ {'type': 'Property', 'value': ${pm10}} }}
     ...    description=${{ {'type': 'Property', 'value': '${desc}'} }}
     ...    location=${{ {'type': 'GeoProperty', 'value': {'type': 'Point', 'coordinates': [${lon}, ${lat}]}} }}

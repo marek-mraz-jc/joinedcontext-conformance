@@ -133,10 +133,13 @@ CIM009 6.5.3.4 Merge Entity Returns 204
 
 CIM009 6.5.3.3 Replace Entity Returns 204
     [Documentation]    Clause 6.5.3.3: PUT /entities/{entityId} replaces existing entity
-    ...                attributes with the provided payload and returns 204 No Content.
+    ...                attributes with the provided payload and returns 204 No Content. The
+    ...                replacement keeps the `dateObserved` the space's model requires (T-4369).
+    ${observed}=    Get ISO Timestamp
     ${replaced}=    Create Dictionary
     ...    id=${SETUP_ID_2}
     ...    type=AirQualityObserved
+    ...    dateObserved=${{ {'type': 'Property', 'value': '${observed}'} }}
     ...    co2=${{ {'type': 'Property', 'value': 415.2} }}
     ...    @context=${CORE_CONTEXT}
     ${headers}=    NGSI-LD Headers    content_type=application/ld+json
@@ -338,10 +341,7 @@ CIM009 6.3.5 Context In Body With Content-Type Application Json Is BadRequestDat
     [Documentation]    Clause 6.3.5: For Content-Type application/json, if the request payload
     ...                body contains an @context term, an error of type BadRequestData shall be raised.
     ${id}=    Random Entity Id
-    ${payload}=    Create Dictionary
-    ...    id=${id}
-    ...    type=AirQualityObserved
-    ...    @context=${CORE_CONTEXT}
+    ${payload}=    Build Sensor Entity    ${id}
     ${headers}=    NGSI-LD Headers    content_type=application/json
     ${response}=    POST On Session    ${SESSION}    /entities    json=${payload}    headers=${headers}    expected_status=any
     Should Be NGSI-LD Error    ${response}    400    BadRequestData
@@ -368,7 +368,7 @@ CIM009 6.4.3.1 Missing Type In Payload Is BadRequestData 400
 CIM009 6.4.3.1 Non URI Entity Id Is BadRequestData 400
     [Documentation]    Clause 4.5.4 & Table 6.3.2-1: An entity identifier that is not a valid
     ...                URI is rejected with BadRequestData 400.
-    ${payload}=    Create Dictionary    id=not-a-valid-uri    type=AirQualityObserved    @context=${CORE_CONTEXT}
+    ${payload}=    Build Sensor Entity    not-a-valid-uri
     ${headers}=    NGSI-LD Headers    content_type=application/ld+json
     ${response}=    POST On Session    ${SESSION}    /entities    json=${payload}    headers=${headers}    expected_status=any
     Should Be NGSI-LD Error    ${response}    400    BadRequestData
