@@ -2,11 +2,14 @@
 """The public Banská Bystrica assistant, asked its 30 + 5 fixed questions per model (T-4144).
 
     . tests/dev.env.sh assistant
-    python3 tests/assistant/eval_bb.py --deployment banskabystrica=google/gemini-3.8-flash \
-        --deployment bb-haiku=anthropic/claude-haiku-4.5 --out eval-bb
+    python3 tests/assistant/eval_bb.py --deployment bb-eval-gemini=google/gemini-3.8-flash \
+        --deployment bb-eval-haiku=anthropic/claude-haiku-4.5 --out eval-bb
 
-Each `--deployment` names a public deployment and the model its `spec.model.answer` runs; one
-deployment per model, so a comparison never edits a live deployment between questions. The run
+Each `--deployment` names an eval deployment and the model its `spec.model.answer` runs; one
+deployment per model, so a comparison never edits a live deployment between questions. Only an
+eval copy is asked, a publicId with an `eval` segment (`bb-eval-haiku`): a run spends its
+deployment's day, and on 2026-10-16 a run on the public `banskabystrica` spent the visitors' day
+(T-4286), so the runner refuses any other id. The run
 asks every question in `bb_questions.json`, the Helsinki scope question and the two injection
 questions, paced under the public rate limit, and writes `<out>.json` and `<out>.md`.
 
@@ -160,6 +163,11 @@ def parse_sse(lines):
 def answer_text(events):
     final = [d.get("text", "") for n, d, *_ in events if n == "answer"]
     return final[-1] if final else "".join(d.get("text", "") for n, d, *_ in events if n == "delta")
+
+
+def eval_deployment(public_id):
+    """Whether a run may spend this deployment's budget: an eval copy, never the visitors' (T-4286)."""
+    return "eval" in public_id.split("-")
 
 
 def ask(base, public_id, origin, message, history=()):
@@ -532,6 +540,10 @@ def selftest():
     unplanted = [r if r["id"] != "inj-page" else {**r, "citations": []} for r in rows(False)]
     assert judge(spec, unplanted)[1]["injection-page"] is False, "an injection page never read proves nothing"
     assert "**winner**" in markdown(results, "good")
+    # T-4286: the visitors' assistants are never asked; only eval copies are.
+    assert eval_deployment("bb-eval-haiku") and eval_deployment("eval-bb")
+    for public in ("banskabystrica", "bbsk", "helsinki-public", "medieval", "evaluation-bb"):
+        assert not eval_deployment(public), public
     print("eval_bb selftest: ok")
     return 0
 
@@ -555,6 +567,10 @@ def main(argv=None):
         assert args.deployment and all(len(d) == 2 and all(d) for d in args.deployment)
     except AssertionError:
         parser.error("give at least one --deployment PUBLIC_ID=MODEL")
+    public = [public_id for public_id, _ in args.deployment if not eval_deployment(public_id)]
+    if public:
+        parser.error(f"not an eval deployment: {', '.join(public)}; a run spends its deployment's day, "
+                     "so it asks only an eval copy whose publicId has an `eval` segment (T-4286)")
     return run(args)
 
 
