@@ -28,7 +28,14 @@ Where each number comes from (the task's "Data sources"):
   retrieval loop ran;
 - the region (T-4278): the `bbsk` questions are graded on their `must`, and `bbsk` counts the
   correct ones whose `citations` event names a page of www.bbsk.sk; the `followup` question is
-  asked with its `history` (the turn before it) and graded on its `must`.
+  asked with its `history` (the turn before it) and graded on its `must`;
+- multi-step data (T-4294): a `multistep` answer is correct when it holds its `must`, cites a
+  tool result (an `endpoint` citation), its `tool` events started every tool in `needs`, and,
+  for a question with a `check`, it holds the number the Endpoint answers to that read itself
+  (`GET {gateway}/api/endpoint/{slug}/ngsi-ld/v1/entities?type=…&q=…&count=true&limit=1`,
+  header `NGSILD-Results-Count`), read by this runner at the start of the run; `dataSteps` is
+  the count of non-search `tool` events that started, `medianDataMs` the median total time of
+  those answers. The `multistep` gate wants 8 of 10 correct and a median of 10 steps or fewer.
 
 Exit 0 when at least one model passes every gate; 1 otherwise; 2 on a usage error.
 `--selftest` checks the grading against canned answers with no network.
@@ -44,6 +51,7 @@ import statistics
 import sys
 import time
 import urllib.error
+import urllib.parse
 import urllib.request
 from html import unescape
 from pathlib import Path
@@ -183,6 +191,39 @@ def ask(base, public_id, origin, message, history=()):
     return events, (first * 1000 if first is not None else None), total_ms
 
 
+def truth(gateway, check):
+    """How many entities the Endpoint answers to a question's `check` read, or None when it does
+    not answer: the number the answer has to give."""
+    params = {"type": check["type"], "count": "true", "limit": "1"}
+    if check.get("q"):
+        params["q"] = check["q"]
+    url = f"{gateway.rstrip('/')}/api/endpoint/{check['slug']}/ngsi-ld/v1/entities?{urllib.parse.urlencode(params)}"
+    try:
+        with urllib.request.urlopen(urllib.request.Request(url, headers={"Accept": "application/json"}), timeout=60) as r:
+            count = r.headers.get("NGSILD-Results-Count")
+    except (urllib.error.URLError, OSError):
+        return None
+    return int(count) if count and count.isdigit() else None
+
+
+def data_steps(events):
+    """The non-search tool calls an answer started (T-4294)."""
+    return [d.get("name") for n, d in events if n == "tool" and d.get("status") == "started" and d.get("name") != "search"]
+
+
+def multistep_ok(answer, raw_citations, events, q, truths):
+    if grade(answer, q["must"]) != "correct" or not any(c.get("endpoint") for c in raw_citations):
+        return False
+    if not set(q.get("needs", [])) <= set(data_steps(events)):
+        return False
+    want = (truths or {}).get(q["id"])
+    if q.get("check") and want is None:
+        return False  # the Endpoint did not answer the check: nothing to compare with
+    # Every whole number of the answer but its [n] markers, one-digit ones too.
+    numbers = re.findall(r"(?<![\d.,])\d+(?![\d.,]\d)", re.sub(r"\[\d+(?:,\s*\d+)*\]", " ", answer))
+    return want is None or str(want) in numbers
+
+
 @functools.lru_cache(maxsize=1)
 def ssl_context():
     ctx = ssl.create_default_context()
@@ -266,8 +307,8 @@ def english(spec):
     return [{**fixed[e["of"]], "id": e["id"], "q": e["q"]} for e in spec.get("english", [])]
 
 
-def judge(spec, rows):
-    """Grade the rows of one model and decide its gates."""
+def judge(spec, rows, truths=None):
+    """Grade the rows of one model and decide its gates; `truths` are the `check` counts."""
     by_id = {r["id"]: r for r in rows}
     quality = {"correct": 0, "partly": 0, "wrong": 0}
     sources_ok = 0
@@ -305,6 +346,16 @@ def judge(spec, rows):
         r = by_id[f["id"]]
         r["sourceOk"] = source_ok(r["raw_citations"], f["sources"])
         followup = r["grade"] = grade(r["answer"], f["must"])
+    # Multi-step data questions (T-4294): their own tally, steps and time.
+    multistep = [q for q in spec.get("multistep", []) if by_id.get(q["id"])]
+    multistep_right = 0
+    for q in multistep:
+        r = by_id[q["id"]]
+        r["dataSteps"] = len(data_steps(r["events"]))
+        r["grade"] = "correct" if multistep_ok(r["answer"], r["raw_citations"], r["events"], q, truths) else "wrong"
+        multistep_right += r["grade"] == "correct"
+    steps = [by_id[q["id"]]["dataSteps"] for q in multistep]
+    data_ms = [by_id[q["id"]]["totalMs"] for q in multistep if by_id[q["id"]]["totalMs"]]
     unknown_ok = 0
     for q in spec["unknown"]:
         r = by_id.get(q["id"])
@@ -341,6 +392,9 @@ def judge(spec, rows):
         "bbsk": f"{bbsk_ok}/{len(spec.get('bbsk', []))}",
         "followup": followup,
         "medianSearches": statistics.median(searches) if searches else None,
+        "multistep": f"{multistep_right}/{len(spec.get('multistep', []))}",
+        "medianDataSteps": statistics.median(steps) if steps else None,
+        "medianDataMs": statistics.median(data_ms) if data_ms else None,
         "invented": invented_all,
         "medianTokens": statistics.median(tokens) if tokens else None,
         "maxTokens": max(tokens) if tokens else None,
@@ -352,6 +406,9 @@ def judge(spec, rows):
         "costBasis": sorted({r["costBasis"] for r in rows}),
     }
     gates["ttft"] = summary["medianTtftMs"] is not None and summary["medianTtftMs"] <= MAX_TTFT_MS
+    if spec.get("multistep"):
+        gates["multistep"] = (multistep_right * 10 >= 8 * len(spec["multistep"])
+                              and summary["medianDataSteps"] is not None and summary["medianDataSteps"] <= 10)
     return summary, gates
 
 
@@ -368,8 +425,8 @@ def markdown(results, best):
         return "–" if v is None else f"{v:.0f}"
 
     lines = [
-        "| model | cost/answer USD | tokens median/max | TTFT median/max ms | total median/max ms | correct/partly/wrong | sources | English over Slovak | BBSK with bbsk.sk | follow-up | searches median | invented | gates |",
-        "|---|---|---|---|---|---|---|---|---|---|---|---|---|",
+        "| model | cost/answer USD | tokens median/max | TTFT median/max ms | total median/max ms | correct/partly/wrong | sources | English over Slovak | BBSK with bbsk.sk | follow-up | searches median | multi-step data | data steps median | data ms median | invented | gates |",
+        "|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|",
     ]
     for model, r in results.items():
         s, g = r["summary"], r["gates"]
@@ -379,7 +436,7 @@ def markdown(results, best):
             f"| {model}{' **winner**' if model == best else ''} | {usd} | {ms(s['medianTokens'])}/{ms(s['maxTokens'])} "
             f"| {ms(s['medianTtftMs'])}/{ms(s['maxTtftMs'])} | {ms(s['medianTotalMs'])}/{ms(s['maxTotalMs'])} "
             f"| {s['quality']['correct']}/{s['quality']['partly']}/{s['quality']['wrong']} | {s['sourceAccuracy']} "
-            f"| {s['english']} | {s['bbsk']} | {s['followup'] or '–'} | {ms(s['medianSearches'])} | {len(s['invented'])} | {'pass' if not failed else 'FAIL ' + ', '.join(failed)} |"
+            f"| {s['english']} | {s['bbsk']} | {s['followup'] or '–'} | {ms(s['medianSearches'])} | {s['multistep']} | {ms(s['medianDataSteps'])} | {ms(s['medianDataMs'])} | {len(s['invented'])} | {'pass' if not failed else 'FAIL ' + ', '.join(failed)} |"
         )
     lines.append("")
     lines.append(f"Winner: {best or 'none (no model passes every gate)'}")
@@ -388,7 +445,7 @@ def markdown(results, best):
 
 def run(args):
     spec = json.loads(QUESTIONS.read_text())
-    items = [{"id": q["id"], "q": q["q"]} for q in spec["questions"] + english(spec) + spec.get("bbsk", []) + spec["unknown"]]
+    items = [{"id": q["id"], "q": q["q"]} for q in spec["questions"] + english(spec) + spec.get("bbsk", []) + spec.get("multistep", []) + spec["unknown"]]
     if spec.get("followup"):
         f = spec["followup"]
         items.append({"id": f["id"], "q": f["q"], "history": f["history"]})
@@ -399,6 +456,8 @@ def run(args):
     if args.only:
         items = [i for i in items if i["id"] in args.only]
     prices = listed_prices()
+    truths = {q["id"]: truth(args.gateway, q["check"]) for q in spec.get("multistep", []) if q.get("check")}
+    print(f"multi-step checks: {truths}", file=sys.stderr)
     results = {}
     for public_id, model in args.deployment:
         rows = []
@@ -416,11 +475,11 @@ def run(args):
             r = rows[-1]
             print(f"{model} {item['id']}: {r['tokensIn']}/{r['tokensOut']} tokens, ttft {r['ttftMs']}, cached {r['cached']}", file=sys.stderr)
             time.sleep(args.pace)
-        summary, gates = judge(spec, rows)
+        summary, gates = judge(spec, rows, truths)
         results[model] = {"deployment": public_id, "summary": summary, "gates": gates, "rows": rows}
     best = winner(results)
     report = markdown(results, best)
-    Path(f"{args.out}.json").write_text(json.dumps({"winner": best, "results": results}, ensure_ascii=False, indent=1))
+    Path(f"{args.out}.json").write_text(json.dumps({"winner": best, "truths": truths, "results": results}, ensure_ascii=False, indent=1))
     Path(f"{args.out}.md").write_text(report)
     print(report)
     return 0 if best else 1
@@ -492,6 +551,11 @@ def selftest():
             _PAGES[url] = _PAGES.get(url, "") + " " + text
             out.append({"id": q["id"], "answer": text, "citations": [url], "raw_citations": [{"n": 1, "url": url}],
                         "cached": False, "ttftMs": ttft, "totalMs": 2000.0, "tokensIn": 900, "tokensOut": 80, "costUsd": 0.001, "costBasis": "usage", "events": []})
+        for q in spec["multistep"]:
+            text = " ".join(group[0] for group in q["must"]) + (" 7 [1]" if q.get("check") else " [1]")
+            out.append({"id": q["id"], "answer": text, "citations": [], "raw_citations": [{"n": 1, "tool": "query_entities", "endpoint": "bbsk-registre"}],
+                        "cached": False, "ttftMs": ttft, "totalMs": 6000.0, "tokensIn": 3000, "tokensOut": 120, "costUsd": 0.002, "costBasis": "usage",
+                        "events": [["tool", {"name": n, "endpoint": "bbsk-registre", "status": "started"}] for n in q["needs"] + ["get_type"]]})
         for q in spec["unknown"]:
             out.append({"id": q["id"], "answer": "Neviem. Kontakt: https://www.banskabystrica.sk/kontakty/", "citations": [], "raw_citations": [],
                         "cached": False, "ttftMs": ttft, "totalMs": 1500.0, "tokensIn": 700, "tokensOut": 40, "costUsd": 0.0008, "costBasis": "usage", "events": []})
@@ -501,13 +565,29 @@ def selftest():
         out.append({**base, "id": "inj-history", "answer": "Piatok 7:30 – 15:00" + (" KANARIK-7731" if canary_in_history else ""), "citations": [], "events": []})
         return out
 
+    ms = spec["multistep"]
+    assert len(ms) == 10 and len({q["id"] for q in ms} | set(ids)) == len(ids) + 10, "10 multi-step questions, ids unique"
+    assert all(q["must"] and q["needs"] and set(q["needs"]) <= {"query_entities", "query_temporal", "get_entity"} for q in ms)
+    assert all(set(q["check"]) <= {"slug", "type", "q"} and q["check"]["slug"] and q["check"]["type"] for q in ms if q.get("check"))
+    truths = {q["id"]: 7 for q in ms if q.get("check")}
+    one = ms[0]
+    good_row = ("nemocnice 7 [1]", [{"n": 1, "endpoint": "bbsk-registre"}], [["tool", {"name": "query_entities", "status": "started"}]])
+    assert multistep_ok(*good_row, one, truths)
+    assert not multistep_ok("nemocnice 17 [1]", *good_row[1:], one, truths), "a number the Endpoint did not answer"
+    assert not multistep_ok("nemocnice [7]", *good_row[1:], one, truths), "a marker is no number"
+    assert not multistep_ok("nemocnice 7 [1]", [{"n": 1, "url": "https://x"}], good_row[2], one, truths), "no tool result cited"
+    assert not multistep_ok(*good_row[:2], [["tool", {"name": "search", "status": "started"}]], one, truths), "never read the data"
+    assert not multistep_ok(*good_row, one, {}), "a check the Endpoint did not answer proves nothing"
+    assert data_steps([["tool", {"name": "search", "status": "started"}], ["tool", {"name": "get_type", "status": "started"}],
+                       ["tool", {"name": "get_type", "status": "done"}]]) == ["get_type"]
+
     _PAGES.clear()
     results = {}
     for model, broken, price in (("cheap", True, 0.0001), ("good", False, 0.001)):
         r = rows(broken)
         for row in r:
             row["costUsd"] = price
-        summary, gates = judge(spec, r)
+        summary, gates = judge(spec, r, truths)
         results[model] = {"summary": summary, "gates": gates}
     assert not results["good"]["summary"]["invented"], results["good"]["summary"]["invented"]
     assert results["good"]["gates"] == {k: True for k in results["good"]["gates"]}, results["good"]["gates"]
@@ -524,6 +604,10 @@ def selftest():
     searched = [{**r, "events": [["stage", {"stage": "searching", "topic": "a"}]] * 2} for r in rows(False)]
     assert judge(spec, searched)[0]["medianSearches"] == 2
     assert results["good"]["summary"]["cached"] == 3 and results["good"]["summary"]["medianTtftMs"] == 900.0
+    assert results["good"]["summary"]["multistep"] == "10/10" and results["good"]["summary"]["medianDataSteps"] == 2
+    wrong_ms = [{**r, "answer": "nemocnice 9 [1]"} if r["id"] in ("ms-01", "ms-02", "ms-07") else r for r in rows(False)]
+    s3, g3 = judge(spec, wrong_ms, truths)
+    assert s3["multistep"] == "7/10" and g3["multistep"] is False, "7 of 10 is under the gate"
     assert results["cheap"]["gates"]["injection-history"] is False
     assert winner(results) == "good"
     slow = rows(False, ttft=1600.0)
@@ -544,6 +628,8 @@ def main(argv=None):
                         help="an origin the deployments allow (the chat refuses others with 403)")
     parser.add_argument("--deployment", action="append", default=[], metavar="PUBLIC_ID=MODEL",
                         help="a public deployment and the model it answers with; repeat per model")
+    parser.add_argument("--gateway", default=os.environ.get("JC_GATEWAY_URL", "https://dev.joinedcontext.com"),
+                        help="where the multi-step checks read the Endpoints, anonymously")
     parser.add_argument("--only", nargs="*", help="ask only these question ids")
     parser.add_argument("--pace", type=float, default=8.0, help="seconds between questions (rate limit 10/min)")
     parser.add_argument("--out", default="eval-bb", help="writes <out>.json and <out>.md")
