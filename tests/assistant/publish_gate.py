@@ -4,6 +4,7 @@ source, can be asked about, and names a Smart Data Model (T-4318, T-4319).
 
     python3 tests/assistant/publish_gate.py \
         --mapping ../docs/Research/bb-bbsk-ngsi-ld-mapping.yaml --out evidence/publish-gate \
+        --distributions ../joinedcontext-deployment/charts/ckan/files/od-datasets.json \
         --sdm ../joinedcontext-deployment/scripts/open-data/sdm
 
 Reads only public data: the catalogue, the hub's endpoint list, the broker's public Endpoints,
@@ -70,7 +71,10 @@ EVAL_ID = "bb-eval-gemini"
 SAMPLE = 100
 # Publisher -> (west, south, east, north), a little wider than the body's territory.
 BOXES = {
-    "bbsk": (18.55, 47.90, 20.55, 49.30),
+    # Banskobystrický kraj (NUTS3 SK032) in BBSK's own Kraj3_WebMercator layer, the source of
+    # bbsk-kraj-bbk-hranica: 18.478678, 48.053834 to 20.4699, 48.947247, widened by 0.02° (T-4518).
+    # The typed box started at 18.55 E and cut off the Žarnovica district.
+    "bbsk": (18.45, 48.03, 20.49, 48.97),
     "banskabystrica": (18.95, 48.60, 19.35, 48.90),
     "hel-fi": (24.50, 59.90, 25.50, 60.45),
     "zilina": (18.55, 49.10, 18.95, 49.35),
@@ -596,8 +600,14 @@ def gate(package, e, slug, spaces, http, ask, now, shared, sdm=None):
     row["type"] = kind
     sample = []
     doors = [e["door"]] if whole and e.get("door") else [d for d, types in spaces.get(e["space"], []) if kind in types]
-    dataset_q = None if whole else f'isPartOf=="{e["dataset"]}"'
-    if not doors:
+    # A seed whose door two datasets share marks its rows with `isPartOf` (od-datasets.json
+    # `filtered: true`, bbsk obce and okresy: T-4523).
+    dataset_q = None if whole and not e.get("doorFiltered") else f'isPartOf=="{e["dataset"]}"'
+    if not doors and whole:
+        # The mapping's space is the generator's default; the seed's own door is in od-datasets.json
+        # (bb-podujatia is Event of banskabystrica-verejne, not of the mapping's space: T-4520).
+        checks["ngsi-ld"] = check("not run", f"a platform seed reads it whole and its door is in od-datasets.json: pass --distributions")
+    elif not doors:
         checks["ngsi-ld"] = check("fail", f"no public Endpoint over {e['space']} lists {kind}")
     else:
         base = doors[0]
@@ -654,6 +664,8 @@ def gate(package, e, slug, spaces, http, ask, now, shared, sdm=None):
         sdm = check("fail", f"{wrong[0]} is not a valid {model}: " + "; ".join(wrong[1][:3])) if wrong else check("pass")
     if "fail" in (checks["ngsi-ld"]["state"], checks["accurate"]["state"], sdm["state"]):
         checks["queryable"] = check("not run", "asked only when checks 1, 2 and 4 pass (the eval copy's hourly limit)")
+    elif not row["entities"]:
+        checks["queryable"] = check("not run", "no entity count to ask about")
     elif org not in DOMAINS or ask is None:
         checks["queryable"] = check("not run", f"no eval copy of {org}'s assistant")
     else:
@@ -671,8 +683,9 @@ def gate(package, e, slug, spaces, http, ask, now, shared, sdm=None):
 def run(packages, mapping, spaces, http, ask, now, sdm=None, distributions=None):
     by_name = {e["name"]: e for e in mapping}
     for name, d in (distributions or {}).items():
-        if name in by_name and d.get("filtered") is False:
-            by_name[name] = by_name[name] | {"door": f"{GATEWAY}/api/endpoint/{d['endpoint']}/", "doorType": d["type"]}
+        if name in by_name and "filtered" in d:
+            by_name[name] = by_name[name] | {"door": f"{GATEWAY}/api/endpoint/{d['endpoint']}/", "doorType": d["type"],
+                                             "doorFiltered": d["filtered"]}
     names = slugs([e for e in mapping if e["status"] == "mapped"])
     shared = {}
     for e in mapping:
@@ -845,6 +858,9 @@ def selftest():
     assert "5 entities for 3 source rows" in cases["count mismatch"]["checks"]["accurate"]["reason"]
     assert "ziaci" in cases["a wrong value"]["checks"]["accurate"]["reason"], cases["a wrong value"]
     assert "outside" in cases["outside the box"]["checks"]["accurate"]["reason"]
+    # The region's own west edge (Žarnovica, 18.53771 E) is inside bbsk's box; Bratislava is not.
+    assert outside("bbsk", [entity_of(source[0], location={"type": "GeoProperty", "value": {"type": "Point", "coordinates": [18.53771, 48.313064]}})]) == ""
+    assert outside("bbsk", [entity_of(source[0], location={"type": "GeoProperty", "value": {"type": "Point", "coordinates": [17.338519, 48.650915]}})])
     assert "same" in cases["a duplicate id"]["checks"]["accurate"]["reason"]
     assert "older than a day" in cases["stale observedAt"]["checks"]["accurate"]["reason"]
     assert "ziaci: -1 is less than the minimum of 0" in cases["not valid in its model"]["checks"]["smart-data-model"]["reason"], cases["not valid in its model"]
@@ -940,6 +956,14 @@ def selftest():
     door = run([package], [dict(e, existing={"covers": "whole"})], spaces, world(), right, now, None,
                {"bb-skoly": {"endpoint": "seed", "type": "School", "filtered": False}})
     assert door[0]["entities"] == 3, door
+    # A shared door is read for this dataset's rows alone.
+    seen.clear()
+    shared = run([package], [dict(e, existing={"covers": "whole"})], spaces, Whole(), right, now, None,
+                 {"bb-skoly": {"endpoint": "seed", "type": "School", "filtered": True}})
+    assert shared[0]["entities"] == 3 and any("isPartOf" in qs.get("q", [""])[0] for qs in seen), (shared, seen)
+    # Without its door a whole seed's dataset is held, not hidden for a space it does not live in.
+    doorless = verdict_of(world(), entry=dict(e, space="elsewhere", existing={"seed": "x.yaml", "covers": "whole"}))
+    assert doorless["verdict"] == "hold" and "--distributions" in doorless["checks"]["ngsi-ld"]["reason"], doorless
     # The source counts what the pipeline keeps: rows a keep pattern passes, and for a row hash
     # one per distinct set of mapped cells (T-4517).
     schools = dict(e, rowFilter={"keep": {"column": "Nazov", "pattern": "^ZŠ "}})
