@@ -1,10 +1,13 @@
 """Does every converted open dataset answer in every standard its catalogue page lists (T-4279)?
 
-For each dataset of the organizations named, read anonymously from CKAN, every resource the
-harvest wrote as `resource_type: api` (deployment charts/ckan/files/od-standards.py) is called
-over its own URL, once, paced: an HTTP `GET` (200, a body of the media type it declares, and how
+For each dataset of the organizations named, read anonymously from CKAN, every API distribution
+is called over its own URL, once, paced. That is a resource the harvest wrote as
+`resource_type: api` (deployment charts/ckan/files/od-standards.py), or one an Endpoint's own
+publisher wrote under its `/api/endpoint/` URL (jcctl ckan.rs, which sets no resource_type; its
+schema artefacts are files, not APIs, T-4429). Each is probed with an HTTP `GET` (200, a body of the media type it declares, and how
 many rows: NGSI-LD from `NGSILD-Results-Count`, GeoJSON features, OData `value`, JSON items, CSV
-lines; XLSX and Parquet by their size), the WebSocket by an `x-subscribe` answered 201, MCP by `initialize`.
+lines; XLSX and Parquet by their size; a base URL ending in `/` by a JSON landing page), the WebSocket
+by an `x-subscribe` answered 201, MCP by `initialize`.
 
     python3 tests/ckan/standards_sweep.py --ckan https://data.dev.joinedcontext.com bbsk banskabystrica
 
@@ -79,7 +82,9 @@ def probe_http(
 ) -> tuple[str, str]:
     """(verdict, detail) of one HTTP distribution."""
     url, media = resource["url"], resource.get("mimetype") or ""
-    asked = url + ("&count=true" if "/ngsi-ld/" in url else "")
+    # An API's base (`…/ngsi-ld/v1/`, `…/odata/v4/`) answers a JSON landing page, not the rows.
+    landing = url.endswith("/")
+    asked = url + ("&count=true" if "/ngsi-ld/" in url and not landing else "")
     for wait in (*waits, None):
         try:
             answer = http.get(asked, timeout=TIMEOUT)
@@ -101,6 +106,12 @@ def probe_http(
             except (ValueError, AttributeError):
                 pass
         return "FAIL", f"{answer.status_code}{problem}"
+    if landing:
+        try:
+            answer.json()
+        except ValueError:
+            return "FAIL", f"200 {kind}, not a JSON landing page"
+        return "OK", f"200 {kind} landing page"
     if media and kind != media:
         return "FAIL", f"200 {kind}, listed as {media}"
     count = rows(url, media, answer.content, answer.headers)
@@ -117,6 +128,12 @@ def entity_type(resource: dict[str, Any]) -> str:
     return name[name.rfind("(") + 1:-1] if name.endswith(")") else ""
 
 
+def is_api(resource: dict[str, Any]) -> bool:
+    """A distribution the sweep calls: the harvest's api rows, and an Endpoint's own surfaces."""
+    url = resource.get("url") or ""
+    return resource.get("resource_type") == "api" or ("/api/endpoint/" in url and "/schema/" not in url)
+
+
 def sweep(
     packages: list[dict[str, Any]],
     http_probe: Callable[[dict[str, Any]], tuple[str, str]],
@@ -127,12 +144,12 @@ def sweep(
     """(dataset, distribution, verdict, detail) for every api resource of every package."""
     out = []
     for package in sorted(packages, key=lambda p: p["name"]):
-        apis = [r for r in package.get("resources", []) if r.get("resource_type") == "api"]
+        apis = [r for r in package.get("resources", []) if is_api(r)]
         if not apis:
             out.append((package["name"], "-", "none", "no api distribution"))
         for resource in apis:
             label = resource.get("name", resource["url"]).split(" (")[0]
-            if resource["url"].startswith("wss://"):
+            if resource["url"].startswith("wss://") or resource["url"].endswith("/ws"):
                 problem = ws_probe(resource["url"], entity_type(resource))
                 verdict, detail = ("OK", "x-subscribe 201") if problem is None else ("FAIL", problem)
             elif resource["url"].endswith("/mcp"):
@@ -174,14 +191,18 @@ def main(argv: list[str]) -> int:
     parser.add_argument("--junit", help="write one JUnit test case per row to this file")
     parser.add_argument("organizations", nargs="+")
     args = parser.parse_args(argv)
-    from surfaces import answers_mcp, answers_ws
+    from surfaces import answers_mcp, answers_ws, first_type
+
+    def ws_type(reader: Reader, url: str) -> str:
+        """An Endpoint's own WebSocket row names no type; subscribe to the first it serves."""
+        return first_type(reader, url.replace("wss://", "https://", 1).rsplit("/ws", 1)[0]) or ""
 
     reader = Reader(args.ckan)
     packages = []
     for org in args.organizations:
         packages += reader.action("package_search", fq=f"organization:{org}", rows=1000)["results"]
     results = sweep(packages, lambda r: probe_http(reader.http, r),
-                    lambda url, kind: answers_ws(reader, url, kind), answers_mcp, args.pace)
+                    lambda url, kind: answers_ws(reader, url, kind or ws_type(reader, url)), answers_mcp, args.pace)
     report = table(results)
     print(report)
     if args.out:

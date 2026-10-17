@@ -156,3 +156,34 @@ def test_the_exit_code_passes_ok_and_restricted_only(monkeypatch, tmp_path):
     for red in ("FAIL", "EMPTY"):
         code, _, xml = run(["OK", red])
         assert code == 1 and xml.count("<failure") == 1 and 'name="bbsk-a CSV1"' in xml
+
+
+# T-4429: an Endpoint's own publisher (jcctl ckan.rs) sets no resource_type, so the sweep listed
+# every such dataset as `none` and called nothing. It keys on the Endpoint URL instead.
+def test_an_endpoint_published_dataset_is_swept_by_its_urls():
+    published = [
+        {"name": "NGSI-LD API", "url": ROOT + "ngsi-ld/v1/", "mimetype": "application/ld+json", "resource_type": None},
+        {"name": "CSV", "url": ROOT + "file.csv", "mimetype": "text/csv", "resource_type": None},
+        {"name": "Live updates over WebSocket", "url": ROOT + "ws", "mimetype": "application/json"},
+        {"name": "Model Context Protocol", "url": ROOT + "mcp", "mimetype": "application/json"},
+        {"name": "Data model: SHACL", "url": ROOT + "schema/v1/model.shacl.ttl", "mimetype": "text/turtle"},
+        {"name": "Event", "url": "https://data.dev.joinedcontext.com/datastore/dump/x", "url_type": "datastore"},
+    ]
+    called, seen = [], []
+    results = sweep([{"name": "bb-podujatia", "resources": published}],
+                    lambda r: called.append(r["url"]) or ("OK", "200"),
+                    lambda url, kind: seen.append((url, kind)) or None, lambda url: None)
+    assert [(d, v) for _, d, v, _ in results] == [
+        ("NGSI-LD API", "OK"), ("CSV", "OK"), ("Live updates over WebSocket", "OK"), ("Model Context Protocol", "OK")]
+    assert called == [ROOT + "ngsi-ld/v1/", ROOT + "file.csv"]
+    assert seen == [(ROOT + "ws", "")]
+
+
+def test_a_base_url_passes_on_a_json_landing_page_and_fails_on_anything_else():
+    r = {"name": "NGSI-LD API", "url": ROOT + "ngsi-ld/v1/", "mimetype": "application/ld+json"}
+    assert probe_http(Http({r["url"]: Answer(200, "application/json", {"entities": ROOT})}), r) \
+        == ("OK", "200 application/json landing page")
+    assert probe_http(Http({r["url"]: Answer(200, "text/html", b"<html>")}), r) \
+        == ("FAIL", "200 text/html, not a JSON landing page")
+    assert probe_http(Http({r["url"]: Answer(404, "application/json", {"title": "NotFound"})}), r) \
+        == ("FAIL", "404 NotFound")
