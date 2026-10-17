@@ -65,7 +65,7 @@ test.describe('Journey 16: granular roles, disabled with a reason (T-0604)', () 
 
       // The disabled state is a guide; the Portal is the point of enforcement (PF-50). The same
       // request sent directly, with the session and the CSRF pair, is refused.
-      const csrf = (await context.cookies()).find((cookie) => cookie.name === 'jc_csrf');
+      const csrf = (await context.cookies()).find((cookie) => cookie.name === '__Host-jc_csrf');
       expect(csrf, 'the session carries a CSRF cookie').toBeTruthy();
       const direct = await context.request.post(`/api/v1/projects/${project}/endpoints`, {
         headers: { 'x-csrf-token': csrf?.value ?? '', 'content-type': 'application/json' },
