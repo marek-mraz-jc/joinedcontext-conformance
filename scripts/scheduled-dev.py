@@ -3,11 +3,11 @@
 
     scripts/scheduled-dev.py hourly|6h|nightly --out <summary.json> [--suites etsi,mcp]
 
-The sandbox's batch runs it (hourly: ETSI smoke, the Helsinki live feed; every 6 hours: OGC, STA, MCP, CKAN; nightly:
-schemathesis, DSP, the authorization matrix) and hands the summary to `tasks/file-failures`, which files one task per
-new failure. Each suite runs with its `tests/dev.env.sh` profile, which mints the suite's own
-least-role token from the cluster at run time, and writes JUnit XML into
-`reports/scheduled/<suite>/`; every test case becomes one result keyed `<suite>/<case>`.
+The sandbox's batch runs it (hourly: ETSI smoke, the Helsinki live feed, the catalogue sweep; every 6 hours: OGC, STA,
+MCP, CKAN; nightly: schemathesis, DSP, the authorization matrix) and hands the summary to `tasks/file-failures`, which
+files one task per new failure. Each suite runs with its `tests/dev.env.sh` profile, which mints the suite's own
+least-role token from the cluster at run time, and writes JUnit XML into `reports/scheduled/<suite>/`; every test case
+becomes one result keyed `<suite>/<case>`.
 
 - ETSI is `scripts/etsi-smoke-dev.sh`, the 31 smoke cases. The Testing Task Force suite never
   runs against dev (the owner's rule); nothing here can name it.
@@ -33,7 +33,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 SCHEDULES = {
-    "hourly": ("etsi", "helsinki-live"),
+    "hourly": ("etsi", "helsinki-live", "catalogue-sweep"),
     "6h": ("ogc", "sta", "mcp", "ckan"),
     "nightly": ("schemathesis", "dsp", "authz"),
 }
@@ -42,6 +42,8 @@ SCHEDULES = {
 RUNNERS = {
     "etsi": ("scripts/etsi-smoke-dev.sh", (), 900),
     "helsinki-live": ("tests/helsinki-live/run.sh", (), 600),
+    # About 600 distributions at the default pace, each answer under a second (T-4386).
+    "catalogue-sweep": ("tests/ckan/sweep.sh", (), 1800),
     "ogc": ("tests/ogc/run.sh", (), 1800),
     "sta": ("tests/sta/run.sh", (), 900),
     "mcp": ("tests/mcp/run.sh", (), 900),

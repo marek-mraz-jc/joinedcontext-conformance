@@ -85,3 +85,70 @@ def test_the_sweep_routes_ws_and_mcp_and_lists_a_dataset_without_apis():
     report = table(results)
     assert "| bbsk-a | WebSocket | FAIL | x-subscribe answered 403 |" in report
     assert "tally: FAIL 1, OK 2, none 1" in report
+
+
+# T-4386: the hourly sweep of all six publishers. A 404 fails; a 401 is a distribution closed to
+# the anonymous sweep and passes; a 429 from the edge's rate limit is asked again after a wait and
+# counts only when it outlasts every wait.
+class Throttled(Http):
+    def get(self, url, timeout):
+        self.asked.append(url)
+        return self.answers[url].pop(0)
+
+
+def test_a_missing_distribution_fails_and_a_closed_one_passes():
+    r = resource("file.csv", "text/csv", "CSV (Supplier)")
+    assert probe_http(Http({r["url"]: Answer(404, "application/json", {"title": "ResourceNotFound"})}), r) \
+        == ("FAIL", "404 ResourceNotFound")
+    assert probe_http(Http({r["url"]: Answer(401, "application/json", {})}), r) == ("RESTRICTED", "401")
+
+
+def test_a_rate_limited_read_is_asked_again_after_the_wait():
+    r = resource("file.csv", "text/csv", "CSV (Supplier)")
+    waited = []
+    http = Throttled({r["url"]: [Answer(429, "text/plain", b"", {"Retry-After": "7"}),
+                                 Answer(429, "text/plain", b""),
+                                 Answer(200, "text/csv", b"a\n1\n")]})
+    assert probe_http(http, r, waits=(2.0, 10.0, 30.0), sleep=waited.append) == ("OK", "200 1 rows")
+    assert waited == [7.0, 10.0] and len(http.asked) == 3
+    capped = Throttled({r["url"]: [Answer(429, "text/plain", b"", {"Retry-After": "3600"}), Answer(200, "text/csv", b"a\n")]})
+    waited.clear()
+    probe_http(capped, r, waits=(2.0,), sleep=waited.append)
+    assert waited == [60.0], "a Retry-After past the cap waits the cap"
+
+
+def test_a_rate_limit_that_outlasts_every_wait_fails():
+    r = resource("file.csv", "text/csv", "CSV (Supplier)")
+    http = Throttled({r["url"]: [Answer(429, "text/plain", b"")] * 3})
+    assert probe_http(http, r, waits=(1.0, 1.0), sleep=lambda s: None) == ("FAIL", "429 after 3 tries")
+
+
+def test_the_exit_code_passes_ok_and_restricted_only(monkeypatch, tmp_path):
+    import standards_sweep
+    import surfaces
+
+    def run(verdicts):
+        class Reader:
+            http = None
+
+            def __init__(self, url):
+                pass
+
+            def action(self, action, **params):
+                rs = [resource(f"file{i}.csv", "text/csv", f"CSV{i} (Supplier)") for i in range(len(verdicts))]
+                return {"results": [{"name": params["fq"].split(":")[1] + "-a", "resources": rs}]}
+
+        answers = iter(verdicts)
+        monkeypatch.setattr(standards_sweep, "Reader", Reader)
+        monkeypatch.setattr(standards_sweep, "probe_http", lambda http, r: (next(answers), "x"))
+        monkeypatch.setattr(surfaces, "answers_ws", lambda *a: None)
+        monkeypatch.setattr(surfaces, "answers_mcp", lambda *a: None)
+        out, xml = tmp_path / "t.md", tmp_path / "t.xml"
+        code = standards_sweep.main(["--ckan", "https://c", "--pace", "0", "--out", str(out), "--junit", str(xml), "bbsk"])
+        return code, out.read_text(), xml.read_text()
+
+    code, report, xml = run(["OK", "RESTRICTED"])
+    assert code == 0 and "| bbsk-a | CSV1 | RESTRICTED | x |" in report and "<failure" not in xml
+    for red in ("FAIL", "EMPTY"):
+        code, _, xml = run(["OK", red])
+        assert code == 1 and xml.count("<failure") == 1 and 'name="bbsk-a CSV1"' in xml

@@ -263,6 +263,10 @@ sta)
 	fi
 	unset _jc_sta
 	;;
+catalogue-sweep)
+	# T-4386: every distribution of the six publishers, anonymously and paced.
+	export CKAN_URL="$JC_DEV_CKAN"
+	;;
 ckan)
 	export CKAN_URL="$JC_DEV_CKAN"
 	export CKAN_DATASET="helsinki-transport"
