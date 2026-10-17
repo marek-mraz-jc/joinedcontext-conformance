@@ -381,7 +381,7 @@ def hub_page(arguments):
 
 
 def entities_url(base, **params):
-    return f"{base}ngsi-ld/v1/entities?{urllib.parse.urlencode(params)}"
+    return f"{base}ngsi-ld/v1/entities?{urllib.parse.urlencode({k: v for k, v in params.items() if v is not None})}"
 
 
 def count(http, base, kind, q=None):
@@ -506,7 +506,7 @@ def find_entity(http, base, e, slug, row, dataset_q):
         return body if status == 200 and isinstance(body, dict) else None
     # A row-hash id is the hash of every mapped cell, so the row's entity is the one that carries
     # all of them: match on every string and whole-number cell the q grammar can quote.
-    terms = [dataset_q]
+    terms = []
     for name, prop in e["properties"].items():
         value = expected(prop["range"], row.get(prop["column"])) if prop["range"] in ("string", "integer") else None
         if isinstance(value, int) and not isinstance(value, bool):
@@ -514,9 +514,9 @@ def find_entity(http, base, e, slug, row, dataset_q):
             terms.append(f'({attribute(name)}=={value}|{attribute(name)}=="{value}")')
         elif isinstance(value, str) and not re.search(r'["\\;|()]', value) and len(value) <= 200:
             terms.append(f'{attribute(name)}=="{value}"')
-    if len(terms) == 1:
+    if not terms:
         return None
-    status, _, body = http.get(entities_url(base, type=e["type"], q=";".join(terms), limit=1))
+    status, _, body = http.get(entities_url(base, type=e["type"], q=";".join([t for t in [dataset_q] if t] + terms), limit=1))
     return body[0] if status == 200 and isinstance(body, list) and body else None
 
 
@@ -548,17 +548,21 @@ def gate(package, e, slug, spaces, http, ask, now, shared, sdm=None):
         checks["smart-data-model"] = check("not run", "no mapping")
         return row | {"checks": checks, "verdict": verdict(checks)}
 
-    row["type"] = e["type"]
+    # A dataset a platform seed reads whole is that seed's Endpoint and its whole type
+    # (od-datasets.json `filtered: false`); that seed's own pipeline names the ids and attributes.
+    whole = (e.get("existing") or {}).get("covers") == "whole"
+    kind = e.get("doorType", e["type"]) if whole else e["type"]
+    row["type"] = kind
     sample = []
-    doors = [d for d, types in spaces.get(e["space"], []) if e["type"] in types]
-    dataset_q = f'isPartOf=="{e["dataset"]}"'
+    doors = [e["door"]] if whole and e.get("door") else [d for d, types in spaces.get(e["space"], []) if kind in types]
+    dataset_q = None if whole else f'isPartOf=="{e["dataset"]}"'
     if not doors:
-        checks["ngsi-ld"] = check("fail", f"no public Endpoint over {e['space']} lists {e['type']}")
+        checks["ngsi-ld"] = check("fail", f"no public Endpoint over {e['space']} lists {kind}")
     else:
         base = doors[0]
-        n, why = count(http, base, e["type"], dataset_q)
-        if n is None and shared.get((e["space"], e["type"]), 0) == 1:
-            n, why = count(http, base, e["type"])
+        n, why = count(http, base, kind, dataset_q)
+        if n is None and shared.get((e["space"], kind), 0) == 1:
+            n, why = count(http, base, kind)
         row["entities"] = n
         if n is None:
             checks["ngsi-ld"] = check("fail", why)
@@ -577,13 +581,13 @@ def gate(package, e, slug, spaces, http, ask, now, shared, sdm=None):
             problems.append("the source did not answer its row count")
         elif c:
             problems.append(c)
-        status, _, sample = http.get(entities_url(base, type=e["type"], q=dataset_q, limit=SAMPLE))
+        status, _, sample = http.get(entities_url(base, type=kind, q=dataset_q, limit=SAMPLE))
         if status != 200 or not isinstance(sample, list):
-            status, _, sample = http.get(entities_url(base, type=e["type"], limit=SAMPLE))
+            status, _, sample = http.get(entities_url(base, type=kind, limit=SAMPLE))
         sample = sample if isinstance(sample, list) else []
-        problems += [p for p in (outside(org, sample), duplicates(e, sample), stale(e, sample, now)) if p]
-        total = row["rows"] or 0
-        for offset in sorted({0, total // 4, total // 2, 3 * total // 4, max(0, total - 1)}):
+        problems += [p for p in (outside(org, sample), None if whole else duplicates(e, sample), stale(e, sample, now)) if p]
+        total = 0 if whole else row["rows"] or 0
+        for offset in sorted({0, total // 4, total // 2, 3 * total // 4, max(0, total - 1)}) if not whole else ():
             source, geometry = source_row(http, e, offset)
             if source is None:
                 problems.append(f"source row {offset} could not be read")
@@ -621,8 +625,11 @@ def gate(package, e, slug, spaces, http, ask, now, shared, sdm=None):
 
 # --- the run -----------------------------------------------------------------------------------
 
-def run(packages, mapping, spaces, http, ask, now, sdm=None):
+def run(packages, mapping, spaces, http, ask, now, sdm=None, distributions=None):
     by_name = {e["name"]: e for e in mapping}
+    for name, d in (distributions or {}).items():
+        if name in by_name and d.get("filtered") is False:
+            by_name[name] = by_name[name] | {"door": f"{GATEWAY}/api/endpoint/{d['endpoint']}/", "doorType": d["type"]}
     names = slugs([e for e in mapping if e["status"] == "mapped"])
     shared = {}
     for e in mapping:
@@ -682,6 +689,8 @@ def main():
     parser.add_argument("--catalogue", default=CKAN)
     parser.add_argument("--eval", default=EVAL_ID, help="the eval copy's publicId; 'none' skips check 3")
     parser.add_argument("--sdm", type=Path, help="the vendored Smart Data Models (deployment scripts/open-data/sdm)")
+    parser.add_argument("--distributions", type=Path,
+                        help="deployment charts/ckan/files/od-datasets.json: the Endpoint of a dataset a seed reads whole")
     parser.add_argument("--also", type=Path, help="package names the public search hides, one per line")
     parser.add_argument("--selftest", action="store_true")
     args = parser.parse_args()
@@ -702,7 +711,8 @@ def main():
     packages = sorted(packages, key=lambda p: p["name"])
     ask = None if args.eval == "none" else eval_asker(GATEWAY, args.eval)
     now = dt.datetime.now(dt.timezone.utc)
-    rows = run(packages, mapping, endpoints(http), http, ask, now, args.sdm and sdm_validators(args.sdm))
+    rows = run(packages, mapping, endpoints(http), http, ask, now, args.sdm and sdm_validators(args.sdm),
+               args.distributions and json.loads(args.distributions.read_text()))
     when = now.strftime("%Y-%m-%dT%H:%MZ")
     args.out.parent.mkdir(parents=True, exist_ok=True)
     Path(f"{args.out}.json").write_text(json.dumps({"at": when, "rows": rows}, indent=1, ensure_ascii=False) + "\n")
@@ -874,6 +884,19 @@ def selftest():
     assert '(ziaci==410|ziaci=="410")' in asked[0] and 'nazov=="ZŠ Moskovská"' in asked[0], asked
     # A column called like an attribute the generator sets is renamed; `name` is the model's own.
     assert attribute("source") == "columnSource" and attribute("isPartOf") == "columnIsPartOf" and attribute("name") == "name"
+    # A dataset a seed reads whole is counted and sampled over its type, with no isPartOf filter.
+    seen = []
+
+    class Whole:
+        def get(self, url, accept=None):
+            seen.append(urllib.parse.parse_qs(urllib.parse.urlsplit(url).query))
+            return world().get(url, accept)
+    whole = verdict_of(Whole(), entry=dict(e, existing={"seed": "x.yaml", "covers": "whole"}, door="https://gw/api/endpoint/seed/", doorType="School"))
+    assert whole["verdict"] == "keep" and whole["entities"] == 3, whole
+    assert not any("q" in qs and "isPartOf" in qs["q"][0] for qs in seen), seen
+    door = run([package], [dict(e, existing={"covers": "whole"})], spaces, world(), right, now, None,
+               {"bb-skoly": {"endpoint": "seed", "type": "School", "filtered": False}})
+    assert door[0]["entities"] == 3, door
     print("publish_gate selftest: ok")
 
 
