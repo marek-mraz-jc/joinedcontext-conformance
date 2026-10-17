@@ -117,7 +117,7 @@ async function cameraToken(request: APIRequestContext, key: CameraKey, client: s
 }
 
 async function csrfHeaders(context: BrowserContext): Promise<Record<string, string>> {
-  const csrf = (await context.cookies()).find((cookie) => cookie.name === 'jc_csrf');
+  const csrf = (await context.cookies()).find((cookie) => cookie.name === '__Host-jc_csrf');
   expect(csrf, 'the session carries a CSRF cookie').toBeTruthy();
   return { 'x-csrf-token': csrf?.value ?? '', 'content-type': 'application/json' };
 }
