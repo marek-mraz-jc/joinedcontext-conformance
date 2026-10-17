@@ -25,8 +25,10 @@ cd Antares-NGSI-LD-Context-Broker && cg build && cg q -e "<query>"
 
 | Id | Path | What | Task | State |
 |---|---|---|---|---|
-| F1 | 1 | The gateway authorized a dot segment as a name and forwarded it: `PATCH …/entities/{id}/attrs/..` is decided as Update Attributes of one attribute, and a hop that resolves dot segments (RFC 3986 clause 5.2.4) runs it as every attribute of the body. Not exploitable against Antares, which refuses a dot segment in an id or attribute name (`antares-model/src/lib.rs:267,290`, `src/id.rs:193`). It is a parser differential all the same. | T-4389 | fixed on `agent/worker-3/T-4389`, in review |
-| F2 | 3 | An App's page can plant session cookies for the Portal and every other App: the App origins and the Portal are the same site, every session cookie is unprefixed, and a planted one wins whenever the victim has none at the edge, and always in the Portal's own jar. Login CSRF: the victim works inside the attacker's session. Priority 2 (Decided, worker-3: no right is gained directly, the victim must act inside the planted session). | T-4395 | open |
+| F1 | 1 | The gateway authorized a dot segment as a name and forwarded it: `PATCH …/entities/{id}/attrs/..` is decided as Update Attributes of one attribute, and a hop that resolves dot segments (RFC 3986 clause 5.2.4) runs it as every attribute of the body. Not exploitable against Antares, which refuses a dot segment in an id or attribute name (`antares-model/src/lib.rs:267,290`, `src/id.rs:193`). It is a parser differential all the same. | T-4389 | fixed, merged to platform main (`8009039`) |
+| F2 | 3 | An App's page can plant session cookies for the Portal and every other App: the App origins and the Portal are the same site, every session cookie is unprefixed, and a planted one wins whenever the victim has none at the edge, and always in the Portal's own jar. Login CSRF: the victim works inside the attacker's session. Priority 2 (Decided, worker-3: no right is gained directly, the victim must act inside the planted session). | T-4395 | in review |
+| F3 | 9 | Antares: an offset near `i64::MAX` under conditional view rules wrapped into a negative SQL LIMIT, so Postgres answered 500. No data and no right; section 9.3. | T-3590 | fixed on Antares `agent/worker-3/T-3588`, in review |
+| F4 | 10 | Platform: three token clients followed redirects, so a redirecting token endpoint would have received the credential form again at another host. Needs a compromised realm; section 10.3. | T-3591 | fixed on platform `agent/worker-3/T-3591`, in review |
 | T-2479 | 5 | The Portal's Role may read every Secret of its instance (existing task, not found here). | T-2479 | blocked, priority 3 |
 
 Reference checks against the broker's threat model (every test name in a row's test column, looked up in the tree at `b7200437`):
@@ -35,7 +37,7 @@ Reference checks against the broker's threat model (every test name in a row's t
 |---|---|---|---|
 | odata O2 | fuzz target `odata_filter_to_qnode` (proposed) | no; `fuzz/fuzz_targets/odata_url_parse.rs` fuzzes the parser, not the translation | the property test `filter_props.rs::odata_filter_translation_agrees_with_reference_eval` covers the translation; the fuzz target stays a T-3590 item, not priority 1 |
 | odata O6 | `odata_expand_levels_above_max_is_400`, `odata_expand_max_is_clamped_to_max_levels` (proposed) | no | holds: `$levels` and nested `$expand` still answer 501 (`odata_expand.rs::odata_expand_beyond_one_level_is_501`), so the bound has nothing to clamp yet |
-| odata O23 | `ops_seam.rs::a_change_event_names_the_surface_and_the_view` (proposed) | no | stale reference: T-3593 resolved G10 with the `surface operation` log line (`ops_log.rs::a_surface_operation_is_logged_with_the_surface_and_the_view`); the row is corrected under T-3590 |
+| odata O23 | `ops_seam.rs::a_change_event_names_the_surface_and_the_view` (proposed) | no | stale reference: T-3593 resolved G10 with the `surface operation` log line (`ops_log.rs::a_surface_operation_is_logged_with_the_surface_and_the_view`); T-3590 corrected the row |
 | mcp MC16 | `join_is_not_an_argument_until_the_target_is_checked` | renamed | holds: the row names the rename to `mcp_gate.rs::join_is_an_argument_now_that_the_target_is_checked` |
 
 Every other test a row names exists in the tree (check: every backticked name of 15 or more characters in a row's test column, against the `fn` names under `crates/`, `tests/`, `addons/` and `fuzz/`).
@@ -126,6 +128,315 @@ The dependencies that take input from a client or an upstream, and the limits th
 | rmcp | not a dependency of platform or portal (`Cargo.toml`); the broker's MCP surface is its own (threat-model mcp) | holds |
 
 Observation O2: `space_move.rs` could add a connect timeout and an idle-read timeout without bounding the stream; a broker that accepts and never answers holds one move job, which only an organization administrator starts. Observation O3: the gateway's broker client could carry a connect timeout of its own for in-cluster callers that do not pass the edge. Neither raises a right; both are resilience items for T-3591.
+
+## 9. Antares sweep with a fresh graph (T-3590)
+
+Commit: Antares-NGSI-LD-Context-Broker `b7200437` (dev). Two graphs of it:
+
+```bash
+cd Antares-NGSI-LD-Context-Broker
+# review graph: the crates that read input, auth, SQL, HTTP indexed as well (36 904 symbols, 79 http routes)
+RUSTUP_TOOLCHAIN=1.99.1 cg build --fg --deps axum,hyper,reqwest,sqlx,serde_json,tungstenite,tokio-tungstenite,rmcp,redb,async-nats
+# invariant graph: our code only (17 969 symbols, 82 http routes once the T-3590 pins are in)
+RUSTUP_TOOLCHAIN=1.99.1 cg build --fg && python3 dev/cg-invariants.py
+```
+
+`RUSTUP_TOOLCHAIN` matters: the repository's `rust-toolchain.toml` names `stable`, a toolchain without rust-analyzer in this sandbox, and `cg build` then skips the workspace and indexes only the dependencies, without failing. Neither `jsonwebtoken` nor `wasmtime` is in the broker's `Cargo.lock`.
+
+Vanilla and all-features come from the graph's `features` column, because rust-analyzer indexes every `cfg` branch and tags it. The default build (`default = ["mqtt"]`) serves the 82 routes below. The `views` feature and the surface features (`odata`, `ogc`, `mcp`, `linkml`, `ws`, `internal-csr`) add the `/q` view routes and the `/x` surfaces, which crate-level gating keeps out of the column. Feature-gated non-test functions: `postgres` 112, `views` 82, `fetch` 55, `mqtt` 21, `use-rustls-no-provider` 5, `edm` 4.
+
+### 9.1 Invariants: what the rerun found
+
+`dev/cg-invariants.py` was not green on `dev`. Since T-3962 renamed five crates and T-4354 rewrote the OData parse, nobody had run it against a real graph. The CI job runs only `--selftest`. Fixed on the T-3590 branch:
+
+| Drift | Effect | Fix |
+|---|---|---|
+| `egress-outside-policy` excepted `antares_jsonld::loader::client_builder`, now `ngsild_jsonld::…` | cg answered with a hint, so the invariant checked nothing | path renamed in `dev/security.cypher` and the allowlist |
+| `protocol-crate-depends-on-antares` matched `antares-*` only | `odata-url` could depend on `ngsild-model` (the renamed `antares-model`) unnoticed: the fixture row was missing | also matches `ngsild-*`, and `ogc-cql2` counts as a protocol crate |
+| `fs-write-from-a-server` listed `set_permissions` in an `IN` list | a name no code calls is a cg hint, so the job was red | the names are a regex |
+| `sql-from-text`: `PgDocStore::list_digests` (T-4354) and `maintenance::retain` | new dynamic SQL, not allowlisted | read: closed table names, constant query parts, every value bound; allowlisted with the reason |
+| two stale entries (`antares_odata::batch::serve`, `antares_odata::serve → client_builder`) | T-4354 gave `batch::serve` a direct edge to `Ops::read_answer`; the OData path no longer reaches the CA file read | removed |
+| `GET /q/tenants/{}/digest`, `GET …/export`, `POST …/import` had no Channel | the tenant move (ADR-0030) was invisible to every route invariant | pinned in `.cg/links/admin.toml`; allowlisted as admin-secret routes, which `q_admin_sweep.rs` (T-3855) proves |
+| a `--deps` graph makes dependency symbols non-external | 17 false `panic-reachable-from-a-route` rows from axum, hyper, reqwest and tungstenite, and lost redb rows | the checker refuses a `--deps` graph |
+
+New invariant `outbound-http-send` lists every function that sends a request with reqwest. Each of the 4 is allowlisted with the egress check its URL passes first. The client's resolver sees hostnames only, so an IP-literal URL is dialled directly unless `Egress::check_url`/`check_destination` or `EgressPolicy::check_host` refused it (SSRF). `dev/cg-invariants/fixture.patch` (refreshed: the old one no longer applied to `Cargo.lock`) turns all 16 invariants red, each with its `cg_fixture` row. With the patch reverted, `cg-invariants: OK`.
+
+### 9.2 Route table
+
+Every http Channel of the invariant graph. "Decision" is what `routes-without-decision` proves: the handler reaches `policy::gate`, `gate_each`, `decide` or `decide_each` within six calls, or the allowlist names the layer that stands in for it. "Tenant" is what `tenant-not-from-header` proves for every route that reaches a Tenant-scoped store method. The bounds wall (`bounds.rs`) caps the URI at 8 KiB, the body at `MAX_BODY_BYTES` and JSON depth at 64 before any parse, on every route. No NATS subject has a Channel: subjects are built at run time and none is reachable from outside the cluster (threat model 9.4).
+
+| Route | Handler | Who may call | Decision | Limits | Writes | Tenant |
+|---|---|---|---|---|---|---|
+| `POST /ex/v1/remote-notify` | `distsub::remote_notify` | peer broker | its own index, no Policy | bounds wall, body limit | notifications to local subscribers | from the inbound index (ADR-0019) |
+| `GET /ngsi-ld/v1/attributes` | `types_attrs::attributes` | a caller the Policy admits | `policy::gate`/`decide` (REACH ≤ 6) | bounds wall, page ≤ `max_limit` (else 403 TooManyResults) | none | `negotiate::tenant_from` |
+| `GET /ngsi-ld/v1/attributes/{}` | `types_attrs::attribute_info` | a caller the Policy admits | `policy::gate`/`decide` (REACH ≤ 6) | bounds wall | none | `negotiate::tenant_from` |
+| `GET /ngsi-ld/v1/csourceRegistrations` | `csource::query_registrations` | a caller the Policy admits | `policy::gate`/`decide` (REACH ≤ 6) | bounds wall, page ≤ `max_limit` (else 403 TooManyResults) | none | `negotiate::tenant_from` |
+| `POST /ngsi-ld/v1/csourceRegistrations` | `csource::create_registration` | a caller the Policy admits | `policy::gate`/`decide` (REACH ≤ 6) | bounds wall | creates | `negotiate::tenant_from` |
+| `DELETE /ngsi-ld/v1/csourceRegistrations/{}` | `csource::delete_registration` | a caller the Policy admits | `policy::gate`/`decide` (REACH ≤ 6) | bounds wall | deletes | `negotiate::tenant_from` |
+| `GET /ngsi-ld/v1/csourceRegistrations/{}` | `csource::retrieve_registration` | a caller the Policy admits | `policy::gate`/`decide` (REACH ≤ 6) | bounds wall | none | `negotiate::tenant_from` |
+| `PATCH /ngsi-ld/v1/csourceRegistrations/{}` | `csource::update_registration` | a caller the Policy admits | `policy::gate`/`decide` (REACH ≤ 6) | bounds wall | updates | `negotiate::tenant_from` |
+| `GET /ngsi-ld/v1/csourceSubscriptions` | `subscriptions::query_csource_subscriptions` | a caller the Policy admits | `policy::gate`/`decide` (REACH ≤ 6) | bounds wall, page ≤ `max_limit` (else 403 TooManyResults) | none | `negotiate::tenant_from` |
+| `POST /ngsi-ld/v1/csourceSubscriptions` | `subscriptions::create_csource_subscription` | a caller the Policy admits | `policy::gate`/`decide` (REACH ≤ 6) | bounds wall | creates | `negotiate::tenant_from` |
+| `DELETE /ngsi-ld/v1/csourceSubscriptions/{}` | `subscriptions::delete_csource_subscription` | a caller the Policy admits | `policy::gate`/`decide` (REACH ≤ 6) | bounds wall | deletes | `negotiate::tenant_from` |
+| `GET /ngsi-ld/v1/csourceSubscriptions/{}` | `subscriptions::retrieve_csource_subscription` | a caller the Policy admits | `policy::gate`/`decide` (REACH ≤ 6) | bounds wall | none | `negotiate::tenant_from` |
+| `PATCH /ngsi-ld/v1/csourceSubscriptions/{}` | `subscriptions::update_csource_subscription` | a caller the Policy admits | `policy::gate`/`decide` (REACH ≤ 6) | bounds wall | updates | `negotiate::tenant_from` |
+| `DELETE /ngsi-ld/v1/entities` | `entities::purge_entities` | a caller the Policy admits | `policy::gate`/`decide` (REACH ≤ 6) | bounds wall | deletes | `negotiate::tenant_from` |
+| `GET /ngsi-ld/v1/entities` | `entities::query_entities` | a caller the Policy admits | `policy::gate`/`decide` (REACH ≤ 6) | bounds wall, page ≤ `max_limit` (else 403 TooManyResults), geometry ≤ 1024 vertices | none | `negotiate::tenant_from` |
+| `PATCH /ngsi-ld/v1/entities` | `missing_entity_id` | anyone | none: 400 before any store call | bounds wall | none | none |
+| `POST /ngsi-ld/v1/entities` | `entities::create_entity` | a caller the Policy admits | `policy::gate`/`decide` (REACH ≤ 6) | bounds wall | creates | `negotiate::tenant_from` |
+| `PUT /ngsi-ld/v1/entities` | `missing_entity_id` | anyone | none: 400 before any store call | bounds wall | none | none |
+| `DELETE /ngsi-ld/v1/entities/{}` | `entities::delete_entity` | a caller the Policy admits | `policy::gate`/`decide` (REACH ≤ 6) | bounds wall | deletes | `negotiate::tenant_from` |
+| `GET /ngsi-ld/v1/entities/{}` | `entities::retrieve_entity` | a caller the Policy admits | `policy::gate`/`decide` (REACH ≤ 6) | bounds wall | none | `negotiate::tenant_from` |
+| `PATCH /ngsi-ld/v1/entities/{}` | `entities::merge_entity` | a caller the Policy admits | `policy::gate`/`decide` (REACH ≤ 6) | bounds wall | updates | `negotiate::tenant_from` |
+| `PUT /ngsi-ld/v1/entities/{}` | `entities::replace_entity` | a caller the Policy admits | `policy::gate`/`decide` (REACH ≤ 6) | bounds wall | replaces | `negotiate::tenant_from` |
+| `PATCH /ngsi-ld/v1/entities/{}/attrs` | `attrs::update_attrs` | a caller the Policy admits | `policy::gate`/`decide` (REACH ≤ 6) | bounds wall | updates | `negotiate::tenant_from` |
+| `POST /ngsi-ld/v1/entities/{}/attrs` | `attrs::append_attrs` | a caller the Policy admits | `policy::gate`/`decide` (REACH ≤ 6) | bounds wall | creates | `negotiate::tenant_from` |
+| `DELETE /ngsi-ld/v1/entities/{}/attrs/{}` | `attrs::delete_attr` | a caller the Policy admits | `policy::gate`/`decide` (REACH ≤ 6) | bounds wall | deletes | `negotiate::tenant_from` |
+| `GET /ngsi-ld/v1/entities/{}/attrs/{}` | `entities::retrieve_entity_attr` | a caller the Policy admits | `policy::gate`/`decide` (REACH ≤ 6) | bounds wall | none | `negotiate::tenant_from` |
+| `PATCH /ngsi-ld/v1/entities/{}/attrs/{}` | `attrs::partial_update_attr` | a caller the Policy admits | `policy::gate`/`decide` (REACH ≤ 6) | bounds wall | updates | `negotiate::tenant_from` |
+| `PUT /ngsi-ld/v1/entities/{}/attrs/{}` | `attrs::replace_attr` | a caller the Policy admits | `policy::gate`/`decide` (REACH ≤ 6) | bounds wall | replaces | `negotiate::tenant_from` |
+| `GET /ngsi-ld/v1/entities/{}/attrs/{}/value` | `entities::retrieve_entity_attr_value` | a caller the Policy admits | `policy::gate`/`decide` (REACH ≤ 6) | bounds wall | none | `negotiate::tenant_from` |
+| `PUT /ngsi-ld/v1/entities/{}/attrs/{}/value` | `attrs::set_attr_value` | a caller the Policy admits | `policy::gate`/`decide` (REACH ≤ 6) | bounds wall | replaces | `negotiate::tenant_from` |
+| `GET /ngsi-ld/v1/entityMaps` | `entity_maps::create_entity_map` | a caller the Policy admits | `policy::gate`/`decide` (REACH ≤ 6) | bounds wall, page ≤ `max_limit` (else 403 TooManyResults) | an EntityMap document (implicit create, 5.14) | `negotiate::tenant_from` |
+| `POST /ngsi-ld/v1/entityMaps` | `entity_maps::create_entity_map_post` | a caller the Policy admits | `policy::gate`/`decide` (REACH ≤ 6) | bounds wall | creates | `negotiate::tenant_from` |
+| `DELETE /ngsi-ld/v1/entityMaps/{}` | `entity_maps::delete_entity_map` | a caller the Policy admits | `policy::gate`/`decide` (REACH ≤ 6) | bounds wall | deletes | `negotiate::tenant_from` |
+| `GET /ngsi-ld/v1/entityMaps/{}` | `entity_maps::retrieve_entity_map` | a caller the Policy admits | `policy::gate`/`decide` (REACH ≤ 6) | bounds wall | an EntityMap document (implicit create, 5.14) | `negotiate::tenant_from` |
+| `PATCH /ngsi-ld/v1/entityMaps/{}` | `entity_maps::update_entity_map` | a caller the Policy admits | `policy::gate`/`decide` (REACH ≤ 6) | bounds wall | updates | `negotiate::tenant_from` |
+| `POST /ngsi-ld/v1/entityOperations/create` | `batch::batch_create` | a caller the Policy admits | `policy::gate`/`decide` (REACH ≤ 6) | bounds wall, `MAX_BATCH_ITEMS` | creates | `negotiate::tenant_from` |
+| `POST /ngsi-ld/v1/entityOperations/delete` | `batch::batch_delete` | a caller the Policy admits | `policy::gate`/`decide` (REACH ≤ 6) | bounds wall, `MAX_BATCH_ITEMS` | creates | `negotiate::tenant_from` |
+| `POST /ngsi-ld/v1/entityOperations/merge` | `batch::batch_merge` | a caller the Policy admits | `policy::gate`/`decide` (REACH ≤ 6) | bounds wall, `MAX_BATCH_ITEMS` | creates | `negotiate::tenant_from` |
+| `POST /ngsi-ld/v1/entityOperations/query` | `batch::batch_query` | a caller the Policy admits | `policy::gate`/`decide` (REACH ≤ 6) | bounds wall, page ≤ `max_limit` (else 403 TooManyResults), geometry ≤ 1024 vertices | none | `negotiate::tenant_from` |
+| `POST /ngsi-ld/v1/entityOperations/update` | `batch::batch_update` | a caller the Policy admits | `policy::gate`/`decide` (REACH ≤ 6) | bounds wall, `MAX_BATCH_ITEMS` | creates | `negotiate::tenant_from` |
+| `POST /ngsi-ld/v1/entityOperations/upsert` | `batch::batch_upsert` | a caller the Policy admits | `policy::gate`/`decide` (REACH ≤ 6) | bounds wall, `MAX_BATCH_ITEMS` | creates | `negotiate::tenant_from` |
+| `GET /ngsi-ld/v1/info/sourceIdentity` | `source_identity` | a caller the Policy admits | `policy::gate`/`decide` (REACH ≤ 6) | bounds wall, page ≤ `max_limit` (else 403 TooManyResults) | none | `negotiate::tenant_from` |
+| `GET /ngsi-ld/v1/jsonldContexts` | `contexts::list_contexts` | a caller the Policy admits | `policy::gate`/`decide` (REACH ≤ 6) | bounds wall, page ≤ `max_limit` (else 403 TooManyResults) | none | `negotiate::tenant_from` |
+| `POST /ngsi-ld/v1/jsonldContexts` | `contexts::add_context` | a caller the Policy admits | `policy::gate`/`decide` (REACH ≤ 6) | bounds wall | creates | `negotiate::tenant_from` |
+| `DELETE /ngsi-ld/v1/jsonldContexts/{}` | `contexts::delete_context` | a caller the Policy admits | `policy::gate`/`decide` (REACH ≤ 6) | bounds wall | deletes | `negotiate::tenant_from` |
+| `GET /ngsi-ld/v1/jsonldContexts/{}` | `contexts::serve_context` | a caller the Policy admits | `policy::gate`/`decide` (REACH ≤ 6) | bounds wall | none | `negotiate::tenant_from` |
+| `DELETE /ngsi-ld/v1/snapshots` | `snapshots::purge_snapshots` | a caller the Policy admits | `policy::gate`/`decide` (REACH ≤ 6) | bounds wall | deletes | `negotiate::tenant_from` |
+| `POST /ngsi-ld/v1/snapshots` | `snapshots::create_snapshot` | a caller the Policy admits | `policy::gate`/`decide` (REACH ≤ 6) | bounds wall | creates | `negotiate::tenant_from` |
+| `DELETE /ngsi-ld/v1/snapshots/{}` | `snapshots::delete_snapshot` | a caller the Policy admits | `policy::gate`/`decide` (REACH ≤ 6) | bounds wall | deletes | `negotiate::tenant_from` |
+| `GET /ngsi-ld/v1/snapshots/{}` | `snapshots::retrieve_snapshot` | a caller the Policy admits | `policy::gate`/`decide` (REACH ≤ 6) | bounds wall | none | `negotiate::tenant_from` |
+| `PATCH /ngsi-ld/v1/snapshots/{}` | `snapshots::update_snapshot` | a caller the Policy admits | `policy::gate`/`decide` (REACH ≤ 6) | bounds wall | updates | `negotiate::tenant_from` |
+| `POST /ngsi-ld/v1/snapshots/{}/clone` | `snapshots::clone_snapshot` | a caller the Policy admits | `policy::gate`/`decide` (REACH ≤ 6) | bounds wall | creates | `negotiate::tenant_from` |
+| `GET /ngsi-ld/v1/subscriptions` | `subscriptions::query_subscriptions` | a caller the Policy admits | `policy::gate`/`decide` (REACH ≤ 6) | bounds wall, page ≤ `max_limit` (else 403 TooManyResults) | none | `negotiate::tenant_from` |
+| `POST /ngsi-ld/v1/subscriptions` | `subscriptions::create_subscription` | a caller the Policy admits | `policy::gate`/`decide` (REACH ≤ 6) | bounds wall | creates | `negotiate::tenant_from` |
+| `DELETE /ngsi-ld/v1/subscriptions/{}` | `subscriptions::delete_subscription` | a caller the Policy admits | `policy::gate`/`decide` (REACH ≤ 6) | bounds wall | deletes | `negotiate::tenant_from` |
+| `GET /ngsi-ld/v1/subscriptions/{}` | `subscriptions::retrieve_subscription` | a caller the Policy admits | `policy::gate`/`decide` (REACH ≤ 6) | bounds wall | none | `negotiate::tenant_from` |
+| `PATCH /ngsi-ld/v1/subscriptions/{}` | `subscriptions::update_subscription` | a caller the Policy admits | `policy::gate`/`decide` (REACH ≤ 6) | bounds wall | updates | `negotiate::tenant_from` |
+| `GET /ngsi-ld/v1/temporal/entities` | `temporal::query_temporal` | a caller the Policy admits | `policy::gate`/`decide` (REACH ≤ 6) | bounds wall, page ≤ `max_limit` (else 403 TooManyResults), geometry ≤ 1024 vertices | none | `negotiate::tenant_from` |
+| `POST /ngsi-ld/v1/temporal/entities` | `temporal::upsert_temporal` | a caller the Policy admits | `policy::gate`/`decide` (REACH ≤ 6) | bounds wall | creates | `negotiate::tenant_from` |
+| `DELETE /ngsi-ld/v1/temporal/entities/{}` | `temporal::delete_temporal` | a caller the Policy admits | `policy::gate`/`decide` (REACH ≤ 6) | bounds wall | deletes | `negotiate::tenant_from` |
+| `GET /ngsi-ld/v1/temporal/entities/{}` | `temporal::retrieve_temporal` | a caller the Policy admits | `policy::gate`/`decide` (REACH ≤ 6) | bounds wall | none | `negotiate::tenant_from` |
+| `POST /ngsi-ld/v1/temporal/entities/{}/attrs` | `temporal::add_temporal_attrs` | a caller the Policy admits | `policy::gate`/`decide` (REACH ≤ 6) | bounds wall | creates | `negotiate::tenant_from` |
+| `DELETE /ngsi-ld/v1/temporal/entities/{}/attrs/{}` | `temporal::delete_temporal_attr` | a caller the Policy admits | `policy::gate`/`decide` (REACH ≤ 6) | bounds wall | deletes | `negotiate::tenant_from` |
+| `DELETE /ngsi-ld/v1/temporal/entities/{}/attrs/{}/{}` | `temporal::delete_temporal_instance` | a caller the Policy admits | `policy::gate`/`decide` (REACH ≤ 6) | bounds wall | deletes | `negotiate::tenant_from` |
+| `PATCH /ngsi-ld/v1/temporal/entities/{}/attrs/{}/{}` | `temporal::modify_temporal_instance` | a caller the Policy admits | `policy::gate`/`decide` (REACH ≤ 6) | bounds wall | updates | `negotiate::tenant_from` |
+| `GET /ngsi-ld/v1/temporal/entityMaps` | `entity_maps::create_temporal_entity_map` | a caller the Policy admits | `policy::gate`/`decide` (REACH ≤ 6) | bounds wall, page ≤ `max_limit` (else 403 TooManyResults) | an EntityMap document (implicit create, 5.14) | `negotiate::tenant_from` |
+| `POST /ngsi-ld/v1/temporal/entityMaps` | `entity_maps::create_temporal_entity_map_post` | a caller the Policy admits | `policy::gate`/`decide` (REACH ≤ 6) | bounds wall | creates | `negotiate::tenant_from` |
+| `POST /ngsi-ld/v1/temporal/entityOperations/query` | `temporal::batch_temporal_query` | a caller the Policy admits | `policy::gate`/`decide` (REACH ≤ 6) | bounds wall, page ≤ `max_limit` (else 403 TooManyResults), geometry ≤ 1024 vertices | none | `negotiate::tenant_from` |
+| `GET /ngsi-ld/v1/types` | `types_attrs::entity_types` | a caller the Policy admits | `policy::gate`/`decide` (REACH ≤ 6) | bounds wall, page ≤ `max_limit` (else 403 TooManyResults) | none | `negotiate::tenant_from` |
+| `GET /ngsi-ld/v1/types/{}` | `types_attrs::entity_type_info` | a caller the Policy admits | `policy::gate`/`decide` (REACH ≤ 6) | bounds wall | none | `negotiate::tenant_from` |
+| `GET /q/dead-letters` | `dead_letters_list` | operator (admin secret) | admin secret layer | bounds wall, body limit | none | path or `?tenant=`, `TenantId::new` |
+| `DELETE /q/dead-letters/{}` | `dead_letter_delete` | operator (admin secret) | admin secret layer | bounds wall, body limit | deletes | path or `?tenant=`, `TenantId::new` |
+| `POST /q/dead-letters/{}/replay` | `dead_letter_replay` | operator (admin secret) | admin secret layer | bounds wall, body limit | re-delivers one dead letter | path or `?tenant=`, `TenantId::new` |
+| `GET /q/health` | `health` | anyone (probe) | none, public | bounds wall, body limit | none | none |
+| `GET /q/metrics` | `metrics_endpoint` | operator (admin secret unless `metrics_open`) | admin secret layer | bounds wall, body limit | none | none |
+| `GET /q/ready` | `ready` | anyone (probe) | none, public | bounds wall, body limit | none | none |
+| `GET /q/tenants` | `tenants_list` | operator (admin secret) | admin secret layer | bounds wall, body limit | none | none: the Tenant inventory |
+| `DELETE /q/tenants/{}` | `tenant_purge` | operator (admin secret) | admin secret layer | bounds wall, body limit | deletes | path or `?tenant=`, `TenantId::new` |
+| `GET /q/tenants/{}` | `tenant_get` | operator (admin secret) | admin secret layer | bounds wall, body limit | none | path or `?tenant=`, `TenantId::new` |
+| `GET /q/tenants/{}/digest` | `tenant_move::digest` | operator (admin secret) | admin secret layer | bounds wall, body limit | none | path or `?tenant=`, `TenantId::new` |
+| `GET /q/tenants/{}/export` | `tenant_move::export` | operator (admin secret) | admin secret layer | bounds wall, body limit | none | path or `?tenant=`, `TenantId::new` |
+| `POST /q/tenants/{}/import` | `tenant_move::import` | operator (admin secret) | admin secret layer | bounds wall, body limit | creates | path or `?tenant=`, `TenantId::new` |
+
+Routes the graph does not key, each with what stands in for the Channel:
+
+| Routes | Built from | Covered by |
+|---|---|---|
+| `/q/views`, `/q/views/{id}`, `/q/views/{id}/preview`, `/q/schemas/{tenant}`, `/q/policy`, `/q/policy/{tenant}`, `/q/retention/{tenant}`, `…/preview`, `…/deleted`, `/q/quality/{tenant}` (`views`) | closures in `antares_ops::views::admin` and its modules, merged before the admin `route_layer` | `antares-icsr/tests/q_admin_sweep.rs`: the route list is checked against the sources, and every method on every path refuses without the secret |
+| `/x/views/{view}/ngsi-ld/v1/{*rest}`, `…/odata/v4…`, `…/ogc/features…`, `…/linkml/{*rest}`, `…/mcp`, `…/ws`, `/x/ws/ngsi-ld/v1` | `ApiSurface::router` of each surface crate, nested by `antares_api::router` | `surface-entry-without-ops` (every entry runs through Ops) and `surfaces_fail_closed.rs`; the per-surface rows of the threat model (ADR-0023) |
+| `/grants`, `/grants/{target}/{source}` (`antares_icsr::routes`) | not mounted by the broker binary | none needed while unmounted; mounting it adds a route to `q_admin_sweep.rs` |
+
+### 9.3 Functions ranked by risk
+
+3 953 non-test workspace functions. 1 771 are reachable from a route within four calls (`[:CALLS|DISPATCHES*0..4]` from every route provider). Ranked by branch count × number of routes reaching them. The top tier is every function with `cc ≥ 25` and a score of at least 100, plus every hit of the GREP patterns:
+
+```cypher
+MATCH (h:Symbol)-[:PROVIDES]->(:Channel {channel:'http'}) WHERE NOT h.is_test WITH DISTINCT h
+MATCH (h)-[:CALLS|DISPATCHES*0..4]->(s:Symbol) WHERE NOT s.is_test AND NOT s.file STARTS WITH '/'
+  AND s.kind IN ['Function','Method','StaticMethod']
+WITH s, count(DISTINCT h) AS routes WHERE s.cc >= 25
+RETURN s.path, s.cc, routes ORDER BY s.cc * routes DESC LIMIT 60;
+```
+
+| Function | cc × routes | Risk read for | Verdict |
+|---|---|---|---|
+| `ngsild_jsonld::expand::expand_instance` | 120 × 12 | recursion on client JSON | safe: request bodies stop at depth 64 at the bounds wall, and federated answers are parsed by serde_json (recursion limit 128) and capped at `MAX_FED_RESPONSE_BYTES` |
+| `ngsild_jsonld::expand::expand_entity` | 67 × 19 | as above | safe, as above |
+| `antares_api::federation::build_forward` | 55 × 19 | headers copied to a Context Source (credential leak) | safe because documented: `contextSourceInfo` with `urn:ngsi-ld:request` copies a named header (4.3.6.5, an `Authorization` pass-through by design), so creating a registration is a privileged Policy operation (`docs/src/federation.md`). Subject headers are never copied (`a_registration_cannot_ask_for_the_subject_header`), the requesting Tenant never flows through, and the gateway offers no registration operation (platform `attack_dot_segment_tests.rs::the_brokers_admin_registration_and_peer_doors_are_no_endpoint_operation`) |
+| `antares_api::temporal::query_temporal_collected` | 120 × 7 | unbounded collection, casts | safe: the page comes from `page_params` (offset ≤ `i64::MAX`, limit ≤ `max_limit`), and the store refuses an unpaged read past its ceiling (`check_ceiling`, 403 TooManyResults) |
+| `antares_api::paging::query_doc_params` | 114 × 7 | parameter parsing | safe: every value sits inside the 8 KiB URI, and geometry stops at `MAX_GEO_VERTICES` (1024) |
+| `ngsild_jsonld::loader::Loader::fetch` | 33 × 22 | SSRF, size, redirects | safe: `check_host` before the send, at most `MAX_CONTEXT_URLS` per resolution, `MAX_CONTEXT_BYTES` per document, redirects re-checked and capped at 3 (`client_builder`) |
+| `antares_api::entities::filter_entities_paged` | 78 × 8 | casts on client numbers | finding F3, fixed: the conditional-rules scan cast `offset + limit + 1` and its doubling limit with `as i64`, so an offset near `i64::MAX` wrapped into a negative LIMIT, which Postgres refuses (500). Now `entities::store_page` saturates; `the_scan_page_past_i64_saturates_and_never_wraps_negative` |
+| `ngsild_ql::geo::GeoQuery::from_params` | 35 × 17 | geometry size | safe: `MAX_GEO_VERTICES` |
+| `antares_api::notify::deliver_as` | 72 × 8 | SSRF via a subscription endpoint | safe: `Egress::check_destination` before `send_outbound`; the sink keeps the checked URI for its retries |
+| `antares_api::batch::batch_write` | 126 × 4 | batch size | safe: `parse_batch` refuses more than `MAX_BATCH_ITEMS` |
+| `antares_api::paging::order_entities` | 81 × 5 | sort cost | safe: sorts the rows already read, which the store ceiling bounds (5.5.6) |
+| `antares_api::subscriptions::norm_member` | 65 × 4 | deserialisation | safe: each named member is type-checked (an id through `EntityId::new`); an unknown member is kept verbatim as 5.5.9 asks, inside the body cap and the depth limit |
+| `antares_api::repr::parse_projection` | 31 × 8 | `pick`/`omit` size | safe: bounded by the 8 KiB URI |
+| `antares_api::batch::forward_batch` | 59 × 4 | SSRF | safe: `Egress::check_url` before every forward |
+| GREP: `Regex::new`/`RegexBuilder::new` (4 non-test) | | regex from input | safe: `ngsild_ql::regex::build` and `ngsild_residual::pattern::build` set `size_limit` and `dfa_size_limit`; `odata_csdl` compiles a constant; the one at `ngsild_ql/src/regex.rs:300` is inside a `#[test]` that cg marks non-test |
+| GREP: TLS switched off, `unsafe` | | | 0 hits in `crates/*/src` |
+| GREP: secret compare | | | `AdminAuth::admits` uses `constant_time_eq`; the one other `==` on a token is HTTP method parsing (`odata_batch::multipart::request_line`) |
+
+Zero open priority-1 findings in the broker. F3 is a 500 on an absurd offset, with no data and no right gained, and it is fixed in the same branch.
+
+## 10. joinedcontext-platform sweep with a fresh graph (T-3591)
+
+Commit: joinedcontext-platform `a69980d` (main). Two graphs of it:
+
+```bash
+cd joinedcontext-platform
+# invariant graph (17 336 symbols, 85 http Channels with the T-3591 link rules)
+RUSTUP_TOOLCHAIN=1.99.1 cg build --fg && python3 dev/cg-invariants.py
+# review graph (25 219 symbols)
+RUSTUP_TOOLCHAIN=1.99.1 cg build --fg --deps axum,hyper,reqwest,sqlx,serde_json,jsonwebtoken,tokio-tungstenite
+```
+
+`wasmtime` is left out of `--deps`: its size would outweigh the rest, and T-3588 path 3 already proves the sandbox with an attack test (`host_tests.rs::a_component_reaches_no_environment_file_or_socket`). Neither `rmcp` nor `async-nats` is a platform dependency.
+
+### 10.1 Link rules and invariants
+
+Before T-3591, `.cg/links` keyed only the gateway's `app.rs`, so `ROUTES` missed six servers. `.cg/links/services.toml` adds agent-proxy, the assistant (chat, widget and the Portal's knowledge admin), the gateway's MQTT auth hook, functions, token-sidecar and the wasm-host shard's two ports. The gateway's own hop pins in `gateway.toml` still name `serve_ngsi_ld` and `egress::notifications`, which T-3643 and T-3654 deleted (logged in chyby.md, with the stale `dev/trace-request.py`).
+
+`dev/cg-invariants.py` was red on `main`, for the same reason as the broker's: CI runs only `--selftest`.
+
+| Drift | Fix |
+|---|---|
+| `Exchanger::exchange`/`Exchanger::new` (federation token exchange, PF-47) not allowlisted | read; the client now follows no redirect (F4 below), then allowlisted |
+| `camera_sim::token` (token request and a bare `Client::new`) | a demo simulator, not a deployed service: allowlisted with that reason |
+| `jcctl::commands::publish_ckan::example_type` | the operator's CLI asking the URL the operator publishes: allowlisted |
+| two `secret-exposed` entries for the gateway's delivery key | stale: T-3654 deleted the key; removed |
+| a `--deps` graph | refused by the checker, as in the broker |
+
+New invariant `route-without-authentication`: every http route whose handler reaches none of the caller checks (`gateway::auth::token::Verifier::verify`, `agent_proxy::auth::authenticate`, `agent_proxy::routes::identity::portal_only`, `assistant::chat::admin::the_portal`) within six calls. Its 21 rows are allowlisted with the reason they need none: protected-resource metadata, the public DCAT feed, the widget assets of public deployments, the probes, in-cluster metrics, the network-guarded token sidecar, and the wasm apps port (an App never sees the caller's `Authorization` or `Cookie`; the host carries the token to the gateway). The fixture (`dev/cg-invariants/fixture.patch`) turns all 7 invariants red. Without it: `cg-invariants: OK`.
+
+### 10.2 Route table
+
+Every http Channel of the invariant graph (80 distinct route and handler pairs; the gateway mounts five of them twice, with and without a trailing slash). Limits: the gateway reads a body up to the organization's limit (`app.rs` `read_body`), agent-proxy through `routes::body::bounded`, functions under `DefaultBodyLimit::max(INVOCATION_LIMIT)`, the assistant's chat under `DefaultBodyLimit::max(MAX_BODY)`, and its admin upload under its own `DefaultBodyLimit`. WebSocket frame and message sizes are set (section 8). Tenant scoping in the gateway is the Endpoint's Context Space, resolved from the slug (`resolver`). Each other service scopes by its own principal: the run (agent-proxy), the project path segment checked against the Portal's token (assistant admin), the deployment's public id (assistant chat).
+
+| Route | Handler | Who may call | Caller check (REACH ≤ 6) | Writes |
+|---|---|---|---|---|
+| `ANY /v1/data/endpoints/{}/{}` | `agent_proxy::routes::data::endpoint_handler` | a run's workspace | run token `auth::authenticate`, `DataCredentials::verify` | what the forwarded operation writes, through the broker |
+| `ANY /v1/data/{}` | `agent_proxy::routes::data::handler` | a run's workspace | run token `auth::authenticate`, `DataCredentials::verify` | what the forwarded operation writes, through the broker |
+| `GET /v1/diagnostics/{}/{}` | `agent_proxy::routes::diagnostics::handler` | a run's workspace | run token `auth::authenticate` | none |
+| `POST /v1/runs/events` | `agent_proxy::routes::events::handler` | a run's workspace | run token `auth::authenticate` | creates or forwards |
+| `GET /v1/fetch` | `agent_proxy::routes::fetch::handler` | a run's workspace | run token `auth::authenticate` | none |
+| `ANY /v1/forge/{}` | `agent_proxy::routes::forge::handler` | a run's workspace | run token `auth::authenticate` | what the forwarded operation writes, through the broker |
+| `POST /internal/runs/{}/data-credential` | `agent_proxy::routes::identity::data_credential` | the Portal | `portal_only` | creates or forwards |
+| `POST /internal/runs/{}/identity` | `agent_proxy::routes::identity::handler` | the Portal | `portal_only` | creates or forwards |
+| `GET /v1/runs/inbox` | `agent_proxy::routes::inbox::handler` | a run's workspace | run token `auth::authenticate` | none |
+| `POST /v1/llm/{}` | `agent_proxy::routes::llm::handler` | a run's workspace | run token `auth::authenticate` | creates or forwards |
+| `POST /v1/mcp` | `agent_proxy::routes::mcp::handler` | a run's workspace | run token `auth::authenticate` | creates or forwards |
+| `GET /v1/packages/{}/{}` | `agent_proxy::routes::packages::handler` | a run's workspace | run token `auth::authenticate` | none |
+| `GET /internal/v1/projects/{}/knowledge/sources/{}/documents` | `assistant::chat::admin::documents` | the Portal | `the_portal` | none |
+| `GET /internal/v1/projects/{}/knowledge/sources/{}/errors` | `assistant::chat::admin::errors` | the Portal | `the_portal` | none |
+| `GET /internal/v1/projects/{}/knowledge/sources/{}/files` | `assistant::chat::admin::files` | the Portal | `the_portal` | none |
+| `POST /internal/v1/projects/{}/knowledge/sources/{}/inclusion` | `assistant::chat::admin::inclusion` | the Portal | `the_portal` | creates or forwards |
+| `GET /internal/v1/projects/{}/knowledge/sources/{}/pages/{}/links` | `assistant::chat::admin::links` | the Portal | `the_portal` | none |
+| `GET /internal/v1/projects/{}/knowledge/sources/{}/pages` | `assistant::chat::admin::pages` | the Portal | `the_portal` | none |
+| `GET /internal/v1/projects/{}/knowledge/sources/{}/passages` | `assistant::chat::admin::passages` | the Portal | `the_portal` | none |
+| `POST /internal/v1/projects/{}/knowledge/sources/{}/recrawl` | `assistant::chat::admin::recrawl` | the Portal | `the_portal` | creates or forwards |
+| `DELETE /internal/v1/projects/{}/knowledge/sources/{}/files/{}` | `assistant::chat::admin::remove` | the Portal | `the_portal` | deletes |
+| `GET /internal/v1/projects/{}/knowledge/sources` | `assistant::chat::admin::sources` | the Portal | `the_portal` | none |
+| `POST /internal/v1/projects/{}/knowledge/sources/{}/files` | `assistant::chat::admin::upload` | the Portal | `the_portal` | creates or forwards |
+| `GET /internal/v1/projects/{}/knowledge/deployments/{}/usage` | `assistant::chat::admin::usage` | the Portal | `the_portal` | none |
+| `POST /api/v1/d/{}/chat` | `assistant::chat::chat` | anyone, for a public deployment | none: a public deployment's anonymous chat by its public id | creates or forwards |
+| `POST /internal/v1/projects/{}/knowledge/deployments/{}/chat` | `assistant::chat::chat_in_portal` | the Portal | `the_portal` | creates or forwards |
+| `POST /api/v1/d/{}/feedback` | `assistant::chat::feedback` | anyone, for a public deployment | none: anonymous feedback on a public deployment's answer | creates or forwards |
+| `OPTIONS /api/v1/d/{}/feedback` | `assistant::chat::preflight` | anyone, for a public deployment | none: CORS preflight of a public deployment's feedback | none |
+| `OPTIONS /api/v1/d/{}/chat` | `assistant::chat::preflight` | anyone, for a public deployment | none: CORS preflight of a public deployment's chat | none |
+| `GET /d/{}` | `assistant::chat::widget::full_page` | anyone, for a public deployment | none: a public assistant deployment's page by its public id | none |
+| `GET /d/{}/embed.js` | `assistant::chat::widget::launcher` | anyone, for a public deployment | none: the launcher script of a public deployment by its public id | none |
+| `GET /d/{}/widget` | `assistant::chat::widget::page` | anyone, for a public deployment | none: the widget page of a public deployment by its public id | none |
+| `GET /d/widget.js` | `assistant::chat::widget::script` | anyone, for a public deployment | none: the embeddable chat widget's static script | none |
+| `GET /d/widget.css` | `assistant::chat::widget::style` | anyone, for a public deployment | none: the embeddable chat widget's static stylesheet | none |
+| `GET /catalog.jsonld` | `gateway::app::catalog_feed_jsonld` | an Endpoint's audience (public, organization or a granted ServiceAccount) | none: the public DCAT catalogue: only public Endpoints are listed | none |
+| `GET /catalog.ttl` | `gateway::app::catalog_feed_turtle` | an Endpoint's audience (public, organization or a granted ServiceAccount) | none: the public DCAT catalogue as Turtle | none |
+| `GET /api/endpoint/{}` | `gateway::app::endpoint_record` | an Endpoint's audience (public, organization or a granted ServiceAccount) | token `Verifier::verify`, `Endpoint::admits` | none |
+| `POST /api/endpoint/{}/mcp` | `gateway::app::mcp_message` | an Endpoint's audience (public, organization or a granted ServiceAccount) | token `Verifier::verify`, `Pdp::decide` | creates or forwards |
+| `ANY /api/endpoint/{}/ngsi-ld/v1/{}` | `gateway::app::ngsi_ld` | an Endpoint's audience (public, organization or a granted ServiceAccount) | token `Verifier::verify`, `Pdp::decide` | what the forwarded operation writes, through the broker |
+| `GET /api/endpoint/{}/ngsi-ld/v1` | `gateway::app::ngsi_ld_entry` | an Endpoint's audience (public, organization or a granted ServiceAccount) | token `Verifier::verify`, `Endpoint::admits` | none |
+| `GET /healthz` | `gateway::app::ok` | in-cluster probe or scraper | none: liveness probe | none |
+| `GET /livez` | `gateway::app::ok` | in-cluster probe or scraper | none: liveness probe | none |
+| `GET /api/endpoint/{}/.well-known/oauth-protected-resource` | `gateway::app::protected_resource` | an Endpoint's audience (public, organization or a granted ServiceAccount) | none: RFC 9728 metadata a client reads before it has a token: the issuer and the audience | none |
+| `POST /cs/{}/mcp` | `gateway::app::space_mcp_message` | an Endpoint's audience (public, organization or a granted ServiceAccount) | token `Verifier::verify`, `Pdp::decide` | creates or forwards |
+| `ANY /cs/{}/ngsi-ld/v1/{}` | `gateway::app::space_ngsi_ld` | an Endpoint's audience (public, organization or a granted ServiceAccount) | token `Verifier::verify`, `Pdp::decide` | what the forwarded operation writes, through the broker |
+| `GET /api/endpoint/{}/file.csv` | `gateway::handlers::files::file_csv` | an Endpoint's audience (public, organization or a granted ServiceAccount) | token `Verifier::verify`, `Endpoint::admits` | none |
+| `GET /api/endpoint/{}/file.geojson` | `gateway::handlers::files::file_geojson` | an Endpoint's audience (public, organization or a granted ServiceAccount) | token `Verifier::verify`, `Endpoint::admits` | none |
+| `GET /api/endpoint/{}/file.json` | `gateway::handlers::files::file_json` | an Endpoint's audience (public, organization or a granted ServiceAccount) | token `Verifier::verify`, `Endpoint::admits` | none |
+| `GET /api/endpoint/{}/file.parquet` | `gateway::handlers::files::file_parquet` | an Endpoint's audience (public, organization or a granted ServiceAccount) | token `Verifier::verify`, `Endpoint::admits` | none |
+| `GET /api/endpoint/{}/file.xlsx` | `gateway::handlers::files::file_xlsx` | an Endpoint's audience (public, organization or a granted ServiceAccount) | token `Verifier::verify`, `Endpoint::admits` | none |
+| `GET /api/endpoint/{}/file.zip` | `gateway::handlers::files::file_zip` | an Endpoint's audience (public, organization or a granted ServiceAccount) | token `Verifier::verify`, `Endpoint::admits` | none |
+| `GET /cs/{}/dump` | `gateway::handlers::files::space_dump` | an Endpoint's audience (public, organization or a granted ServiceAccount) | token `Verifier::verify`, `Pdp::decide` | none |
+| `ANY /api/endpoint/{}/odata/v4/{}` | `gateway::handlers::ogc::odata` | an Endpoint's audience (public, organization or a granted ServiceAccount) | token `Verifier::verify`, `Endpoint::admits` | what the forwarded operation writes, through the broker |
+| `ANY /api/endpoint/{}/odata/v4` | `gateway::handlers::ogc::odata` | an Endpoint's audience (public, organization or a granted ServiceAccount) | token `Verifier::verify`, `Endpoint::admits` | what the forwarded operation writes, through the broker |
+| `ANY /api/endpoint/{}/ogc/features` | `gateway::handlers::ogc::ogc_features` | an Endpoint's audience (public, organization or a granted ServiceAccount) | token `Verifier::verify`, `Endpoint::admits` | what the forwarded operation writes, through the broker |
+| `ANY /api/endpoint/{}/ogc/features/{}` | `gateway::handlers::ogc::ogc_features` | an Endpoint's audience (public, organization or a granted ServiceAccount) | token `Verifier::verify`, `Endpoint::admits` | what the forwarded operation writes, through the broker |
+| `GET /api/endpoint/{}/openapi.json` | `gateway::handlers::openapi_doc::openapi` | an Endpoint's audience (public, organization or a granted ServiceAccount) | token `Verifier::verify`, `Endpoint::admits` | none |
+| `GET /api/endpoint/{}/schema/{}/{}` | `gateway::handlers::schema_routes::schema_artifact` | an Endpoint's audience (public, organization or a granted ServiceAccount) | token `Verifier::verify`, `Endpoint::admits` | none |
+| `GET /api/endpoint/{}/schema/index.json` | `gateway::handlers::schema_routes::schema_index` | an Endpoint's audience (public, organization or a granted ServiceAccount) | token `Verifier::verify`, `Endpoint::admits` | none |
+| `GET /cs/{}/schema/{}/{}` | `gateway::handlers::schema_routes::space_schema_artifact` | an Endpoint's audience (public, organization or a granted ServiceAccount) | token `Verifier::verify`, `Pdp::decide` | none |
+| `GET /cs/{}/schema/index.json` | `gateway::handlers::schema_routes::space_schema_index` | an Endpoint's audience (public, organization or a granted ServiceAccount) | token `Verifier::verify`, `Pdp::decide` | none |
+| `GET /cs` | `gateway::handlers::space_routes::space_catalog` | an Endpoint's audience (public, organization or a granted ServiceAccount) | token `Verifier::verify`, `Pdp::decide` | none |
+| `GET /cs/{}` | `gateway::handlers::space_routes::space_record` | an Endpoint's audience (public, organization or a granted ServiceAccount) | token `Verifier::verify`, `Pdp::decide` | none |
+| `ANY /api/endpoint/{}/sta/v1.1` | `gateway::handlers::sta::sensorthings` | an Endpoint's audience (public, organization or a granted ServiceAccount) | token `Verifier::verify`, `Endpoint::admits` | what the forwarded operation writes, through the broker |
+| `ANY /api/endpoint/{}/sta/v1.1/{}` | `gateway::handlers::sta::sensorthings` | an Endpoint's audience (public, organization or a granted ServiceAccount) | token `Verifier::verify`, `Endpoint::admits` | what the forwarded operation writes, through the broker |
+| `GET /api/endpoint/{}/access` | `gateway::handlers::view_access::access` | an Endpoint's audience (public, organization or a granted ServiceAccount) | token `Verifier::verify`, `Endpoint::admits` | none |
+| `POST /api/endpoint/{}/access/check` | `gateway::handlers::view_access::access_check` | an Endpoint's audience (public, organization or a granted ServiceAccount) | token `Verifier::verify`, `Endpoint::admits` | none (a decision preview) |
+| `POST /api/endpoint/{}/access/simulate` | `gateway::handlers::view_access::access_simulate` | an Endpoint's audience (public, organization or a granted ServiceAccount) | token `Verifier::verify`, `Endpoint::admits` | none (a decision preview) |
+| `GET /api/endpoint/{}/ws` | `gateway::handlers::ws::endpoint_ws` | an Endpoint's audience (public, organization or a granted ServiceAccount) | token `Verifier::verify`, `Pdp::decide` | none |
+| `GET /api/endpoints` | `gateway::mcp::hub::endpoints` | an Endpoint's audience (public, organization or a granted ServiceAccount) | token `Verifier::verify`, `Pdp::decide` | none |
+| `GET /api/mcp/.well-known/oauth-protected-resource` | `gateway::mcp::hub::protected_resource` | an Endpoint's audience (public, organization or a granted ServiceAccount) | none: RFC 9728 metadata of the MCP hub | none |
+| `POST /api/mcp/{}/{}` | `gateway::mcp::server::message` | an Endpoint's audience (public, organization or a granted ServiceAccount) | token `Verifier::verify`, `Pdp::decide` | creates or forwards |
+| `GET /api/mcp/{}/{}/.well-known/oauth-protected-resource` | `gateway::mcp::server::protected_resource` | an Endpoint's audience (public, organization or a granted ServiceAccount) | none: RFC 9728 metadata of one MCP server | none |
+| `POST /internal/mqtt/auth` | `gateway::mqtt::auth` | the MQTT broker's auth hook | token `Verifier::verify`, `mqtt::decide` | creates or forwards |
+| `GET /metrics` | `gateway::telemetry::metrics` | in-cluster probe or scraper | none: Prometheus scrape inside the cluster | none |
+| `POST /invoke` | `functions::invoke` | a caller with a gateway-verified token | token `Verifier::verify` | creates or forwards |
+| `POST /token` | `token_sidecar::token` | the pipeline runner pod | none: the pipeline runner's token service: the deployment's NetworkPolicy admits the runner pod alone to 4180 (pipeline-runner networkpolicies.yaml pipeline-tokens) | creates or forwards |
+| `ANY /{}/{}` | `wasm_host::server::Shard::handle` | the edge (apps port) or in-cluster (admin port) | none: the apps port: the App never sees the caller's Authorization or Cookie (host.rs Host::serve_admitted removes both) | what the forwarded operation writes, through the broker |
+| `GET /jobs` | `wasm_host::server::Shard::handle_admin` | the edge (apps port) or in-cluster (admin port) | none: the shard's admin port | none |
+| `GET /metrics` | `wasm_host::server::Shard::handle_admin` | the edge (apps port) or in-cluster (admin port) | none: the shard's admin port | none |
+
+### 10.3 Functions ranked by risk
+
+3 028 non-test workspace functions. 1 853 are reachable from a route within four calls. The ranking query is the one in 9.3 with `cc ≥ 20`. The top tier and the GREP patterns:
+
+| Function | cc × routes | Risk read for | Verdict |
+|---|---|---|---|
+| `gateway::handlers::reads::paged_view` | 30 × 7 | paging numbers | safe: `limit` parses as `u64` and is capped at the Endpoint's `max_rows`; the client's `offset` is dropped and the gateway pages the broker's view itself |
+| `gateway::app::serve_ngsi_ld_view` | 44 × 2 | the decision and the hop | safe: T-3588 path 1; dot segments refused before the hop since F1 |
+| `gateway::operations::operation_of` | 42 × 2 | parser differential | fixed in F1 (T-4389) |
+| `agent_proxy::routes::data::forward` | 42 × 2 | a run reaching another Endpoint | safe: `/v1/data/endpoints/{slug}` admits only a slug the run names, checked once more against the Portal's record when the cache does not name it (`data.rs:116-122`), after `auth::authenticate` |
+| `agent_proxy::routes::forge::handler` | 38 × 1 | path traversal with the platform's forge token | safe: `escapes` refuses `%`, `\`, `//`, leading `/` and dot segments; a write must start with the run's `pathPrefix` (the Portal sends it with a trailing `/`), and nothing under `.gitea/`; only `contents/`, branches, pull requests and read-only `pulls/`/`commits/` pass |
+| `gateway::app::view_payload`, `gateway::app::HeldWrite::check` | 41 × 2, 29 × 2 | write narrowing | safe: T-3588 path 2 (hidden attributes, held writes) |
+| `gateway::translators::sta::filter_to_q` | 21 × 1 | injection into `q` | safe: an operand passes through unescaped, so a caller can write any `q`; a `q` only narrows inside the view the broker enforces, and grants nothing |
+| `gateway::translators::tabular::parquet`, `handlers::files::tabular_download` | 20 × 3 | output size | safe: refused past the Endpoint's `maxFileBytes` (T-4287) |
+| `gateway::fanout::socket::session`, `::run` | 35 × 1, 28 × 1 | WebSocket floods | safe: frame and message caps (section 8), each push decided again (`fanout::hub::decide`) |
+| `gateway::mcp::server::Hub::fan_out`, `mcp::hub::Hub::call` | 28 × 1, 25 × 1 | one call fanning out to many Endpoints | safe: both reach `Verifier::verify` and `Pdp::decide` (route table), so each Endpoint the call reaches is decided on its own |
+| `gateway::federation::exchange::Exchanger::exchange` | via `federation_token` | credential carry-over | finding F4, fixed |
+| `functions::sandbox::execute`, `functions::invoke` | 22 × 1, 20 × 1 | sandbox escape, size | safe: `Verifier::verify` first, `INVOCATION_LIMIT`, the sandbox's `tokio::time::timeout` (section 8) |
+| `wasm_host::host::Host::serve_admitted` | 22 × 1 | credential to the guest | safe: `Authorization` and `Cookie` removed before the guest sees the request; body over `request_bytes` refused |
+| `assistant::upload::office` | 21 × 1 | untrusted Office files | safe: behind `the_portal`, under the admin body limit; kreuzberg reads members in memory and calls no `extract` (T-4383) |
+| `gateway::auth::token::Verifier::verify` | caller check | JWT validation | safe: the algorithm comes from the JWKS entry for the `kid`, never from the token header; issuer, audience, `exp` and `nbf` are checked, with 60 s leeway; an empty audience list refuses |
+| GREP: `Regex::new` (48 non-test) | | regex from input | constants, except `pdp::projection::id_permitted` and `jc_core::kinds::role::whole_value`, which compile patterns from a Policy or Role that the project's administrators write, validated at commit (`EntitySelector::validate`, `PATTERN_MAX` 256); the regex crate runs in linear time. Observation: `id_permitted` compiles each pattern per entity (chyby.md) |
+| GREP: TLS switched off, `unsafe` | | | 0 hits in `crates/*/src` |
+| GREP: secrets in log calls | 24 hits | | each logs that a token is missing or was refused, never its value |
+
+**F4 (fixed in T-3591).** Three clients that post a credential to a token endpoint kept reqwest's default redirect policy: the gateway's federation exchange (the caller's token and the gateway's client secret), the gateway's workload token (its ServiceAccount assertion) and token-sidecar (the pipeline's assertion). A 307 or 308 from the configured endpoint made reqwest resend the form, credential included, to whatever host the answer named. Reaching that needs a compromised or misconfigured realm. No caller can trigger it, so it is not priority 1. All three now set `redirect::Policy::none()`. Tests: `exchange::tests::a_redirect_from_the_token_endpoint_is_refused_and_the_form_goes_nowhere_else` (red with the default policy) and `previews_federated_tests::a_redirecting_token_endpoint_is_not_followed`.
+
+Zero open priority-1 findings in the platform.
 
 ## Related
 
