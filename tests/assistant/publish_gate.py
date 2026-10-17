@@ -29,7 +29,7 @@ Where each value comes from (the task's "Data sources"):
 - packages and distributions: `package_search` of the catalogue, `resources[].format == NGSI-LD`;
 - type, space, source, keys, properties: the T-4254 mapping (`datasets[]`);
 - the Endpoint of a space: the hub's `list_endpoints` (`space`, `types`, `dcat`);
-- entity counts: `NGSILD-Results-Count` of `GET {endpoint}ngsi-ld/v1/entities?type&q=dataset==…`;
+- entity counts: `NGSILD-Results-Count` of `GET {endpoint}ngsi-ld/v1/entities?type&q=isPartOf==…`;
 - source rows: Esri `query?returnCountOnly`, CKAN `datastore_search` `total`, WordPress
   `X-WP-Total`; sampled rows by offset from the same services;
 - the answer: the eval copy's SSE `answer` and `citations` events.
@@ -444,7 +444,7 @@ def gate(package, e, slug, spaces, http, ask, now, shared, sdm=None):
     row["type"] = e["type"]
     sample = []
     doors = [d for d, types in spaces.get(e["space"], []) if e["type"] in types]
-    dataset_q = f'dataset=="{e["dataset"]}"'
+    dataset_q = f'isPartOf=="{e["dataset"]}"'
     if not doors:
         checks["ngsi-ld"] = check("fail", f"no public Endpoint over {e['space']} lists {e['type']}")
     else:

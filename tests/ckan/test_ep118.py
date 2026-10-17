@@ -25,7 +25,7 @@ class Answer:
 def dataset(*extra, drop=(), rows=None):
     """A conforming dataset's resources, without the formats in `drop`, plus `extra`."""
     resources = [
-        {"format": "NGSI-LD", "url": ROOT + "ngsi-ld/v1/entities?type=Supplier&q=dataset%3D%3D%22d%22"},
+        {"format": "NGSI-LD", "url": ROOT + "ngsi-ld/v1/entities?type=Supplier&q=isPartOf%3D%3D%22d%22"},
         {"format": "CSV", "url": ROOT + "file.csv?type=Supplier"},
         {"format": "JSON", "url": ROOT + "file.json?type=Supplier"},
         {"format": "MCP", "url": ROOT + "mcp"},
@@ -54,7 +54,7 @@ def test_a_conforming_dataset_passes_and_every_link_is_read_small():
     verdict, asked, socket = run(dataset())
     assert verdict["ok"], verdict
     assert ROOT + "file.csv?type=Supplier" in asked, "a file is read as listed: its route takes no limit"
-    assert ROOT + "ngsi-ld/v1/entities?type=Supplier&q=dataset%3D%3D%22d%22&limit=1" in asked
+    assert ROOT + "ngsi-ld/v1/entities?type=Supplier&q=isPartOf%3D%3D%22d%22&limit=1" in asked
     assert ROOT + "schema/v1/model.schema.json" in asked, "a model artefact is read whole"
     assert socket == ["Supplier"]
     assert small(ROOT + "odata/v4/Supplier") == ROOT + "odata/v4/Supplier?$top=1"

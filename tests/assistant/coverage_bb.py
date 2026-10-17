@@ -17,7 +17,7 @@ Where each value comes from (the task's "Data sources"):
   `contextSpaceRef` is the dataset's space (its `slug`), and the pipeline whose Bento mapping
   writes the dataset's URL into `dataset` (its name from the seed's `index.yaml` path);
 - entities: `NGSILD-Results-Count` of `GET {base}/api/endpoint/{slug}/ngsi-ld/v1/entities` with
-  `type`, `q=dataset=="<url>"`, `count=true`, `limit=0`, anonymous;
+  `type`, `q=isPartOf=="<url>"`, `count=true`, `limit=0`, anonymous;
 - last run and error: `items[0]` of `GET {portal}/api/v1/projects/{project}/pipelines/{name}/runs`
   (`lastAt`, `sent`, `rejected`, `failed`).
 
@@ -79,7 +79,7 @@ def row_of(dataset: dict, doors: dict, pipelines: dict, get, base: str, portal: 
     if not slug:
         row["error"] = f"no public Endpoint over space {dataset['space']} in the seed"
         return row
-    query = urlencode({"type": dataset["type"], "q": f'dataset=="{url}"', "count": "true", "limit": 0})
+    query = urlencode({"type": dataset["type"], "q": f'isPartOf=="{url}"', "count": "true", "limit": 0})
     status, headers, _ = get(f"{base}/api/endpoint/{slug}/ngsi-ld/v1/entities?{query}", None)
     count = headers.get("NGSILD-Results-Count") if status == 200 else None
     if count is None:
@@ -175,7 +175,7 @@ def selftest() -> None:
             name = url.split("/pipelines/")[1].split("/")[0]
             return 200, {}, {"items": runs[name]}
         for dataset, n in counts.items():
-            if urlencode({"q": f'dataset=="{dataset}"'}) in url:
+            if urlencode({"q": f'isPartOf=="{dataset}"'}) in url:
                 return 200, {"NGSILD-Results-Count": n}, []
         return 404, {}, None
 
