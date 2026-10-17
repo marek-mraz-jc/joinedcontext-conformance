@@ -28,6 +28,7 @@ cd Antares-NGSI-LD-Context-Broker && cg build && cg q -e "<query>"
 | F1 | 1 | The gateway authorized a dot segment as a name and forwarded it: `PATCH …/entities/{id}/attrs/..` is decided as Update Attributes of one attribute, and a hop that resolves dot segments (RFC 3986 clause 5.2.4) runs it as every attribute of the body. Not exploitable against Antares, which refuses a dot segment in an id or attribute name (`antares-model/src/lib.rs:267,290`, `src/id.rs:193`). It is a parser differential all the same. | T-4389 | fixed, merged to platform main (`8009039`) |
 | F2 | 3 | An App's page can plant session cookies for the Portal and every other App: the App origins and the Portal are the same site, every session cookie is unprefixed, and a planted one wins whenever the victim has none at the edge, and always in the Portal's own jar. Login CSRF: the victim works inside the attacker's session. Priority 2 (Decided, worker-3: no right is gained directly, the victim must act inside the planted session). | T-4395 | in review |
 | F3 | 9 | Antares: an offset near `i64::MAX` under conditional view rules wrapped into a negative SQL LIMIT, so Postgres answered 500. No data and no right; section 9.3. | T-3590 | fixed on Antares `agent/worker-3/T-3588`, in review |
+| F4 | 10 | Platform: three token clients followed redirects, so a redirecting token endpoint would have received the credential form again at another host. Needs a compromised realm; section 10.3. | T-3591 | fixed on platform `agent/worker-3/T-3591`, in review |
 | T-2479 | 5 | The Portal's Role may read every Secret of its instance (existing task, not found here). | T-2479 | blocked, priority 3 |
 
 Reference checks against the broker's threat model (every test name in a row's test column, looked up in the tree at `b7200437`):
@@ -290,6 +291,152 @@ RETURN s.path, s.cc, routes ORDER BY s.cc * routes DESC LIMIT 60;
 | GREP: secret compare | | | `AdminAuth::admits` uses `constant_time_eq`; the one other `==` on a token is HTTP method parsing (`odata_batch::multipart::request_line`) |
 
 Zero open priority-1 findings in the broker. F3 is a 500 on an absurd offset, with no data and no right gained, and it is fixed in the same branch.
+
+## 10. joinedcontext-platform sweep with a fresh graph (T-3591)
+
+Commit: joinedcontext-platform `a69980d` (main). Two graphs of it:
+
+```bash
+cd joinedcontext-platform
+# invariant graph (17 336 symbols, 85 http Channels with the T-3591 link rules)
+RUSTUP_TOOLCHAIN=1.99.1 cg build --fg && python3 dev/cg-invariants.py
+# review graph (25 219 symbols)
+RUSTUP_TOOLCHAIN=1.99.1 cg build --fg --deps axum,hyper,reqwest,sqlx,serde_json,jsonwebtoken,tokio-tungstenite
+```
+
+`wasmtime` is left out of `--deps`: its size would outweigh the rest, and T-3588 path 3 already proves the sandbox with an attack test (`host_tests.rs::a_component_reaches_no_environment_file_or_socket`). Neither `rmcp` nor `async-nats` is a platform dependency.
+
+### 10.1 Link rules and invariants
+
+Before T-3591, `.cg/links` keyed only the gateway's `app.rs`, so `ROUTES` missed six servers. `.cg/links/services.toml` adds agent-proxy, the assistant (chat, widget and the Portal's knowledge admin), the gateway's MQTT auth hook, functions, token-sidecar and the wasm-host shard's two ports. The gateway's own hop pins in `gateway.toml` still name `serve_ngsi_ld` and `egress::notifications`, which T-3643 and T-3654 deleted (logged in chyby.md, with the stale `dev/trace-request.py`).
+
+`dev/cg-invariants.py` was red on `main`, for the same reason as the broker's: CI runs only `--selftest`.
+
+| Drift | Fix |
+|---|---|
+| `Exchanger::exchange`/`Exchanger::new` (federation token exchange, PF-47) not allowlisted | read; the client now follows no redirect (F4 below), then allowlisted |
+| `camera_sim::token` (token request and a bare `Client::new`) | a demo simulator, not a deployed service: allowlisted with that reason |
+| `jcctl::commands::publish_ckan::example_type` | the operator's CLI asking the URL the operator publishes: allowlisted |
+| two `secret-exposed` entries for the gateway's delivery key | stale: T-3654 deleted the key; removed |
+| a `--deps` graph | refused by the checker, as in the broker |
+
+New invariant `route-without-authentication`: every http route whose handler reaches none of the caller checks (`gateway::auth::token::Verifier::verify`, `agent_proxy::auth::authenticate`, `agent_proxy::routes::identity::portal_only`, `assistant::chat::admin::the_portal`) within six calls. Its 21 rows are allowlisted with the reason they need none: protected-resource metadata, the public DCAT feed, the widget assets of public deployments, the probes, in-cluster metrics, the network-guarded token sidecar, and the wasm apps port (an App never sees the caller's `Authorization` or `Cookie`; the host carries the token to the gateway). The fixture (`dev/cg-invariants/fixture.patch`) turns all 7 invariants red. Without it: `cg-invariants: OK`.
+
+### 10.2 Route table
+
+Every http Channel of the invariant graph (80 distinct route and handler pairs; the gateway mounts five of them twice, with and without a trailing slash). Limits: the gateway reads a body up to the organization's limit (`app.rs` `read_body`), agent-proxy through `routes::body::bounded`, functions under `DefaultBodyLimit::max(INVOCATION_LIMIT)`, the assistant's chat under `DefaultBodyLimit::max(MAX_BODY)`, and its admin upload under its own `DefaultBodyLimit`. WebSocket frame and message sizes are set (section 8). Tenant scoping in the gateway is the Endpoint's Context Space, resolved from the slug (`resolver`). Each other service scopes by its own principal: the run (agent-proxy), the project path segment checked against the Portal's token (assistant admin), the deployment's public id (assistant chat).
+
+| Route | Handler | Who may call | Caller check (REACH ≤ 6) | Writes |
+|---|---|---|---|---|
+| `ANY /v1/data/endpoints/{}/{}` | `agent_proxy::routes::data::endpoint_handler` | a run's workspace | run token `auth::authenticate`, `DataCredentials::verify` | what the forwarded operation writes, through the broker |
+| `ANY /v1/data/{}` | `agent_proxy::routes::data::handler` | a run's workspace | run token `auth::authenticate`, `DataCredentials::verify` | what the forwarded operation writes, through the broker |
+| `GET /v1/diagnostics/{}/{}` | `agent_proxy::routes::diagnostics::handler` | a run's workspace | run token `auth::authenticate` | none |
+| `POST /v1/runs/events` | `agent_proxy::routes::events::handler` | a run's workspace | run token `auth::authenticate` | creates or forwards |
+| `GET /v1/fetch` | `agent_proxy::routes::fetch::handler` | a run's workspace | run token `auth::authenticate` | none |
+| `ANY /v1/forge/{}` | `agent_proxy::routes::forge::handler` | a run's workspace | run token `auth::authenticate` | what the forwarded operation writes, through the broker |
+| `POST /internal/runs/{}/data-credential` | `agent_proxy::routes::identity::data_credential` | the Portal | `portal_only` | creates or forwards |
+| `POST /internal/runs/{}/identity` | `agent_proxy::routes::identity::handler` | the Portal | `portal_only` | creates or forwards |
+| `GET /v1/runs/inbox` | `agent_proxy::routes::inbox::handler` | a run's workspace | run token `auth::authenticate` | none |
+| `POST /v1/llm/{}` | `agent_proxy::routes::llm::handler` | a run's workspace | run token `auth::authenticate` | creates or forwards |
+| `POST /v1/mcp` | `agent_proxy::routes::mcp::handler` | a run's workspace | run token `auth::authenticate` | creates or forwards |
+| `GET /v1/packages/{}/{}` | `agent_proxy::routes::packages::handler` | a run's workspace | run token `auth::authenticate` | none |
+| `GET /internal/v1/projects/{}/knowledge/sources/{}/documents` | `assistant::chat::admin::documents` | the Portal | `the_portal` | none |
+| `GET /internal/v1/projects/{}/knowledge/sources/{}/errors` | `assistant::chat::admin::errors` | the Portal | `the_portal` | none |
+| `GET /internal/v1/projects/{}/knowledge/sources/{}/files` | `assistant::chat::admin::files` | the Portal | `the_portal` | none |
+| `POST /internal/v1/projects/{}/knowledge/sources/{}/inclusion` | `assistant::chat::admin::inclusion` | the Portal | `the_portal` | creates or forwards |
+| `GET /internal/v1/projects/{}/knowledge/sources/{}/pages/{}/links` | `assistant::chat::admin::links` | the Portal | `the_portal` | none |
+| `GET /internal/v1/projects/{}/knowledge/sources/{}/pages` | `assistant::chat::admin::pages` | the Portal | `the_portal` | none |
+| `GET /internal/v1/projects/{}/knowledge/sources/{}/passages` | `assistant::chat::admin::passages` | the Portal | `the_portal` | none |
+| `POST /internal/v1/projects/{}/knowledge/sources/{}/recrawl` | `assistant::chat::admin::recrawl` | the Portal | `the_portal` | creates or forwards |
+| `DELETE /internal/v1/projects/{}/knowledge/sources/{}/files/{}` | `assistant::chat::admin::remove` | the Portal | `the_portal` | deletes |
+| `GET /internal/v1/projects/{}/knowledge/sources` | `assistant::chat::admin::sources` | the Portal | `the_portal` | none |
+| `POST /internal/v1/projects/{}/knowledge/sources/{}/files` | `assistant::chat::admin::upload` | the Portal | `the_portal` | creates or forwards |
+| `GET /internal/v1/projects/{}/knowledge/deployments/{}/usage` | `assistant::chat::admin::usage` | the Portal | `the_portal` | none |
+| `POST /api/v1/d/{}/chat` | `assistant::chat::chat` | anyone, for a public deployment | none: a public deployment's anonymous chat by its public id | creates or forwards |
+| `POST /internal/v1/projects/{}/knowledge/deployments/{}/chat` | `assistant::chat::chat_in_portal` | the Portal | `the_portal` | creates or forwards |
+| `POST /api/v1/d/{}/feedback` | `assistant::chat::feedback` | anyone, for a public deployment | none: anonymous feedback on a public deployment's answer | creates or forwards |
+| `OPTIONS /api/v1/d/{}/feedback` | `assistant::chat::preflight` | anyone, for a public deployment | none: CORS preflight of a public deployment's feedback | none |
+| `OPTIONS /api/v1/d/{}/chat` | `assistant::chat::preflight` | anyone, for a public deployment | none: CORS preflight of a public deployment's chat | none |
+| `GET /d/{}` | `assistant::chat::widget::full_page` | anyone, for a public deployment | none: a public assistant deployment's page by its public id | none |
+| `GET /d/{}/embed.js` | `assistant::chat::widget::launcher` | anyone, for a public deployment | none: the launcher script of a public deployment by its public id | none |
+| `GET /d/{}/widget` | `assistant::chat::widget::page` | anyone, for a public deployment | none: the widget page of a public deployment by its public id | none |
+| `GET /d/widget.js` | `assistant::chat::widget::script` | anyone, for a public deployment | none: the embeddable chat widget's static script | none |
+| `GET /d/widget.css` | `assistant::chat::widget::style` | anyone, for a public deployment | none: the embeddable chat widget's static stylesheet | none |
+| `GET /catalog.jsonld` | `gateway::app::catalog_feed_jsonld` | an Endpoint's audience (public, organization or a granted ServiceAccount) | none: the public DCAT catalogue: only public Endpoints are listed | none |
+| `GET /catalog.ttl` | `gateway::app::catalog_feed_turtle` | an Endpoint's audience (public, organization or a granted ServiceAccount) | none: the public DCAT catalogue as Turtle | none |
+| `GET /api/endpoint/{}` | `gateway::app::endpoint_record` | an Endpoint's audience (public, organization or a granted ServiceAccount) | token `Verifier::verify`, `Endpoint::admits` | none |
+| `POST /api/endpoint/{}/mcp` | `gateway::app::mcp_message` | an Endpoint's audience (public, organization or a granted ServiceAccount) | token `Verifier::verify`, `Pdp::decide` | creates or forwards |
+| `ANY /api/endpoint/{}/ngsi-ld/v1/{}` | `gateway::app::ngsi_ld` | an Endpoint's audience (public, organization or a granted ServiceAccount) | token `Verifier::verify`, `Pdp::decide` | what the forwarded operation writes, through the broker |
+| `GET /api/endpoint/{}/ngsi-ld/v1` | `gateway::app::ngsi_ld_entry` | an Endpoint's audience (public, organization or a granted ServiceAccount) | token `Verifier::verify`, `Endpoint::admits` | none |
+| `GET /healthz` | `gateway::app::ok` | in-cluster probe or scraper | none: liveness probe | none |
+| `GET /livez` | `gateway::app::ok` | in-cluster probe or scraper | none: liveness probe | none |
+| `GET /api/endpoint/{}/.well-known/oauth-protected-resource` | `gateway::app::protected_resource` | an Endpoint's audience (public, organization or a granted ServiceAccount) | none: RFC 9728 metadata a client reads before it has a token: the issuer and the audience | none |
+| `POST /cs/{}/mcp` | `gateway::app::space_mcp_message` | an Endpoint's audience (public, organization or a granted ServiceAccount) | token `Verifier::verify`, `Pdp::decide` | creates or forwards |
+| `ANY /cs/{}/ngsi-ld/v1/{}` | `gateway::app::space_ngsi_ld` | an Endpoint's audience (public, organization or a granted ServiceAccount) | token `Verifier::verify`, `Pdp::decide` | what the forwarded operation writes, through the broker |
+| `GET /api/endpoint/{}/file.csv` | `gateway::handlers::files::file_csv` | an Endpoint's audience (public, organization or a granted ServiceAccount) | token `Verifier::verify`, `Endpoint::admits` | none |
+| `GET /api/endpoint/{}/file.geojson` | `gateway::handlers::files::file_geojson` | an Endpoint's audience (public, organization or a granted ServiceAccount) | token `Verifier::verify`, `Endpoint::admits` | none |
+| `GET /api/endpoint/{}/file.json` | `gateway::handlers::files::file_json` | an Endpoint's audience (public, organization or a granted ServiceAccount) | token `Verifier::verify`, `Endpoint::admits` | none |
+| `GET /api/endpoint/{}/file.parquet` | `gateway::handlers::files::file_parquet` | an Endpoint's audience (public, organization or a granted ServiceAccount) | token `Verifier::verify`, `Endpoint::admits` | none |
+| `GET /api/endpoint/{}/file.xlsx` | `gateway::handlers::files::file_xlsx` | an Endpoint's audience (public, organization or a granted ServiceAccount) | token `Verifier::verify`, `Endpoint::admits` | none |
+| `GET /api/endpoint/{}/file.zip` | `gateway::handlers::files::file_zip` | an Endpoint's audience (public, organization or a granted ServiceAccount) | token `Verifier::verify`, `Endpoint::admits` | none |
+| `GET /cs/{}/dump` | `gateway::handlers::files::space_dump` | an Endpoint's audience (public, organization or a granted ServiceAccount) | token `Verifier::verify`, `Pdp::decide` | none |
+| `ANY /api/endpoint/{}/odata/v4/{}` | `gateway::handlers::ogc::odata` | an Endpoint's audience (public, organization or a granted ServiceAccount) | token `Verifier::verify`, `Endpoint::admits` | what the forwarded operation writes, through the broker |
+| `ANY /api/endpoint/{}/odata/v4` | `gateway::handlers::ogc::odata` | an Endpoint's audience (public, organization or a granted ServiceAccount) | token `Verifier::verify`, `Endpoint::admits` | what the forwarded operation writes, through the broker |
+| `ANY /api/endpoint/{}/ogc/features` | `gateway::handlers::ogc::ogc_features` | an Endpoint's audience (public, organization or a granted ServiceAccount) | token `Verifier::verify`, `Endpoint::admits` | what the forwarded operation writes, through the broker |
+| `ANY /api/endpoint/{}/ogc/features/{}` | `gateway::handlers::ogc::ogc_features` | an Endpoint's audience (public, organization or a granted ServiceAccount) | token `Verifier::verify`, `Endpoint::admits` | what the forwarded operation writes, through the broker |
+| `GET /api/endpoint/{}/openapi.json` | `gateway::handlers::openapi_doc::openapi` | an Endpoint's audience (public, organization or a granted ServiceAccount) | token `Verifier::verify`, `Endpoint::admits` | none |
+| `GET /api/endpoint/{}/schema/{}/{}` | `gateway::handlers::schema_routes::schema_artifact` | an Endpoint's audience (public, organization or a granted ServiceAccount) | token `Verifier::verify`, `Endpoint::admits` | none |
+| `GET /api/endpoint/{}/schema/index.json` | `gateway::handlers::schema_routes::schema_index` | an Endpoint's audience (public, organization or a granted ServiceAccount) | token `Verifier::verify`, `Endpoint::admits` | none |
+| `GET /cs/{}/schema/{}/{}` | `gateway::handlers::schema_routes::space_schema_artifact` | an Endpoint's audience (public, organization or a granted ServiceAccount) | token `Verifier::verify`, `Pdp::decide` | none |
+| `GET /cs/{}/schema/index.json` | `gateway::handlers::schema_routes::space_schema_index` | an Endpoint's audience (public, organization or a granted ServiceAccount) | token `Verifier::verify`, `Pdp::decide` | none |
+| `GET /cs` | `gateway::handlers::space_routes::space_catalog` | an Endpoint's audience (public, organization or a granted ServiceAccount) | token `Verifier::verify`, `Pdp::decide` | none |
+| `GET /cs/{}` | `gateway::handlers::space_routes::space_record` | an Endpoint's audience (public, organization or a granted ServiceAccount) | token `Verifier::verify`, `Pdp::decide` | none |
+| `ANY /api/endpoint/{}/sta/v1.1` | `gateway::handlers::sta::sensorthings` | an Endpoint's audience (public, organization or a granted ServiceAccount) | token `Verifier::verify`, `Endpoint::admits` | what the forwarded operation writes, through the broker |
+| `ANY /api/endpoint/{}/sta/v1.1/{}` | `gateway::handlers::sta::sensorthings` | an Endpoint's audience (public, organization or a granted ServiceAccount) | token `Verifier::verify`, `Endpoint::admits` | what the forwarded operation writes, through the broker |
+| `GET /api/endpoint/{}/access` | `gateway::handlers::view_access::access` | an Endpoint's audience (public, organization or a granted ServiceAccount) | token `Verifier::verify`, `Endpoint::admits` | none |
+| `POST /api/endpoint/{}/access/check` | `gateway::handlers::view_access::access_check` | an Endpoint's audience (public, organization or a granted ServiceAccount) | token `Verifier::verify`, `Endpoint::admits` | none (a decision preview) |
+| `POST /api/endpoint/{}/access/simulate` | `gateway::handlers::view_access::access_simulate` | an Endpoint's audience (public, organization or a granted ServiceAccount) | token `Verifier::verify`, `Endpoint::admits` | none (a decision preview) |
+| `GET /api/endpoint/{}/ws` | `gateway::handlers::ws::endpoint_ws` | an Endpoint's audience (public, organization or a granted ServiceAccount) | token `Verifier::verify`, `Pdp::decide` | none |
+| `GET /api/endpoints` | `gateway::mcp::hub::endpoints` | an Endpoint's audience (public, organization or a granted ServiceAccount) | token `Verifier::verify`, `Pdp::decide` | none |
+| `GET /api/mcp/.well-known/oauth-protected-resource` | `gateway::mcp::hub::protected_resource` | an Endpoint's audience (public, organization or a granted ServiceAccount) | none: RFC 9728 metadata of the MCP hub | none |
+| `POST /api/mcp/{}/{}` | `gateway::mcp::server::message` | an Endpoint's audience (public, organization or a granted ServiceAccount) | token `Verifier::verify`, `Pdp::decide` | creates or forwards |
+| `GET /api/mcp/{}/{}/.well-known/oauth-protected-resource` | `gateway::mcp::server::protected_resource` | an Endpoint's audience (public, organization or a granted ServiceAccount) | none: RFC 9728 metadata of one MCP server | none |
+| `POST /internal/mqtt/auth` | `gateway::mqtt::auth` | the MQTT broker's auth hook | token `Verifier::verify`, `mqtt::decide` | creates or forwards |
+| `GET /metrics` | `gateway::telemetry::metrics` | in-cluster probe or scraper | none: Prometheus scrape inside the cluster | none |
+| `POST /invoke` | `functions::invoke` | a caller with a gateway-verified token | token `Verifier::verify` | creates or forwards |
+| `POST /token` | `token_sidecar::token` | the pipeline runner pod | none: the pipeline runner's token service: the deployment's NetworkPolicy admits the runner pod alone to 4180 (pipeline-runner networkpolicies.yaml pipeline-tokens) | creates or forwards |
+| `ANY /{}/{}` | `wasm_host::server::Shard::handle` | the edge (apps port) or in-cluster (admin port) | none: the apps port: the App never sees the caller's Authorization or Cookie (host.rs Host::serve_admitted removes both) | what the forwarded operation writes, through the broker |
+| `GET /jobs` | `wasm_host::server::Shard::handle_admin` | the edge (apps port) or in-cluster (admin port) | none: the shard's admin port | none |
+| `GET /metrics` | `wasm_host::server::Shard::handle_admin` | the edge (apps port) or in-cluster (admin port) | none: the shard's admin port | none |
+
+### 10.3 Functions ranked by risk
+
+3 028 non-test workspace functions. 1 853 are reachable from a route within four calls. The ranking query is the one in 9.3 with `cc ≥ 20`. The top tier and the GREP patterns:
+
+| Function | cc × routes | Risk read for | Verdict |
+|---|---|---|---|
+| `gateway::handlers::reads::paged_view` | 30 × 7 | paging numbers | safe: `limit` parses as `u64` and is capped at the Endpoint's `max_rows`; the client's `offset` is dropped and the gateway pages the broker's view itself |
+| `gateway::app::serve_ngsi_ld_view` | 44 × 2 | the decision and the hop | safe: T-3588 path 1; dot segments refused before the hop since F1 |
+| `gateway::operations::operation_of` | 42 × 2 | parser differential | fixed in F1 (T-4389) |
+| `agent_proxy::routes::data::forward` | 42 × 2 | a run reaching another Endpoint | safe: `/v1/data/endpoints/{slug}` admits only a slug the run names, checked once more against the Portal's record when the cache does not name it (`data.rs:116-122`), after `auth::authenticate` |
+| `agent_proxy::routes::forge::handler` | 38 × 1 | path traversal with the platform's forge token | safe: `escapes` refuses `%`, `\`, `//`, leading `/` and dot segments; a write must start with the run's `pathPrefix` (the Portal sends it with a trailing `/`), and nothing under `.gitea/`; only `contents/`, branches, pull requests and read-only `pulls/`/`commits/` pass |
+| `gateway::app::view_payload`, `gateway::app::HeldWrite::check` | 41 × 2, 29 × 2 | write narrowing | safe: T-3588 path 2 (hidden attributes, held writes) |
+| `gateway::translators::sta::filter_to_q` | 21 × 1 | injection into `q` | safe: an operand passes through unescaped, so a caller can write any `q`; a `q` only narrows inside the view the broker enforces, and grants nothing |
+| `gateway::translators::tabular::parquet`, `handlers::files::tabular_download` | 20 × 3 | output size | safe: refused past the Endpoint's `maxFileBytes` (T-4287) |
+| `gateway::fanout::socket::session`, `::run` | 35 × 1, 28 × 1 | WebSocket floods | safe: frame and message caps (section 8), each push decided again (`fanout::hub::decide`) |
+| `gateway::mcp::server::Hub::fan_out`, `mcp::hub::Hub::call` | 28 × 1, 25 × 1 | one call fanning out to many Endpoints | safe: both reach `Verifier::verify` and `Pdp::decide` (route table), so each Endpoint the call reaches is decided on its own |
+| `gateway::federation::exchange::Exchanger::exchange` | via `federation_token` | credential carry-over | finding F4, fixed |
+| `functions::sandbox::execute`, `functions::invoke` | 22 × 1, 20 × 1 | sandbox escape, size | safe: `Verifier::verify` first, `INVOCATION_LIMIT`, the sandbox's `tokio::time::timeout` (section 8) |
+| `wasm_host::host::Host::serve_admitted` | 22 × 1 | credential to the guest | safe: `Authorization` and `Cookie` removed before the guest sees the request; body over `request_bytes` refused |
+| `assistant::upload::office` | 21 × 1 | untrusted Office files | safe: behind `the_portal`, under the admin body limit; kreuzberg reads members in memory and calls no `extract` (T-4383) |
+| `gateway::auth::token::Verifier::verify` | caller check | JWT validation | safe: the algorithm comes from the JWKS entry for the `kid`, never from the token header; issuer, audience, `exp` and `nbf` are checked, with 60 s leeway; an empty audience list refuses |
+| GREP: `Regex::new` (48 non-test) | | regex from input | constants, except `pdp::projection::id_permitted` and `jc_core::kinds::role::whole_value`, which compile patterns from a Policy or Role that the project's administrators write, validated at commit (`EntitySelector::validate`, `PATTERN_MAX` 256); the regex crate runs in linear time. Observation: `id_permitted` compiles each pattern per entity (chyby.md) |
+| GREP: TLS switched off, `unsafe` | | | 0 hits in `crates/*/src` |
+| GREP: secrets in log calls | 24 hits | | each logs that a token is missing or was refused, never its value |
+
+**F4 (fixed in T-3591).** Three clients that post a credential to a token endpoint kept reqwest's default redirect policy: the gateway's federation exchange (the caller's token and the gateway's client secret), the gateway's workload token (its ServiceAccount assertion) and token-sidecar (the pipeline's assertion). A 307 or 308 from the configured endpoint made reqwest resend the form, credential included, to whatever host the answer named. Reaching that needs a compromised or misconfigured realm. No caller can trigger it, so it is not priority 1. All three now set `redirect::Policy::none()`. Tests: `exchange::tests::a_redirect_from_the_token_endpoint_is_refused_and_the_form_goes_nowhere_else` (red with the default policy) and `previews_federated_tests::a_redirecting_token_endpoint_is_not_followed`.
+
+Zero open priority-1 findings in the platform.
 
 ## Related
 
