@@ -8,9 +8,13 @@ lines; XLSX by its size), the WebSocket by an `x-subscribe` answered 201, MCP by
 
     python3 tests/ckan/standards_sweep.py --ckan https://data.dev.joinedcontext.com bbsk banskabystrica
 
-prints one Markdown table row per distribution and a tally, and exits 1 when any is not OK.
-A dataset with no api resource is listed too, as `none`: nothing converted it, or the harvest
-has not run since the mapping named it. Only reads; no token.
+prints one Markdown table row per distribution and a tally, and exits 1 when any is neither OK
+nor RESTRICTED (a 401: the sweep reads anonymously, so a closed distribution answers 401 by
+design, T-4386). A 429 from the edge's rate limit is asked again after a wait and is not a verdict
+until it outlasts every wait. A dataset with no api resource is listed too, as `none`: nothing
+converted it, or the harvest has not run since the mapping named it. `--out` writes the table to a
+file, `--junit` one test case per row, which the hourly batch files a task for when it fails
+(`tests/ckan/sweep.sh`). Only reads; no token.
 """
 
 from __future__ import annotations
@@ -21,6 +25,7 @@ import io
 import json
 import sys
 import time
+import xml.etree.ElementTree as ET
 from collections import Counter
 from collections.abc import Callable
 from typing import Any
@@ -29,6 +34,11 @@ import requests
 from completeness import Reader
 
 TIMEOUT = 60
+# What passes: the distribution answered, or it is closed to an anonymous reader (T-4386).
+PASSING = ("OK", "RESTRICTED")
+# The waits after a 429 that names no Retry-After, in seconds; one names its own, up to the cap.
+THROTTLE_WAITS = (2.0, 10.0, 30.0)
+RETRY_AFTER_CAP = 60.0
 
 
 def rows(url: str, media: str, body: bytes, headers: dict[str, str]) -> int | None:
@@ -52,15 +62,34 @@ def rows(url: str, media: str, body: bytes, headers: dict[str, str]) -> int | No
     return len(doc) if isinstance(doc, list) else None
 
 
-def probe_http(http: requests.Session, resource: dict[str, Any]) -> tuple[str, str]:
+def retry_after(answer: Any, default: float) -> float:
+    """The wait a 429 asks for in seconds, `default` when it names none, never over the cap."""
+    value = (answer.headers.get("retry-after") or answer.headers.get("Retry-After") or "").strip()
+    return min(float(value), RETRY_AFTER_CAP) if value.isdigit() else default
+
+
+def probe_http(
+    http: requests.Session,
+    resource: dict[str, Any],
+    waits: tuple[float, ...] = THROTTLE_WAITS,
+    sleep: Callable[[float], None] = time.sleep,
+) -> tuple[str, str]:
     """(verdict, detail) of one HTTP distribution."""
     url, media = resource["url"], resource.get("mimetype") or ""
     asked = url + ("&count=true" if "/ngsi-ld/" in url else "")
-    try:
-        answer = http.get(asked, timeout=TIMEOUT)
-    except requests.RequestException as error:
-        return "FAIL", type(error).__name__
+    for wait in (*waits, None):
+        try:
+            answer = http.get(asked, timeout=TIMEOUT)
+        except requests.RequestException as error:
+            return "FAIL", type(error).__name__
+        if answer.status_code != 429 or wait is None:
+            break
+        sleep(retry_after(answer, wait))
     kind = answer.headers.get("content-type", "").split(";")[0].strip()
+    if answer.status_code == 429:
+        return "FAIL", f"429 after {len(waits) + 1} tries"
+    if answer.status_code == 401:
+        return "RESTRICTED", "401"
     if answer.status_code != 200:
         problem = ""
         if kind.endswith("json"):
@@ -123,10 +152,23 @@ def table(results: list[tuple[str, str, str, str]]) -> str:
     return "\n".join(lines)
 
 
+def junit(results: list[tuple[str, str, str, str]]) -> bytes:
+    """One test case per row, failing unless its verdict passes: a red row is one filed task."""
+    suite = ET.Element("testsuite", name="standards_sweep", tests=str(len(results)),
+                       failures=str(sum(v not in PASSING for _, _, v, _ in results)))
+    for dataset, distribution, verdict, detail in results:
+        case = ET.SubElement(suite, "testcase", classname="standards_sweep", name=f"{dataset} {distribution}")
+        if verdict not in PASSING:
+            ET.SubElement(case, "failure", message=f"{verdict}: {detail}")
+    return ET.tostring(suite, encoding="utf-8", xml_declaration=True)
+
+
 def main(argv: list[str]) -> int:
     parser = argparse.ArgumentParser(description=__doc__.split("\n", 1)[0])
     parser.add_argument("--ckan", required=True)
     parser.add_argument("--pace", type=float, default=0.3, help="seconds between calls")
+    parser.add_argument("--out", help="also write the table to this file")
+    parser.add_argument("--junit", help="write one JUnit test case per row to this file")
     parser.add_argument("organizations", nargs="+")
     args = parser.parse_args(argv)
     from surfaces import answers_mcp, answers_ws
@@ -137,8 +179,15 @@ def main(argv: list[str]) -> int:
         packages += reader.action("package_search", fq=f"organization:{org}", rows=1000)["results"]
     results = sweep(packages, lambda r: probe_http(reader.http, r),
                     lambda url, kind: answers_ws(reader, url, kind), answers_mcp, args.pace)
-    print(table(results))
-    return 0 if all(v == "OK" for _, _, v, _ in results) else 1
+    report = table(results)
+    print(report)
+    if args.out:
+        with open(args.out, "w", encoding="utf-8") as out:
+            out.write(report + "\n")
+    if args.junit:
+        with open(args.junit, "wb") as out:
+            out.write(junit(results))
+    return 0 if all(v in PASSING for _, _, v, _ in results) else 1
 
 
 if __name__ == "__main__":
