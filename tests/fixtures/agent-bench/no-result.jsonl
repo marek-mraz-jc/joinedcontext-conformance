@@ -1,0 +1,2 @@
+{"type":"system","subtype":"init","tools":[]}
+{"type":"assistant","message":{"content":[{"type":"tool_use","id":"t1","name":"mcp__opendata__list_endpoints","input":{}}]}}
