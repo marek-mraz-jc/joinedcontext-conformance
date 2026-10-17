@@ -29,6 +29,7 @@ cd Antares-NGSI-LD-Context-Broker && cg build && cg q -e "<query>"
 | F2 | 3 | An App's page can plant session cookies for the Portal and every other App: the App origins and the Portal are the same site, every session cookie is unprefixed, and a planted one wins whenever the victim has none at the edge, and always in the Portal's own jar. Login CSRF: the victim works inside the attacker's session. Priority 2 (Decided, worker-3: no right is gained directly, the victim must act inside the planted session). | T-4395 | in review |
 | F3 | 9 | Antares: an offset near `i64::MAX` under conditional view rules wrapped into a negative SQL LIMIT, so Postgres answered 500. No data and no right; section 9.3. | T-3590 | fixed on Antares `agent/worker-3/T-3588`, in review |
 | F4 | 10 | Platform: three token clients followed redirects, so a redirecting token endpoint would have received the credential form again at another host. Needs a compromised realm; section 10.3. | T-3591 | fixed on platform `agent/worker-3/T-3591`, in review |
+| F5 | 11 | Portal: the three Keycloak admin clients followed redirects, so a redirecting realm token endpoint would have received the client secret again at another host. Needs a compromised realm; section 11.3. | T-3592 | fixed on portal `agent/worker-3/T-3591` (`43911cc`), in review |
 | T-2479 | 5 | The Portal's Role may read every Secret of its instance (existing task, not found here). | T-2479 | blocked, priority 3 |
 
 Reference checks against the broker's threat model (every test name in a row's test column, looked up in the tree at `b7200437`):
@@ -437,6 +438,301 @@ Every http Channel of the invariant graph (80 distinct route and handler pairs; 
 **F4 (fixed in T-3591).** Three clients that post a credential to a token endpoint kept reqwest's default redirect policy: the gateway's federation exchange (the caller's token and the gateway's client secret), the gateway's workload token (its ServiceAccount assertion) and token-sidecar (the pipeline's assertion). A 307 or 308 from the configured endpoint made reqwest resend the form, credential included, to whatever host the answer named. Reaching that needs a compromised or misconfigured realm. No caller can trigger it, so it is not priority 1. All three now set `redirect::Policy::none()`. Tests: `exchange::tests::a_redirect_from_the_token_endpoint_is_refused_and_the_form_goes_nowhere_else` (red with the default policy) and `previews_federated_tests::a_redirecting_token_endpoint_is_not_followed`.
 
 Zero open priority-1 findings in the platform.
+
+## 11. joinedcontext-portal sweep with a fresh graph (T-3592)
+
+Commit: joinedcontext-portal `e07e0c89` (main). One graph, built with the toolchain that ships rust-analyzer:
+
+```bash
+cd joinedcontext-portal
+RUSTUP_TOOLCHAIN=1.99.1 cg build --fg && python3 dev/cg-invariants.py
+```
+
+The graph holds 42 674 symbols (Rust, plus the embedded React UI under `ui/`), 231 http Channels and 1 377 links from the UI's calls to the routes.
+
+### 11.1 Link rules and invariants
+
+`dev/cg-invariants.py` was red on `main` here too, because CI runs only `--selftest`.
+
+| Drift | Fix |
+|---|---|
+| `public_docs::serve` (the public API and User Guide pages, T-4063) has no identity | read: a chapter from a fixed list, a page name of `[A-Za-z0-9_-]`, raw HTML filtered by `safe`; allowlisted |
+| `outbound-http` in `mqtt_measured.rs`, `quality_checks.rs`, `space_move.rs` | read: every host comes from configuration or a declared resource's DNS-1123 name, never from a request value; `space_move` is for organization administrators only (`require_organization_admin`); allowlisted with those reasons |
+| `route-without-caller` for `GET`/`POST …/spaces/{}/move` and `POST /internal/pipelines/{}/{}/samples` | documented API without a UI page yet (PF-111), and the pipeline runner's taps on the internal listener (T-3974); allowlisted |
+| `POST …/knowledge/sources/{s}/files` showed no caller | the UI's `uploadFile` builds the URL from a `FormData` call cg does not follow; pinned in `.cg/links/ui.toml` |
+| the realm admin clients followed redirects | finding F5 below |
+
+The fixture (`dev/cg-invariants/fixture.patch`) still turns every invariant red. Without it: `cg-invariants: OK`.
+
+Decided (worker-3, owner may override): no new invariant for the redirect policy of the Portal's 34 `reqwest` client constructions, because the clients that carry a credential to a host outside the cluster (`auth::oidc`, `agents::identity`, and since F5 the three realm admin clients) all set `Policy::none()`, and the rest call in-cluster services from configuration, where reqwest already drops `Authorization` on a cross-host redirect. Options: an invariant on every `Client::builder` without `.redirect(`, with an allowlist of about 30 rows.
+
+### 11.2 Route table
+
+Every http Channel of the graph: 232 route and handler pairs. 161 reach `permissions::for_request` (the signed-in user's rights in the project) within six calls. 12 use the internal listener's bearer (`auth::internal`). 12 use an App token (`BearerVerifier`), 2 of them through the App session. 47 need none, each with its reason in the table.
+
+| Route | Handler | Decision (REACH ≤ 6) | Writes |
+|---|---|---|---|
+| `DELETE /api/v1/alerts/{}` | `api::alerts::unsubscribe` | none needed: DELETE ... WHERE id = $1 AND subject = $2: another caller's id is 404 | deletes |
+| `DELETE /api/v1/organization/people/{}` | `api::people::delete_person` | `permissions` (signed-in user's rights in the project) | deletes |
+| `DELETE /api/v1/organization/people/{}/consents/{}` | `api::people::revoke_consent` | `permissions` (signed-in user's rights in the project) | deletes |
+| `DELETE /api/v1/projects/{}` | `api::projects::delete_project` | `permissions` (signed-in user's rights in the project) | deletes |
+| `DELETE /api/v1/projects/{}/drafts/{}/{}` | `api::drafts::drop_draft` | `permissions` (signed-in user's rights in the project) | deletes |
+| `DELETE /api/v1/projects/{}/knowledge/sources/{}/files/{}` | `api::knowledge::remove_file` | `permissions` (signed-in user's rights in the project) | deletes |
+| `DELETE /api/v1/projects/{}/pipelinetemplates/{}` | `api::pipeline_templates::delete_pipeline_template` | `permissions` (signed-in user's rights in the project) | deletes |
+| `DELETE /api/v1/projects/{}/serviceaccounts/{}/keys/{}` | `api::service_accounts::revoke_key` | `permissions` (signed-in user's rights in the project) | deletes |
+| `DELETE /api/v1/projects/{}/spaces/{}/comments/{}` | `api::entity_comments::remove_comment` | `permissions` (signed-in user's rights in the project) | deletes |
+| `DELETE /api/v1/projects/{}/spaces/{}/trash/{}` | `api::entity_trash::forget` | `permissions` (signed-in user's rights in the project) | deletes |
+| `DELETE /api/v1/projects/{}/spaces/{}/views/{}` | `api::data_views::delete_view` | `permissions` (signed-in user's rights in the project) | deletes |
+| `DELETE /api/v1/projects/{}/workspaces/{}` | `api::workspaces::discard_workspace` | `permissions` (signed-in user's rights in the project) | deletes |
+| `DELETE /api/v1/projects/{}/workspaces/{}/preview` | `api::workspaces::stop_workspace_preview` | `permissions` (signed-in user's rights in the project) | deletes |
+| `DELETE /api/v1/projects/{}/{}/{}` | `api::delete::delete_resource` | `permissions` (signed-in user's rights in the project) | deletes |
+| `DELETE /apps/{}/api/services/files/{}` | `apps::files::delete` | App token (`BearerVerifier::verify_app_token`), the App's person and role (`apps::roles::person`) and its declared services (`apps::services::gate`) | deletes |
+| `GET /.well-known/oauth-protected-resource` | `mcp::oauth_protected_resource` | none needed: RFC 9728 metadata, public by the standard | none |
+| `GET /.well-known/oauth-protected-resource/api/v1/mcp` | `mcp::oauth_protected_resource` | none needed: RFC 9728 metadata, public by the standard | none |
+| `GET /api/v1/alerts` | `api::alerts::list_alerts` | none needed: the caller's own subscriptions, selected by subject | none |
+| `GET /api/v1/alerts/notices` | `api::alerts::list_notices` | `permissions` (signed-in user's rights in the project) | none |
+| `GET /api/v1/app-templates` | `api::app_templates::list_templates` | none needed: the built-in template list compiled into the binary | none |
+| `GET /api/v1/app-templates/{}/screenshot/{}` | `api::app_templates::screenshot` | none needed: embedded PNG; the name must be a known template and the width 1440 or 375, so no path is built from input | none |
+| `GET /api/v1/auth/callback` | `auth::oidc::callback` | none needed: login: state and PKCE verifier from the private cookie jar | none |
+| `GET /api/v1/auth/login` | `auth::oidc::login` | none needed: login start | none |
+| `GET /api/v1/auth/me` | `auth::oidc::me` | none needed: the caller's own identity | none |
+| `GET /api/v1/auth/sso-check` | `auth::oidc::sso_check` | none needed: silent SSO probe, a redirect to the realm | none |
+| `GET /api/v1/auth/sso-check/done` | `auth::oidc::sso_check_done` | none needed: static page ending the probe | none |
+| `GET /api/v1/blueprints` | `api::blueprints::list_blueprints` | none needed: filters every Blueprint through may_run on the caller's identity | none |
+| `GET /api/v1/branding` | `api::branding::get_branding` | none needed: the installation's public branding | none |
+| `GET /api/v1/branding/{}` | `api::branding::get_asset` | none needed: the installation's public branding | none |
+| `GET /api/v1/catalogue` | `api::catalogue::get_catalogue` | none needed: the open-data catalogue: only audience public Endpoints, private datasets dropped (EP-81) | none |
+| `GET /api/v1/catalogue/datasets/{}` | `api::catalogue::get_dataset` | none needed: one public dataset (EP-82) | none |
+| `GET /api/v1/catalogue/datasets/{}/sample` | `api::catalogue::get_sample` | none needed: reads a public Endpoint with no credential, so the gateway's own anonymous policy decides what comes back | none |
+| `GET /api/v1/endpoints` | `api::resources::list_endpoints_everywhere` | `permissions` (signed-in user's rights in the project) | none |
+| `GET /api/v1/forms` | `api::forms::list_forms` | none needed: the organization's form arrangements (UISchema), the same for every person; no project data | none |
+| `GET /api/v1/health` | `api::health::health` | none needed: liveness probe | none |
+| `GET /api/v1/mcp` | `mcp::router` | `permissions` (signed-in user's rights in the project) | none |
+| `GET /api/v1/notifications` | `api::entity_comments::list_notifications` | none needed: the caller's own notifications, selected by recipient | none |
+| `GET /api/v1/openapi.json` | `openapi::openapi_json` | none needed: the published API contract | none |
+| `GET /api/v1/organization/brokers` | `api::brokers::list_brokers` | `permissions` (signed-in user's rights in the project) | none |
+| `GET /api/v1/organization/datamodels` | `api::datamodels::list_organization_datamodels` | `permissions` (signed-in user's rights in the project) | none |
+| `GET /api/v1/organization/feedback` | `api::feedback::list_feedback` | `permissions` (signed-in user's rights in the project) | none |
+| `GET /api/v1/organization/feedback/{}/screenshot` | `api::feedback::feedback_screenshot` | `permissions` (signed-in user's rights in the project) | none |
+| `GET /api/v1/organization/health` | `api::validation::get_health` | `permissions` (signed-in user's rights in the project) | none |
+| `GET /api/v1/organization/limits` | `api::organization_limits::get_limits` | `permissions` (signed-in user's rights in the project) | none |
+| `GET /api/v1/organization/people` | `api::people::list_people` | `permissions` (signed-in user's rights in the project) | none |
+| `GET /api/v1/organization/people/{}` | `api::people::get_person` | `permissions` (signed-in user's rights in the project) | none |
+| `GET /api/v1/organization/setup` | `api::setup::get_setup` | `permissions` (signed-in user's rights in the project) | none |
+| `GET /api/v1/preferences` | `api::preferences::get_preferences` | none needed: the caller's own preferences, keyed by subject | none |
+| `GET /api/v1/projects` | `api::projects::list_projects` | `permissions` (signed-in user's rights in the project) | none |
+| `GET /api/v1/projects/{}` | `api::projects::get_project` | `permissions` (signed-in user's rights in the project) | none |
+| `GET /api/v1/projects/{}/activity` | `api::activity::list_activity` | `permissions` (signed-in user's rights in the project) | none |
+| `GET /api/v1/projects/{}/activity/stream` | `api::activity::stream_activity` | `permissions` (signed-in user's rights in the project) | none |
+| `GET /api/v1/projects/{}/agent-runs` | `api::agent_runs::list_runs` | `permissions` (signed-in user's rights in the project) | none |
+| `GET /api/v1/projects/{}/agent-runs/{}` | `api::agent_runs::get_run` | `permissions` (signed-in user's rights in the project) | none |
+| `GET /api/v1/projects/{}/agent-runs/{}/events` | `api::agent_runs::stream_events` | `permissions` (signed-in user's rights in the project) | none |
+| `GET /api/v1/projects/{}/agent-runs/{}/preview` | `api::agent_runs::preview` | `permissions` (signed-in user's rights in the project) | none |
+| `GET /api/v1/projects/{}/app-checks` | `api::validation::list_app_checks` | `permissions` (signed-in user's rights in the project) | none |
+| `GET /api/v1/projects/{}/apps/{}/build` | `api::app_build::build` | `permissions` (signed-in user's rights in the project) | none |
+| `GET /api/v1/projects/{}/apps/{}/builds` | `api::app_build::builds` | `permissions` (signed-in user's rights in the project) | none |
+| `GET /api/v1/projects/{}/apps/{}/export` | `api::app_transfer::export_app` | `permissions` (signed-in user's rights in the project) | none |
+| `GET /api/v1/projects/{}/apps/{}/me` | `api::app_me::me` | App token (`BearerVerifier::verify_app_token`, `session_of`) | none |
+| `GET /api/v1/projects/{}/assistant/access` | `api::assistant::get_access` | `permissions` (signed-in user's rights in the project) | none |
+| `GET /api/v1/projects/{}/assistant/catalog` | `api::assistant::get_catalog` | `permissions` (signed-in user's rights in the project) | none |
+| `GET /api/v1/projects/{}/basemap/{}/style.json` | `api::basemap::get_style` | none needed: the public basemap style; project checked against the mirror | none |
+| `GET /api/v1/projects/{}/basemap/{}/{}/{}/{}` | `api::basemap::get_tile` | none needed: public tiles: style fixed to default, z/x/y parsed as integers in range, extension allowlisted, so the cache path takes no free text | none |
+| `GET /api/v1/projects/{}/changes` | `api::changes::list_changes` | `permissions` (signed-in user's rights in the project) | none |
+| `GET /api/v1/projects/{}/changes/history` | `api::changes::list_change_history` | `permissions` (signed-in user's rights in the project) | none |
+| `GET /api/v1/projects/{}/changes/{}` | `api::changes::get_change` | `permissions` (signed-in user's rights in the project) | none |
+| `GET /api/v1/projects/{}/changes/{}/manifests` | `api::restore::change_manifests` | `permissions` (signed-in user's rights in the project) | none |
+| `GET /api/v1/projects/{}/ckan/status` | `api::ckan::get_status` | `permissions` (signed-in user's rights in the project) | none |
+| `GET /api/v1/projects/{}/datamodels/{}/source` | `api::datamodels::get_source` | `permissions` (signed-in user's rights in the project) | none |
+| `GET /api/v1/projects/{}/drafts` | `api::drafts::list_drafts` | `permissions` (signed-in user's rights in the project) | none |
+| `GET /api/v1/projects/{}/drafts/events` | `api::drafts::stream_draft_events` | `permissions` (signed-in user's rights in the project) | none |
+| `GET /api/v1/projects/{}/drafts/{}/{}` | `api::drafts::get_draft` | `permissions` (signed-in user's rights in the project) | none |
+| `GET /api/v1/projects/{}/drift` | `api::drift::list_drift` | `permissions` (signed-in user's rights in the project) | none |
+| `GET /api/v1/projects/{}/export` | `api::export::export` | `permissions` (signed-in user's rights in the project) | none |
+| `GET /api/v1/projects/{}/federation-graph` | `api::federation::get_graph` | `permissions` (signed-in user's rights in the project) | none |
+| `GET /api/v1/projects/{}/knowledge/deployments/{}/usage` | `api::knowledge::deployment_usage` | `permissions` (signed-in user's rights in the project) | none |
+| `GET /api/v1/projects/{}/knowledge/sources` | `api::knowledge::list_sources` | `permissions` (signed-in user's rights in the project) | none |
+| `GET /api/v1/projects/{}/knowledge/sources/{}/documents` | `api::knowledge::list_documents` | `permissions` (signed-in user's rights in the project) | none |
+| `GET /api/v1/projects/{}/knowledge/sources/{}/errors` | `api::knowledge::list_errors` | `permissions` (signed-in user's rights in the project) | none |
+| `GET /api/v1/projects/{}/knowledge/sources/{}/files` | `api::knowledge::list_files` | `permissions` (signed-in user's rights in the project) | none |
+| `GET /api/v1/projects/{}/knowledge/sources/{}/pages` | `api::knowledge::list_pages` | `permissions` (signed-in user's rights in the project) | none |
+| `GET /api/v1/projects/{}/knowledge/sources/{}/pages/{}/links` | `api::knowledge::list_links` | `permissions` (signed-in user's rights in the project) | none |
+| `GET /api/v1/projects/{}/knowledge/sources/{}/passages` | `api::knowledge::list_passages` | `permissions` (signed-in user's rights in the project) | none |
+| `GET /api/v1/projects/{}/mqttbrokers/{}/measured` | `api::mqtt_measured::get_measured` | `permissions` (signed-in user's rights in the project) | none |
+| `GET /api/v1/projects/{}/ops` | `api::ops::list_ops` | `permissions` (signed-in user's rights in the project) | none |
+| `GET /api/v1/projects/{}/permissions/me` | `api::permissions::permissions_me` | `permissions` (signed-in user's rights in the project) | none |
+| `GET /api/v1/projects/{}/pipelines/{}/metrics` | `api::pipelines::get_metrics` | `permissions` (signed-in user's rights in the project) | none |
+| `GET /api/v1/projects/{}/pipelines/{}/rejected` | `api::pipelines::get_rejected` | `permissions` (signed-in user's rights in the project) | none |
+| `GET /api/v1/projects/{}/pipelines/{}/runs` | `api::pipelines::get_runs` | `permissions` (signed-in user's rights in the project) | none |
+| `GET /api/v1/projects/{}/pipelines/{}/runs/{}/log` | `api::pipelines::get_run_log` | `permissions` (signed-in user's rights in the project) | none |
+| `GET /api/v1/projects/{}/pipelines/{}/samples` | `api::pipelines::get_samples` | `permissions` (signed-in user's rights in the project) | none |
+| `GET /api/v1/projects/{}/pipelines/{}/stats` | `api::pipelines::get_stats` | `permissions` (signed-in user's rights in the project) | none |
+| `GET /api/v1/projects/{}/pipelinetemplates` | `api::pipeline_templates::list_pipeline_templates` | `permissions` (signed-in user's rights in the project) | none |
+| `GET /api/v1/projects/{}/registry` | `api::projects::get_registry_entry` | `permissions` (signed-in user's rights in the project) | none |
+| `GET /api/v1/projects/{}/revisions` | `api::export::revisions` | `permissions` (signed-in user's rights in the project) | none |
+| `GET /api/v1/projects/{}/serviceaccounts/{}/keys` | `api::service_accounts::list_keys` | `permissions` (signed-in user's rights in the project) | none |
+| `GET /api/v1/projects/{}/serviceaccounts/{}/keys/claims/{}` | `api::service_accounts::get_key_claim` | `permissions` (signed-in user's rights in the project) | none |
+| `GET /api/v1/projects/{}/spaces/{}/comments` | `api::entity_comments::list_comments` | `permissions` (signed-in user's rights in the project) | none |
+| `GET /api/v1/projects/{}/spaces/{}/live` | `api::live::watch` | `permissions` (signed-in user's rights in the project) | none |
+| `GET /api/v1/projects/{}/spaces/{}/move` | `api::space_move::get_move` | `permissions` (signed-in user's rights in the project) | none |
+| `GET /api/v1/projects/{}/spaces/{}/quality` | `api::quality::get_quality` | `permissions` (signed-in user's rights in the project) | none |
+| `GET /api/v1/projects/{}/spaces/{}/quality/checks` | `api::quality::get_checks` | `permissions` (signed-in user's rights in the project) | none |
+| `GET /api/v1/projects/{}/spaces/{}/retention/deleted` | `api::space_retention::retention_deleted` | `permissions` (signed-in user's rights in the project) | none |
+| `GET /api/v1/projects/{}/spaces/{}/trash` | `api::entity_trash::list_trash` | `permissions` (signed-in user's rights in the project) | none |
+| `GET /api/v1/projects/{}/spaces/{}/types/{}/attributes` | `api::type_attributes::type_attributes` | `permissions` (signed-in user's rights in the project) | none |
+| `GET /api/v1/projects/{}/spaces/{}/usage` | `api::space_usage::get_usage` | `permissions` (signed-in user's rights in the project) | none |
+| `GET /api/v1/projects/{}/spaces/{}/views` | `api::data_views::list_views` | `permissions` (signed-in user's rights in the project) | none |
+| `GET /api/v1/projects/{}/spaces/{}/views/{}` | `api::data_views::get_view` | `permissions` (signed-in user's rights in the project) | none |
+| `GET /api/v1/projects/{}/syncsources/{}/status` | `api::sync_sources::status` | `permissions` (signed-in user's rights in the project) | none |
+| `GET /api/v1/projects/{}/workspaces` | `api::workspaces::list_workspaces` | `permissions` (signed-in user's rights in the project) | none |
+| `GET /api/v1/projects/{}/workspaces/{}` | `api::workspaces::get_workspace` | `permissions` (signed-in user's rights in the project) | none |
+| `GET /api/v1/projects/{}/workspaces/{}/compare` | `api::workspaces::compare_workspace` | `permissions` (signed-in user's rights in the project) | none |
+| `GET /api/v1/projects/{}/workspaces/{}/preview` | `api::workspaces::get_workspace_preview` | `permissions` (signed-in user's rights in the project) | none |
+| `GET /api/v1/projects/{}/{}` | `api::resources::list` | `permissions` (signed-in user's rights in the project) | none |
+| `GET /api/v1/projects/{}/{}/{}` | `api::resources::get_resource` | `permissions` (signed-in user's rights in the project) | none |
+| `GET /api/v1/ready` | `api::health::ready` | none needed: readiness probe | none |
+| `GET /api/v1/sync` | `api::sync::get_sync_status` | none needed: the instance's mirror state (revision, count, error text without credentials); no project data | none |
+| `GET /api/v1/tools/sdm-catalog` | `tools::model_tools::sdm_catalog` | none needed: the public Smart Data Models index; the URL is Model Tools' own allowlist, the caller steers only refresh | none |
+| `GET /apps/{}` | `apps::static_host::serve_index` | the App's visibility, through the App session (`BearerVerifier::verify_app_token`, `session_of`) | none |
+| `GET /apps/{}/api/services/files` | `apps::files::list` | App token (`BearerVerifier::verify_app_token`), the App's person and role (`apps::roles::person`) and its declared services (`apps::services::gate`) | none |
+| `GET /apps/{}/api/services/files/{}` | `apps::files::get` | App token (`BearerVerifier::verify_app_token`), the App's person and role (`apps::roles::person`) and its declared services (`apps::services::gate`) | none |
+| `GET /apps/{}/api/services/jobs` | `apps::jobs::list` | App token (`BearerVerifier::verify_app_token`), the App's person and role (`apps::roles::person`) and its declared services (`apps::services::gate`) | none |
+| `GET /apps/{}/{}` | `apps::static_host::serve` | the App's visibility, through the App session (`BearerVerifier::verify_app_token`, `session_of`) | none |
+| `GET /internal/agent-runs/{}` | `api::internal::agent_runs::internal_get_run` | internal bearer (`auth::internal`) | none |
+| `GET /internal/agent-runs/{}/diagnostics/{}/{}` | `api::internal::agent_runs::internal_diagnostics` | internal bearer (`auth::internal`) and `permissions` | none |
+| `GET /internal/agent-runs/{}/inbox` | `api::internal::agent_runs::internal_inbox` | internal bearer (`auth::internal`) | none |
+| `GET /internal/domain-verifications` | `api::internal::domain_verifications::domain_verifications` | internal bearer (`auth::internal`) | none |
+| `GET /internal/previews` | `api::internal::previews::served_previews` | internal bearer (`auth::internal`) | none |
+| `GET /mail/unsubscribe` | `apps::email::unsubscribe_page` | none needed: same signed link; the page echoes only a DNS-1123 app name under a default-src 'none' CSP | none |
+| `GET /metrics` | `telemetry::metrics` | none needed: /metrics: the edge refuses the path (deployment components/portal/apisix-routes.yaml portal-metrics), scraped in-cluster only | none |
+| `GET /templates/assets/{}` | `apps::template_demos::asset` | none needed: the built-in templates' demo files, CSP forbids every connection (AP-141) | none |
+| `GET /templates/{}` | `apps::template_demos::demo` | none needed: the built-in templates' demo pages (AP-141) | none |
+| `GET /templates/{}` | `apps::template_demos::demo` | none needed: the built-in templates' demo pages (AP-141) | none |
+| `PATCH /api/v1/organization/people/{}` | `api::people::edit_person` | `permissions` (signed-in user's rights in the project) | updates |
+| `PATCH /api/v1/projects/{}/{}/{}` | `api::mutate::patch` | `permissions` (signed-in user's rights in the project) | updates |
+| `POST /api/v1/activity` | `api::activity::ingest_activity` | none needed: refuses every caller but the collector's own Keycloak client over a bearer (OPS-48, T-1402); projects are checked against the mirror | creates or runs |
+| `POST /api/v1/alerts/notices/{}/read` | `api::alerts::read_notice` | none needed: UPDATE ... WHERE id = $1 AND recipient = ANY($2): another caller's id is 404 | creates or runs |
+| `POST /api/v1/alerts/{}/mute` | `api::alerts::mute` | none needed: UPDATE ... WHERE id = $1 AND subject = $2: another caller's id is 404 | creates or runs |
+| `POST /api/v1/auth/backchannel-logout` | `auth::oidc::backchannel_logout` | none needed: the realm's call: the logout token's signature, issuer and audience are verified, and it must carry the logout event and no nonce | creates or runs |
+| `POST /api/v1/auth/logout` | `auth::oidc::logout` | none needed: ends the caller's own session | creates or runs |
+| `POST /api/v1/feedback` | `api::feedback::send_feedback` | none needed: anyone signed in may send feedback; bounded text, rate-limited per subject, scrubbed; reading it needs an org administrator | creates or runs |
+| `POST /api/v1/mcp` | `mcp::handle_mcp` | `permissions` (signed-in user's rights in the project) | creates or runs |
+| `POST /api/v1/notifications/{}/read` | `api::entity_comments::read_notification` | none needed: mark_read filters by the caller's recipients: another caller's id is 404 | creates or runs |
+| `POST /api/v1/organization/people` | `api::people::create_person` | `permissions` (signed-in user's rights in the project) | creates or runs |
+| `POST /api/v1/organization/people/{}/disable` | `api::people::disable_person` | `permissions` (signed-in user's rights in the project) | creates or runs |
+| `POST /api/v1/organization/people/{}/enable` | `api::people::enable_person` | `permissions` (signed-in user's rights in the project) | creates or runs |
+| `POST /api/v1/organization/people/{}/remove-second-factor` | `api::people::remove_second_factor` | `permissions` (signed-in user's rights in the project) | creates or runs |
+| `POST /api/v1/organization/people/{}/resend-invitation` | `api::people::resend_invitation` | `permissions` (signed-in user's rights in the project) | creates or runs |
+| `POST /api/v1/organization/people/{}/reset-password` | `api::people::reset_password` | `permissions` (signed-in user's rights in the project) | creates or runs |
+| `POST /api/v1/organization/people/{}/sign-out` | `api::people::sign_out_person` | `permissions` (signed-in user's rights in the project) | creates or runs |
+| `POST /api/v1/preferences/recent` | `api::preferences::add_recent` | none needed: the caller's own preferences, keyed by subject | creates or runs |
+| `POST /api/v1/projects` | `api::projects::open_project` | `permissions` (signed-in user's rights in the project) | creates or runs |
+| `POST /api/v1/projects/{}/access/explore` | `api::access_explore::explore_access` | `permissions` (signed-in user's rights in the project) | creates or runs |
+| `POST /api/v1/projects/{}/agent-runs` | `api::agent_runs::create_run` | `permissions` (signed-in user's rights in the project) | creates or runs |
+| `POST /api/v1/projects/{}/agent-runs/{}/answers` | `api::agent_runs::answer_question` | `permissions` (signed-in user's rights in the project) | creates or runs |
+| `POST /api/v1/projects/{}/agent-runs/{}/cancel` | `api::agent_runs::cancel_run` | `permissions` (signed-in user's rights in the project) | creates or runs |
+| `POST /api/v1/projects/{}/agent-runs/{}/functions/{}` | `api::agent_runs::call_function` | `permissions` (signed-in user's rights in the project) | creates or runs |
+| `POST /api/v1/projects/{}/agent-runs/{}/messages` | `api::agent_runs::post_message` | `permissions` (signed-in user's rights in the project) | creates or runs |
+| `POST /api/v1/projects/{}/agent-runs/{}/preview-errors` | `api::agent_runs::post_preview_error` | `permissions` (signed-in user's rights in the project) | creates or runs |
+| `POST /api/v1/projects/{}/agent-runs/{}/preview-observations` | `api::agent_runs::post_preview_observation` | `permissions` (signed-in user's rights in the project) | creates or runs |
+| `POST /api/v1/projects/{}/agent-runs/{}/publish` | `api::agent_runs::publish_run` | `permissions` (signed-in user's rights in the project) | creates or runs |
+| `POST /api/v1/projects/{}/apps/rename-shapes` | `api::app_shapes::rename_shapes` | `permissions` (signed-in user's rights in the project) | creates or runs |
+| `POST /api/v1/projects/{}/apps/{}/rebuild` | `api::app_build::rebuild` | `permissions` (signed-in user's rights in the project) | creates or runs |
+| `POST /api/v1/projects/{}/apps/{}/restore` | `api::app_build::restore` | `permissions` (signed-in user's rights in the project) | creates or runs |
+| `POST /api/v1/projects/{}/assistant/conversations` | `api::assistant::start_conversation` | `permissions` (signed-in user's rights in the project) | creates or runs |
+| `POST /api/v1/projects/{}/assistant/propose-endpoint` | `api::assistant::propose_endpoint` | `permissions` (signed-in user's rights in the project) | creates or runs |
+| `POST /api/v1/projects/{}/catalogue/drafts` | `api::catalogue_draft::draft_publication` | `permissions` (signed-in user's rights in the project) | creates or runs |
+| `POST /api/v1/projects/{}/changes/{}/approve` | `api::changes::approve_change` | `permissions` (signed-in user's rights in the project) | creates or runs |
+| `POST /api/v1/projects/{}/changes/{}/reject` | `api::changes::reject_change` | `permissions` (signed-in user's rights in the project) | creates or runs |
+| `POST /api/v1/projects/{}/changes/{}/restore` | `api::restore::restore_change` | `permissions` (signed-in user's rights in the project) | creates or runs |
+| `POST /api/v1/projects/{}/changes/{}/undo` | `api::restore::undo_change` | `permissions` (signed-in user's rights in the project) | creates or runs |
+| `POST /api/v1/projects/{}/datamodels/{}/share` | `api::datamodels::share_model` | `permissions` (signed-in user's rights in the project) | creates or runs |
+| `POST /api/v1/projects/{}/drift/{}/{}/adopt` | `api::drift::adopt_drift` | `permissions` (signed-in user's rights in the project) | creates or runs |
+| `POST /api/v1/projects/{}/drift/{}/{}/revert` | `api::drift::revert_drift` | `permissions` (signed-in user's rights in the project) | creates or runs |
+| `POST /api/v1/projects/{}/duplicate` | `api::projects::duplicate_project` | `permissions` (signed-in user's rights in the project) | creates or runs |
+| `POST /api/v1/projects/{}/endpoints/{}/access/simulate` | `api::access_simulate::simulate_access` | `permissions` (signed-in user's rights in the project) | creates or runs |
+| `POST /api/v1/projects/{}/endpoints/{}/preview` | `api::endpoint_preview::preview_endpoint` | `permissions` (signed-in user's rights in the project) | creates or runs |
+| `POST /api/v1/projects/{}/flows` | `api::blueprints::start_flow` | `permissions` (signed-in user's rights in the project) | creates or runs |
+| `POST /api/v1/projects/{}/import` | `api::import::import` | `permissions` (signed-in user's rights in the project) | creates or runs |
+| `POST /api/v1/projects/{}/knowledge/deployments/{}/chat` | `api::knowledge::chat` | `permissions` (signed-in user's rights in the project) | creates or runs |
+| `POST /api/v1/projects/{}/knowledge/sources/{}/files` | `api::knowledge::upload_file` | `permissions` (signed-in user's rights in the project) | creates or runs |
+| `POST /api/v1/projects/{}/knowledge/sources/{}/inclusion` | `api::knowledge::set_inclusion` | `permissions` (signed-in user's rights in the project) | creates or runs |
+| `POST /api/v1/projects/{}/knowledge/sources/{}/recrawl` | `api::knowledge::recrawl` | `permissions` (signed-in user's rights in the project) | creates or runs |
+| `POST /api/v1/projects/{}/ops/{}` | `api::ops::run_op` | `permissions` (signed-in user's rights in the project) | creates or runs |
+| `POST /api/v1/projects/{}/pipelines/test` | `api::pipeline_test::test_pipeline` | `permissions` (signed-in user's rights in the project) | creates or runs |
+| `POST /api/v1/projects/{}/pipelines/{}/rejected/retry` | `api::pipelines::retry_rejected` | `permissions` (signed-in user's rights in the project) | creates or runs |
+| `POST /api/v1/projects/{}/pipelines/{}/runs` | `api::pipelines::post_run` | `permissions` (signed-in user's rights in the project) | creates or runs |
+| `POST /api/v1/projects/{}/pipelinetemplates` | `api::pipeline_templates::create_pipeline_template` | `permissions` (signed-in user's rights in the project) | creates or runs |
+| `POST /api/v1/projects/{}/serviceaccounts/{}/keys` | `api::service_accounts::create_key` | `permissions` (signed-in user's rights in the project) | creates or runs |
+| `POST /api/v1/projects/{}/serviceaccounts/{}/keys/claims/{}` | `api::service_accounts::use_key_claim` | `permissions` (signed-in user's rights in the project) | creates or runs |
+| `POST /api/v1/projects/{}/serviceaccounts/{}/keys/{}/rotate` | `api::service_accounts::rotate_key` | `permissions` (signed-in user's rights in the project) | creates or runs |
+| `POST /api/v1/projects/{}/spaces/{}/comments` | `api::entity_comments::add_comment` | `permissions` (signed-in user's rights in the project) | creates or runs |
+| `POST /api/v1/projects/{}/spaces/{}/move` | `api::space_move::start_move` | `permissions` (signed-in user's rights in the project) | creates or runs |
+| `POST /api/v1/projects/{}/spaces/{}/retention/preview` | `api::space_retention::preview_retention` | `permissions` (signed-in user's rights in the project) | creates or runs |
+| `POST /api/v1/projects/{}/spaces/{}/trash` | `api::entity_trash::keep` | `permissions` (signed-in user's rights in the project) | creates or runs |
+| `POST /api/v1/projects/{}/spaces/{}/views` | `api::data_views::create_view` | `permissions` (signed-in user's rights in the project) | creates or runs |
+| `POST /api/v1/projects/{}/syncsources/{}/detach` | `api::sync_sources::detach` | `permissions` (signed-in user's rights in the project) | creates or runs |
+| `POST /api/v1/projects/{}/syncsources/{}/pause` | `api::sync_sources::pause` | `permissions` (signed-in user's rights in the project) | creates or runs |
+| `POST /api/v1/projects/{}/syncsources/{}/sync` | `api::sync_sources::sync_now` | `permissions` (signed-in user's rights in the project) | creates or runs |
+| `POST /api/v1/projects/{}/workspaces` | `api::workspaces::open_workspace` | `permissions` (signed-in user's rights in the project) | creates or runs |
+| `POST /api/v1/projects/{}/workspaces/{}/preview` | `api::workspaces::start_workspace_preview` | `permissions` (signed-in user's rights in the project) | creates or runs |
+| `POST /api/v1/projects/{}/workspaces/{}/propose` | `api::workspaces::propose_workspace` | `permissions` (signed-in user's rights in the project) | creates or runs |
+| `POST /api/v1/projects/{}/workspaces/{}/update` | `api::workspaces::update_workspace` | `permissions` (signed-in user's rights in the project) | creates or runs |
+| `POST /api/v1/projects/{}/{}` | `api::mutate::create` | `permissions` (signed-in user's rights in the project) | creates or runs |
+| `POST /api/v1/tools/generate` | `tools::model_tools::generate` | none needed: stateless compile of the caller's own source in Model Tools; writes nothing | creates or runs |
+| `POST /api/v1/tools/import-sdm` | `tools::model_tools::import_sdm` | none needed: stateless compile of a catalogue id (is_catalogue_id refuses a URL); writes nothing | creates or runs |
+| `POST /api/v1/tools/infer-schema` | `tools::model_tools::infer_schema` | none needed: stateless inference over the caller's own sample, parsed in memory by Model Tools; writes nothing | creates or runs |
+| `POST /api/v1/webhooks/gitea` | `api::webhook::gitea_webhook` | `permissions` (signed-in user's rights in the project) | creates or runs |
+| `POST /api/v1/webhooks/sync/{}/{}` | `api::sync_sources::webhook` | none needed: the body must carry the HMAC of the SyncSource's own secret (MF-44, PF-59) | creates or runs |
+| `POST /apps/{}/api/functions/{}` | `apps::functions::call` | App token (`BearerVerifier::verify_app_token`), the App's person and role (`apps::roles::person`) and its declared services (`apps::services::gate`) | creates or runs |
+| `POST /apps/{}/api/services/ai/complete` | `apps::ai::complete` | App token (`BearerVerifier::verify_app_token`), the App's person and role (`apps::roles::person`) and its declared services (`apps::services::gate`) | creates or runs |
+| `POST /apps/{}/api/services/email/send` | `apps::email::send` | App token (`BearerVerifier::verify_app_token`), the App's person and role (`apps::roles::person`) and its declared services (`apps::services::gate`) | creates or runs |
+| `POST /apps/{}/api/services/files/{}` | `apps::files::url` | App token (`BearerVerifier::verify_app_token`), the App's person and role (`apps::roles::person`) and its declared services (`apps::services::gate`) | creates or runs |
+| `POST /internal/agent-runs/events` | `api::internal::agent_runs::internal_post_event` | internal bearer (`auth::internal`) | creates or runs |
+| `POST /internal/agent-runs/{}/mcp` | `api::internal::agent_runs::internal_mcp` | internal bearer (`auth::internal`) and `permissions` | creates or runs |
+| `POST /internal/model-key` | `api::internal::model_key::model_key` | internal bearer (`auth::internal`) | creates or runs |
+| `POST /internal/pipeline-tests/{}` | `api::internal::pipeline_tests::capture` | internal bearer (`auth::internal`) | creates or runs |
+| `POST /internal/pipelines/{}/{}/outcomes` | `api::internal::pipeline_rejected::outcomes` | internal bearer (`auth::internal`) | creates or runs |
+| `POST /internal/pipelines/{}/{}/rejected` | `api::internal::pipeline_rejected::rejected` | internal bearer (`auth::internal`) | creates or runs |
+| `POST /internal/pipelines/{}/{}/samples` | `api::internal::pipeline_rejected::sampled` | internal bearer (`auth::internal`) | creates or runs |
+| `POST /live-notify/{}` | `api::live::notify` | none needed: the path key is an HMAC under a per-process secret (live::LiveHub::key); body bounded, a delivery only makes a view read again | creates or runs |
+| `POST /mail/unsubscribe` | `apps::email::unsubscribe` | none needed: the link is an HMAC over project, app and subject, each validated before it is echoed or bound | creates or runs |
+| `PUT /api/v1/alerts` | `api::alerts::subscribe` | `permissions` (signed-in user's rights in the project) | replaces |
+| `PUT /api/v1/preferences` | `api::preferences::put_preferences` | none needed: the caller's own preferences, keyed by subject | replaces |
+| `PUT /api/v1/projects/{}/datamodels/{}/source` | `api::datamodels::put_source` | `permissions` (signed-in user's rights in the project) | replaces |
+| `PUT /api/v1/projects/{}/drafts/{}/{}` | `api::drafts::put_draft` | `permissions` (signed-in user's rights in the project) | replaces |
+| `PUT /api/v1/projects/{}/registry` | `api::projects::repoint_project` | `permissions` (signed-in user's rights in the project) | replaces |
+| `PUT /api/v1/projects/{}/spaces/{}/views/{}` | `api::data_views::update_view` | `permissions` (signed-in user's rights in the project) | replaces |
+| `PUT /api/v1/projects/{}/{}/{}` | `api::mutate::replace` | `permissions` (signed-in user's rights in the project) | replaces |
+| `PUT /apps/{}/api/services/files/{}` | `apps::files::put` | App token (`BearerVerifier::verify_app_token`), the App's person and role (`apps::roles::person`) and its declared services (`apps::services::gate`) | replaces |
+
+### 11.3 Functions ranked by risk
+
+3 478 non-test Portal functions. 3 368 are reachable from a route within four calls: the reconciler runs in-process, and the `ops` tables tie most of it to a route. The ranking query is the one in 9.3 with `cc ≥ 30`. The top tier and the GREP patterns:
+
+| Function | cc × routes | Risk read for | Verdict |
+|---|---|---|---|
+| `api::mutate::propose_engine` | 136 × 7 | a write past the caller's rights | safe: every route into it reaches `permissions::for_request` (route table) |
+| `api::changes::approve_change_for` | 35 × 7 | self-approval | safe: `permissions::for_request(…).check` before the merge; an approver named by the author cannot approve their own Change (T-3433) |
+| `reconciler::daemon::Syncer::do_sync` | 205 × 4 | reconciling a resource into another project | safe: the reconciler loop runs it on the forge's state; no request value reaches it |
+| `ops::views::operations`, `ops::admin::operations`, `ops::proposals::operations`, `ops::people::operations`, `ops::compute::operations` | 30–42 × 8 | operation tables shared by the API and MCP | safe: `ops::listing` filters by the `Caller`, and each operation is checked again when it runs |
+| `mcp::dispatch` | 46 × 3 | MCP tools past the caller's rights | safe: `tools/list` and every call go through `ops::listing(&caller, …)` |
+| `api::pipelines::scrape` | 32 × 6 | parsing untrusted metrics text | safe: a line parser over the runner's Prometheus text; a malformed line is skipped, counts are summed as `u64` |
+| `api::export::export` | 63 × 2 | secrets in the bundle | safe: behind `permissions`; `strip_secret_values` empties literal values and keeps `secretRef`; `status` dropped (MF-17) |
+| `api::delete::delete_with_identity` | 70 × 1 | delete past the caller's rights | safe: `effective.check(kind, Verb::Delete, Some(target))` before anything is removed (`delete.rs:433`) |
+| `api::import::plan_import` | 46 × 1 | a literal secret coming in | safe: behind `permissions`; the write door refuses a literal secret (`find_literal_secret`, T-2540) |
+| `api::basemap::get_tile` | 55 × 1 | path traversal into the tile cache | safe: style fixed to `default`, project must exist, `z`/`x`/`y` parse as integers, extension allowlisted |
+| `agents::share::render` | 65 × 1 | injection into the shared manifest | safe: name and space refused unless DNS-1123 labels |
+| `agents::oneshot::code_pass::Driver::drive_code`, `conversation::drive_conversation`, `edit_loop::scoped_edit_turn` | 35–77 × 2 | an agent run reaching beyond its workspace | safe: behind `permissions`; the run gets its person's identity, or none and reads no data (ADR-N-038); data through agent-proxy (section 10) |
+| `reconciler::streams::StreamDeployer::converge` | 59 × 2 | a secret rendered into a stream | safe: `${VAR}` references compare by escaped pattern (`regex::escape`), values come from `secretRef` |
+| `auth::client_auth` realm clients (`people`, `reconciler::groups`, `reconciler::app_clients`) | caller check | credential carry-over | finding F5, fixed |
+| GREP: `Regex::new` (12 non-test) | | regex from input | constants, or built from `regex::escape` (`streams.rs:193`, `agents/patch.rs:266`); the `regex` crate matches in linear time |
+| GREP: TLS switched off, `unsafe` | | | 0 hits in `src/` |
+| GREP: secret compared with `==` | 2 hits | timing | a test, and a Kubernetes `secretName` comparison: no credential |
+| GREP: secrets in log calls | 9 hits | | each logs that a token is missing, refused or failed to verify, never its value |
+
+**F5 (fixed in T-3592).** The Portal's Keycloak admin clients in `people.rs`, `reconciler/groups.rs` and `reconciler/app_clients.rs` kept reqwest's default redirect policy, so a redirecting realm token endpoint would have received the client-credentials form, client secret included, again at the host the redirect named. Like F4 it needs a compromised realm or its ingress. `auth::client_auth::realm_http` builds the client with `Policy::none()`; the test `the_realm_client_resends_no_grant_to_the_host_a_redirect_names` answers a token request with 307 to a second server and asserts that server receives nothing.
+
+Zero open priority-1 findings in the Portal.
 
 ## Related
 
