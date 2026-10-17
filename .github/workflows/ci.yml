@@ -131,6 +131,8 @@ jobs:
         run: python3 -m pytest tests/test_authz_cells.py -q
       - name: the nightly budgets fail on the second night over and never read a refusal as a latency (T-2800)
         run: python3 -m pytest tests/test_budgets_dev.py -q
+      - name: the agent benchmark counts calls and tokens from the stream and matches only within tolerance (T-4496)
+        run: python3 -m pytest tests/test_agent_bench.py -q
       - name: qualification report aggregates suite outcomes and catches corrupt files (T-0089)
         run: python3 scripts/generate-qualification-report.py --selftest
       - name: latency regression gate flags degradations and respects baselines (T-0090)
