@@ -25,8 +25,9 @@ cd Antares-NGSI-LD-Context-Broker && cg build && cg q -e "<query>"
 
 | Id | Path | What | Task | State |
 |---|---|---|---|---|
-| F1 | 1 | The gateway authorized a dot segment as a name and forwarded it: `PATCH …/entities/{id}/attrs/..` is decided as Update Attributes of one attribute, and a hop that resolves dot segments (RFC 3986 clause 5.2.4) runs it as every attribute of the body. Not exploitable against Antares, which refuses a dot segment in an id or attribute name (`antares-model/src/lib.rs:267,290`, `src/id.rs:193`). It is a parser differential all the same. | T-4389 | fixed on `agent/worker-3/T-4389`, in review |
-| F2 | 3 | An App's page can plant session cookies for the Portal and every other App: the App origins and the Portal are the same site, every session cookie is unprefixed, and a planted one wins whenever the victim has none at the edge, and always in the Portal's own jar. Login CSRF: the victim works inside the attacker's session. Priority 2 (Decided, worker-3: no right is gained directly, the victim must act inside the planted session). | T-4395 | open |
+| F1 | 1 | The gateway authorized a dot segment as a name and forwarded it: `PATCH …/entities/{id}/attrs/..` is decided as Update Attributes of one attribute, and a hop that resolves dot segments (RFC 3986 clause 5.2.4) runs it as every attribute of the body. Not exploitable against Antares, which refuses a dot segment in an id or attribute name (`antares-model/src/lib.rs:267,290`, `src/id.rs:193`). It is a parser differential all the same. | T-4389 | fixed, merged to platform main (`8009039`) |
+| F2 | 3 | An App's page can plant session cookies for the Portal and every other App: the App origins and the Portal are the same site, every session cookie is unprefixed, and a planted one wins whenever the victim has none at the edge, and always in the Portal's own jar. Login CSRF: the victim works inside the attacker's session. Priority 2 (Decided, worker-3: no right is gained directly, the victim must act inside the planted session). | T-4395 | in review |
+| F3 | 9 | Antares: an offset near `i64::MAX` under conditional view rules wrapped into a negative SQL LIMIT, so Postgres answered 500. No data and no right; section 9.3. | T-3590 | fixed on Antares `agent/worker-3/T-3588`, in review |
 | T-2479 | 5 | The Portal's Role may read every Secret of its instance (existing task, not found here). | T-2479 | blocked, priority 3 |
 
 Reference checks against the broker's threat model (every test name in a row's test column, looked up in the tree at `b7200437`):
@@ -35,7 +36,7 @@ Reference checks against the broker's threat model (every test name in a row's t
 |---|---|---|---|
 | odata O2 | fuzz target `odata_filter_to_qnode` (proposed) | no; `fuzz/fuzz_targets/odata_url_parse.rs` fuzzes the parser, not the translation | the property test `filter_props.rs::odata_filter_translation_agrees_with_reference_eval` covers the translation; the fuzz target stays a T-3590 item, not priority 1 |
 | odata O6 | `odata_expand_levels_above_max_is_400`, `odata_expand_max_is_clamped_to_max_levels` (proposed) | no | holds: `$levels` and nested `$expand` still answer 501 (`odata_expand.rs::odata_expand_beyond_one_level_is_501`), so the bound has nothing to clamp yet |
-| odata O23 | `ops_seam.rs::a_change_event_names_the_surface_and_the_view` (proposed) | no | stale reference: T-3593 resolved G10 with the `surface operation` log line (`ops_log.rs::a_surface_operation_is_logged_with_the_surface_and_the_view`); the row is corrected under T-3590 |
+| odata O23 | `ops_seam.rs::a_change_event_names_the_surface_and_the_view` (proposed) | no | stale reference: T-3593 resolved G10 with the `surface operation` log line (`ops_log.rs::a_surface_operation_is_logged_with_the_surface_and_the_view`); T-3590 corrected the row |
 | mcp MC16 | `join_is_not_an_argument_until_the_target_is_checked` | renamed | holds: the row names the rename to `mcp_gate.rs::join_is_an_argument_now_that_the_target_is_checked` |
 
 Every other test a row names exists in the tree (check: every backticked name of 15 or more characters in a row's test column, against the `fn` names under `crates/`, `tests/`, `addons/` and `fuzz/`).
@@ -126,6 +127,169 @@ The dependencies that take input from a client or an upstream, and the limits th
 | rmcp | not a dependency of platform or portal (`Cargo.toml`); the broker's MCP surface is its own (threat-model mcp) | holds |
 
 Observation O2: `space_move.rs` could add a connect timeout and an idle-read timeout without bounding the stream; a broker that accepts and never answers holds one move job, which only an organization administrator starts. Observation O3: the gateway's broker client could carry a connect timeout of its own for in-cluster callers that do not pass the edge. Neither raises a right; both are resilience items for T-3591.
+
+## 9. Antares sweep with a fresh graph (T-3590)
+
+Commit: Antares-NGSI-LD-Context-Broker `b7200437` (dev). Two graphs of it:
+
+```bash
+cd Antares-NGSI-LD-Context-Broker
+# review graph: the crates that read input, auth, SQL, HTTP indexed as well (36 904 symbols, 79 http routes)
+RUSTUP_TOOLCHAIN=1.99.1 cg build --fg --deps axum,hyper,reqwest,sqlx,serde_json,tungstenite,tokio-tungstenite,rmcp,redb,async-nats
+# invariant graph: our code only (17 969 symbols, 82 http routes once the T-3590 pins are in)
+RUSTUP_TOOLCHAIN=1.99.1 cg build --fg && python3 dev/cg-invariants.py
+```
+
+`RUSTUP_TOOLCHAIN` matters: the repository's `rust-toolchain.toml` names `stable`, a toolchain without rust-analyzer in this sandbox, and `cg build` then skips the workspace and indexes only the dependencies, without failing. Neither `jsonwebtoken` nor `wasmtime` is in the broker's `Cargo.lock`.
+
+Vanilla and all-features come from the graph's `features` column, because rust-analyzer indexes every `cfg` branch and tags it. The default build (`default = ["mqtt"]`) serves the 82 routes below. The `views` feature and the surface features (`odata`, `ogc`, `mcp`, `linkml`, `ws`, `internal-csr`) add the `/q` view routes and the `/x` surfaces, which crate-level gating keeps out of the column. Feature-gated non-test functions: `postgres` 112, `views` 82, `fetch` 55, `mqtt` 21, `use-rustls-no-provider` 5, `edm` 4.
+
+### 9.1 Invariants: what the rerun found
+
+`dev/cg-invariants.py` was not green on `dev`. Since T-3962 renamed five crates and T-4354 rewrote the OData parse, nobody had run it against a real graph. The CI job runs only `--selftest`. Fixed on the T-3590 branch:
+
+| Drift | Effect | Fix |
+|---|---|---|
+| `egress-outside-policy` excepted `antares_jsonld::loader::client_builder`, now `ngsild_jsonld::…` | cg answered with a hint, so the invariant checked nothing | path renamed in `dev/security.cypher` and the allowlist |
+| `protocol-crate-depends-on-antares` matched `antares-*` only | `odata-url` could depend on `ngsild-model` (the renamed `antares-model`) unnoticed: the fixture row was missing | also matches `ngsild-*`, and `ogc-cql2` counts as a protocol crate |
+| `fs-write-from-a-server` listed `set_permissions` in an `IN` list | a name no code calls is a cg hint, so the job was red | the names are a regex |
+| `sql-from-text`: `PgDocStore::list_digests` (T-4354) and `maintenance::retain` | new dynamic SQL, not allowlisted | read: closed table names, constant query parts, every value bound; allowlisted with the reason |
+| two stale entries (`antares_odata::batch::serve`, `antares_odata::serve → client_builder`) | T-4354 gave `batch::serve` a direct edge to `Ops::read_answer`; the OData path no longer reaches the CA file read | removed |
+| `GET /q/tenants/{}/digest`, `GET …/export`, `POST …/import` had no Channel | the tenant move (ADR-0030) was invisible to every route invariant | pinned in `.cg/links/admin.toml`; allowlisted as admin-secret routes, which `q_admin_sweep.rs` (T-3855) proves |
+| a `--deps` graph makes dependency symbols non-external | 17 false `panic-reachable-from-a-route` rows from axum, hyper, reqwest and tungstenite, and lost redb rows | the checker refuses a `--deps` graph |
+
+New invariant `outbound-http-send` lists every function that sends a request with reqwest. Each of the 4 is allowlisted with the egress check its URL passes first. The client's resolver sees hostnames only, so an IP-literal URL is dialled directly unless `Egress::check_url`/`check_destination` or `EgressPolicy::check_host` refused it (SSRF). `dev/cg-invariants/fixture.patch` (refreshed: the old one no longer applied to `Cargo.lock`) turns all 16 invariants red, each with its `cg_fixture` row. With the patch reverted, `cg-invariants: OK`.
+
+### 9.2 Route table
+
+Every http Channel of the invariant graph. "Decision" is what `routes-without-decision` proves: the handler reaches `policy::gate`, `gate_each`, `decide` or `decide_each` within six calls, or the allowlist names the layer that stands in for it. "Tenant" is what `tenant-not-from-header` proves for every route that reaches a Tenant-scoped store method. The bounds wall (`bounds.rs`) caps the URI at 8 KiB, the body at `MAX_BODY_BYTES` and JSON depth at 64 before any parse, on every route. No NATS subject has a Channel: subjects are built at run time and none is reachable from outside the cluster (threat model 9.4).
+
+| Route | Handler | Who may call | Decision | Limits | Writes | Tenant |
+|---|---|---|---|---|---|---|
+| `POST /ex/v1/remote-notify` | `distsub::remote_notify` | peer broker | its own index, no Policy | bounds wall, body limit | notifications to local subscribers | from the inbound index (ADR-0019) |
+| `GET /ngsi-ld/v1/attributes` | `types_attrs::attributes` | a caller the Policy admits | `policy::gate`/`decide` (REACH ≤ 6) | bounds wall, page ≤ `max_limit` (else 403 TooManyResults) | none | `negotiate::tenant_from` |
+| `GET /ngsi-ld/v1/attributes/{}` | `types_attrs::attribute_info` | a caller the Policy admits | `policy::gate`/`decide` (REACH ≤ 6) | bounds wall | none | `negotiate::tenant_from` |
+| `GET /ngsi-ld/v1/csourceRegistrations` | `csource::query_registrations` | a caller the Policy admits | `policy::gate`/`decide` (REACH ≤ 6) | bounds wall, page ≤ `max_limit` (else 403 TooManyResults) | none | `negotiate::tenant_from` |
+| `POST /ngsi-ld/v1/csourceRegistrations` | `csource::create_registration` | a caller the Policy admits | `policy::gate`/`decide` (REACH ≤ 6) | bounds wall | creates | `negotiate::tenant_from` |
+| `DELETE /ngsi-ld/v1/csourceRegistrations/{}` | `csource::delete_registration` | a caller the Policy admits | `policy::gate`/`decide` (REACH ≤ 6) | bounds wall | deletes | `negotiate::tenant_from` |
+| `GET /ngsi-ld/v1/csourceRegistrations/{}` | `csource::retrieve_registration` | a caller the Policy admits | `policy::gate`/`decide` (REACH ≤ 6) | bounds wall | none | `negotiate::tenant_from` |
+| `PATCH /ngsi-ld/v1/csourceRegistrations/{}` | `csource::update_registration` | a caller the Policy admits | `policy::gate`/`decide` (REACH ≤ 6) | bounds wall | updates | `negotiate::tenant_from` |
+| `GET /ngsi-ld/v1/csourceSubscriptions` | `subscriptions::query_csource_subscriptions` | a caller the Policy admits | `policy::gate`/`decide` (REACH ≤ 6) | bounds wall, page ≤ `max_limit` (else 403 TooManyResults) | none | `negotiate::tenant_from` |
+| `POST /ngsi-ld/v1/csourceSubscriptions` | `subscriptions::create_csource_subscription` | a caller the Policy admits | `policy::gate`/`decide` (REACH ≤ 6) | bounds wall | creates | `negotiate::tenant_from` |
+| `DELETE /ngsi-ld/v1/csourceSubscriptions/{}` | `subscriptions::delete_csource_subscription` | a caller the Policy admits | `policy::gate`/`decide` (REACH ≤ 6) | bounds wall | deletes | `negotiate::tenant_from` |
+| `GET /ngsi-ld/v1/csourceSubscriptions/{}` | `subscriptions::retrieve_csource_subscription` | a caller the Policy admits | `policy::gate`/`decide` (REACH ≤ 6) | bounds wall | none | `negotiate::tenant_from` |
+| `PATCH /ngsi-ld/v1/csourceSubscriptions/{}` | `subscriptions::update_csource_subscription` | a caller the Policy admits | `policy::gate`/`decide` (REACH ≤ 6) | bounds wall | updates | `negotiate::tenant_from` |
+| `DELETE /ngsi-ld/v1/entities` | `entities::purge_entities` | a caller the Policy admits | `policy::gate`/`decide` (REACH ≤ 6) | bounds wall | deletes | `negotiate::tenant_from` |
+| `GET /ngsi-ld/v1/entities` | `entities::query_entities` | a caller the Policy admits | `policy::gate`/`decide` (REACH ≤ 6) | bounds wall, page ≤ `max_limit` (else 403 TooManyResults), geometry ≤ 1024 vertices | none | `negotiate::tenant_from` |
+| `PATCH /ngsi-ld/v1/entities` | `missing_entity_id` | anyone | none: 400 before any store call | bounds wall | none | none |
+| `POST /ngsi-ld/v1/entities` | `entities::create_entity` | a caller the Policy admits | `policy::gate`/`decide` (REACH ≤ 6) | bounds wall | creates | `negotiate::tenant_from` |
+| `PUT /ngsi-ld/v1/entities` | `missing_entity_id` | anyone | none: 400 before any store call | bounds wall | none | none |
+| `DELETE /ngsi-ld/v1/entities/{}` | `entities::delete_entity` | a caller the Policy admits | `policy::gate`/`decide` (REACH ≤ 6) | bounds wall | deletes | `negotiate::tenant_from` |
+| `GET /ngsi-ld/v1/entities/{}` | `entities::retrieve_entity` | a caller the Policy admits | `policy::gate`/`decide` (REACH ≤ 6) | bounds wall | none | `negotiate::tenant_from` |
+| `PATCH /ngsi-ld/v1/entities/{}` | `entities::merge_entity` | a caller the Policy admits | `policy::gate`/`decide` (REACH ≤ 6) | bounds wall | updates | `negotiate::tenant_from` |
+| `PUT /ngsi-ld/v1/entities/{}` | `entities::replace_entity` | a caller the Policy admits | `policy::gate`/`decide` (REACH ≤ 6) | bounds wall | replaces | `negotiate::tenant_from` |
+| `PATCH /ngsi-ld/v1/entities/{}/attrs` | `attrs::update_attrs` | a caller the Policy admits | `policy::gate`/`decide` (REACH ≤ 6) | bounds wall | updates | `negotiate::tenant_from` |
+| `POST /ngsi-ld/v1/entities/{}/attrs` | `attrs::append_attrs` | a caller the Policy admits | `policy::gate`/`decide` (REACH ≤ 6) | bounds wall | creates | `negotiate::tenant_from` |
+| `DELETE /ngsi-ld/v1/entities/{}/attrs/{}` | `attrs::delete_attr` | a caller the Policy admits | `policy::gate`/`decide` (REACH ≤ 6) | bounds wall | deletes | `negotiate::tenant_from` |
+| `GET /ngsi-ld/v1/entities/{}/attrs/{}` | `entities::retrieve_entity_attr` | a caller the Policy admits | `policy::gate`/`decide` (REACH ≤ 6) | bounds wall | none | `negotiate::tenant_from` |
+| `PATCH /ngsi-ld/v1/entities/{}/attrs/{}` | `attrs::partial_update_attr` | a caller the Policy admits | `policy::gate`/`decide` (REACH ≤ 6) | bounds wall | updates | `negotiate::tenant_from` |
+| `PUT /ngsi-ld/v1/entities/{}/attrs/{}` | `attrs::replace_attr` | a caller the Policy admits | `policy::gate`/`decide` (REACH ≤ 6) | bounds wall | replaces | `negotiate::tenant_from` |
+| `GET /ngsi-ld/v1/entities/{}/attrs/{}/value` | `entities::retrieve_entity_attr_value` | a caller the Policy admits | `policy::gate`/`decide` (REACH ≤ 6) | bounds wall | none | `negotiate::tenant_from` |
+| `PUT /ngsi-ld/v1/entities/{}/attrs/{}/value` | `attrs::set_attr_value` | a caller the Policy admits | `policy::gate`/`decide` (REACH ≤ 6) | bounds wall | replaces | `negotiate::tenant_from` |
+| `GET /ngsi-ld/v1/entityMaps` | `entity_maps::create_entity_map` | a caller the Policy admits | `policy::gate`/`decide` (REACH ≤ 6) | bounds wall, page ≤ `max_limit` (else 403 TooManyResults) | an EntityMap document (implicit create, 5.14) | `negotiate::tenant_from` |
+| `POST /ngsi-ld/v1/entityMaps` | `entity_maps::create_entity_map_post` | a caller the Policy admits | `policy::gate`/`decide` (REACH ≤ 6) | bounds wall | creates | `negotiate::tenant_from` |
+| `DELETE /ngsi-ld/v1/entityMaps/{}` | `entity_maps::delete_entity_map` | a caller the Policy admits | `policy::gate`/`decide` (REACH ≤ 6) | bounds wall | deletes | `negotiate::tenant_from` |
+| `GET /ngsi-ld/v1/entityMaps/{}` | `entity_maps::retrieve_entity_map` | a caller the Policy admits | `policy::gate`/`decide` (REACH ≤ 6) | bounds wall | an EntityMap document (implicit create, 5.14) | `negotiate::tenant_from` |
+| `PATCH /ngsi-ld/v1/entityMaps/{}` | `entity_maps::update_entity_map` | a caller the Policy admits | `policy::gate`/`decide` (REACH ≤ 6) | bounds wall | updates | `negotiate::tenant_from` |
+| `POST /ngsi-ld/v1/entityOperations/create` | `batch::batch_create` | a caller the Policy admits | `policy::gate`/`decide` (REACH ≤ 6) | bounds wall, `MAX_BATCH_ITEMS` | creates | `negotiate::tenant_from` |
+| `POST /ngsi-ld/v1/entityOperations/delete` | `batch::batch_delete` | a caller the Policy admits | `policy::gate`/`decide` (REACH ≤ 6) | bounds wall, `MAX_BATCH_ITEMS` | creates | `negotiate::tenant_from` |
+| `POST /ngsi-ld/v1/entityOperations/merge` | `batch::batch_merge` | a caller the Policy admits | `policy::gate`/`decide` (REACH ≤ 6) | bounds wall, `MAX_BATCH_ITEMS` | creates | `negotiate::tenant_from` |
+| `POST /ngsi-ld/v1/entityOperations/query` | `batch::batch_query` | a caller the Policy admits | `policy::gate`/`decide` (REACH ≤ 6) | bounds wall, page ≤ `max_limit` (else 403 TooManyResults), geometry ≤ 1024 vertices | none | `negotiate::tenant_from` |
+| `POST /ngsi-ld/v1/entityOperations/update` | `batch::batch_update` | a caller the Policy admits | `policy::gate`/`decide` (REACH ≤ 6) | bounds wall, `MAX_BATCH_ITEMS` | creates | `negotiate::tenant_from` |
+| `POST /ngsi-ld/v1/entityOperations/upsert` | `batch::batch_upsert` | a caller the Policy admits | `policy::gate`/`decide` (REACH ≤ 6) | bounds wall, `MAX_BATCH_ITEMS` | creates | `negotiate::tenant_from` |
+| `GET /ngsi-ld/v1/info/sourceIdentity` | `source_identity` | a caller the Policy admits | `policy::gate`/`decide` (REACH ≤ 6) | bounds wall, page ≤ `max_limit` (else 403 TooManyResults) | none | `negotiate::tenant_from` |
+| `GET /ngsi-ld/v1/jsonldContexts` | `contexts::list_contexts` | a caller the Policy admits | `policy::gate`/`decide` (REACH ≤ 6) | bounds wall, page ≤ `max_limit` (else 403 TooManyResults) | none | `negotiate::tenant_from` |
+| `POST /ngsi-ld/v1/jsonldContexts` | `contexts::add_context` | a caller the Policy admits | `policy::gate`/`decide` (REACH ≤ 6) | bounds wall | creates | `negotiate::tenant_from` |
+| `DELETE /ngsi-ld/v1/jsonldContexts/{}` | `contexts::delete_context` | a caller the Policy admits | `policy::gate`/`decide` (REACH ≤ 6) | bounds wall | deletes | `negotiate::tenant_from` |
+| `GET /ngsi-ld/v1/jsonldContexts/{}` | `contexts::serve_context` | a caller the Policy admits | `policy::gate`/`decide` (REACH ≤ 6) | bounds wall | none | `negotiate::tenant_from` |
+| `DELETE /ngsi-ld/v1/snapshots` | `snapshots::purge_snapshots` | a caller the Policy admits | `policy::gate`/`decide` (REACH ≤ 6) | bounds wall | deletes | `negotiate::tenant_from` |
+| `POST /ngsi-ld/v1/snapshots` | `snapshots::create_snapshot` | a caller the Policy admits | `policy::gate`/`decide` (REACH ≤ 6) | bounds wall | creates | `negotiate::tenant_from` |
+| `DELETE /ngsi-ld/v1/snapshots/{}` | `snapshots::delete_snapshot` | a caller the Policy admits | `policy::gate`/`decide` (REACH ≤ 6) | bounds wall | deletes | `negotiate::tenant_from` |
+| `GET /ngsi-ld/v1/snapshots/{}` | `snapshots::retrieve_snapshot` | a caller the Policy admits | `policy::gate`/`decide` (REACH ≤ 6) | bounds wall | none | `negotiate::tenant_from` |
+| `PATCH /ngsi-ld/v1/snapshots/{}` | `snapshots::update_snapshot` | a caller the Policy admits | `policy::gate`/`decide` (REACH ≤ 6) | bounds wall | updates | `negotiate::tenant_from` |
+| `POST /ngsi-ld/v1/snapshots/{}/clone` | `snapshots::clone_snapshot` | a caller the Policy admits | `policy::gate`/`decide` (REACH ≤ 6) | bounds wall | creates | `negotiate::tenant_from` |
+| `GET /ngsi-ld/v1/subscriptions` | `subscriptions::query_subscriptions` | a caller the Policy admits | `policy::gate`/`decide` (REACH ≤ 6) | bounds wall, page ≤ `max_limit` (else 403 TooManyResults) | none | `negotiate::tenant_from` |
+| `POST /ngsi-ld/v1/subscriptions` | `subscriptions::create_subscription` | a caller the Policy admits | `policy::gate`/`decide` (REACH ≤ 6) | bounds wall | creates | `negotiate::tenant_from` |
+| `DELETE /ngsi-ld/v1/subscriptions/{}` | `subscriptions::delete_subscription` | a caller the Policy admits | `policy::gate`/`decide` (REACH ≤ 6) | bounds wall | deletes | `negotiate::tenant_from` |
+| `GET /ngsi-ld/v1/subscriptions/{}` | `subscriptions::retrieve_subscription` | a caller the Policy admits | `policy::gate`/`decide` (REACH ≤ 6) | bounds wall | none | `negotiate::tenant_from` |
+| `PATCH /ngsi-ld/v1/subscriptions/{}` | `subscriptions::update_subscription` | a caller the Policy admits | `policy::gate`/`decide` (REACH ≤ 6) | bounds wall | updates | `negotiate::tenant_from` |
+| `GET /ngsi-ld/v1/temporal/entities` | `temporal::query_temporal` | a caller the Policy admits | `policy::gate`/`decide` (REACH ≤ 6) | bounds wall, page ≤ `max_limit` (else 403 TooManyResults), geometry ≤ 1024 vertices | none | `negotiate::tenant_from` |
+| `POST /ngsi-ld/v1/temporal/entities` | `temporal::upsert_temporal` | a caller the Policy admits | `policy::gate`/`decide` (REACH ≤ 6) | bounds wall | creates | `negotiate::tenant_from` |
+| `DELETE /ngsi-ld/v1/temporal/entities/{}` | `temporal::delete_temporal` | a caller the Policy admits | `policy::gate`/`decide` (REACH ≤ 6) | bounds wall | deletes | `negotiate::tenant_from` |
+| `GET /ngsi-ld/v1/temporal/entities/{}` | `temporal::retrieve_temporal` | a caller the Policy admits | `policy::gate`/`decide` (REACH ≤ 6) | bounds wall | none | `negotiate::tenant_from` |
+| `POST /ngsi-ld/v1/temporal/entities/{}/attrs` | `temporal::add_temporal_attrs` | a caller the Policy admits | `policy::gate`/`decide` (REACH ≤ 6) | bounds wall | creates | `negotiate::tenant_from` |
+| `DELETE /ngsi-ld/v1/temporal/entities/{}/attrs/{}` | `temporal::delete_temporal_attr` | a caller the Policy admits | `policy::gate`/`decide` (REACH ≤ 6) | bounds wall | deletes | `negotiate::tenant_from` |
+| `DELETE /ngsi-ld/v1/temporal/entities/{}/attrs/{}/{}` | `temporal::delete_temporal_instance` | a caller the Policy admits | `policy::gate`/`decide` (REACH ≤ 6) | bounds wall | deletes | `negotiate::tenant_from` |
+| `PATCH /ngsi-ld/v1/temporal/entities/{}/attrs/{}/{}` | `temporal::modify_temporal_instance` | a caller the Policy admits | `policy::gate`/`decide` (REACH ≤ 6) | bounds wall | updates | `negotiate::tenant_from` |
+| `GET /ngsi-ld/v1/temporal/entityMaps` | `entity_maps::create_temporal_entity_map` | a caller the Policy admits | `policy::gate`/`decide` (REACH ≤ 6) | bounds wall, page ≤ `max_limit` (else 403 TooManyResults) | an EntityMap document (implicit create, 5.14) | `negotiate::tenant_from` |
+| `POST /ngsi-ld/v1/temporal/entityMaps` | `entity_maps::create_temporal_entity_map_post` | a caller the Policy admits | `policy::gate`/`decide` (REACH ≤ 6) | bounds wall | creates | `negotiate::tenant_from` |
+| `POST /ngsi-ld/v1/temporal/entityOperations/query` | `temporal::batch_temporal_query` | a caller the Policy admits | `policy::gate`/`decide` (REACH ≤ 6) | bounds wall, page ≤ `max_limit` (else 403 TooManyResults), geometry ≤ 1024 vertices | none | `negotiate::tenant_from` |
+| `GET /ngsi-ld/v1/types` | `types_attrs::entity_types` | a caller the Policy admits | `policy::gate`/`decide` (REACH ≤ 6) | bounds wall, page ≤ `max_limit` (else 403 TooManyResults) | none | `negotiate::tenant_from` |
+| `GET /ngsi-ld/v1/types/{}` | `types_attrs::entity_type_info` | a caller the Policy admits | `policy::gate`/`decide` (REACH ≤ 6) | bounds wall | none | `negotiate::tenant_from` |
+| `GET /q/dead-letters` | `dead_letters_list` | operator (admin secret) | admin secret layer | bounds wall, body limit | none | path or `?tenant=`, `TenantId::new` |
+| `DELETE /q/dead-letters/{}` | `dead_letter_delete` | operator (admin secret) | admin secret layer | bounds wall, body limit | deletes | path or `?tenant=`, `TenantId::new` |
+| `POST /q/dead-letters/{}/replay` | `dead_letter_replay` | operator (admin secret) | admin secret layer | bounds wall, body limit | re-delivers one dead letter | path or `?tenant=`, `TenantId::new` |
+| `GET /q/health` | `health` | anyone (probe) | none, public | bounds wall, body limit | none | none |
+| `GET /q/metrics` | `metrics_endpoint` | operator (admin secret unless `metrics_open`) | admin secret layer | bounds wall, body limit | none | none |
+| `GET /q/ready` | `ready` | anyone (probe) | none, public | bounds wall, body limit | none | none |
+| `GET /q/tenants` | `tenants_list` | operator (admin secret) | admin secret layer | bounds wall, body limit | none | none: the Tenant inventory |
+| `DELETE /q/tenants/{}` | `tenant_purge` | operator (admin secret) | admin secret layer | bounds wall, body limit | deletes | path or `?tenant=`, `TenantId::new` |
+| `GET /q/tenants/{}` | `tenant_get` | operator (admin secret) | admin secret layer | bounds wall, body limit | none | path or `?tenant=`, `TenantId::new` |
+| `GET /q/tenants/{}/digest` | `tenant_move::digest` | operator (admin secret) | admin secret layer | bounds wall, body limit | none | path or `?tenant=`, `TenantId::new` |
+| `GET /q/tenants/{}/export` | `tenant_move::export` | operator (admin secret) | admin secret layer | bounds wall, body limit | none | path or `?tenant=`, `TenantId::new` |
+| `POST /q/tenants/{}/import` | `tenant_move::import` | operator (admin secret) | admin secret layer | bounds wall, body limit | creates | path or `?tenant=`, `TenantId::new` |
+
+Routes the graph does not key, each with what stands in for the Channel:
+
+| Routes | Built from | Covered by |
+|---|---|---|
+| `/q/views`, `/q/views/{id}`, `/q/views/{id}/preview`, `/q/schemas/{tenant}`, `/q/policy`, `/q/policy/{tenant}`, `/q/retention/{tenant}`, `…/preview`, `…/deleted`, `/q/quality/{tenant}` (`views`) | closures in `antares_ops::views::admin` and its modules, merged before the admin `route_layer` | `antares-icsr/tests/q_admin_sweep.rs`: the route list is checked against the sources, and every method on every path refuses without the secret |
+| `/x/views/{view}/ngsi-ld/v1/{*rest}`, `…/odata/v4…`, `…/ogc/features…`, `…/linkml/{*rest}`, `…/mcp`, `…/ws`, `/x/ws/ngsi-ld/v1` | `ApiSurface::router` of each surface crate, nested by `antares_api::router` | `surface-entry-without-ops` (every entry runs through Ops) and `surfaces_fail_closed.rs`; the per-surface rows of the threat model (ADR-0023) |
+| `/grants`, `/grants/{target}/{source}` (`antares_icsr::routes`) | not mounted by the broker binary | none needed while unmounted; mounting it adds a route to `q_admin_sweep.rs` |
+
+### 9.3 Functions ranked by risk
+
+3 953 non-test workspace functions. 1 771 are reachable from a route within four calls (`[:CALLS|DISPATCHES*0..4]` from every route provider). Ranked by branch count × number of routes reaching them. The top tier is every function with `cc ≥ 25` and a score of at least 100, plus every hit of the GREP patterns:
+
+```cypher
+MATCH (h:Symbol)-[:PROVIDES]->(:Channel {channel:'http'}) WHERE NOT h.is_test WITH DISTINCT h
+MATCH (h)-[:CALLS|DISPATCHES*0..4]->(s:Symbol) WHERE NOT s.is_test AND NOT s.file STARTS WITH '/'
+  AND s.kind IN ['Function','Method','StaticMethod']
+WITH s, count(DISTINCT h) AS routes WHERE s.cc >= 25
+RETURN s.path, s.cc, routes ORDER BY s.cc * routes DESC LIMIT 60;
+```
+
+| Function | cc × routes | Risk read for | Verdict |
+|---|---|---|---|
+| `ngsild_jsonld::expand::expand_instance` | 120 × 12 | recursion on client JSON | safe: request bodies stop at depth 64 at the bounds wall, and federated answers are parsed by serde_json (recursion limit 128) and capped at `MAX_FED_RESPONSE_BYTES` |
+| `ngsild_jsonld::expand::expand_entity` | 67 × 19 | as above | safe, as above |
+| `antares_api::federation::build_forward` | 55 × 19 | headers copied to a Context Source (credential leak) | safe because documented: `contextSourceInfo` with `urn:ngsi-ld:request` copies a named header (4.3.6.5, an `Authorization` pass-through by design), so creating a registration is a privileged Policy operation (`docs/src/federation.md`). Subject headers are never copied (`a_registration_cannot_ask_for_the_subject_header`), the requesting Tenant never flows through, and the gateway offers no registration operation (platform `attack_dot_segment_tests.rs::the_brokers_admin_registration_and_peer_doors_are_no_endpoint_operation`) |
+| `antares_api::temporal::query_temporal_collected` | 120 × 7 | unbounded collection, casts | safe: the page comes from `page_params` (offset ≤ `i64::MAX`, limit ≤ `max_limit`), and the store refuses an unpaged read past its ceiling (`check_ceiling`, 403 TooManyResults) |
+| `antares_api::paging::query_doc_params` | 114 × 7 | parameter parsing | safe: every value sits inside the 8 KiB URI, and geometry stops at `MAX_GEO_VERTICES` (1024) |
+| `ngsild_jsonld::loader::Loader::fetch` | 33 × 22 | SSRF, size, redirects | safe: `check_host` before the send, at most `MAX_CONTEXT_URLS` per resolution, `MAX_CONTEXT_BYTES` per document, redirects re-checked and capped at 3 (`client_builder`) |
+| `antares_api::entities::filter_entities_paged` | 78 × 8 | casts on client numbers | finding F3, fixed: the conditional-rules scan cast `offset + limit + 1` and its doubling limit with `as i64`, so an offset near `i64::MAX` wrapped into a negative LIMIT, which Postgres refuses (500). Now `entities::store_page` saturates; `the_scan_page_past_i64_saturates_and_never_wraps_negative` |
+| `ngsild_ql::geo::GeoQuery::from_params` | 35 × 17 | geometry size | safe: `MAX_GEO_VERTICES` |
+| `antares_api::notify::deliver_as` | 72 × 8 | SSRF via a subscription endpoint | safe: `Egress::check_destination` before `send_outbound`; the sink keeps the checked URI for its retries |
+| `antares_api::batch::batch_write` | 126 × 4 | batch size | safe: `parse_batch` refuses more than `MAX_BATCH_ITEMS` |
+| `antares_api::paging::order_entities` | 81 × 5 | sort cost | safe: sorts the rows already read, which the store ceiling bounds (5.5.6) |
+| `antares_api::subscriptions::norm_member` | 65 × 4 | deserialisation | safe: each named member is type-checked (an id through `EntityId::new`); an unknown member is kept verbatim as 5.5.9 asks, inside the body cap and the depth limit |
+| `antares_api::repr::parse_projection` | 31 × 8 | `pick`/`omit` size | safe: bounded by the 8 KiB URI |
+| `antares_api::batch::forward_batch` | 59 × 4 | SSRF | safe: `Egress::check_url` before every forward |
+| GREP: `Regex::new`/`RegexBuilder::new` (4 non-test) | | regex from input | safe: `ngsild_ql::regex::build` and `ngsild_residual::pattern::build` set `size_limit` and `dfa_size_limit`; `odata_csdl` compiles a constant; the one at `ngsild_ql/src/regex.rs:300` is inside a `#[test]` that cg marks non-test |
+| GREP: TLS switched off, `unsafe` | | | 0 hits in `crates/*/src` |
+| GREP: secret compare | | | `AdminAuth::admits` uses `constant_time_eq`; the one other `==` on a token is HTTP method parsing (`odata_batch::multipart::request_line`) |
+
+Zero open priority-1 findings in the broker. F3 is a 500 on an absurd offset, with no data and no right gained, and it is fixed in the same branch.
 
 ## Related
 
