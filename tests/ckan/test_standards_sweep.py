@@ -10,6 +10,7 @@ from standards_sweep import probe_http, rows, sweep, table
 
 ROOT = "https://dev.joinedcontext.com/api/endpoint/abc/"
 XLSX = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+PARQUET = "application/vnd.apache.parquet"
 
 
 class Answer:
@@ -45,6 +46,9 @@ def test_each_media_type_is_counted_by_its_own_shape():
     assert rows(ROOT + "ngsi-ld/v1/entities?type=T", "application/ld+json", b"[{}]", {"NGSILD-Results-Count": "57"}) == 57
     assert rows(ROOT + "file.xlsx", XLSX, b"PK\x03\x04rest", {}) == 8
     assert rows(ROOT + "file.xlsx", XLSX, b"<html>", {}) is None
+    assert rows(ROOT + "file.parquet", PARQUET, b"PAR1rowsPAR1", {}) == 12
+    assert rows(ROOT + "file.parquet", PARQUET, b"PAR1", {}) is None
+    assert rows(ROOT + "file.parquet", PARQUET, b"PAR1 cut off", {}) is None
     assert rows(ROOT + "file.json", "application/json", b"<html>", {}) is None
 
 

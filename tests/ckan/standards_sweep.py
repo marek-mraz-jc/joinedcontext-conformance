@@ -4,7 +4,7 @@ For each dataset of the organizations named, read anonymously from CKAN, every r
 harvest wrote as `resource_type: api` (deployment charts/ckan/files/od-standards.py) is called
 over its own URL, once, paced: an HTTP `GET` (200, a body of the media type it declares, and how
 many rows: NGSI-LD from `NGSILD-Results-Count`, GeoJSON features, OData `value`, JSON items, CSV
-lines; XLSX by its size), the WebSocket by an `x-subscribe` answered 201, MCP by `initialize`.
+lines; XLSX and Parquet by their size), the WebSocket by an `x-subscribe` answered 201, MCP by `initialize`.
 
     python3 tests/ckan/standards_sweep.py --ckan https://data.dev.joinedcontext.com bbsk banskabystrica
 
@@ -45,6 +45,9 @@ def rows(url: str, media: str, body: bytes, headers: dict[str, str]) -> int | No
     """How many rows `body` carries, or None when it is not what `media` says."""
     if media.endswith("spreadsheetml.sheet"):
         return len(body) if body.startswith(b"PK") else None
+    if media == "application/vnd.apache.parquet":
+        # A Parquet file opens and closes with its magic; the rows sit in the footer's thrift.
+        return len(body) if len(body) >= 8 and body[:4] == body[-4:] == b"PAR1" else None
     if media == "text/csv":
         lines = list(csv.reader(io.StringIO(body.decode("utf-8-sig", "replace"))))
         return max(len(lines) - 1, 0)
