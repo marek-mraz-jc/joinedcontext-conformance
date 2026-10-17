@@ -1,0 +1,5153 @@
+{
+ "at": "2026-10-17T21:34Z",
+ "rows": [
+  {
+   "package": "banskabystrica-pocasie",
+   "org": "banskabystrica",
+   "type": null,
+   "entities": 2,
+   "rows": null,
+   "checks": {
+    "ngsi-ld": {
+     "state": "pass",
+     "reason": ""
+    },
+    "accurate": {
+     "state": "not run",
+     "reason": "the platform publishes it from its own Endpoint; no mapping names an outside source"
+    },
+    "queryable": {
+     "state": "not run",
+     "reason": "no mapped type to ask about"
+    },
+    "smart-data-model": {
+     "state": "not run",
+     "reason": "no mapping"
+    }
+   },
+   "verdict": "hold"
+  },
+  {
+   "package": "banskabystrica-podujatia",
+   "org": "banskabystrica",
+   "type": null,
+   "entities": 150,
+   "rows": null,
+   "checks": {
+    "ngsi-ld": {
+     "state": "pass",
+     "reason": ""
+    },
+    "accurate": {
+     "state": "not run",
+     "reason": "the platform publishes it from its own Endpoint; no mapping names an outside source"
+    },
+    "queryable": {
+     "state": "not run",
+     "reason": "no mapped type to ask about"
+    },
+    "smart-data-model": {
+     "state": "not run",
+     "reason": "no mapping"
+    }
+   },
+   "verdict": "hold"
+  },
+  {
+   "package": "banskabystrica-skoly",
+   "org": "banskabystrica",
+   "type": null,
+   "entities": 210,
+   "rows": null,
+   "checks": {
+    "ngsi-ld": {
+     "state": "pass",
+     "reason": ""
+    },
+    "accurate": {
+     "state": "not run",
+     "reason": "the platform publishes it from its own Endpoint; no mapping names an outside source"
+    },
+    "queryable": {
+     "state": "not run",
+     "reason": "no mapped type to ask about"
+    },
+    "smart-data-model": {
+     "state": "not run",
+     "reason": "no mapping"
+    }
+   },
+   "verdict": "hold"
+  },
+  {
+   "package": "bb-adresy",
+   "org": "banskabystrica",
+   "type": "Address",
+   "entities": null,
+   "rows": null,
+   "checks": {
+    "ngsi-ld": {
+     "state": "fail",
+     "reason": "the Endpoint answered 403 TooManyResults"
+    },
+    "accurate": {
+     "state": "not run",
+     "reason": "no entity to compare"
+    },
+    "queryable": {
+     "state": "not run",
+     "reason": "asked only when checks 1, 2 and 4 pass (the eval copy's hourly limit)"
+    },
+    "smart-data-model": {
+     "state": "pass",
+     "reason": ""
+    }
+   },
+   "verdict": "hide"
+  },
+  {
+   "package": "bb-aktuality",
+   "org": "banskabystrica",
+   "type": "Article",
+   "entities": 0,
+   "rows": null,
+   "checks": {
+    "ngsi-ld": {
+     "state": "fail",
+     "reason": "no entity on dev"
+    },
+    "accurate": {
+     "state": "not run",
+     "reason": "no entity to compare"
+    },
+    "queryable": {
+     "state": "not run",
+     "reason": "asked only when checks 1, 2 and 4 pass (the eval copy's hourly limit)"
+    },
+    "smart-data-model": {
+     "state": "pass",
+     "reason": ""
+    }
+   },
+   "verdict": "hide"
+  },
+  {
+   "package": "bb-dotacie",
+   "org": "banskabystrica",
+   "type": "Grant",
+   "entities": 1302,
+   "rows": 1303,
+   "checks": {
+    "ngsi-ld": {
+     "state": "pass",
+     "reason": ""
+    },
+    "accurate": {
+     "state": "pass",
+     "reason": ""
+    },
+    "queryable": {
+     "state": "not run",
+     "reason": "no eval copy of banskabystrica's assistant"
+    },
+    "smart-data-model": {
+     "state": "pass",
+     "reason": ""
+    }
+   },
+   "verdict": "hold"
+  },
+  {
+   "package": "bb-dtm-bb-funkcne-vyuzitie-uzemia",
+   "org": "banskabystrica",
+   "type": null,
+   "entities": null,
+   "rows": null,
+   "checks": {
+    "ngsi-ld": {
+     "state": "fail",
+     "reason": "removed in the mapping: no smart data model: dataModel.UrbanPlanning holds no model yet; no other subject holds a land-use plan's zones, limits or planned works"
+    },
+    "accurate": {
+     "state": "not run",
+     "reason": "no mapping"
+    },
+    "queryable": {
+     "state": "not run",
+     "reason": "no mapped type to ask about"
+    },
+    "smart-data-model": {
+     "state": "not run",
+     "reason": "no mapping"
+    }
+   },
+   "verdict": "hide"
+  },
+  {
+   "package": "bb-dtm-bb-polohopis-a-vyskopis-bodoveho-pola",
+   "org": "banskabystrica",
+   "type": null,
+   "entities": null,
+   "rows": null,
+   "checks": {
+    "ngsi-ld": {
+     "state": "fail",
+     "reason": "not ingestible (T-4324 deletes it): 240638 rows, more than the 100000 this round loads into the one broker"
+    },
+    "accurate": {
+     "state": "not run",
+     "reason": "no mapping"
+    },
+    "queryable": {
+     "state": "not run",
+     "reason": "no mapped type to ask about"
+    },
+    "smart-data-model": {
+     "state": "not run",
+     "reason": "no mapping"
+    }
+   },
+   "verdict": "hide"
+  },
+  {
+   "package": "bb-dtm-bb-register-adries",
+   "org": "banskabystrica",
+   "type": "Address",
+   "entities": null,
+   "rows": null,
+   "checks": {
+    "ngsi-ld": {
+     "state": "fail",
+     "reason": "the Endpoint answered 403 TooManyResults"
+    },
+    "accurate": {
+     "state": "not run",
+     "reason": "no entity to compare"
+    },
+    "queryable": {
+     "state": "not run",
+     "reason": "asked only when checks 1, 2 and 4 pass (the eval copy's hourly limit)"
+    },
+    "smart-data-model": {
+     "state": "pass",
+     "reason": ""
+    }
+   },
+   "verdict": "hide"
+  },
+  {
+   "package": "bb-dtm-bb-register-chodnikov-a-verejnych-priestranstiev",
+   "org": "banskabystrica",
+   "type": null,
+   "entities": null,
+   "rows": null,
+   "checks": {
+    "ngsi-ld": {
+     "state": "fail",
+     "reason": "removed in the mapping: no smart data model: Transportation/BikeLane is a lane on a road; no model holds a footway or a pavement"
+    },
+    "accurate": {
+     "state": "not run",
+     "reason": "no mapping"
+    },
+    "queryable": {
+     "state": "not run",
+     "reason": "no mapped type to ask about"
+    },
+    "smart-data-model": {
+     "state": "not run",
+     "reason": "no mapping"
+    }
+   },
+   "verdict": "hide"
+  },
+  {
+   "package": "bb-dtm-bb-register-miestnych-komunikacii-a-vyssich-tried",
+   "org": "banskabystrica",
+   "type": null,
+   "entities": null,
+   "rows": null,
+   "checks": {
+    "ngsi-ld": {
+     "state": "fail",
+     "reason": "removed in the mapping: no smart data model: Transportation/Road requires name and roadClass; a DTM road point has neither, only a surface code"
+    },
+    "accurate": {
+     "state": "not run",
+     "reason": "no mapping"
+    },
+    "queryable": {
+     "state": "not run",
+     "reason": "no mapped type to ask about"
+    },
+    "smart-data-model": {
+     "state": "not run",
+     "reason": "no mapping"
+    }
+   },
+   "verdict": "hide"
+  },
+  {
+   "package": "bb-dtm-bb-register-statickej-dopravy",
+   "org": "banskabystrica",
+   "type": "OffStreetParking",
+   "entities": 535,
+   "rows": 535,
+   "checks": {
+    "ngsi-ld": {
+     "state": "pass",
+     "reason": ""
+    },
+    "accurate": {
+     "state": "pass",
+     "reason": ""
+    },
+    "queryable": {
+     "state": "not run",
+     "reason": "no eval copy of banskabystrica's assistant"
+    },
+    "smart-data-model": {
+     "state": "pass",
+     "reason": ""
+    }
+   },
+   "verdict": "hold"
+  },
+  {
+   "package": "bb-dtm-bb-register-stavby",
+   "org": "banskabystrica",
+   "type": null,
+   "entities": null,
+   "rows": null,
+   "checks": {
+    "ngsi-ld": {
+     "state": "fail",
+     "reason": "removed in the mapping: no smart data model: Building/Building requires address and category; the register has neither (municipality and district only)"
+    },
+    "accurate": {
+     "state": "not run",
+     "reason": "no mapping"
+    },
+    "queryable": {
+     "state": "not run",
+     "reason": "no mapped type to ask about"
+    },
+    "smart-data-model": {
+     "state": "not run",
+     "reason": "no mapping"
+    }
+   },
+   "verdict": "hide"
+  },
+  {
+   "package": "bb-dtm-bb-register-stlpov-vo",
+   "org": "banskabystrica",
+   "type": null,
+   "entities": null,
+   "rows": null,
+   "checks": {
+    "ngsi-ld": {
+     "state": "fail",
+     "reason": "removed in the mapping: no smart data model: Streetlighting/Streetlight requires status (ok, defectiveLamp, columnIssue, brokenLantern); the DTM records whether a pole is operated, not the state of its lamp"
+    },
+    "accurate": {
+     "state": "not run",
+     "reason": "no mapping"
+    },
+    "queryable": {
+     "state": "not run",
+     "reason": "no mapped type to ask about"
+    },
+    "smart-data-model": {
+     "state": "not run",
+     "reason": "no mapping"
+    }
+   },
+   "verdict": "hide"
+  },
+  {
+   "package": "bb-dtm-bb-register-ulic",
+   "org": "banskabystrica",
+   "type": null,
+   "entities": null,
+   "rows": null,
+   "checks": {
+    "ngsi-ld": {
+     "state": "fail",
+     "reason": "removed in the mapping: no smart data model: Transportation/RoadSegment requires refRoad, startPoint, endPoint and allowedVehicleType, which a street register has not"
+    },
+    "accurate": {
+     "state": "not run",
+     "reason": "no mapping"
+    },
+    "queryable": {
+     "state": "not run",
+     "reason": "no mapped type to ask about"
+    },
+    "smart-data-model": {
+     "state": "not run",
+     "reason": "no mapping"
+    }
+   },
+   "verdict": "hide"
+  },
+  {
+   "package": "bb-dtm-bb-register-verejnej-zelene-1",
+   "org": "banskabystrica",
+   "type": "Garden",
+   "entities": 4000,
+   "rows": 8546,
+   "checks": {
+    "ngsi-ld": {
+     "state": "pass",
+     "reason": ""
+    },
+    "accurate": {
+     "state": "fail",
+     "reason": "4000 entities for 8546 source rows (-53.2%) | source row 0 has no entity | source row 2136 has no entity | source row 8545 has no entity"
+    },
+    "queryable": {
+     "state": "not run",
+     "reason": "asked only when checks 1, 2 and 4 pass (the eval copy's hourly limit)"
+    },
+    "smart-data-model": {
+     "state": "pass",
+     "reason": ""
+    }
+   },
+   "verdict": "hide"
+  },
+  {
+   "package": "bb-dtm-bb-register-verejnej-zelene-2",
+   "org": "banskabystrica",
+   "type": null,
+   "entities": null,
+   "rows": null,
+   "checks": {
+    "ngsi-ld": {
+     "state": "fail",
+     "reason": "removed in the mapping: no smart data model: ParksAndGardens has Garden, FlowerBed and GreenspaceRecord (a measurement); no model holds a single tree"
+    },
+    "accurate": {
+     "state": "not run",
+     "reason": "no mapping"
+    },
+    "queryable": {
+     "state": "not run",
+     "reason": "no mapped type to ask about"
+    },
+    "smart-data-model": {
+     "state": "not run",
+     "reason": "no mapping"
+    }
+   },
+   "verdict": "hide"
+  },
+  {
+   "package": "bb-dtm-bb-register-verejnej-zelene-3",
+   "org": "banskabystrica",
+   "type": null,
+   "entities": null,
+   "rows": null,
+   "checks": {
+    "ngsi-ld": {
+     "state": "fail",
+     "reason": "removed in the mapping: no smart data model: ParksAndGardens/Garden is the area; no model holds the line around it"
+    },
+    "accurate": {
+     "state": "not run",
+     "reason": "no mapping"
+    },
+    "queryable": {
+     "state": "not run",
+     "reason": "no mapped type to ask about"
+    },
+    "smart-data-model": {
+     "state": "not run",
+     "reason": "no mapping"
+    }
+   },
+   "verdict": "hide"
+  },
+  {
+   "package": "bb-dtm-bb-register-vodorovneho-dopravneho-znacenia",
+   "org": "banskabystrica",
+   "type": null,
+   "entities": null,
+   "rows": null,
+   "checks": {
+    "ngsi-ld": {
+     "state": "fail",
+     "reason": "no-data-source in the mapping: a ZIP of 1 .pdf (193 KiB): a PDF map sheet, and no layer of the city's ArcGIS services holds its data"
+    },
+    "accurate": {
+     "state": "not run",
+     "reason": "no mapping"
+    },
+    "queryable": {
+     "state": "not run",
+     "reason": "no mapped type to ask about"
+    },
+    "smart-data-model": {
+     "state": "not run",
+     "reason": "no mapping"
+    }
+   },
+   "verdict": "hide"
+  },
+  {
+   "package": "bb-dtm-bb-register-zvisleho-dopravneho-znacenia",
+   "org": "banskabystrica",
+   "type": null,
+   "entities": null,
+   "rows": null,
+   "checks": {
+    "ngsi-ld": {
+     "state": "fail",
+     "reason": "removed in the mapping: no smart data model: no subject of the official list (2026-07-19) holds a traffic sign but OpenStreetMap's"
+    },
+    "accurate": {
+     "state": "not run",
+     "reason": "no mapping"
+    },
+    "queryable": {
+     "state": "not run",
+     "reason": "no mapped type to ask about"
+    },
+    "smart-data-model": {
+     "state": "not run",
+     "reason": "no mapping"
+    }
+   },
+   "verdict": "hide"
+  },
+  {
+   "package": "bb-dtm-bb-regulativy-a-limity-funkcneho-vyuzitia-uzemia",
+   "org": "banskabystrica",
+   "type": null,
+   "entities": null,
+   "rows": null,
+   "checks": {
+    "ngsi-ld": {
+     "state": "fail",
+     "reason": "removed in the mapping: no smart data model: dataModel.UrbanPlanning holds no model yet; no other subject holds a land-use plan's zones, limits or planned works"
+    },
+    "accurate": {
+     "state": "not run",
+     "reason": "no mapping"
+    },
+    "queryable": {
+     "state": "not run",
+     "reason": "no mapped type to ask about"
+    },
+    "smart-data-model": {
+     "state": "not run",
+     "reason": "no mapping"
+    }
+   },
+   "verdict": "hide"
+  },
+  {
+   "package": "bb-dtm-bb-tvorba-krajiny-a-ochrana-prirody",
+   "org": "banskabystrica",
+   "type": null,
+   "entities": null,
+   "rows": null,
+   "checks": {
+    "ngsi-ld": {
+     "state": "fail",
+     "reason": "removed in the mapping: no smart data model: dataModel.UrbanPlanning holds no model yet; no other subject holds a land-use plan's zones, limits or planned works"
+    },
+    "accurate": {
+     "state": "not run",
+     "reason": "no mapping"
+    },
+    "queryable": {
+     "state": "not run",
+     "reason": "no mapped type to ask about"
+    },
+    "smart-data-model": {
+     "state": "not run",
+     "reason": "no mapping"
+    }
+   },
+   "verdict": "hide"
+  },
+  {
+   "package": "bb-dtm-bb-verejne-dopravne-a-technicke-vybavenie",
+   "org": "banskabystrica",
+   "type": null,
+   "entities": null,
+   "rows": null,
+   "checks": {
+    "ngsi-ld": {
+     "state": "fail",
+     "reason": "removed in the mapping: no smart data model: dataModel.UrbanPlanning holds no model yet; no other subject holds a land-use plan's zones, limits or planned works"
+    },
+    "accurate": {
+     "state": "not run",
+     "reason": "no mapping"
+    },
+    "queryable": {
+     "state": "not run",
+     "reason": "no mapped type to ask about"
+    },
+    "smart-data-model": {
+     "state": "not run",
+     "reason": "no mapping"
+    }
+   },
+   "verdict": "hide"
+  },
+  {
+   "package": "bb-dtm-bb-verejnoprospesne-stavby",
+   "org": "banskabystrica",
+   "type": null,
+   "entities": null,
+   "rows": null,
+   "checks": {
+    "ngsi-ld": {
+     "state": "fail",
+     "reason": "removed in the mapping: no smart data model: dataModel.UrbanPlanning holds no model yet; no other subject holds a land-use plan's zones, limits or planned works"
+    },
+    "accurate": {
+     "state": "not run",
+     "reason": "no mapping"
+    },
+    "queryable": {
+     "state": "not run",
+     "reason": "no mapped type to ask about"
+    },
+    "smart-data-model": {
+     "state": "not run",
+     "reason": "no mapping"
+    }
+   },
+   "verdict": "hide"
+  },
+  {
+   "package": "bb-dtm-bb-vodne-toky-a-plochy",
+   "org": "banskabystrica",
+   "type": null,
+   "entities": null,
+   "rows": null,
+   "checks": {
+    "ngsi-ld": {
+     "state": "fail",
+     "reason": "removed in the mapping: no smart data model: OpenChannelManagement/OpenChannel is a hydraulic model of a channel (cross sections, flow); Environment/WaterObserved is a measurement; no model holds a stream or a reservoir"
+    },
+    "accurate": {
+     "state": "not run",
+     "reason": "no mapping"
+    },
+    "queryable": {
+     "state": "not run",
+     "reason": "no mapped type to ask about"
+    },
+    "smart-data-model": {
+     "state": "not run",
+     "reason": "no mapping"
+    }
+   },
+   "verdict": "hide"
+  },
+  {
+   "package": "bb-dtm-bb-vyskopis-teran",
+   "org": "banskabystrica",
+   "type": null,
+   "entities": null,
+   "rows": null,
+   "checks": {
+    "ngsi-ld": {
+     "state": "fail",
+     "reason": "removed in the mapping: no smart data model: no subject of the official list (2026-07-19) holds contour lines or terrain edges"
+    },
+    "accurate": {
+     "state": "not run",
+     "reason": "no mapping"
+    },
+    "queryable": {
+     "state": "not run",
+     "reason": "no mapped type to ask about"
+    },
+    "smart-data-model": {
+     "state": "not run",
+     "reason": "no mapping"
+    }
+   },
+   "verdict": "hide"
+  },
+  {
+   "package": "bb-dtm-bb-vyuzitie-pody-na-nepolnohospodarske-ucely",
+   "org": "banskabystrica",
+   "type": null,
+   "entities": null,
+   "rows": null,
+   "checks": {
+    "ngsi-ld": {
+     "state": "fail",
+     "reason": "removed in the mapping: no smart data model: dataModel.UrbanPlanning holds no model yet; no other subject holds a land-use plan's zones, limits or planned works"
+    },
+    "accurate": {
+     "state": "not run",
+     "reason": "no mapping"
+    },
+    "queryable": {
+     "state": "not run",
+     "reason": "no mapped type to ask about"
+    },
+    "smart-data-model": {
+     "state": "not run",
+     "reason": "no mapping"
+    }
+   },
+   "verdict": "hide"
+  },
+  {
+   "package": "bb-dtm-bb-zaujmove-uzemie-a-sirsie-vztahy",
+   "org": "banskabystrica",
+   "type": null,
+   "entities": null,
+   "rows": null,
+   "checks": {
+    "ngsi-ld": {
+     "state": "fail",
+     "reason": "removed in the mapping: no smart data model: dataModel.UrbanPlanning holds no model yet; no other subject holds a land-use plan's zones, limits or planned works"
+    },
+    "accurate": {
+     "state": "not run",
+     "reason": "no mapping"
+    },
+    "queryable": {
+     "state": "not run",
+     "reason": "no mapped type to ask about"
+    },
+    "smart-data-model": {
+     "state": "not run",
+     "reason": "no mapping"
+    }
+   },
+   "verdict": "hide"
+  },
+  {
+   "package": "bb-objednavky-bb",
+   "org": "banskabystrica",
+   "type": "PurchaseOrder",
+   "entities": 26862,
+   "rows": 26862,
+   "checks": {
+    "ngsi-ld": {
+     "state": "pass",
+     "reason": ""
+    },
+    "accurate": {
+     "state": "pass",
+     "reason": ""
+    },
+    "queryable": {
+     "state": "not run",
+     "reason": "no eval copy of banskabystrica's assistant"
+    },
+    "smart-data-model": {
+     "state": "pass",
+     "reason": ""
+    }
+   },
+   "verdict": "hold"
+  },
+  {
+   "package": "bb-pocet-obcanov-podla-dna-narodenia",
+   "org": "banskabystrica",
+   "type": "KeyPerformanceIndicator",
+   "entities": 0,
+   "rows": null,
+   "checks": {
+    "ngsi-ld": {
+     "state": "fail",
+     "reason": "no entity on dev"
+    },
+    "accurate": {
+     "state": "not run",
+     "reason": "no entity to compare"
+    },
+    "queryable": {
+     "state": "not run",
+     "reason": "asked only when checks 1, 2 and 4 pass (the eval copy's hourly limit)"
+    },
+    "smart-data-model": {
+     "state": "pass",
+     "reason": ""
+    }
+   },
+   "verdict": "hide"
+  },
+  {
+   "package": "bb-pocet-obcanov-podla-veku",
+   "org": "banskabystrica",
+   "type": "KeyPerformanceIndicator",
+   "entities": 105,
+   "rows": 105,
+   "checks": {
+    "ngsi-ld": {
+     "state": "pass",
+     "reason": ""
+    },
+    "accurate": {
+     "state": "fail",
+     "reason": "row 0 (urn:ngsi-ld:KeyPerformanceIndicator:banskabystrica.sk:banskabystrica-otvorene-data:pocet-obcanov-podla-veku-0): pocetObcanovVDanomVeku: source 378, broker 379; pocetMuzov: source 220, broker 222; pocetZien: source 158, broker 157 | row 26 (urn:ngsi-ld:KeyPerformanceIndicator:banskabystrica.sk:banskabystrica-otvorene-data:pocet-obcanov-podla-veku-26): pocetObcanovVDanomVeku: source 580, broker 581; pocetZien: source 278, broker 279 | row 52 (urn:ngsi-ld:KeyPerformanceIndicator:banskabystrica.sk:banskabystrica-otvorene-data:pocet-obcanov-podla-veku-52): pocetObcanovVDanomVeku: source 1 134, broker 1 132; pocetMuzov: source 586, broker 584 | row 78 (urn:ngsi-ld:KeyPerformanceIndicator:banskabystrica.sk:banskabystrica-otvorene-data:pocet-obcanov-podla-veku-78): pocetObcanovVDanomVeku: source 649, broker 648; pocetMuzov: source 265, broker 266; pocetZien: source 384, broker 382"
+    },
+    "queryable": {
+     "state": "not run",
+     "reason": "asked only when checks 1, 2 and 4 pass (the eval copy's hourly limit)"
+    },
+    "smart-data-model": {
+     "state": "pass",
+     "reason": ""
+    }
+   },
+   "verdict": "hide"
+  },
+  {
+   "package": "bb-podujatia",
+   "org": "banskabystrica",
+   "type": "Event",
+   "entities": null,
+   "rows": null,
+   "checks": {
+    "ngsi-ld": {
+     "state": "fail",
+     "reason": "no public Endpoint over banskabystrica-otvorene-data lists Event"
+    },
+    "accurate": {
+     "state": "not run",
+     "reason": "no entity to compare"
+    },
+    "queryable": {
+     "state": "not run",
+     "reason": "asked only when checks 1, 2 and 4 pass (the eval copy's hourly limit)"
+    },
+    "smart-data-model": {
+     "state": "pass",
+     "reason": ""
+    }
+   },
+   "verdict": "hide"
+  },
+  {
+   "package": "bb-prirastky-a-ubytky-obcanov-za-jednotlive-roky",
+   "org": "banskabystrica",
+   "type": "KeyPerformanceIndicator",
+   "entities": 0,
+   "rows": null,
+   "checks": {
+    "ngsi-ld": {
+     "state": "fail",
+     "reason": "no entity on dev"
+    },
+    "accurate": {
+     "state": "not run",
+     "reason": "no entity to compare"
+    },
+    "queryable": {
+     "state": "not run",
+     "reason": "asked only when checks 1, 2 and 4 pass (the eval copy's hourly limit)"
+    },
+    "smart-data-model": {
+     "state": "pass",
+     "reason": ""
+    }
+   },
+   "verdict": "hide"
+  },
+  {
+   "package": "bb-zasadnutia-organov-samospravy",
+   "org": "banskabystrica",
+   "type": "CouncilMeeting",
+   "entities": 1499,
+   "rows": 1499,
+   "checks": {
+    "ngsi-ld": {
+     "state": "pass",
+     "reason": ""
+    },
+    "accurate": {
+     "state": "pass",
+     "reason": ""
+    },
+    "queryable": {
+     "state": "not run",
+     "reason": "no eval copy of banskabystrica's assistant"
+    },
+    "smart-data-model": {
+     "state": "pass",
+     "reason": ""
+    }
+   },
+   "verdict": "hold"
+  },
+  {
+   "package": "bb-zmluvy-bb",
+   "org": "banskabystrica",
+   "type": "Contract",
+   "entities": 11440,
+   "rows": 19886,
+   "checks": {
+    "ngsi-ld": {
+     "state": "pass",
+     "reason": ""
+    },
+    "accurate": {
+     "state": "fail",
+     "reason": "11440 entities for 19886 source rows (-42.5%) | source row 0 has no entity | source row 4971 has no entity | source row 9943 has no entity | source row 14914 has no entity | source row 19885 has no entity"
+    },
+    "queryable": {
+     "state": "not run",
+     "reason": "asked only when checks 1, 2 and 4 pass (the eval copy's hourly limit)"
+    },
+    "smart-data-model": {
+     "state": "pass",
+     "reason": ""
+    }
+   },
+   "verdict": "hide"
+  },
+  {
+   "package": "bbsk-clenovia-samospravy-efc2f3",
+   "org": "bbsk",
+   "type": "Person",
+   "entities": 125,
+   "rows": 125,
+   "checks": {
+    "ngsi-ld": {
+     "state": "pass",
+     "reason": ""
+    },
+    "accurate": {
+     "state": "pass",
+     "reason": ""
+    },
+    "queryable": {
+     "state": "not run",
+     "reason": "no eval copy of bbsk's assistant"
+    },
+    "smart-data-model": {
+     "state": "pass",
+     "reason": ""
+    }
+   },
+   "verdict": "hold"
+  },
+  {
+   "package": "bbsk-cyklisti-nehodovost-addf0f",
+   "org": "bbsk",
+   "type": "RoadAccident",
+   "entities": 0,
+   "rows": null,
+   "checks": {
+    "ngsi-ld": {
+     "state": "fail",
+     "reason": "no entity on dev"
+    },
+    "accurate": {
+     "state": "not run",
+     "reason": "no entity to compare"
+    },
+    "queryable": {
+     "state": "not run",
+     "reason": "asked only when checks 1, 2 and 4 pass (the eval copy's hourly limit)"
+    },
+    "smart-data-model": {
+     "state": "pass",
+     "reason": ""
+    }
+   },
+   "verdict": "hide"
+  },
+  {
+   "package": "bbsk-cykloscitace-miesta-6e967d",
+   "org": "bbsk",
+   "type": "PointOfInterest",
+   "entities": 13,
+   "rows": 13,
+   "checks": {
+    "ngsi-ld": {
+     "state": "pass",
+     "reason": ""
+    },
+    "accurate": {
+     "state": "pass",
+     "reason": ""
+    },
+    "queryable": {
+     "state": "not run",
+     "reason": "no eval copy of bbsk's assistant"
+    },
+    "smart-data-model": {
+     "state": "pass",
+     "reason": ""
+    }
+   },
+   "verdict": "hold"
+  },
+  {
+   "package": "bbsk-cykloturisticke-trasy-linie-e6a1a7",
+   "org": "bbsk",
+   "type": "CycleRoute",
+   "entities": 0,
+   "rows": null,
+   "checks": {
+    "ngsi-ld": {
+     "state": "fail",
+     "reason": "no entity on dev"
+    },
+    "accurate": {
+     "state": "not run",
+     "reason": "no entity to compare"
+    },
+    "queryable": {
+     "state": "not run",
+     "reason": "asked only when checks 1, 2 and 4 pass (the eval copy's hourly limit)"
+    },
+    "smart-data-model": {
+     "state": "pass",
+     "reason": ""
+    }
+   },
+   "verdict": "hide"
+  },
+  {
+   "package": "bbsk-cykloturisticke-trasy-linie-povrchy-2ec670",
+   "org": "bbsk",
+   "type": "CycleRoute",
+   "entities": 785,
+   "rows": 785,
+   "checks": {
+    "ngsi-ld": {
+     "state": "pass",
+     "reason": ""
+    },
+    "accurate": {
+     "state": "fail",
+     "reason": "urn:ngsi-ld:CycleRoute:bbsk.sk:bbsk-otvorene-data:cykloturisticke-trasy-linie-povrchy-09ed773567f717290dc94ed8 at (18.549817, 48.560893) is outside bbsk's box"
+    },
+    "queryable": {
+     "state": "not run",
+     "reason": "asked only when checks 1, 2 and 4 pass (the eval copy's hourly limit)"
+    },
+    "smart-data-model": {
+     "state": "pass",
+     "reason": ""
+    }
+   },
+   "verdict": "hide"
+  },
+  {
+   "package": "bbsk-cykloturisticke-trasy-nosic-infotabula-odpocivadlo-znacenie-f3c643",
+   "org": "bbsk",
+   "type": "PointOfInterest",
+   "entities": 0,
+   "rows": null,
+   "checks": {
+    "ngsi-ld": {
+     "state": "fail",
+     "reason": "no entity on dev"
+    },
+    "accurate": {
+     "state": "not run",
+     "reason": "no entity to compare"
+    },
+    "queryable": {
+     "state": "not run",
+     "reason": "asked only when checks 1, 2 and 4 pass (the eval copy's hourly limit)"
+    },
+    "smart-data-model": {
+     "state": "pass",
+     "reason": ""
+    }
+   },
+   "verdict": "hide"
+  },
+  {
+   "package": "bbsk-dilatacne-celky-v-banskobystrickom-kraji-public-view-6ff77a",
+   "org": "bbsk",
+   "type": "RoadStructure",
+   "entities": 1652,
+   "rows": 1652,
+   "checks": {
+    "ngsi-ld": {
+     "state": "pass",
+     "reason": ""
+    },
+    "accurate": {
+     "state": "fail",
+     "reason": "urn:ngsi-ld:RoadStructure:bbsk.sk:bbsk-otvorene-data:dilatacne-celky-v-banskobystrickom-kraji-M10170.01 at (18.53771, 48.313064) is outside bbsk's box"
+    },
+    "queryable": {
+     "state": "not run",
+     "reason": "asked only when checks 1, 2 and 4 pass (the eval copy's hourly limit)"
+    },
+    "smart-data-model": {
+     "state": "pass",
+     "reason": ""
+    }
+   },
+   "verdict": "hide"
+  },
+  {
+   "package": "bbsk-dodavatelia-825cd0",
+   "org": "bbsk",
+   "type": "Organization",
+   "entities": 0,
+   "rows": null,
+   "checks": {
+    "ngsi-ld": {
+     "state": "fail",
+     "reason": "no entity on dev"
+    },
+    "accurate": {
+     "state": "not run",
+     "reason": "no entity to compare"
+    },
+    "queryable": {
+     "state": "not run",
+     "reason": "asked only when checks 1, 2 and 4 pass (the eval copy's hourly limit)"
+    },
+    "smart-data-model": {
+     "state": "pass",
+     "reason": ""
+    }
+   },
+   "verdict": "hide"
+  },
+  {
+   "package": "bbsk-dotacie-bada80",
+   "org": "bbsk",
+   "type": "Grant",
+   "entities": null,
+   "rows": null,
+   "checks": {
+    "ngsi-ld": {
+     "state": "fail",
+     "reason": "the Endpoint answered 403 TooManyResults"
+    },
+    "accurate": {
+     "state": "not run",
+     "reason": "no entity to compare"
+    },
+    "queryable": {
+     "state": "not run",
+     "reason": "asked only when checks 1, 2 and 4 pass (the eval copy's hourly limit)"
+    },
+    "smart-data-model": {
+     "state": "pass",
+     "reason": ""
+    }
+   },
+   "verdict": "hide"
+  },
+  {
+   "package": "bbsk-ekologicky-potencial-vodnych-utvarov-672eca",
+   "org": "bbsk",
+   "type": "WaterBodyStatus",
+   "entities": 0,
+   "rows": null,
+   "checks": {
+    "ngsi-ld": {
+     "state": "fail",
+     "reason": "no entity on dev"
+    },
+    "accurate": {
+     "state": "not run",
+     "reason": "no entity to compare"
+    },
+    "queryable": {
+     "state": "not run",
+     "reason": "asked only when checks 1, 2 and 4 pass (the eval copy's hourly limit)"
+    },
+    "smart-data-model": {
+     "state": "pass",
+     "reason": ""
+    }
+   },
+   "verdict": "hide"
+  },
+  {
+   "package": "bbsk-ekologicky-stav-vodnych-utvarov-48bbbd",
+   "org": "bbsk",
+   "type": "WaterBodyStatus",
+   "entities": 306,
+   "rows": 306,
+   "checks": {
+    "ngsi-ld": {
+     "state": "pass",
+     "reason": ""
+    },
+    "accurate": {
+     "state": "pass",
+     "reason": ""
+    },
+    "queryable": {
+     "state": "not run",
+     "reason": "no eval copy of bbsk's assistant"
+    },
+    "smart-data-model": {
+     "state": "pass",
+     "reason": ""
+    }
+   },
+   "verdict": "hold"
+  },
+  {
+   "package": "bbsk-faktury-422b35",
+   "org": "bbsk",
+   "type": "Invoice",
+   "entities": 0,
+   "rows": null,
+   "checks": {
+    "ngsi-ld": {
+     "state": "fail",
+     "reason": "no entity on dev"
+    },
+    "accurate": {
+     "state": "not run",
+     "reason": "no entity to compare"
+    },
+    "queryable": {
+     "state": "not run",
+     "reason": "asked only when checks 1, 2 and 4 pass (the eval copy's hourly limit)"
+    },
+    "smart-data-model": {
+     "state": "pass",
+     "reason": ""
+    }
+   },
+   "verdict": "hide"
+  },
+  {
+   "package": "bbsk-hlasovania-poslancov-ba7ca6",
+   "org": "bbsk",
+   "type": "CouncilVote",
+   "entities": 73428,
+   "rows": 89670,
+   "checks": {
+    "ngsi-ld": {
+     "state": "pass",
+     "reason": ""
+    },
+    "accurate": {
+     "state": "fail",
+     "reason": "73428 entities for 89670 source rows (-18.1%)"
+    },
+    "queryable": {
+     "state": "not run",
+     "reason": "asked only when checks 1, 2 and 4 pass (the eval copy's hourly limit)"
+    },
+    "smart-data-model": {
+     "state": "pass",
+     "reason": ""
+    }
+   },
+   "verdict": "hide"
+  },
+  {
+   "package": "bbsk-hranice",
+   "org": "bbsk",
+   "type": null,
+   "entities": 529,
+   "rows": null,
+   "checks": {
+    "ngsi-ld": {
+     "state": "pass",
+     "reason": ""
+    },
+    "accurate": {
+     "state": "not run",
+     "reason": "the platform publishes it from its own Endpoint; no mapping names an outside source"
+    },
+    "queryable": {
+     "state": "not run",
+     "reason": "no mapped type to ask about"
+    },
+    "smart-data-model": {
+     "state": "not run",
+     "reason": "no mapping"
+    }
+   },
+   "verdict": "hold"
+  },
+  {
+   "package": "bbsk-hustota-obyvatelstva-2021-503a78",
+   "org": "bbsk",
+   "type": "KeyPerformanceIndicator",
+   "entities": 0,
+   "rows": null,
+   "checks": {
+    "ngsi-ld": {
+     "state": "fail",
+     "reason": "no entity on dev"
+    },
+    "accurate": {
+     "state": "not run",
+     "reason": "no entity to compare"
+    },
+    "queryable": {
+     "state": "not run",
+     "reason": "asked only when checks 1, 2 and 4 pass (the eval copy's hourly limit)"
+    },
+    "smart-data-model": {
+     "state": "pass",
+     "reason": ""
+    }
+   },
+   "verdict": "hide"
+  },
+  {
+   "package": "bbsk-hustota-obyvatelstva-v-obciach-bbk-79fd96",
+   "org": "bbsk",
+   "type": "KeyPerformanceIndicator",
+   "entities": 0,
+   "rows": null,
+   "checks": {
+    "ngsi-ld": {
+     "state": "fail",
+     "reason": "no entity on dev"
+    },
+    "accurate": {
+     "state": "not run",
+     "reason": "no entity to compare"
+    },
+    "queryable": {
+     "state": "not run",
+     "reason": "asked only when checks 1, 2 and 4 pass (the eval copy's hourly limit)"
+    },
+    "smart-data-model": {
+     "state": "pass",
+     "reason": ""
+    }
+   },
+   "verdict": "hide"
+  },
+  {
+   "package": "bbsk-komisie-zastupitelstva-banskobystrickeho-samospravneho-kraja-59b9e4",
+   "org": "bbsk",
+   "type": "CommitteeSeat",
+   "entities": 0,
+   "rows": null,
+   "checks": {
+    "ngsi-ld": {
+     "state": "fail",
+     "reason": "no entity on dev"
+    },
+    "accurate": {
+     "state": "not run",
+     "reason": "no entity to compare"
+    },
+    "queryable": {
+     "state": "not run",
+     "reason": "asked only when checks 1, 2 and 4 pass (the eval copy's hourly limit)"
+    },
+    "smart-data-model": {
+     "state": "pass",
+     "reason": ""
+    }
+   },
+   "verdict": "hide"
+  },
+  {
+   "package": "bbsk-kontaktne-miesta-2128a0",
+   "org": "bbsk",
+   "type": "PointOfInterest",
+   "entities": 65,
+   "rows": 65,
+   "checks": {
+    "ngsi-ld": {
+     "state": "pass",
+     "reason": ""
+    },
+    "accurate": {
+     "state": "pass",
+     "reason": ""
+    },
+    "queryable": {
+     "state": "not run",
+     "reason": "no eval copy of bbsk's assistant"
+    },
+    "smart-data-model": {
+     "state": "pass",
+     "reason": ""
+    }
+   },
+   "verdict": "hold"
+  },
+  {
+   "package": "bbsk-kontakty-na-miestne-samospravy-v-bbk-fc5ecb",
+   "org": "bbsk",
+   "type": "Organization",
+   "entities": 0,
+   "rows": null,
+   "checks": {
+    "ngsi-ld": {
+     "state": "fail",
+     "reason": "no entity on dev"
+    },
+    "accurate": {
+     "state": "not run",
+     "reason": "no entity to compare"
+    },
+    "queryable": {
+     "state": "not run",
+     "reason": "asked only when checks 1, 2 and 4 pass (the eval copy's hourly limit)"
+    },
+    "smart-data-model": {
+     "state": "pass",
+     "reason": ""
+    }
+   },
+   "verdict": "hide"
+  },
+  {
+   "package": "bbsk-kpi",
+   "org": "bbsk",
+   "type": null,
+   "entities": 56,
+   "rows": null,
+   "checks": {
+    "ngsi-ld": {
+     "state": "pass",
+     "reason": ""
+    },
+    "accurate": {
+     "state": "not run",
+     "reason": "the platform publishes it from its own Endpoint; no mapping names an outside source"
+    },
+    "queryable": {
+     "state": "not run",
+     "reason": "no mapped type to ask about"
+    },
+    "smart-data-model": {
+     "state": "not run",
+     "reason": "no mapping"
+    }
+   },
+   "verdict": "hold"
+  },
+  {
+   "package": "bbsk-kraj-bbk-hranica-a05568",
+   "org": "bbsk",
+   "type": "AdministrativeArea",
+   "entities": 8,
+   "rows": 8,
+   "checks": {
+    "ngsi-ld": {
+     "state": "pass",
+     "reason": ""
+    },
+    "accurate": {
+     "state": "fail",
+     "reason": "urn:ngsi-ld:AdministrativeArea:bbsk.sk:bbsk-otvorene-data:kraj-bbk-hranica-1 at (17.338519, 48.650915) is outside bbsk's box"
+    },
+    "queryable": {
+     "state": "not run",
+     "reason": "asked only when checks 1, 2 and 4 pass (the eval copy's hourly limit)"
+    },
+    "smart-data-model": {
+     "state": "pass",
+     "reason": ""
+    }
+   },
+   "verdict": "hide"
+  },
+  {
+   "package": "bbsk-kulturne-institucie-bbsk-24fbf9",
+   "org": "bbsk",
+   "type": "PointOfInterest",
+   "entities": 0,
+   "rows": null,
+   "checks": {
+    "ngsi-ld": {
+     "state": "fail",
+     "reason": "no entity on dev"
+    },
+    "accurate": {
+     "state": "not run",
+     "reason": "no entity to compare"
+    },
+    "queryable": {
+     "state": "not run",
+     "reason": "asked only when checks 1, 2 and 4 pass (the eval copy's hourly limit)"
+    },
+    "smart-data-model": {
+     "state": "pass",
+     "reason": ""
+    }
+   },
+   "verdict": "hide"
+  },
+  {
+   "package": "bbsk-kulturne-institucie-bbsk-a-ich-pobocky-2f9362",
+   "org": "bbsk",
+   "type": "PointOfInterest",
+   "entities": 23,
+   "rows": 23,
+   "checks": {
+    "ngsi-ld": {
+     "state": "pass",
+     "reason": ""
+    },
+    "accurate": {
+     "state": "pass",
+     "reason": ""
+    },
+    "queryable": {
+     "state": "not run",
+     "reason": "no eval copy of bbsk's assistant"
+    },
+    "smart-data-model": {
+     "state": "pass",
+     "reason": ""
+    }
+   },
+   "verdict": "hold"
+  },
+  {
+   "package": "bbsk-materske-skoly-v-banskobystrickom-kraji-3f7d07",
+   "org": "bbsk",
+   "type": "Organization",
+   "entities": 0,
+   "rows": null,
+   "checks": {
+    "ngsi-ld": {
+     "state": "fail",
+     "reason": "no entity on dev"
+    },
+    "accurate": {
+     "state": "not run",
+     "reason": "no entity to compare"
+    },
+    "queryable": {
+     "state": "not run",
+     "reason": "asked only when checks 1, 2 and 4 pass (the eval copy's hourly limit)"
+    },
+    "smart-data-model": {
+     "state": "pass",
+     "reason": ""
+    }
+   },
+   "verdict": "hide"
+  },
+  {
+   "package": "bbsk-mosty",
+   "org": "bbsk",
+   "type": null,
+   "entities": 1651,
+   "rows": null,
+   "checks": {
+    "ngsi-ld": {
+     "state": "pass",
+     "reason": ""
+    },
+    "accurate": {
+     "state": "not run",
+     "reason": "the platform publishes it from its own Endpoint; no mapping names an outside source"
+    },
+    "queryable": {
+     "state": "not run",
+     "reason": "no mapped type to ask about"
+    },
+    "smart-data-model": {
+     "state": "not run",
+     "reason": "no mapping"
+    }
+   },
+   "verdict": "hold"
+  },
+  {
+   "package": "bbsk-mosty-v-banskobystrickom-kraji-public-view-3b4675",
+   "org": "bbsk",
+   "type": "Bridge",
+   "entities": 0,
+   "rows": null,
+   "checks": {
+    "ngsi-ld": {
+     "state": "fail",
+     "reason": "no entity on dev"
+    },
+    "accurate": {
+     "state": "not run",
+     "reason": "no entity to compare"
+    },
+    "queryable": {
+     "state": "not run",
+     "reason": "asked only when checks 1, 2 and 4 pass (the eval copy's hourly limit)"
+    },
+    "smart-data-model": {
+     "state": "pass",
+     "reason": ""
+    }
+   },
+   "verdict": "hide"
+  },
+  {
+   "package": "bbsk-mosty-v-sprave-bbrsc-public-view-d3252c",
+   "org": "bbsk",
+   "type": "Bridge",
+   "entities": 1031,
+   "rows": 1031,
+   "checks": {
+    "ngsi-ld": {
+     "state": "pass",
+     "reason": ""
+    },
+    "accurate": {
+     "state": "fail",
+     "reason": "urn:ngsi-ld:Bridge:bbsk.sk:bbsk-otvorene-data:mosty-v-sprave-bbrsc-public-view-M1398 at (18.548736, 48.345263) is outside bbsk's box"
+    },
+    "queryable": {
+     "state": "not run",
+     "reason": "asked only when checks 1, 2 and 4 pass (the eval copy's hourly limit)"
+    },
+    "smart-data-model": {
+     "state": "pass",
+     "reason": ""
+    }
+   },
+   "verdict": "hide"
+  },
+  {
+   "package": "bbsk-nabijacky-a-zastavky-937210",
+   "org": "bbsk",
+   "type": "PointOfInterest",
+   "entities": 0,
+   "rows": null,
+   "checks": {
+    "ngsi-ld": {
+     "state": "fail",
+     "reason": "no entity on dev"
+    },
+    "accurate": {
+     "state": "not run",
+     "reason": "no entity to compare"
+    },
+    "queryable": {
+     "state": "not run",
+     "reason": "asked only when checks 1, 2 and 4 pass (the eval copy's hourly limit)"
+    },
+    "smart-data-model": {
+     "state": "pass",
+     "reason": ""
+    }
+   },
+   "verdict": "hide"
+  },
+  {
+   "package": "bbsk-nehodovost-v-bbk-0ea72d",
+   "org": "bbsk",
+   "type": "RoadAccident",
+   "entities": 3046,
+   "rows": 3046,
+   "checks": {
+    "ngsi-ld": {
+     "state": "pass",
+     "reason": ""
+    },
+    "accurate": {
+     "state": "pass",
+     "reason": ""
+    },
+    "queryable": {
+     "state": "not run",
+     "reason": "no eval copy of bbsk's assistant"
+    },
+    "smart-data-model": {
+     "state": "pass",
+     "reason": ""
+    }
+   },
+   "verdict": "hold"
+  },
+  {
+   "package": "bbsk-obce-bbk-centroidy-cbd19f",
+   "org": "bbsk",
+   "type": "AdministrativeArea",
+   "entities": 0,
+   "rows": null,
+   "checks": {
+    "ngsi-ld": {
+     "state": "fail",
+     "reason": "no entity on dev"
+    },
+    "accurate": {
+     "state": "not run",
+     "reason": "no entity to compare"
+    },
+    "queryable": {
+     "state": "not run",
+     "reason": "asked only when checks 1, 2 and 4 pass (the eval copy's hourly limit)"
+    },
+    "smart-data-model": {
+     "state": "pass",
+     "reason": ""
+    }
+   },
+   "verdict": "hide"
+  },
+  {
+   "package": "bbsk-obce-bbk-hranice-ec7ac6",
+   "org": "bbsk",
+   "type": "AdministrativeArea",
+   "entities": 0,
+   "rows": null,
+   "checks": {
+    "ngsi-ld": {
+     "state": "fail",
+     "reason": "no entity on dev"
+    },
+    "accurate": {
+     "state": "not run",
+     "reason": "no entity to compare"
+    },
+    "queryable": {
+     "state": "not run",
+     "reason": "asked only when checks 1, 2 and 4 pass (the eval copy's hourly limit)"
+    },
+    "smart-data-model": {
+     "state": "pass",
+     "reason": ""
+    }
+   },
+   "verdict": "hide"
+  },
+  {
+   "package": "bbsk-objednavky-a97e8a",
+   "org": "bbsk",
+   "type": "PurchaseOrder",
+   "entities": 16993,
+   "rows": 18896,
+   "checks": {
+    "ngsi-ld": {
+     "state": "pass",
+     "reason": ""
+    },
+    "accurate": {
+     "state": "fail",
+     "reason": "16993 entities for 18896 source rows (-10.1%)"
+    },
+    "queryable": {
+     "state": "not run",
+     "reason": "asked only when checks 1, 2 and 4 pass (the eval copy's hourly limit)"
+    },
+    "smart-data-model": {
+     "state": "pass",
+     "reason": ""
+    }
+   },
+   "verdict": "hide"
+  },
+  {
+   "package": "bbsk-obyvatelstvo-podla-dalsej-narodnosti-2021-obce-11667a",
+   "org": "bbsk",
+   "type": "KeyPerformanceIndicator",
+   "entities": 0,
+   "rows": null,
+   "checks": {
+    "ngsi-ld": {
+     "state": "fail",
+     "reason": "no entity on dev"
+    },
+    "accurate": {
+     "state": "not run",
+     "reason": "no entity to compare"
+    },
+    "queryable": {
+     "state": "not run",
+     "reason": "asked only when checks 1, 2 and 4 pass (the eval copy's hourly limit)"
+    },
+    "smart-data-model": {
+     "state": "pass",
+     "reason": ""
+    }
+   },
+   "verdict": "hide"
+  },
+  {
+   "package": "bbsk-obyvatelstvo-podla-dalsej-narodnosti-2021-okresy-54bc2c",
+   "org": "bbsk",
+   "type": "KeyPerformanceIndicator",
+   "entities": 0,
+   "rows": null,
+   "checks": {
+    "ngsi-ld": {
+     "state": "fail",
+     "reason": "no entity on dev"
+    },
+    "accurate": {
+     "state": "not run",
+     "reason": "no entity to compare"
+    },
+    "queryable": {
+     "state": "not run",
+     "reason": "asked only when checks 1, 2 and 4 pass (the eval copy's hourly limit)"
+    },
+    "smart-data-model": {
+     "state": "pass",
+     "reason": ""
+    }
+   },
+   "verdict": "hide"
+  },
+  {
+   "package": "bbsk-obyvatelstvo-podla-ekonomickej-aktivity-2021-984966",
+   "org": "bbsk",
+   "type": "KeyPerformanceIndicator",
+   "entities": 0,
+   "rows": null,
+   "checks": {
+    "ngsi-ld": {
+     "state": "fail",
+     "reason": "no entity on dev"
+    },
+    "accurate": {
+     "state": "not run",
+     "reason": "no entity to compare"
+    },
+    "queryable": {
+     "state": "not run",
+     "reason": "asked only when checks 1, 2 and 4 pass (the eval copy's hourly limit)"
+    },
+    "smart-data-model": {
+     "state": "pass",
+     "reason": ""
+    }
+   },
+   "verdict": "hide"
+  },
+  {
+   "package": "bbsk-obyvatelstvo-podla-materinskeho-jazyka-2011-obce-c0f097",
+   "org": "bbsk",
+   "type": "KeyPerformanceIndicator",
+   "entities": 0,
+   "rows": null,
+   "checks": {
+    "ngsi-ld": {
+     "state": "fail",
+     "reason": "no entity on dev"
+    },
+    "accurate": {
+     "state": "not run",
+     "reason": "no entity to compare"
+    },
+    "queryable": {
+     "state": "not run",
+     "reason": "asked only when checks 1, 2 and 4 pass (the eval copy's hourly limit)"
+    },
+    "smart-data-model": {
+     "state": "pass",
+     "reason": ""
+    }
+   },
+   "verdict": "hide"
+  },
+  {
+   "package": "bbsk-obyvatelstvo-podla-materinskeho-jazyka-2011-okresy-590643",
+   "org": "bbsk",
+   "type": "KeyPerformanceIndicator",
+   "entities": 0,
+   "rows": null,
+   "checks": {
+    "ngsi-ld": {
+     "state": "fail",
+     "reason": "no entity on dev"
+    },
+    "accurate": {
+     "state": "not run",
+     "reason": "no entity to compare"
+    },
+    "queryable": {
+     "state": "not run",
+     "reason": "asked only when checks 1, 2 and 4 pass (the eval copy's hourly limit)"
+    },
+    "smart-data-model": {
+     "state": "pass",
+     "reason": ""
+    }
+   },
+   "verdict": "hide"
+  },
+  {
+   "package": "bbsk-obyvatelstvo-podla-materinskeho-jazyka-2021-obce-fc02ff",
+   "org": "bbsk",
+   "type": "KeyPerformanceIndicator",
+   "entities": 0,
+   "rows": null,
+   "checks": {
+    "ngsi-ld": {
+     "state": "fail",
+     "reason": "no entity on dev"
+    },
+    "accurate": {
+     "state": "not run",
+     "reason": "no entity to compare"
+    },
+    "queryable": {
+     "state": "not run",
+     "reason": "asked only when checks 1, 2 and 4 pass (the eval copy's hourly limit)"
+    },
+    "smart-data-model": {
+     "state": "pass",
+     "reason": ""
+    }
+   },
+   "verdict": "hide"
+  },
+  {
+   "package": "bbsk-obyvatelstvo-podla-materinskeho-jazyka-2021-okresy-404a3d",
+   "org": "bbsk",
+   "type": "KeyPerformanceIndicator",
+   "entities": 0,
+   "rows": null,
+   "checks": {
+    "ngsi-ld": {
+     "state": "fail",
+     "reason": "no entity on dev"
+    },
+    "accurate": {
+     "state": "not run",
+     "reason": "no entity to compare"
+    },
+    "queryable": {
+     "state": "not run",
+     "reason": "asked only when checks 1, 2 and 4 pass (the eval copy's hourly limit)"
+    },
+    "smart-data-model": {
+     "state": "pass",
+     "reason": ""
+    }
+   },
+   "verdict": "hide"
+  },
+  {
+   "package": "bbsk-obyvatelstvo-podla-nabozenskeho-vyznania-2011-obce-81576b",
+   "org": "bbsk",
+   "type": "KeyPerformanceIndicator",
+   "entities": 0,
+   "rows": null,
+   "checks": {
+    "ngsi-ld": {
+     "state": "fail",
+     "reason": "no entity on dev"
+    },
+    "accurate": {
+     "state": "not run",
+     "reason": "no entity to compare"
+    },
+    "queryable": {
+     "state": "not run",
+     "reason": "asked only when checks 1, 2 and 4 pass (the eval copy's hourly limit)"
+    },
+    "smart-data-model": {
+     "state": "pass",
+     "reason": ""
+    }
+   },
+   "verdict": "hide"
+  },
+  {
+   "package": "bbsk-obyvatelstvo-podla-nabozenskeho-vyznania-2011-okresy-3844c8",
+   "org": "bbsk",
+   "type": "KeyPerformanceIndicator",
+   "entities": 0,
+   "rows": null,
+   "checks": {
+    "ngsi-ld": {
+     "state": "fail",
+     "reason": "no entity on dev"
+    },
+    "accurate": {
+     "state": "not run",
+     "reason": "no entity to compare"
+    },
+    "queryable": {
+     "state": "not run",
+     "reason": "asked only when checks 1, 2 and 4 pass (the eval copy's hourly limit)"
+    },
+    "smart-data-model": {
+     "state": "pass",
+     "reason": ""
+    }
+   },
+   "verdict": "hide"
+  },
+  {
+   "package": "bbsk-obyvatelstvo-podla-nabozenskeho-vyznania-2021-obce-5fb2e9",
+   "org": "bbsk",
+   "type": "KeyPerformanceIndicator",
+   "entities": 0,
+   "rows": null,
+   "checks": {
+    "ngsi-ld": {
+     "state": "fail",
+     "reason": "no entity on dev"
+    },
+    "accurate": {
+     "state": "not run",
+     "reason": "no entity to compare"
+    },
+    "queryable": {
+     "state": "not run",
+     "reason": "asked only when checks 1, 2 and 4 pass (the eval copy's hourly limit)"
+    },
+    "smart-data-model": {
+     "state": "pass",
+     "reason": ""
+    }
+   },
+   "verdict": "hide"
+  },
+  {
+   "package": "bbsk-obyvatelstvo-podla-nabozenskeho-vyznania-2021-okresy-4d7df9",
+   "org": "bbsk",
+   "type": "KeyPerformanceIndicator",
+   "entities": 0,
+   "rows": null,
+   "checks": {
+    "ngsi-ld": {
+     "state": "fail",
+     "reason": "no entity on dev"
+    },
+    "accurate": {
+     "state": "not run",
+     "reason": "no entity to compare"
+    },
+    "queryable": {
+     "state": "not run",
+     "reason": "asked only when checks 1, 2 and 4 pass (the eval copy's hourly limit)"
+    },
+    "smart-data-model": {
+     "state": "pass",
+     "reason": ""
+    }
+   },
+   "verdict": "hide"
+  },
+  {
+   "package": "bbsk-obyvatelstvo-podla-narodnosti-2011-obce-a36024",
+   "org": "bbsk",
+   "type": "KeyPerformanceIndicator",
+   "entities": 0,
+   "rows": null,
+   "checks": {
+    "ngsi-ld": {
+     "state": "fail",
+     "reason": "no entity on dev"
+    },
+    "accurate": {
+     "state": "not run",
+     "reason": "no entity to compare"
+    },
+    "queryable": {
+     "state": "not run",
+     "reason": "asked only when checks 1, 2 and 4 pass (the eval copy's hourly limit)"
+    },
+    "smart-data-model": {
+     "state": "pass",
+     "reason": ""
+    }
+   },
+   "verdict": "hide"
+  },
+  {
+   "package": "bbsk-obyvatelstvo-podla-narodnosti-2011-okresy-09f7d6",
+   "org": "bbsk",
+   "type": "KeyPerformanceIndicator",
+   "entities": 0,
+   "rows": null,
+   "checks": {
+    "ngsi-ld": {
+     "state": "fail",
+     "reason": "no entity on dev"
+    },
+    "accurate": {
+     "state": "not run",
+     "reason": "no entity to compare"
+    },
+    "queryable": {
+     "state": "not run",
+     "reason": "asked only when checks 1, 2 and 4 pass (the eval copy's hourly limit)"
+    },
+    "smart-data-model": {
+     "state": "pass",
+     "reason": ""
+    }
+   },
+   "verdict": "hide"
+  },
+  {
+   "package": "bbsk-obyvatelstvo-podla-narodnosti-2021-obce-bf372d",
+   "org": "bbsk",
+   "type": "KeyPerformanceIndicator",
+   "entities": 0,
+   "rows": null,
+   "checks": {
+    "ngsi-ld": {
+     "state": "fail",
+     "reason": "no entity on dev"
+    },
+    "accurate": {
+     "state": "not run",
+     "reason": "no entity to compare"
+    },
+    "queryable": {
+     "state": "not run",
+     "reason": "asked only when checks 1, 2 and 4 pass (the eval copy's hourly limit)"
+    },
+    "smart-data-model": {
+     "state": "pass",
+     "reason": ""
+    }
+   },
+   "verdict": "hide"
+  },
+  {
+   "package": "bbsk-obyvatelstvo-podla-narodnosti-2021-okresy-d559c2",
+   "org": "bbsk",
+   "type": "KeyPerformanceIndicator",
+   "entities": 0,
+   "rows": null,
+   "checks": {
+    "ngsi-ld": {
+     "state": "fail",
+     "reason": "no entity on dev"
+    },
+    "accurate": {
+     "state": "not run",
+     "reason": "no entity to compare"
+    },
+    "queryable": {
+     "state": "not run",
+     "reason": "asked only when checks 1, 2 and 4 pass (the eval copy's hourly limit)"
+    },
+    "smart-data-model": {
+     "state": "pass",
+     "reason": ""
+    }
+   },
+   "verdict": "hide"
+  },
+  {
+   "package": "bbsk-obyvatelstvo-podla-rodinneho-stavu-2021-obce-40138c",
+   "org": "bbsk",
+   "type": "KeyPerformanceIndicator",
+   "entities": 0,
+   "rows": null,
+   "checks": {
+    "ngsi-ld": {
+     "state": "fail",
+     "reason": "no entity on dev"
+    },
+    "accurate": {
+     "state": "not run",
+     "reason": "no entity to compare"
+    },
+    "queryable": {
+     "state": "not run",
+     "reason": "asked only when checks 1, 2 and 4 pass (the eval copy's hourly limit)"
+    },
+    "smart-data-model": {
+     "state": "pass",
+     "reason": ""
+    }
+   },
+   "verdict": "hide"
+  },
+  {
+   "package": "bbsk-obyvatelstvo-podla-rodinneho-stavu-2021-okresy-04e229",
+   "org": "bbsk",
+   "type": "KeyPerformanceIndicator",
+   "entities": 0,
+   "rows": null,
+   "checks": {
+    "ngsi-ld": {
+     "state": "fail",
+     "reason": "no entity on dev"
+    },
+    "accurate": {
+     "state": "not run",
+     "reason": "no entity to compare"
+    },
+    "queryable": {
+     "state": "not run",
+     "reason": "asked only when checks 1, 2 and 4 pass (the eval copy's hourly limit)"
+    },
+    "smart-data-model": {
+     "state": "pass",
+     "reason": ""
+    }
+   },
+   "verdict": "hide"
+  },
+  {
+   "package": "bbsk-obyvatelstvo-podla-vekovej-struktury-2011-2021-obce-281902",
+   "org": "bbsk",
+   "type": "KeyPerformanceIndicator",
+   "entities": 0,
+   "rows": null,
+   "checks": {
+    "ngsi-ld": {
+     "state": "fail",
+     "reason": "no entity on dev"
+    },
+    "accurate": {
+     "state": "not run",
+     "reason": "no entity to compare"
+    },
+    "queryable": {
+     "state": "not run",
+     "reason": "asked only when checks 1, 2 and 4 pass (the eval copy's hourly limit)"
+    },
+    "smart-data-model": {
+     "state": "pass",
+     "reason": ""
+    }
+   },
+   "verdict": "hide"
+  },
+  {
+   "package": "bbsk-obyvatelstvo-podla-vekovej-struktury-2011-2021-okresy-5e08d3",
+   "org": "bbsk",
+   "type": "KeyPerformanceIndicator",
+   "entities": 0,
+   "rows": null,
+   "checks": {
+    "ngsi-ld": {
+     "state": "fail",
+     "reason": "no entity on dev"
+    },
+    "accurate": {
+     "state": "not run",
+     "reason": "no entity to compare"
+    },
+    "queryable": {
+     "state": "not run",
+     "reason": "asked only when checks 1, 2 and 4 pass (the eval copy's hourly limit)"
+    },
+    "smart-data-model": {
+     "state": "pass",
+     "reason": ""
+    }
+   },
+   "verdict": "hide"
+  },
+  {
+   "package": "bbsk-obyvatelstvo-podla-vzdelania-2021-2481df",
+   "org": "bbsk",
+   "type": "KeyPerformanceIndicator",
+   "entities": 0,
+   "rows": null,
+   "checks": {
+    "ngsi-ld": {
+     "state": "fail",
+     "reason": "no entity on dev"
+    },
+    "accurate": {
+     "state": "not run",
+     "reason": "no entity to compare"
+    },
+    "queryable": {
+     "state": "not run",
+     "reason": "asked only when checks 1, 2 and 4 pass (the eval copy's hourly limit)"
+    },
+    "smart-data-model": {
+     "state": "pass",
+     "reason": ""
+    }
+   },
+   "verdict": "hide"
+  },
+  {
+   "package": "bbsk-ohrozenie-samosprav-zmenou-klimy-extremne-horucavy-68ff15",
+   "org": "bbsk",
+   "type": "KeyPerformanceIndicator",
+   "entities": 0,
+   "rows": null,
+   "checks": {
+    "ngsi-ld": {
+     "state": "fail",
+     "reason": "no entity on dev"
+    },
+    "accurate": {
+     "state": "not run",
+     "reason": "no entity to compare"
+    },
+    "queryable": {
+     "state": "not run",
+     "reason": "asked only when checks 1, 2 and 4 pass (the eval copy's hourly limit)"
+    },
+    "smart-data-model": {
+     "state": "pass",
+     "reason": ""
+    }
+   },
+   "verdict": "hide"
+  },
+  {
+   "package": "bbsk-ohrozenie-samosprav-zmenou-klimy-extremne-sucho-576a4f",
+   "org": "bbsk",
+   "type": "KeyPerformanceIndicator",
+   "entities": 0,
+   "rows": null,
+   "checks": {
+    "ngsi-ld": {
+     "state": "fail",
+     "reason": "no entity on dev"
+    },
+    "accurate": {
+     "state": "not run",
+     "reason": "no entity to compare"
+    },
+    "queryable": {
+     "state": "not run",
+     "reason": "asked only when checks 1, 2 and 4 pass (the eval copy's hourly limit)"
+    },
+    "smart-data-model": {
+     "state": "pass",
+     "reason": ""
+    }
+   },
+   "verdict": "hide"
+  },
+  {
+   "package": "bbsk-ohrozenie-samosprav-zmenou-klimy-extremne-zrazky-a0f87f",
+   "org": "bbsk",
+   "type": "KeyPerformanceIndicator",
+   "entities": 0,
+   "rows": null,
+   "checks": {
+    "ngsi-ld": {
+     "state": "fail",
+     "reason": "no entity on dev"
+    },
+    "accurate": {
+     "state": "not run",
+     "reason": "no entity to compare"
+    },
+    "queryable": {
+     "state": "not run",
+     "reason": "asked only when checks 1, 2 and 4 pass (the eval copy's hourly limit)"
+    },
+    "smart-data-model": {
+     "state": "pass",
+     "reason": ""
+    }
+   },
+   "verdict": "hide"
+  },
+  {
+   "package": "bbsk-okresy-bbk-hranice-17725f",
+   "org": "bbsk",
+   "type": "AdministrativeArea",
+   "entities": 0,
+   "rows": null,
+   "checks": {
+    "ngsi-ld": {
+     "state": "fail",
+     "reason": "no entity on dev"
+    },
+    "accurate": {
+     "state": "not run",
+     "reason": "no entity to compare"
+    },
+    "queryable": {
+     "state": "not run",
+     "reason": "asked only when checks 1, 2 and 4 pass (the eval copy's hourly limit)"
+    },
+    "smart-data-model": {
+     "state": "pass",
+     "reason": ""
+    }
+   },
+   "verdict": "hide"
+  },
+  {
+   "package": "bbsk-organizacie",
+   "org": "bbsk",
+   "type": null,
+   "entities": 105,
+   "rows": null,
+   "checks": {
+    "ngsi-ld": {
+     "state": "pass",
+     "reason": ""
+    },
+    "accurate": {
+     "state": "not run",
+     "reason": "the platform publishes it from its own Endpoint; no mapping names an outside source"
+    },
+    "queryable": {
+     "state": "not run",
+     "reason": "no mapped type to ask about"
+    },
+    "smart-data-model": {
+     "state": "not run",
+     "reason": "no mapping"
+    }
+   },
+   "verdict": "hold"
+  },
+  {
+   "package": "bbsk-organizacie-v-zriadovatelskej-posobnosti-bbsk-bc762a",
+   "org": "bbsk",
+   "type": "PublicOrganization",
+   "entities": 0,
+   "rows": null,
+   "checks": {
+    "ngsi-ld": {
+     "state": "fail",
+     "reason": "no entity on dev"
+    },
+    "accurate": {
+     "state": "not run",
+     "reason": "no entity to compare"
+    },
+    "queryable": {
+     "state": "not run",
+     "reason": "asked only when checks 1, 2 and 4 pass (the eval copy's hourly limit)"
+    },
+    "smart-data-model": {
+     "state": "pass",
+     "reason": ""
+    }
+   },
+   "verdict": "hide"
+  },
+  {
+   "package": "bbsk-organizacna-struktura-40329b",
+   "org": "bbsk",
+   "type": "Organization",
+   "entities": 240,
+   "rows": 353,
+   "checks": {
+    "ngsi-ld": {
+     "state": "pass",
+     "reason": ""
+    },
+    "accurate": {
+     "state": "fail",
+     "reason": "240 entities for 353 source rows (-32.0%) | row 88 (urn:ngsi-ld:Organization:bbsk.sk:bbsk-otvorene-data:organizacna-struktura-48270532fbd44518ea06291c): upravene: source 2025-04-09 04:37:00+00:00, broker 2025-04-09T04:36:00Z; vytvorene: source 2025-04-09 04:37:00+00:00, broker 2025-04-09T04:36:00Z | row 176 (urn:ngsi-ld:Organization:bbsk.sk:bbsk-otvorene-data:organizacna-struktura-1fbed37e16f41e115d1158f7): upravene: source 2025-04-09 04:38:00+00:00, broker 2025-04-09T04:39:00Z; vytvorene: source 2025-04-09 04:38:00+00:00, broker 2025-04-09T04:39:00Z"
+    },
+    "queryable": {
+     "state": "not run",
+     "reason": "asked only when checks 1, 2 and 4 pass (the eval copy's hourly limit)"
+    },
+    "smart-data-model": {
+     "state": "pass",
+     "reason": ""
+    }
+   },
+   "verdict": "hide"
+  },
+  {
+   "package": "bbsk-peticie-f80530",
+   "org": "bbsk",
+   "type": "Petition",
+   "entities": 0,
+   "rows": null,
+   "checks": {
+    "ngsi-ld": {
+     "state": "fail",
+     "reason": "no entity on dev"
+    },
+    "accurate": {
+     "state": "not run",
+     "reason": "no entity to compare"
+    },
+    "queryable": {
+     "state": "not run",
+     "reason": "asked only when checks 1, 2 and 4 pass (the eval copy's hourly limit)"
+    },
+    "smart-data-model": {
+     "state": "pass",
+     "reason": ""
+    }
+   },
+   "verdict": "hide"
+  },
+  {
+   "package": "bbsk-plan-verejneho-obstaravania-48b7e9",
+   "org": "bbsk",
+   "type": "PublicProcurement",
+   "entities": null,
+   "rows": null,
+   "checks": {
+    "ngsi-ld": {
+     "state": "fail",
+     "reason": "the Endpoint answered 403 TooManyResults"
+    },
+    "accurate": {
+     "state": "not run",
+     "reason": "no entity to compare"
+    },
+    "queryable": {
+     "state": "not run",
+     "reason": "asked only when checks 1, 2 and 4 pass (the eval copy's hourly limit)"
+    },
+    "smart-data-model": {
+     "state": "pass",
+     "reason": ""
+    }
+   },
+   "verdict": "hide"
+  },
+  {
+   "package": "bbsk-pocet-obyvatelov-v-obciach-bbk-b2adc3",
+   "org": "bbsk",
+   "type": "KeyPerformanceIndicator",
+   "entities": 0,
+   "rows": null,
+   "checks": {
+    "ngsi-ld": {
+     "state": "fail",
+     "reason": "no entity on dev"
+    },
+    "accurate": {
+     "state": "not run",
+     "reason": "no entity to compare"
+    },
+    "queryable": {
+     "state": "not run",
+     "reason": "asked only when checks 1, 2 and 4 pass (the eval copy's hourly limit)"
+    },
+    "smart-data-model": {
+     "state": "pass",
+     "reason": ""
+    }
+   },
+   "verdict": "hide"
+  },
+  {
+   "package": "bbsk-podjazdy-v-banskobystrickom-kraji-public-view-e6fb8f",
+   "org": "bbsk",
+   "type": "RoadStructure",
+   "entities": 148,
+   "rows": 148,
+   "checks": {
+    "ngsi-ld": {
+     "state": "pass",
+     "reason": ""
+    },
+    "accurate": {
+     "state": "pass",
+     "reason": ""
+    },
+    "queryable": {
+     "state": "not run",
+     "reason": "no eval copy of bbsk's assistant"
+    },
+    "smart-data-model": {
+     "state": "pass",
+     "reason": ""
+    }
+   },
+   "verdict": "hold"
+  },
+  {
+   "package": "bbsk-pohyb-obyvatelstva-v-obciach-1996-2024-919463",
+   "org": "bbsk",
+   "type": "KeyPerformanceIndicator",
+   "entities": 0,
+   "rows": null,
+   "checks": {
+    "ngsi-ld": {
+     "state": "fail",
+     "reason": "no entity on dev"
+    },
+    "accurate": {
+     "state": "not run",
+     "reason": "no entity to compare"
+    },
+    "queryable": {
+     "state": "not run",
+     "reason": "asked only when checks 1, 2 and 4 pass (the eval copy's hourly limit)"
+    },
+    "smart-data-model": {
+     "state": "pass",
+     "reason": ""
+    }
+   },
+   "verdict": "hide"
+  },
+  {
+   "package": "bbsk-pohyb-obyvatelstva-v-okresoch-1996-2024-8b7fa1",
+   "org": "bbsk",
+   "type": "KeyPerformanceIndicator",
+   "entities": 0,
+   "rows": null,
+   "checks": {
+    "ngsi-ld": {
+     "state": "fail",
+     "reason": "no entity on dev"
+    },
+    "accurate": {
+     "state": "not run",
+     "reason": "no entity to compare"
+    },
+    "queryable": {
+     "state": "not run",
+     "reason": "asked only when checks 1, 2 and 4 pass (the eval copy's hourly limit)"
+    },
+    "smart-data-model": {
+     "state": "pass",
+     "reason": ""
+    }
+   },
+   "verdict": "hide"
+  },
+  {
+   "package": "bbsk-povodia-banskobystrickeho-kraja-067504",
+   "org": "bbsk",
+   "type": "RiverBasin",
+   "entities": 0,
+   "rows": null,
+   "checks": {
+    "ngsi-ld": {
+     "state": "fail",
+     "reason": "no entity on dev"
+    },
+    "accurate": {
+     "state": "not run",
+     "reason": "no entity to compare"
+    },
+    "queryable": {
+     "state": "not run",
+     "reason": "asked only when checks 1, 2 and 4 pass (the eval copy's hourly limit)"
+    },
+    "smart-data-model": {
+     "state": "pass",
+     "reason": ""
+    }
+   },
+   "verdict": "hide"
+  },
+  {
+   "package": "bbsk-ppa-platby-f3c509",
+   "org": "bbsk",
+   "type": "Grant",
+   "entities": null,
+   "rows": null,
+   "checks": {
+    "ngsi-ld": {
+     "state": "fail",
+     "reason": "the Endpoint answered 403 TooManyResults"
+    },
+    "accurate": {
+     "state": "not run",
+     "reason": "no entity to compare"
+    },
+    "queryable": {
+     "state": "not run",
+     "reason": "asked only when checks 1, 2 and 4 pass (the eval copy's hourly limit)"
+    },
+    "smart-data-model": {
+     "state": "pass",
+     "reason": ""
+    }
+   },
+   "verdict": "hide"
+  },
+  {
+   "package": "bbsk-ppa-platby-po-okresoch-bf09ef",
+   "org": "bbsk",
+   "type": "KeyPerformanceIndicator",
+   "entities": 0,
+   "rows": null,
+   "checks": {
+    "ngsi-ld": {
+     "state": "fail",
+     "reason": "no entity on dev"
+    },
+    "accurate": {
+     "state": "not run",
+     "reason": "no entity to compare"
+    },
+    "queryable": {
+     "state": "not run",
+     "reason": "asked only when checks 1, 2 and 4 pass (the eval copy's hourly limit)"
+    },
+    "smart-data-model": {
+     "state": "pass",
+     "reason": ""
+    }
+   },
+   "verdict": "hide"
+  },
+  {
+   "package": "bbsk-priepusty-v-banskobystrickom-kraji-public-view-a9ed8e",
+   "org": "bbsk",
+   "type": "RoadStructure",
+   "entities": 7078,
+   "rows": 7078,
+   "checks": {
+    "ngsi-ld": {
+     "state": "pass",
+     "reason": ""
+    },
+    "accurate": {
+     "state": "pass",
+     "reason": ""
+    },
+    "queryable": {
+     "state": "not run",
+     "reason": "no eval copy of bbsk's assistant"
+    },
+    "smart-data-model": {
+     "state": "pass",
+     "reason": ""
+    }
+   },
+   "verdict": "hold"
+  },
+  {
+   "package": "bbsk-prispevkove-rozpoctove-a-ine-organizacie-samospravy-cec768",
+   "org": "bbsk",
+   "type": "PublicOrganization",
+   "entities": 0,
+   "rows": null,
+   "checks": {
+    "ngsi-ld": {
+     "state": "fail",
+     "reason": "no entity on dev"
+    },
+    "accurate": {
+     "state": "not run",
+     "reason": "no entity to compare"
+    },
+    "queryable": {
+     "state": "not run",
+     "reason": "asked only when checks 1, 2 and 4 pass (the eval copy's hourly limit)"
+    },
+    "smart-data-model": {
+     "state": "pass",
+     "reason": ""
+    }
+   },
+   "verdict": "hide"
+  },
+  {
+   "package": "bbsk-prognoza-poctu-obyvatelov-2018-2040-3a097f",
+   "org": "bbsk",
+   "type": "KeyPerformanceIndicator",
+   "entities": 0,
+   "rows": null,
+   "checks": {
+    "ngsi-ld": {
+     "state": "fail",
+     "reason": "no entity on dev"
+    },
+    "accurate": {
+     "state": "not run",
+     "reason": "no entity to compare"
+    },
+    "queryable": {
+     "state": "not run",
+     "reason": "asked only when checks 1, 2 and 4 pass (the eval copy's hourly limit)"
+    },
+    "smart-data-model": {
+     "state": "pass",
+     "reason": ""
+    }
+   },
+   "verdict": "hide"
+  },
+  {
+   "package": "bbsk-projekty-banskobystrickeho-kraja-itms21-c8bfea",
+   "org": "bbsk",
+   "type": "PublicInvestment",
+   "entities": 0,
+   "rows": null,
+   "checks": {
+    "ngsi-ld": {
+     "state": "fail",
+     "reason": "no entity on dev"
+    },
+    "accurate": {
+     "state": "not run",
+     "reason": "no entity to compare"
+    },
+    "queryable": {
+     "state": "not run",
+     "reason": "asked only when checks 1, 2 and 4 pass (the eval copy's hourly limit)"
+    },
+    "smart-data-model": {
+     "state": "pass",
+     "reason": ""
+    }
+   },
+   "verdict": "hide"
+  },
+  {
+   "package": "bbsk-realizovane-verejne-obstaravania-754eee",
+   "org": "bbsk",
+   "type": "PublicProcurement",
+   "entities": null,
+   "rows": null,
+   "checks": {
+    "ngsi-ld": {
+     "state": "fail",
+     "reason": "the Endpoint answered 403 TooManyResults"
+    },
+    "accurate": {
+     "state": "not run",
+     "reason": "no entity to compare"
+    },
+    "queryable": {
+     "state": "not run",
+     "reason": "asked only when checks 1, 2 and 4 pass (the eval copy's hourly limit)"
+    },
+    "smart-data-model": {
+     "state": "pass",
+     "reason": ""
+    }
+   },
+   "verdict": "hide"
+  },
+  {
+   "package": "bbsk-register-investicii-bodova-vrstva-e0b3b4",
+   "org": "bbsk",
+   "type": "PublicInvestment",
+   "entities": 0,
+   "rows": null,
+   "checks": {
+    "ngsi-ld": {
+     "state": "fail",
+     "reason": "no entity on dev"
+    },
+    "accurate": {
+     "state": "not run",
+     "reason": "no entity to compare"
+    },
+    "queryable": {
+     "state": "not run",
+     "reason": "asked only when checks 1, 2 and 4 pass (the eval copy's hourly limit)"
+    },
+    "smart-data-model": {
+     "state": "pass",
+     "reason": ""
+    }
+   },
+   "verdict": "hide"
+  },
+  {
+   "package": "bbsk-register-investicii-polygonova-vrstva-e902a9",
+   "org": "bbsk",
+   "type": "PublicInvestment",
+   "entities": 0,
+   "rows": null,
+   "checks": {
+    "ngsi-ld": {
+     "state": "fail",
+     "reason": "no entity on dev"
+    },
+    "accurate": {
+     "state": "not run",
+     "reason": "no entity to compare"
+    },
+    "queryable": {
+     "state": "not run",
+     "reason": "asked only when checks 1, 2 and 4 pass (the eval copy's hourly limit)"
+    },
+    "smart-data-model": {
+     "state": "pass",
+     "reason": ""
+    }
+   },
+   "verdict": "hide"
+  },
+  {
+   "package": "bbsk-skoly-a-skolske-zariadenia-v-zriadovatelskej-posobnosti-bbsk-791897",
+   "org": "bbsk",
+   "type": "Organization",
+   "entities": 0,
+   "rows": null,
+   "checks": {
+    "ngsi-ld": {
+     "state": "fail",
+     "reason": "no entity on dev"
+    },
+    "accurate": {
+     "state": "not run",
+     "reason": "no entity to compare"
+    },
+    "queryable": {
+     "state": "not run",
+     "reason": "asked only when checks 1, 2 and 4 pass (the eval copy's hourly limit)"
+    },
+    "smart-data-model": {
+     "state": "pass",
+     "reason": ""
+    }
+   },
+   "verdict": "hide"
+  },
+  {
+   "package": "bbsk-stredne-skoly-v-banskobystrickom-kraji-581554",
+   "org": "bbsk",
+   "type": "Organization",
+   "entities": 94,
+   "rows": 94,
+   "checks": {
+    "ngsi-ld": {
+     "state": "pass",
+     "reason": ""
+    },
+    "accurate": {
+     "state": "pass",
+     "reason": ""
+    },
+    "queryable": {
+     "state": "not run",
+     "reason": "no eval copy of bbsk's assistant"
+    },
+    "smart-data-model": {
+     "state": "pass",
+     "reason": ""
+    }
+   },
+   "verdict": "hold"
+  },
+  {
+   "package": "bbsk-stredne-skoly-v-bbk-odbory-a-pocet-studentov-2023-e85365",
+   "org": "bbsk",
+   "type": "Organization",
+   "entities": 0,
+   "rows": null,
+   "checks": {
+    "ngsi-ld": {
+     "state": "fail",
+     "reason": "no entity on dev"
+    },
+    "accurate": {
+     "state": "not run",
+     "reason": "no entity to compare"
+    },
+    "queryable": {
+     "state": "not run",
+     "reason": "asked only when checks 1, 2 and 4 pass (the eval copy's hourly limit)"
+    },
+    "smart-data-model": {
+     "state": "pass",
+     "reason": ""
+    }
+   },
+   "verdict": "hide"
+  },
+  {
+   "package": "bbsk-uradne-hodiny-c912ed",
+   "org": "bbsk",
+   "type": "OfficeHours",
+   "entities": 14,
+   "rows": 14,
+   "checks": {
+    "ngsi-ld": {
+     "state": "pass",
+     "reason": ""
+    },
+    "accurate": {
+     "state": "pass",
+     "reason": ""
+    },
+    "queryable": {
+     "state": "not run",
+     "reason": "no eval copy of bbsk's assistant"
+    },
+    "smart-data-model": {
+     "state": "pass",
+     "reason": ""
+    }
+   },
+   "verdict": "hold"
+  },
+  {
+   "package": "bbsk-vekova-struktura-v-obciach-1996-2022-6de8c3",
+   "org": "bbsk",
+   "type": "KeyPerformanceIndicator",
+   "entities": 0,
+   "rows": null,
+   "checks": {
+    "ngsi-ld": {
+     "state": "fail",
+     "reason": "no entity on dev"
+    },
+    "accurate": {
+     "state": "not run",
+     "reason": "no entity to compare"
+    },
+    "queryable": {
+     "state": "not run",
+     "reason": "asked only when checks 1, 2 and 4 pass (the eval copy's hourly limit)"
+    },
+    "smart-data-model": {
+     "state": "pass",
+     "reason": ""
+    }
+   },
+   "verdict": "hide"
+  },
+  {
+   "package": "bbsk-vekova-struktura-v-okresoch-1996-2022-29ed8a",
+   "org": "bbsk",
+   "type": "KeyPerformanceIndicator",
+   "entities": 0,
+   "rows": null,
+   "checks": {
+    "ngsi-ld": {
+     "state": "fail",
+     "reason": "no entity on dev"
+    },
+    "accurate": {
+     "state": "not run",
+     "reason": "no entity to compare"
+    },
+    "queryable": {
+     "state": "not run",
+     "reason": "asked only when checks 1, 2 and 4 pass (the eval copy's hourly limit)"
+    },
+    "smart-data-model": {
+     "state": "pass",
+     "reason": ""
+    }
+   },
+   "verdict": "hide"
+  },
+  {
+   "package": "bbsk-vysoke-skoly-v-banskobystrickom-kraji-b0be47",
+   "org": "bbsk",
+   "type": "Organization",
+   "entities": 0,
+   "rows": null,
+   "checks": {
+    "ngsi-ld": {
+     "state": "fail",
+     "reason": "no entity on dev"
+    },
+    "accurate": {
+     "state": "not run",
+     "reason": "no entity to compare"
+    },
+    "queryable": {
+     "state": "not run",
+     "reason": "asked only when checks 1, 2 and 4 pass (the eval copy's hourly limit)"
+    },
+    "smart-data-model": {
+     "state": "pass",
+     "reason": ""
+    }
+   },
+   "verdict": "hide"
+  },
+  {
+   "package": "bbsk-vyvoj-emisii-v-bbk-c8d1ed",
+   "org": "bbsk",
+   "type": "KeyPerformanceIndicator",
+   "entities": 0,
+   "rows": null,
+   "checks": {
+    "ngsi-ld": {
+     "state": "fail",
+     "reason": "no entity on dev"
+    },
+    "accurate": {
+     "state": "not run",
+     "reason": "no entity to compare"
+    },
+    "queryable": {
+     "state": "not run",
+     "reason": "asked only when checks 1, 2 and 4 pass (the eval copy's hourly limit)"
+    },
+    "smart-data-model": {
+     "state": "pass",
+     "reason": ""
+    }
+   },
+   "verdict": "hide"
+  },
+  {
+   "package": "bbsk-vyvoj-imisii-v-bbk-377176",
+   "org": "bbsk",
+   "type": "KeyPerformanceIndicator",
+   "entities": 0,
+   "rows": null,
+   "checks": {
+    "ngsi-ld": {
+     "state": "fail",
+     "reason": "no entity on dev"
+    },
+    "accurate": {
+     "state": "not run",
+     "reason": "no entity to compare"
+    },
+    "queryable": {
+     "state": "not run",
+     "reason": "asked only when checks 1, 2 and 4 pass (the eval copy's hourly limit)"
+    },
+    "smart-data-model": {
+     "state": "pass",
+     "reason": ""
+    }
+   },
+   "verdict": "hide"
+  },
+  {
+   "package": "bbsk-zakladne-skoly-v-banskobystrickom-kraji-13a8b6",
+   "org": "bbsk",
+   "type": "Organization",
+   "entities": 267,
+   "rows": 267,
+   "checks": {
+    "ngsi-ld": {
+     "state": "pass",
+     "reason": ""
+    },
+    "accurate": {
+     "state": "pass",
+     "reason": ""
+    },
+    "queryable": {
+     "state": "not run",
+     "reason": "no eval copy of bbsk's assistant"
+    },
+    "smart-data-model": {
+     "state": "pass",
+     "reason": ""
+    }
+   },
+   "verdict": "hold"
+  },
+  {
+   "package": "bbsk-zariadenia",
+   "org": "bbsk",
+   "type": null,
+   "entities": 433,
+   "rows": null,
+   "checks": {
+    "ngsi-ld": {
+     "state": "pass",
+     "reason": ""
+    },
+    "accurate": {
+     "state": "not run",
+     "reason": "the platform publishes it from its own Endpoint; no mapping names an outside source"
+    },
+    "queryable": {
+     "state": "not run",
+     "reason": "no mapped type to ask about"
+    },
+    "smart-data-model": {
+     "state": "not run",
+     "reason": "no mapping"
+    }
+   },
+   "verdict": "hold"
+  },
+  {
+   "package": "bbsk-zasadnutia-samospravy-9a27f2",
+   "org": "bbsk",
+   "type": "CouncilMeeting",
+   "entities": 0,
+   "rows": null,
+   "checks": {
+    "ngsi-ld": {
+     "state": "fail",
+     "reason": "no entity on dev"
+    },
+    "accurate": {
+     "state": "not run",
+     "reason": "no entity to compare"
+    },
+    "queryable": {
+     "state": "not run",
+     "reason": "asked only when checks 1, 2 and 4 pass (the eval copy's hourly limit)"
+    },
+    "smart-data-model": {
+     "state": "pass",
+     "reason": ""
+    }
+   },
+   "verdict": "hide"
+  },
+  {
+   "package": "bbsk-zeleznicne-priecestia-v-banskobystrickom-kraji-public-view-89feb8",
+   "org": "bbsk",
+   "type": "RoadStructure",
+   "entities": 103,
+   "rows": 103,
+   "checks": {
+    "ngsi-ld": {
+     "state": "pass",
+     "reason": ""
+    },
+    "accurate": {
+     "state": "pass",
+     "reason": ""
+    },
+    "queryable": {
+     "state": "not run",
+     "reason": "no eval copy of bbsk's assistant"
+    },
+    "smart-data-model": {
+     "state": "pass",
+     "reason": ""
+    }
+   },
+   "verdict": "hold"
+  },
+  {
+   "package": "bbsk-zmluvy-cafee6",
+   "org": "bbsk",
+   "type": "Contract",
+   "entities": 0,
+   "rows": null,
+   "checks": {
+    "ngsi-ld": {
+     "state": "fail",
+     "reason": "no entity on dev"
+    },
+    "accurate": {
+     "state": "not run",
+     "reason": "no entity to compare"
+    },
+    "queryable": {
+     "state": "not run",
+     "reason": "asked only when checks 1, 2 and 4 pass (the eval copy's hourly limit)"
+    },
+    "smart-data-model": {
+     "state": "pass",
+     "reason": ""
+    }
+   },
+   "verdict": "hide"
+  },
+  {
+   "package": "bbsk-zoznam-lekarni-v-bbk-c564de",
+   "org": "bbsk",
+   "type": "PointOfInterest",
+   "entities": 266,
+   "rows": 266,
+   "checks": {
+    "ngsi-ld": {
+     "state": "pass",
+     "reason": ""
+    },
+    "accurate": {
+     "state": "pass",
+     "reason": ""
+    },
+    "queryable": {
+     "state": "not run",
+     "reason": "no eval copy of bbsk's assistant"
+    },
+    "smart-data-model": {
+     "state": "pass",
+     "reason": ""
+    }
+   },
+   "verdict": "hold"
+  },
+  {
+   "package": "bbsk-zoznam-poskytovatelov-socialnych-sluzieb-v-bbk-9ab090",
+   "org": "bbsk",
+   "type": "PointOfInterest",
+   "entities": 0,
+   "rows": null,
+   "checks": {
+    "ngsi-ld": {
+     "state": "fail",
+     "reason": "no entity on dev"
+    },
+    "accurate": {
+     "state": "not run",
+     "reason": "no entity to compare"
+    },
+    "queryable": {
+     "state": "not run",
+     "reason": "asked only when checks 1, 2 and 4 pass (the eval copy's hourly limit)"
+    },
+    "smart-data-model": {
+     "state": "pass",
+     "reason": ""
+    }
+   },
+   "verdict": "hide"
+  },
+  {
+   "package": "bbsk-zoznam-ucinnych-vseobecne-zavaznych-nariadeni-vzn-80db50",
+   "org": "bbsk",
+   "type": "Rule",
+   "entities": 0,
+   "rows": null,
+   "checks": {
+    "ngsi-ld": {
+     "state": "fail",
+     "reason": "no entity on dev"
+    },
+    "accurate": {
+     "state": "not run",
+     "reason": "no entity to compare"
+    },
+    "queryable": {
+     "state": "not run",
+     "reason": "asked only when checks 1, 2 and 4 pass (the eval copy's hourly limit)"
+    },
+    "smart-data-model": {
+     "state": "pass",
+     "reason": ""
+    }
+   },
+   "verdict": "hide"
+  },
+  {
+   "package": "bbsk-zoznam-zdravotnickych-zariadeni-v-bbk-701db2",
+   "org": "bbsk",
+   "type": "PointOfInterest",
+   "entities": 2572,
+   "rows": 2572,
+   "checks": {
+    "ngsi-ld": {
+     "state": "pass",
+     "reason": ""
+    },
+    "accurate": {
+     "state": "pass",
+     "reason": ""
+    },
+    "queryable": {
+     "state": "not run",
+     "reason": "no eval copy of bbsk's assistant"
+    },
+    "smart-data-model": {
+     "state": "pass",
+     "reason": ""
+    }
+   },
+   "verdict": "hold"
+  },
+  {
+   "package": "helsinki-alerts",
+   "org": "hel-fi",
+   "type": null,
+   "entities": 134,
+   "rows": null,
+   "checks": {
+    "ngsi-ld": {
+     "state": "pass",
+     "reason": ""
+    },
+    "accurate": {
+     "state": "not run",
+     "reason": "the platform publishes it from its own Endpoint; no mapping names an outside source"
+    },
+    "queryable": {
+     "state": "not run",
+     "reason": "no mapped type to ask about"
+    },
+    "smart-data-model": {
+     "state": "not run",
+     "reason": "no mapping"
+    }
+   },
+   "verdict": "hold"
+  },
+  {
+   "package": "helsinki-beach-water",
+   "org": "hel-fi",
+   "type": null,
+   "entities": 28,
+   "rows": null,
+   "checks": {
+    "ngsi-ld": {
+     "state": "pass",
+     "reason": ""
+    },
+    "accurate": {
+     "state": "not run",
+     "reason": "the platform publishes it from its own Endpoint; no mapping names an outside source"
+    },
+    "queryable": {
+     "state": "not run",
+     "reason": "no mapped type to ask about"
+    },
+    "smart-data-model": {
+     "state": "not run",
+     "reason": "no mapping"
+    }
+   },
+   "verdict": "hold"
+  },
+  {
+   "package": "helsinki-bikes",
+   "org": "hel-fi",
+   "type": null,
+   "entities": 457,
+   "rows": null,
+   "checks": {
+    "ngsi-ld": {
+     "state": "pass",
+     "reason": ""
+    },
+    "accurate": {
+     "state": "not run",
+     "reason": "the platform publishes it from its own Endpoint; no mapping names an outside source"
+    },
+    "queryable": {
+     "state": "not run",
+     "reason": "no mapped type to ask about"
+    },
+    "smart-data-model": {
+     "state": "not run",
+     "reason": "no mapping"
+    }
+   },
+   "verdict": "hold"
+  },
+  {
+   "package": "helsinki-districts",
+   "org": "hel-fi",
+   "type": null,
+   "entities": 207,
+   "rows": null,
+   "checks": {
+    "ngsi-ld": {
+     "state": "pass",
+     "reason": ""
+    },
+    "accurate": {
+     "state": "not run",
+     "reason": "the platform publishes it from its own Endpoint; no mapping names an outside source"
+    },
+    "queryable": {
+     "state": "not run",
+     "reason": "no mapped type to ask about"
+    },
+    "smart-data-model": {
+     "state": "not run",
+     "reason": "no mapping"
+    }
+   },
+   "verdict": "hold"
+  },
+  {
+   "package": "helsinki-events",
+   "org": "hel-fi",
+   "type": null,
+   "entities": 120,
+   "rows": null,
+   "checks": {
+    "ngsi-ld": {
+     "state": "pass",
+     "reason": ""
+    },
+    "accurate": {
+     "state": "not run",
+     "reason": "the platform publishes it from its own Endpoint; no mapping names an outside source"
+    },
+    "queryable": {
+     "state": "not run",
+     "reason": "no mapped type to ask about"
+    },
+    "smart-data-model": {
+     "state": "not run",
+     "reason": "no mapping"
+    }
+   },
+   "verdict": "hold"
+  },
+  {
+   "package": "helsinki-news",
+   "org": "hel-fi",
+   "type": null,
+   "entities": 17,
+   "rows": null,
+   "checks": {
+    "ngsi-ld": {
+     "state": "pass",
+     "reason": ""
+    },
+    "accurate": {
+     "state": "not run",
+     "reason": "the platform publishes it from its own Endpoint; no mapping names an outside source"
+    },
+    "queryable": {
+     "state": "not run",
+     "reason": "no mapped type to ask about"
+    },
+    "smart-data-model": {
+     "state": "not run",
+     "reason": "no mapping"
+    }
+   },
+   "verdict": "hold"
+  },
+  {
+   "package": "helsinki-parking",
+   "org": "hel-fi",
+   "type": null,
+   "entities": 1848,
+   "rows": null,
+   "checks": {
+    "ngsi-ld": {
+     "state": "pass",
+     "reason": ""
+    },
+    "accurate": {
+     "state": "not run",
+     "reason": "the platform publishes it from its own Endpoint; no mapping names an outside source"
+    },
+    "queryable": {
+     "state": "not run",
+     "reason": "no mapped type to ask about"
+    },
+    "smart-data-model": {
+     "state": "not run",
+     "reason": "no mapping"
+    }
+   },
+   "verdict": "hold"
+  },
+  {
+   "package": "helsinki-places",
+   "org": "hel-fi",
+   "type": null,
+   "entities": 223,
+   "rows": null,
+   "checks": {
+    "ngsi-ld": {
+     "state": "pass",
+     "reason": ""
+    },
+    "accurate": {
+     "state": "not run",
+     "reason": "the platform publishes it from its own Endpoint; no mapping names an outside source"
+    },
+    "queryable": {
+     "state": "not run",
+     "reason": "no mapped type to ask about"
+    },
+    "smart-data-model": {
+     "state": "not run",
+     "reason": "no mapping"
+    }
+   },
+   "verdict": "hold"
+  },
+  {
+   "package": "helsinki-public-area-permits",
+   "org": "hel-fi",
+   "type": null,
+   "entities": 1047,
+   "rows": null,
+   "checks": {
+    "ngsi-ld": {
+     "state": "pass",
+     "reason": ""
+    },
+    "accurate": {
+     "state": "not run",
+     "reason": "the platform publishes it from its own Endpoint; no mapping names an outside source"
+    },
+    "queryable": {
+     "state": "not run",
+     "reason": "no mapped type to ask about"
+    },
+    "smart-data-model": {
+     "state": "not run",
+     "reason": "no mapping"
+    }
+   },
+   "verdict": "hold"
+  },
+  {
+   "package": "helsinki-transport",
+   "org": "hel-fi",
+   "type": null,
+   "entities": 11218,
+   "rows": null,
+   "checks": {
+    "ngsi-ld": {
+     "state": "pass",
+     "reason": ""
+    },
+    "accurate": {
+     "state": "not run",
+     "reason": "the platform publishes it from its own Endpoint; no mapping names an outside source"
+    },
+    "queryable": {
+     "state": "not run",
+     "reason": "no mapped type to ask about"
+    },
+    "smart-data-model": {
+     "state": "not run",
+     "reason": "no mapping"
+    }
+   },
+   "verdict": "hold"
+  },
+  {
+   "package": "helsinki-weather",
+   "org": "hel-fi",
+   "type": null,
+   "entities": 31,
+   "rows": null,
+   "checks": {
+    "ngsi-ld": {
+     "state": "pass",
+     "reason": ""
+    },
+    "accurate": {
+     "state": "not run",
+     "reason": "the platform publishes it from its own Endpoint; no mapping names an outside source"
+    },
+    "queryable": {
+     "state": "not run",
+     "reason": "no mapped type to ask about"
+    },
+    "smart-data-model": {
+     "state": "not run",
+     "reason": "no mapping"
+    }
+   },
+   "verdict": "hold"
+  },
+  {
+   "package": "ovzdusie-sk",
+   "org": "slovensko",
+   "type": null,
+   "entities": 53,
+   "rows": null,
+   "checks": {
+    "ngsi-ld": {
+     "state": "pass",
+     "reason": ""
+    },
+    "accurate": {
+     "state": "not run",
+     "reason": "the platform publishes it from its own Endpoint; no mapping names an outside source"
+    },
+    "queryable": {
+     "state": "not run",
+     "reason": "no mapped type to ask about"
+    },
+    "smart-data-model": {
+     "state": "not run",
+     "reason": "no mapping"
+    }
+   },
+   "verdict": "hold"
+  },
+  {
+   "package": "praha-mestske-casti",
+   "org": "praha",
+   "type": null,
+   "entities": 57,
+   "rows": null,
+   "checks": {
+    "ngsi-ld": {
+     "state": "pass",
+     "reason": ""
+    },
+    "accurate": {
+     "state": "not run",
+     "reason": "the platform publishes it from its own Endpoint; no mapping names an outside source"
+    },
+    "queryable": {
+     "state": "not run",
+     "reason": "no mapped type to ask about"
+    },
+    "smart-data-model": {
+     "state": "not run",
+     "reason": "no mapping"
+    }
+   },
+   "verdict": "hold"
+  },
+  {
+   "package": "praha-mista",
+   "org": "praha",
+   "type": null,
+   "entities": 2918,
+   "rows": null,
+   "checks": {
+    "ngsi-ld": {
+     "state": "pass",
+     "reason": ""
+    },
+    "accurate": {
+     "state": "not run",
+     "reason": "the platform publishes it from its own Endpoint; no mapping names an outside source"
+    },
+    "queryable": {
+     "state": "not run",
+     "reason": "no mapped type to ask about"
+    },
+    "smart-data-model": {
+     "state": "not run",
+     "reason": "no mapping"
+    }
+   },
+   "verdict": "hold"
+  },
+  {
+   "package": "praha-ovzdusi",
+   "org": "praha",
+   "type": null,
+   "entities": 14,
+   "rows": null,
+   "checks": {
+    "ngsi-ld": {
+     "state": "pass",
+     "reason": ""
+    },
+    "accurate": {
+     "state": "not run",
+     "reason": "the platform publishes it from its own Endpoint; no mapping names an outside source"
+    },
+    "queryable": {
+     "state": "not run",
+     "reason": "no mapped type to ask about"
+    },
+    "smart-data-model": {
+     "state": "not run",
+     "reason": "no mapping"
+    }
+   },
+   "verdict": "hold"
+  },
+  {
+   "package": "praha-parkoviste-pr",
+   "org": "praha",
+   "type": null,
+   "entities": 28,
+   "rows": null,
+   "checks": {
+    "ngsi-ld": {
+     "state": "pass",
+     "reason": ""
+    },
+    "accurate": {
+     "state": "not run",
+     "reason": "the platform publishes it from its own Endpoint; no mapping names an outside source"
+    },
+    "queryable": {
+     "state": "not run",
+     "reason": "no mapped type to ask about"
+    },
+    "smart-data-model": {
+     "state": "not run",
+     "reason": "no mapping"
+    }
+   },
+   "verdict": "hold"
+  },
+  {
+   "package": "praha-rozpocet",
+   "org": "praha",
+   "type": null,
+   "entities": 1612,
+   "rows": null,
+   "checks": {
+    "ngsi-ld": {
+     "state": "pass",
+     "reason": ""
+    },
+    "accurate": {
+     "state": "not run",
+     "reason": "the platform publishes it from its own Endpoint; no mapping names an outside source"
+    },
+    "queryable": {
+     "state": "not run",
+     "reason": "no mapped type to ask about"
+    },
+    "smart-data-model": {
+     "state": "not run",
+     "reason": "no mapping"
+    }
+   },
+   "verdict": "hold"
+  },
+  {
+   "package": "praha-sdilena-kola",
+   "org": "praha",
+   "type": null,
+   "entities": 1605,
+   "rows": null,
+   "checks": {
+    "ngsi-ld": {
+     "state": "pass",
+     "reason": ""
+    },
+    "accurate": {
+     "state": "not run",
+     "reason": "the platform publishes it from its own Endpoint; no mapping names an outside source"
+    },
+    "queryable": {
+     "state": "not run",
+     "reason": "no mapped type to ask about"
+    },
+    "smart-data-model": {
+     "state": "not run",
+     "reason": "no mapping"
+    }
+   },
+   "verdict": "hold"
+  },
+  {
+   "package": "praha-trideny-odpad",
+   "org": "praha",
+   "type": null,
+   "entities": 18902,
+   "rows": null,
+   "checks": {
+    "ngsi-ld": {
+     "state": "pass",
+     "reason": ""
+    },
+    "accurate": {
+     "state": "not run",
+     "reason": "the platform publishes it from its own Endpoint; no mapping names an outside source"
+    },
+    "queryable": {
+     "state": "not run",
+     "reason": "no mapped type to ask about"
+    },
+    "smart-data-model": {
+     "state": "not run",
+     "reason": "no mapping"
+    }
+   },
+   "verdict": "hold"
+  },
+  {
+   "package": "public-air",
+   "org": "banskabystrica",
+   "type": null,
+   "entities": 2,
+   "rows": null,
+   "checks": {
+    "ngsi-ld": {
+     "state": "pass",
+     "reason": ""
+    },
+    "accurate": {
+     "state": "not run",
+     "reason": "the platform publishes it from its own Endpoint; no mapping names an outside source"
+    },
+    "queryable": {
+     "state": "not run",
+     "reason": "no mapped type to ask about"
+    },
+    "smart-data-model": {
+     "state": "not run",
+     "reason": "no mapping"
+    }
+   },
+   "verdict": "hold"
+  },
+  {
+   "package": "susr-as",
+   "org": "slovensko",
+   "type": null,
+   "entities": 980,
+   "rows": null,
+   "checks": {
+    "ngsi-ld": {
+     "state": "pass",
+     "reason": ""
+    },
+    "accurate": {
+     "state": "not run",
+     "reason": "the platform publishes it from its own Endpoint; no mapping names an outside source"
+    },
+    "queryable": {
+     "state": "not run",
+     "reason": "no mapped type to ask about"
+    },
+    "smart-data-model": {
+     "state": "not run",
+     "reason": "no mapping"
+    }
+   },
+   "verdict": "hold"
+  },
+  {
+   "package": "susr-cr",
+   "org": "slovensko",
+   "type": null,
+   "entities": 282,
+   "rows": null,
+   "checks": {
+    "ngsi-ld": {
+     "state": "pass",
+     "reason": ""
+    },
+    "accurate": {
+     "state": "not run",
+     "reason": "the platform publishes it from its own Endpoint; no mapping names an outside source"
+    },
+    "queryable": {
+     "state": "not run",
+     "reason": "no mapped type to ask about"
+    },
+    "smart-data-model": {
+     "state": "not run",
+     "reason": "no mapping"
+    }
+   },
+   "verdict": "hold"
+  },
+  {
+   "package": "susr-cr-navstevnici",
+   "org": "slovensko",
+   "type": null,
+   "entities": 54,
+   "rows": null,
+   "checks": {
+    "ngsi-ld": {
+     "state": "pass",
+     "reason": ""
+    },
+    "accurate": {
+     "state": "not run",
+     "reason": "the platform publishes it from its own Endpoint; no mapping names an outside source"
+    },
+    "queryable": {
+     "state": "not run",
+     "reason": "no mapped type to ask about"
+    },
+    "smart-data-model": {
+     "state": "not run",
+     "reason": "no mapping"
+    }
+   },
+   "verdict": "hold"
+  },
+  {
+   "package": "susr-do",
+   "org": "slovensko",
+   "type": null,
+   "entities": 445,
+   "rows": null,
+   "checks": {
+    "ngsi-ld": {
+     "state": "pass",
+     "reason": ""
+    },
+    "accurate": {
+     "state": "not run",
+     "reason": "the platform publishes it from its own Endpoint; no mapping names an outside source"
+    },
+    "queryable": {
+     "state": "not run",
+     "reason": "no mapped type to ask about"
+    },
+    "smart-data-model": {
+     "state": "not run",
+     "reason": "no mapping"
+    }
+   },
+   "verdict": "hold"
+  },
+  {
+   "package": "susr-do-preprava",
+   "org": "slovensko",
+   "type": null,
+   "entities": 376,
+   "rows": null,
+   "checks": {
+    "ngsi-ld": {
+     "state": "pass",
+     "reason": ""
+    },
+    "accurate": {
+     "state": "not run",
+     "reason": "the platform publishes it from its own Endpoint; no mapping names an outside source"
+    },
+    "queryable": {
+     "state": "not run",
+     "reason": "no mapped type to ask about"
+    },
+    "smart-data-model": {
+     "state": "not run",
+     "reason": "no mapping"
+    }
+   },
+   "verdict": "hold"
+  },
+  {
+   "package": "susr-en",
+   "org": "slovensko",
+   "type": null,
+   "entities": 1862,
+   "rows": null,
+   "checks": {
+    "ngsi-ld": {
+     "state": "pass",
+     "reason": ""
+    },
+    "accurate": {
+     "state": "not run",
+     "reason": "the platform publishes it from its own Endpoint; no mapping names an outside source"
+    },
+    "queryable": {
+     "state": "not run",
+     "reason": "no mapped type to ask about"
+    },
+    "smart-data-model": {
+     "state": "not run",
+     "reason": "no mapping"
+    }
+   },
+   "verdict": "hold"
+  },
+  {
+   "package": "susr-ik",
+   "org": "slovensko",
+   "type": null,
+   "entities": 238,
+   "rows": null,
+   "checks": {
+    "ngsi-ld": {
+     "state": "pass",
+     "reason": ""
+    },
+    "accurate": {
+     "state": "not run",
+     "reason": "the platform publishes it from its own Endpoint; no mapping names an outside source"
+    },
+    "queryable": {
+     "state": "not run",
+     "reason": "no mapped type to ask about"
+    },
+    "smart-data-model": {
+     "state": "not run",
+     "reason": "no mapping"
+    }
+   },
+   "verdict": "hold"
+  },
+  {
+   "package": "susr-kp",
+   "org": "slovensko",
+   "type": null,
+   "entities": 2121,
+   "rows": null,
+   "checks": {
+    "ngsi-ld": {
+     "state": "pass",
+     "reason": ""
+    },
+    "accurate": {
+     "state": "not run",
+     "reason": "the platform publishes it from its own Endpoint; no mapping names an outside source"
+    },
+    "queryable": {
+     "state": "not run",
+     "reason": "no mapped type to ask about"
+    },
+    "smart-data-model": {
+     "state": "not run",
+     "reason": "no mapping"
+    }
+   },
+   "verdict": "hold"
+  },
+  {
+   "package": "susr-kp-priemysel",
+   "org": "slovensko",
+   "type": null,
+   "entities": 2382,
+   "rows": null,
+   "checks": {
+    "ngsi-ld": {
+     "state": "pass",
+     "reason": ""
+    },
+    "accurate": {
+     "state": "not run",
+     "reason": "the platform publishes it from its own Endpoint; no mapping names an outside source"
+    },
+    "queryable": {
+     "state": "not run",
+     "reason": "no mapped type to ask about"
+    },
+    "smart-data-model": {
+     "state": "not run",
+     "reason": "no mapping"
+    }
+   },
+   "verdict": "hold"
+  },
+  {
+   "package": "susr-ku",
+   "org": "slovensko",
+   "type": null,
+   "entities": 1744,
+   "rows": null,
+   "checks": {
+    "ngsi-ld": {
+     "state": "pass",
+     "reason": ""
+    },
+    "accurate": {
+     "state": "not run",
+     "reason": "the platform publishes it from its own Endpoint; no mapping names an outside source"
+    },
+    "queryable": {
+     "state": "not run",
+     "reason": "no mapped type to ask about"
+    },
+    "smart-data-model": {
+     "state": "not run",
+     "reason": "no mapping"
+    }
+   },
+   "verdict": "hold"
+  },
+  {
+   "package": "susr-kz",
+   "org": "slovensko",
+   "type": null,
+   "entities": 126,
+   "rows": null,
+   "checks": {
+    "ngsi-ld": {
+     "state": "pass",
+     "reason": ""
+    },
+    "accurate": {
+     "state": "not run",
+     "reason": "the platform publishes it from its own Endpoint; no mapping names an outside source"
+    },
+    "queryable": {
+     "state": "not run",
+     "reason": "no mapped type to ask about"
+    },
+    "smart-data-model": {
+     "state": "not run",
+     "reason": "no mapping"
+    }
+   },
+   "verdict": "hold"
+  },
+  {
+   "package": "susr-kz-zdravie",
+   "org": "slovensko",
+   "type": null,
+   "entities": 222,
+   "rows": null,
+   "checks": {
+    "ngsi-ld": {
+     "state": "pass",
+     "reason": ""
+    },
+    "accurate": {
+     "state": "not run",
+     "reason": "the platform publishes it from its own Endpoint; no mapping names an outside source"
+    },
+    "queryable": {
+     "state": "not run",
+     "reason": "no mapped type to ask about"
+    },
+    "smart-data-model": {
+     "state": "not run",
+     "reason": "no mapping"
+    }
+   },
+   "verdict": "hold"
+  },
+  {
+   "package": "susr-np",
+   "org": "slovensko",
+   "type": null,
+   "entities": 3060,
+   "rows": null,
+   "checks": {
+    "ngsi-ld": {
+     "state": "pass",
+     "reason": ""
+    },
+    "accurate": {
+     "state": "not run",
+     "reason": "the platform publishes it from its own Endpoint; no mapping names an outside source"
+    },
+    "queryable": {
+     "state": "not run",
+     "reason": "no mapped type to ask about"
+    },
+    "smart-data-model": {
+     "state": "not run",
+     "reason": "no mapping"
+    }
+   },
+   "verdict": "hold"
+  },
+  {
+   "package": "susr-nu",
+   "org": "slovensko",
+   "type": null,
+   "entities": 26,
+   "rows": null,
+   "checks": {
+    "ngsi-ld": {
+     "state": "pass",
+     "reason": ""
+    },
+    "accurate": {
+     "state": "not run",
+     "reason": "the platform publishes it from its own Endpoint; no mapping names an outside source"
+    },
+    "queryable": {
+     "state": "not run",
+     "reason": "no mapped type to ask about"
+    },
+    "smart-data-model": {
+     "state": "not run",
+     "reason": "no mapping"
+    }
+   },
+   "verdict": "hold"
+  },
+  {
+   "package": "susr-nu-odvetvia",
+   "org": "slovensko",
+   "type": null,
+   "entities": 4326,
+   "rows": null,
+   "checks": {
+    "ngsi-ld": {
+     "state": "pass",
+     "reason": ""
+    },
+    "accurate": {
+     "state": "not run",
+     "reason": "the platform publishes it from its own Endpoint; no mapping names an outside source"
+    },
+    "queryable": {
+     "state": "not run",
+     "reason": "no mapped type to ask about"
+    },
+    "smart-data-model": {
+     "state": "not run",
+     "reason": "no mapping"
+    }
+   },
+   "verdict": "hold"
+  },
+  {
+   "package": "susr-ob",
+   "org": "slovensko",
+   "type": null,
+   "entities": 1760,
+   "rows": null,
+   "checks": {
+    "ngsi-ld": {
+     "state": "pass",
+     "reason": ""
+    },
+    "accurate": {
+     "state": "not run",
+     "reason": "the platform publishes it from its own Endpoint; no mapping names an outside source"
+    },
+    "queryable": {
+     "state": "not run",
+     "reason": "no mapped type to ask about"
+    },
+    "smart-data-model": {
+     "state": "not run",
+     "reason": "no mapping"
+    }
+   },
+   "verdict": "hold"
+  },
+  {
+   "package": "susr-od",
+   "org": "slovensko",
+   "type": null,
+   "entities": 3240,
+   "rows": null,
+   "checks": {
+    "ngsi-ld": {
+     "state": "pass",
+     "reason": ""
+    },
+    "accurate": {
+     "state": "not run",
+     "reason": "the platform publishes it from its own Endpoint; no mapping names an outside source"
+    },
+    "queryable": {
+     "state": "not run",
+     "reason": "no mapped type to ask about"
+    },
+    "smart-data-model": {
+     "state": "not run",
+     "reason": "no mapping"
+    }
+   },
+   "verdict": "hold"
+  },
+  {
+   "package": "susr-og",
+   "org": "slovensko",
+   "type": null,
+   "entities": 590,
+   "rows": null,
+   "checks": {
+    "ngsi-ld": {
+     "state": "pass",
+     "reason": ""
+    },
+    "accurate": {
+     "state": "not run",
+     "reason": "the platform publishes it from its own Endpoint; no mapping names an outside source"
+    },
+    "queryable": {
+     "state": "not run",
+     "reason": "no mapped type to ask about"
+    },
+    "smart-data-model": {
+     "state": "not run",
+     "reason": "no mapping"
+    }
+   },
+   "verdict": "hold"
+  },
+  {
+   "package": "susr-om",
+   "org": "slovensko",
+   "type": null,
+   "entities": 530,
+   "rows": null,
+   "checks": {
+    "ngsi-ld": {
+     "state": "pass",
+     "reason": ""
+    },
+    "accurate": {
+     "state": "not run",
+     "reason": "the platform publishes it from its own Endpoint; no mapping names an outside source"
+    },
+    "queryable": {
+     "state": "not run",
+     "reason": "no mapped type to ask about"
+    },
+    "smart-data-model": {
+     "state": "not run",
+     "reason": "no mapping"
+    }
+   },
+   "verdict": "hold"
+  },
+  {
+   "package": "susr-om-pohyb",
+   "org": "slovensko",
+   "type": null,
+   "entities": 882,
+   "rows": null,
+   "checks": {
+    "ngsi-ld": {
+     "state": "pass",
+     "reason": ""
+    },
+    "accurate": {
+     "state": "not run",
+     "reason": "the platform publishes it from its own Endpoint; no mapping names an outside source"
+    },
+    "queryable": {
+     "state": "not run",
+     "reason": "no mapped type to ask about"
+    },
+    "smart-data-model": {
+     "state": "not run",
+     "reason": "no mapping"
+    }
+   },
+   "verdict": "hold"
+  },
+  {
+   "package": "susr-pl",
+   "org": "slovensko",
+   "type": null,
+   "entities": 683,
+   "rows": null,
+   "checks": {
+    "ngsi-ld": {
+     "state": "pass",
+     "reason": ""
+    },
+    "accurate": {
+     "state": "not run",
+     "reason": "the platform publishes it from its own Endpoint; no mapping names an outside source"
+    },
+    "queryable": {
+     "state": "not run",
+     "reason": "no mapped type to ask about"
+    },
+    "smart-data-model": {
+     "state": "not run",
+     "reason": "no mapping"
+    }
+   },
+   "verdict": "hold"
+  },
+  {
+   "package": "susr-pm",
+   "org": "slovensko",
+   "type": null,
+   "entities": 3893,
+   "rows": null,
+   "checks": {
+    "ngsi-ld": {
+     "state": "pass",
+     "reason": ""
+    },
+    "accurate": {
+     "state": "not run",
+     "reason": "the platform publishes it from its own Endpoint; no mapping names an outside source"
+    },
+    "queryable": {
+     "state": "not run",
+     "reason": "no mapped type to ask about"
+    },
+    "smart-data-model": {
+     "state": "not run",
+     "reason": "no mapping"
+    }
+   },
+   "verdict": "hold"
+  },
+  {
+   "package": "susr-pm-ceny",
+   "org": "slovensko",
+   "type": null,
+   "entities": 3996,
+   "rows": null,
+   "checks": {
+    "ngsi-ld": {
+     "state": "pass",
+     "reason": ""
+    },
+    "accurate": {
+     "state": "not run",
+     "reason": "the platform publishes it from its own Endpoint; no mapping names an outside source"
+    },
+    "queryable": {
+     "state": "not run",
+     "reason": "no mapped type to ask about"
+    },
+    "smart-data-model": {
+     "state": "not run",
+     "reason": "no mapping"
+    }
+   },
+   "verdict": "hold"
+  },
+  {
+   "package": "susr-pr",
+   "org": "slovensko",
+   "type": null,
+   "entities": 558,
+   "rows": null,
+   "checks": {
+    "ngsi-ld": {
+     "state": "pass",
+     "reason": ""
+    },
+    "accurate": {
+     "state": "not run",
+     "reason": "the platform publishes it from its own Endpoint; no mapping names an outside source"
+    },
+    "queryable": {
+     "state": "not run",
+     "reason": "no mapped type to ask about"
+    },
+    "smart-data-model": {
+     "state": "not run",
+     "reason": "no mapping"
+    }
+   },
+   "verdict": "hold"
+  },
+  {
+   "package": "susr-pr-mzdy",
+   "org": "slovensko",
+   "type": null,
+   "entities": 303,
+   "rows": null,
+   "checks": {
+    "ngsi-ld": {
+     "state": "pass",
+     "reason": ""
+    },
+    "accurate": {
+     "state": "not run",
+     "reason": "the platform publishes it from its own Endpoint; no mapping names an outside source"
+    },
+    "queryable": {
+     "state": "not run",
+     "reason": "no mapped type to ask about"
+    },
+    "smart-data-model": {
+     "state": "not run",
+     "reason": "no mapping"
+    }
+   },
+   "verdict": "hold"
+  },
+  {
+   "package": "susr-ps",
+   "org": "slovensko",
+   "type": null,
+   "entities": 132,
+   "rows": null,
+   "checks": {
+    "ngsi-ld": {
+     "state": "pass",
+     "reason": ""
+    },
+    "accurate": {
+     "state": "not run",
+     "reason": "the platform publishes it from its own Endpoint; no mapping names an outside source"
+    },
+    "queryable": {
+     "state": "not run",
+     "reason": "no mapped type to ask about"
+    },
+    "smart-data-model": {
+     "state": "not run",
+     "reason": "no mapping"
+    }
+   },
+   "verdict": "hold"
+  },
+  {
+   "package": "susr-ps-vydavky",
+   "org": "slovensko",
+   "type": null,
+   "entities": 480,
+   "rows": null,
+   "checks": {
+    "ngsi-ld": {
+     "state": "pass",
+     "reason": ""
+    },
+    "accurate": {
+     "state": "not run",
+     "reason": "the platform publishes it from its own Endpoint; no mapping names an outside source"
+    },
+    "queryable": {
+     "state": "not run",
+     "reason": "no mapped type to ask about"
+    },
+    "smart-data-model": {
+     "state": "not run",
+     "reason": "no mapping"
+    }
+   },
+   "verdict": "hold"
+  },
+  {
+   "package": "susr-ra",
+   "org": "slovensko",
+   "type": null,
+   "entities": 319,
+   "rows": null,
+   "checks": {
+    "ngsi-ld": {
+     "state": "pass",
+     "reason": ""
+    },
+    "accurate": {
+     "state": "not run",
+     "reason": "the platform publishes it from its own Endpoint; no mapping names an outside source"
+    },
+    "queryable": {
+     "state": "not run",
+     "reason": "no mapped type to ask about"
+    },
+    "smart-data-model": {
+     "state": "not run",
+     "reason": "no mapping"
+    }
+   },
+   "verdict": "hold"
+  },
+  {
+   "package": "susr-sk",
+   "org": "slovensko",
+   "type": null,
+   "entities": 345,
+   "rows": null,
+   "checks": {
+    "ngsi-ld": {
+     "state": "pass",
+     "reason": ""
+    },
+    "accurate": {
+     "state": "not run",
+     "reason": "the platform publishes it from its own Endpoint; no mapping names an outside source"
+    },
+    "queryable": {
+     "state": "not run",
+     "reason": "no mapped type to ask about"
+    },
+    "smart-data-model": {
+     "state": "not run",
+     "reason": "no mapping"
+    }
+   },
+   "verdict": "hold"
+  },
+  {
+   "package": "susr-so",
+   "org": "slovensko",
+   "type": null,
+   "entities": 2392,
+   "rows": null,
+   "checks": {
+    "ngsi-ld": {
+     "state": "pass",
+     "reason": ""
+    },
+    "accurate": {
+     "state": "not run",
+     "reason": "the platform publishes it from its own Endpoint; no mapping names an outside source"
+    },
+    "queryable": {
+     "state": "not run",
+     "reason": "no mapped type to ask about"
+    },
+    "smart-data-model": {
+     "state": "not run",
+     "reason": "no mapping"
+    }
+   },
+   "verdict": "hold"
+  },
+  {
+   "package": "susr-sp",
+   "org": "slovensko",
+   "type": null,
+   "entities": 2197,
+   "rows": null,
+   "checks": {
+    "ngsi-ld": {
+     "state": "pass",
+     "reason": ""
+    },
+    "accurate": {
+     "state": "not run",
+     "reason": "the platform publishes it from its own Endpoint; no mapping names an outside source"
+    },
+    "queryable": {
+     "state": "not run",
+     "reason": "no mapped type to ask about"
+    },
+    "smart-data-model": {
+     "state": "not run",
+     "reason": "no mapping"
+    }
+   },
+   "verdict": "hold"
+  },
+  {
+   "package": "susr-sp-jadrova",
+   "org": "slovensko",
+   "type": null,
+   "entities": 874,
+   "rows": null,
+   "checks": {
+    "ngsi-ld": {
+     "state": "pass",
+     "reason": ""
+    },
+    "accurate": {
+     "state": "not run",
+     "reason": "the platform publishes it from its own Endpoint; no mapping names an outside source"
+    },
+    "queryable": {
+     "state": "not run",
+     "reason": "no mapped type to ask about"
+    },
+    "smart-data-model": {
+     "state": "not run",
+     "reason": "no mapping"
+    }
+   },
+   "verdict": "hold"
+  },
+  {
+   "package": "susr-st",
+   "org": "slovensko",
+   "type": null,
+   "entities": 2904,
+   "rows": null,
+   "checks": {
+    "ngsi-ld": {
+     "state": "pass",
+     "reason": ""
+    },
+    "accurate": {
+     "state": "not run",
+     "reason": "the platform publishes it from its own Endpoint; no mapping names an outside source"
+    },
+    "queryable": {
+     "state": "not run",
+     "reason": "no mapped type to ask about"
+    },
+    "smart-data-model": {
+     "state": "not run",
+     "reason": "no mapping"
+    }
+   },
+   "verdict": "hold"
+  },
+  {
+   "package": "susr-st-povolenia",
+   "org": "slovensko",
+   "type": null,
+   "entities": 1636,
+   "rows": null,
+   "checks": {
+    "ngsi-ld": {
+     "state": "pass",
+     "reason": ""
+    },
+    "accurate": {
+     "state": "not run",
+     "reason": "the platform publishes it from its own Endpoint; no mapping names an outside source"
+    },
+    "queryable": {
+     "state": "not run",
+     "reason": "no mapped type to ask about"
+    },
+    "smart-data-model": {
+     "state": "not run",
+     "reason": "no mapping"
+    }
+   },
+   "verdict": "hold"
+  },
+  {
+   "package": "susr-sv",
+   "org": "slovensko",
+   "type": null,
+   "entities": 502,
+   "rows": null,
+   "checks": {
+    "ngsi-ld": {
+     "state": "pass",
+     "reason": ""
+    },
+    "accurate": {
+     "state": "not run",
+     "reason": "the platform publishes it from its own Endpoint; no mapping names an outside source"
+    },
+    "queryable": {
+     "state": "not run",
+     "reason": "no mapped type to ask about"
+    },
+    "smart-data-model": {
+     "state": "not run",
+     "reason": "no mapping"
+    }
+   },
+   "verdict": "hold"
+  },
+  {
+   "package": "susr-ts",
+   "org": "slovensko",
+   "type": null,
+   "entities": 3420,
+   "rows": null,
+   "checks": {
+    "ngsi-ld": {
+     "state": "pass",
+     "reason": ""
+    },
+    "accurate": {
+     "state": "not run",
+     "reason": "the platform publishes it from its own Endpoint; no mapping names an outside source"
+    },
+    "queryable": {
+     "state": "not run",
+     "reason": "no mapped type to ask about"
+    },
+    "smart-data-model": {
+     "state": "not run",
+     "reason": "no mapping"
+    }
+   },
+   "verdict": "hold"
+  },
+  {
+   "package": "susr-vh",
+   "org": "slovensko",
+   "type": null,
+   "entities": 2520,
+   "rows": null,
+   "checks": {
+    "ngsi-ld": {
+     "state": "pass",
+     "reason": ""
+    },
+    "accurate": {
+     "state": "not run",
+     "reason": "the platform publishes it from its own Endpoint; no mapping names an outside source"
+    },
+    "queryable": {
+     "state": "not run",
+     "reason": "no mapped type to ask about"
+    },
+    "smart-data-model": {
+     "state": "not run",
+     "reason": "no mapping"
+    }
+   },
+   "verdict": "hold"
+  },
+  {
+   "package": "susr-vt",
+   "org": "slovensko",
+   "type": null,
+   "entities": 130,
+   "rows": null,
+   "checks": {
+    "ngsi-ld": {
+     "state": "pass",
+     "reason": ""
+    },
+    "accurate": {
+     "state": "not run",
+     "reason": "the platform publishes it from its own Endpoint; no mapping names an outside source"
+    },
+    "queryable": {
+     "state": "not run",
+     "reason": "no mapped type to ask about"
+    },
+    "smart-data-model": {
+     "state": "not run",
+     "reason": "no mapping"
+    }
+   },
+   "verdict": "hold"
+  },
+  {
+   "package": "susr-vt-pracovnici",
+   "org": "slovensko",
+   "type": null,
+   "entities": 310,
+   "rows": null,
+   "checks": {
+    "ngsi-ld": {
+     "state": "pass",
+     "reason": ""
+    },
+    "accurate": {
+     "state": "not run",
+     "reason": "the platform publishes it from its own Endpoint; no mapping names an outside source"
+    },
+    "queryable": {
+     "state": "not run",
+     "reason": "no mapped type to ask about"
+    },
+    "smart-data-model": {
+     "state": "not run",
+     "reason": "no mapping"
+    }
+   },
+   "verdict": "hold"
+  },
+  {
+   "package": "susr-zd",
+   "org": "slovensko",
+   "type": null,
+   "entities": 279,
+   "rows": null,
+   "checks": {
+    "ngsi-ld": {
+     "state": "pass",
+     "reason": ""
+    },
+    "accurate": {
+     "state": "not run",
+     "reason": "the platform publishes it from its own Endpoint; no mapping names an outside source"
+    },
+    "queryable": {
+     "state": "not run",
+     "reason": "no mapped type to ask about"
+    },
+    "smart-data-model": {
+     "state": "not run",
+     "reason": "no mapping"
+    }
+   },
+   "verdict": "hold"
+  },
+  {
+   "package": "susr-zo",
+   "org": "slovensko",
+   "type": null,
+   "entities": 1248,
+   "rows": null,
+   "checks": {
+    "ngsi-ld": {
+     "state": "pass",
+     "reason": ""
+    },
+    "accurate": {
+     "state": "not run",
+     "reason": "the platform publishes it from its own Endpoint; no mapping names an outside source"
+    },
+    "queryable": {
+     "state": "not run",
+     "reason": "no mapped type to ask about"
+    },
+    "smart-data-model": {
+     "state": "not run",
+     "reason": "no mapping"
+    }
+   },
+   "verdict": "hold"
+  },
+  {
+   "package": "susr-zo-kapitoly",
+   "org": "slovensko",
+   "type": null,
+   "entities": 3527,
+   "rows": null,
+   "checks": {
+    "ngsi-ld": {
+     "state": "pass",
+     "reason": ""
+    },
+    "accurate": {
+     "state": "not run",
+     "reason": "the platform publishes it from its own Endpoint; no mapping names an outside source"
+    },
+    "queryable": {
+     "state": "not run",
+     "reason": "no mapped type to ask about"
+    },
+    "smart-data-model": {
+     "state": "not run",
+     "reason": "no mapping"
+    }
+   },
+   "verdict": "hold"
+  },
+  {
+   "package": "susr-zo-krajiny",
+   "org": "slovensko",
+   "type": null,
+   "entities": null,
+   "rows": null,
+   "checks": {
+    "ngsi-ld": {
+     "state": "fail",
+     "reason": "no entity behind the NGSI-LD distribution (the hub lists no type for https://dev.joinedcontext.com/api/endpoint/3bayn5lqwhce7opxqu3e7ruibkhqmfew/)"
+    },
+    "accurate": {
+     "state": "not run",
+     "reason": "the platform publishes it from its own Endpoint; no mapping names an outside source"
+    },
+    "queryable": {
+     "state": "not run",
+     "reason": "no mapped type to ask about"
+    },
+    "smart-data-model": {
+     "state": "not run",
+     "reason": "no mapping"
+    }
+   },
+   "verdict": "hide"
+  },
+  {
+   "package": "susr-zp",
+   "org": "slovensko",
+   "type": null,
+   "entities": 1112,
+   "rows": null,
+   "checks": {
+    "ngsi-ld": {
+     "state": "pass",
+     "reason": ""
+    },
+    "accurate": {
+     "state": "not run",
+     "reason": "the platform publishes it from its own Endpoint; no mapping names an outside source"
+    },
+    "queryable": {
+     "state": "not run",
+     "reason": "no mapped type to ask about"
+    },
+    "smart-data-model": {
+     "state": "not run",
+     "reason": "no mapping"
+    }
+   },
+   "verdict": "hold"
+  },
+  {
+   "package": "susr-zp-emisie",
+   "org": "slovensko",
+   "type": null,
+   "entities": 3183,
+   "rows": null,
+   "checks": {
+    "ngsi-ld": {
+     "state": "pass",
+     "reason": ""
+    },
+    "accurate": {
+     "state": "not run",
+     "reason": "the platform publishes it from its own Endpoint; no mapping names an outside source"
+    },
+    "queryable": {
+     "state": "not run",
+     "reason": "no mapped type to ask about"
+    },
+    "smart-data-model": {
+     "state": "not run",
+     "reason": "no mapping"
+    }
+   },
+   "verdict": "hold"
+  },
+  {
+   "package": "zilina-kpi",
+   "org": "zilina",
+   "type": null,
+   "entities": 6,
+   "rows": null,
+   "checks": {
+    "ngsi-ld": {
+     "state": "pass",
+     "reason": ""
+    },
+    "accurate": {
+     "state": "not run",
+     "reason": "the platform publishes it from its own Endpoint; no mapping names an outside source"
+    },
+    "queryable": {
+     "state": "not run",
+     "reason": "no mapped type to ask about"
+    },
+    "smart-data-model": {
+     "state": "not run",
+     "reason": "no mapping"
+    }
+   },
+   "verdict": "hold"
+  },
+  {
+   "package": "zilina-ovzdusie",
+   "org": "zilina",
+   "type": null,
+   "entities": 1,
+   "rows": null,
+   "checks": {
+    "ngsi-ld": {
+     "state": "pass",
+     "reason": ""
+    },
+    "accurate": {
+     "state": "not run",
+     "reason": "the platform publishes it from its own Endpoint; no mapping names an outside source"
+    },
+    "queryable": {
+     "state": "not run",
+     "reason": "no mapped type to ask about"
+    },
+    "smart-data-model": {
+     "state": "not run",
+     "reason": "no mapping"
+    }
+   },
+   "verdict": "hold"
+  },
+  {
+   "package": "zilina-pamiatky",
+   "org": "zilina",
+   "type": null,
+   "entities": 104,
+   "rows": null,
+   "checks": {
+    "ngsi-ld": {
+     "state": "pass",
+     "reason": ""
+    },
+    "accurate": {
+     "state": "not run",
+     "reason": "the platform publishes it from its own Endpoint; no mapping names an outside source"
+    },
+    "queryable": {
+     "state": "not run",
+     "reason": "no mapped type to ask about"
+    },
+    "smart-data-model": {
+     "state": "not run",
+     "reason": "no mapping"
+    }
+   },
+   "verdict": "hold"
+  },
+  {
+   "package": "zilina-uniza",
+   "org": "zilina",
+   "type": null,
+   "entities": 787,
+   "rows": null,
+   "checks": {
+    "ngsi-ld": {
+     "state": "pass",
+     "reason": ""
+    },
+    "accurate": {
+     "state": "not run",
+     "reason": "the platform publishes it from its own Endpoint; no mapping names an outside source"
+    },
+    "queryable": {
+     "state": "not run",
+     "reason": "no mapped type to ask about"
+    },
+    "smart-data-model": {
+     "state": "not run",
+     "reason": "no mapping"
+    }
+   },
+   "verdict": "hold"
+  },
+  {
+   "package": "zilina-zeleznicne-stanice",
+   "org": "zilina",
+   "type": null,
+   "entities": 5,
+   "rows": null,
+   "checks": {
+    "ngsi-ld": {
+     "state": "pass",
+     "reason": ""
+    },
+    "accurate": {
+     "state": "not run",
+     "reason": "the platform publishes it from its own Endpoint; no mapping names an outside source"
+    },
+    "queryable": {
+     "state": "not run",
+     "reason": "no mapped type to ask about"
+    },
+    "smart-data-model": {
+     "state": "not run",
+     "reason": "no mapping"
+    }
+   },
+   "verdict": "hold"
+  }
+ ]
+}

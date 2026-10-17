@@ -11,6 +11,10 @@ the sources the mapping names, and an eval copy of the assistant (a publicId wit
 segment, never the visitors' deployment). Writes `<out>.json`, `<out>.md` and `<out>.hidden.txt`
 (one package name per line: what the catalogue's hide switch reads).
 
+The catalogue leaves the packages it hides out of the public search, so a rerun names them with
+`--also <file>` (one name per line, e.g. the last `<out>.hidden.txt`); each is gated from its
+mapping entry, whose org and title stand in for the package's (T-4448).
+
 Checks per catalogue package (the task's 1 to 4):
 1. NGSI-LD: the dataset has entities on dev. Which distributions the package lists (NGSI-LD,
    MCP, CSV, no ZIP, links answering 200) is T-4324's catalogue test, not this gate's.
@@ -40,6 +44,7 @@ Exit 0 when the run completed (whatever the verdicts), 2 on a usage error.
 
 import argparse
 import datetime as dt
+import io
 import json
 import math
 import re
@@ -49,11 +54,13 @@ import time
 import urllib.error
 import urllib.parse
 import urllib.request
+import zipfile
 from pathlib import Path
 
 import yaml
 
 TIMEOUT = 60
+PAGE, PART_ROWS = 1000, 4000  # the generator's rows per Esri page and per esri-layers pipeline
 CKAN = "https://data.dev.joinedcontext.com"
 HUB = "https://dev.joinedcontext.com/api/mcp"
 GATEWAY = "https://dev.joinedcontext.com"
@@ -69,7 +76,8 @@ BOXES = {
 }
 # The generator's publisher domains (joinedcontext-deployment scripts/open-data/generate.py).
 DOMAINS = {"banskabystrica": "banskabystrica.sk", "bbsk": "bbsk.sk"}
-TAKEN = {"dataProvider", "source", "dataset", "location", "observedAt", "name"}
+# The attributes the generator sets itself, so a column of that name is renamed (generate.py TAKEN).
+TAKEN = {"dataProvider", "source", "isPartOf", "location", "observedAt"}
 PERIODS = {"P1D": dt.timedelta(days=1), "P1W": dt.timedelta(weeks=1), "P1M": dt.timedelta(days=31)}
 
 
@@ -90,7 +98,9 @@ def sdm_validators(folder):
 
     def errors(model, entity):
         if model not in cache:
-            path = folder / model.removeprefix("dataModel.") / "schema.json"
+            # An `extension/<Type>` is the generator's own schema (its base inlined), in `extensions/`.
+            path = folder / (f"extensions/{model.removeprefix('extension/')}" if model.startswith("extension/")
+                             else model.removeprefix("dataModel.")) / "schema.json"
             cache[model] = jsonschema.Draft7Validator(
                 json.loads(path.read_text()), registry=registry,
                 format_checker=jsonschema.Draft7Validator.FORMAT_CHECKER) if path.is_file() else None
@@ -317,6 +327,15 @@ def check(state, reason=""):
 
 class Http:
     def get(self, url, accept="application/json"):
+        """A 503 is dev's broker failing one request (it asks to try again in a minute): retried
+        twice before it counts, so a hiccup never hides a dataset."""
+        for wait in (20, 60, None):
+            answer = self.once(url, accept)
+            if answer[0] != 503 or wait is None:
+                return answer
+            time.sleep(wait)
+
+    def once(self, url, accept):
         request = urllib.request.Request(url, headers={"Accept": accept, "User-Agent": "joinedcontext-publish-gate/1"})
         try:
             with urllib.request.urlopen(request, timeout=TIMEOUT) as response:
@@ -326,6 +345,8 @@ class Http:
             raw, status, headers = error.read(), error.code, dict(error.headers or {})
         except (urllib.error.URLError, OSError) as error:
             return 0, {}, {"error": str(error)}
+        if accept is None:
+            return status, {k.lower(): v for k, v in headers.items()}, raw
         try:
             body = json.loads(raw)
         except ValueError:
@@ -335,7 +356,20 @@ class Http:
 
 def endpoints(http):
     """space -> [(dcat url, types)] of the public Endpoints the hub lists."""
-    body = {"jsonrpc": "2.0", "id": 1, "method": "tools/call", "params": {"name": "list_endpoints", "arguments": {}}}
+    out, cursor = {}, None
+    while True:
+        arguments = {"limit": 100} | ({"cursor": cursor} if cursor is not None else {})
+        content = hub_page(arguments)
+        for e in content.get("endpoints", content) if isinstance(content, dict) else content:
+            out.setdefault(e["space"], []).append((e["dcat"], e.get("types", [])))
+        cursor = content.get("nextCursor") if isinstance(content, dict) else None
+        if cursor is None:
+            return out
+
+
+def hub_page(arguments):
+    """One page of the hub's `list_endpoints` (it pages by `nextCursor`)."""
+    body = {"jsonrpc": "2.0", "id": 1, "method": "tools/call", "params": {"name": "list_endpoints", "arguments": arguments}}
     request = urllib.request.Request(HUB, data=json.dumps(body).encode(), method="POST",
                                      headers={"Content-Type": "application/json", "Accept": "application/json, text/event-stream"})
     with urllib.request.urlopen(request, timeout=TIMEOUT) as response:
@@ -343,15 +377,11 @@ def endpoints(http):
     if raw.lstrip().startswith(("event:", "data:")):
         raw = next(line[5:] for line in raw.splitlines() if line.startswith("data:"))
     result = json.loads(raw)["result"]
-    content = result.get("structuredContent") or json.loads(result["content"][0]["text"])
-    out = {}
-    for e in content.get("endpoints", content) if isinstance(content, dict) else content:
-        out.setdefault(e["space"], []).append((e["dcat"], e.get("types", [])))
-    return out
+    return result.get("structuredContent") or json.loads(result["content"][0]["text"])
 
 
 def entities_url(base, **params):
-    return f"{base}ngsi-ld/v1/entities?{urllib.parse.urlencode(params)}"
+    return f"{base}ngsi-ld/v1/entities?{urllib.parse.urlencode({k: v for k, v in params.items() if v is not None})}"
 
 
 def count(http, base, kind, q=None):
@@ -372,6 +402,12 @@ def source_count(http, e):
     if s["kind"] == "ckan-datastore":
         status, _, body = http.get(f"{CKAN}/api/3/action/datastore_search?resource_id={s['resource']}&limit=0")
         return ((body or {}).get("result") or {}).get("total") if status == 200 else None
+    if s["kind"] == "esri-layers":
+        counts = [layer_count(http, x) for x in s["layers"]]
+        return None if None in counts else sum(counts)
+    if s["kind"] == "zip-geojson":
+        features = zip_features(http, s)
+        return None if features is None else len(features)
     status, headers, _ = http.get(f"{s['url']}?per_page=1")
     total = headers.get("x-wp-total")
     return int(total) if status == 200 and total and total.isdigit() else None
@@ -391,8 +427,76 @@ def source_row(http, e, offset):
         status, _, body = http.get(f"{CKAN}/api/3/action/datastore_search?resource_id={s['resource']}&limit=1&offset={offset}")
         records = ((body or {}).get("result") or {}).get("records") if status == 200 else None
         return (records[0], None) if records else (None, None)
+    if s["kind"] == "esri-layers":
+        for x in s["layers"]:
+            n = layer_count(http, x)
+            if n is None:
+                return None, None
+            if offset >= n:
+                offset -= n
+                continue
+            params = {"where": x.get("where", "1=1"), "outFields": ",".join(["OBJECTID", *x["fields"]]), "orderByFields": "OBJECTID",
+                      "returnGeometry": "true", "outSR": "4326", "geometryPrecision": "6", "f": "geojson",
+                      "resultOffset": offset, "resultRecordCount": 1}
+            status, _, body = http.get(f"{x['url']}/query?{urllib.parse.urlencode(params)}")
+            features = (body or {}).get("features") if status == 200 else None
+            if not features:
+                return None, None
+            f = features[0]
+            row = (f.get("properties") or {}) | {"vrstva": x["name"], "vrstva_id": f"{x['key']}-{f.get('id')}",
+                                                 "_page": (x["key"], offset // PAGE * PAGE)}
+            return row, f.get("geometry")
+        return None, None
+    if s["kind"] == "zip-geojson":
+        # S-JTSK coordinates: the row's values are compared, its location only against the box.
+        features = zip_features(http, s)
+        return ((features[offset].get("properties") or {}), None) if features and offset < len(features) else (None, None)
     status, _, body = http.get(f"{s['url']}?per_page=1&page={offset + 1}")
     return (body[0], None) if status == 200 and isinstance(body, list) and body else (None, None)
+
+
+def layer_count(http, x):
+    status, _, body = http.get(f"{x['url']}/query?{urllib.parse.urlencode({'where': x.get('where', '1=1'), 'returnCountOnly': 'true', 'f': 'json'})}")
+    return (body or {}).get("count") if status == 200 else None
+
+
+ZIPS = {}
+
+
+def zip_features(http, s):
+    """The features of the archive's GeoJSON member (the generator's pick: the name ending in
+    .geojson), read once per run, or None."""
+    if s["url"] not in ZIPS:
+        status, _, raw = http.get(s["url"], accept=None)
+        features = None
+        if status == 200 and raw:
+            try:
+                with zipfile.ZipFile(io.BytesIO(raw)) as archive:
+                    member = next(n for n in archive.namelist() if n.lower().endswith(".geojson"))
+                    features = json.loads(archive.read(member)).get("features")
+            except (zipfile.BadZipFile, StopIteration, ValueError, AttributeError):
+                features = None
+        ZIPS[s["url"]] = features if isinstance(features, list) else None
+    return ZIPS[s["url"]]
+
+
+def part_slug(e, slug, row):
+    """The slug of the pipeline that wrote a row: an esri-layers entry is split into pipelines of
+    about PART_ROWS rows, `<slug>`, `<slug[:36]>-p2`, … (deployment generate.py `parts`)."""
+    if e["source"]["kind"] != "esri-layers" or "_page" not in row:
+        return slug
+    i, held = 0, 0
+    first = True
+    for x in e["source"]["layers"]:
+        for o in range(max(1, -(-int(x["rows"] * 1.5) // PAGE))):
+            rows = max(0, min(PAGE, x["rows"] - o * PAGE))
+            if not first and held + rows > PART_ROWS:
+                i, held, first = i + 1, 0, True
+            if (x["key"], o * PAGE) == row["_page"]:
+                return slug if i == 0 else f"{slug[:36].rstrip('-')}-p{i + 1}"
+            first = False
+            held += rows
+    return slug
 
 
 def find_entity(http, base, e, slug, row, dataset_q):
@@ -402,16 +506,17 @@ def find_entity(http, base, e, slug, row, dataset_q):
         return body if status == 200 and isinstance(body, dict) else None
     # A row-hash id is the hash of every mapped cell, so the row's entity is the one that carries
     # all of them: match on every string and whole-number cell the q grammar can quote.
-    terms = [dataset_q]
+    terms = []
     for name, prop in e["properties"].items():
         value = expected(prop["range"], row.get(prop["column"])) if prop["range"] in ("string", "integer") else None
         if isinstance(value, int) and not isinstance(value, bool):
-            terms.append(f"{attribute(name)}=={value}")
+            # The model's range wins in the generator, so an integer column may be stored as text.
+            terms.append(f'({attribute(name)}=={value}|{attribute(name)}=="{value}")')
         elif isinstance(value, str) and not re.search(r'["\\;|()]', value) and len(value) <= 200:
             terms.append(f'{attribute(name)}=="{value}"')
-    if len(terms) == 1:
+    if not terms:
         return None
-    status, _, body = http.get(entities_url(base, type=e["type"], q=";".join(terms), limit=1))
+    status, _, body = http.get(entities_url(base, type=e["type"], q=";".join([t for t in [dataset_q] if t] + terms), limit=1))
     return body[0] if status == 200 and isinstance(body, list) and body else None
 
 
@@ -426,6 +531,8 @@ def gate(package, e, slug, spaces, http, ask, now, shared, sdm=None):
     if e is None or e["status"] != "mapped":
         if e is not None and e["status"] == "not-ingestible":
             checks["ngsi-ld"] = check("fail", f"not ingestible (T-4324 deletes it): {e.get('reason', '')}")
+        elif e is not None and e["status"] in ("removed", "no-data-source"):
+            checks["ngsi-ld"] = check("fail", f"{e['status']} in the mapping: {e.get('note') or e.get('reason') or ''}".strip())
         elif ngsi:
             door = ngsi[0].split("ngsi-ld/v1")[0]
             types = next((t for doors in spaces.values() for d, t in doors if d == door), [])
@@ -441,17 +548,21 @@ def gate(package, e, slug, spaces, http, ask, now, shared, sdm=None):
         checks["smart-data-model"] = check("not run", "no mapping")
         return row | {"checks": checks, "verdict": verdict(checks)}
 
-    row["type"] = e["type"]
+    # A dataset a platform seed reads whole is that seed's Endpoint and its whole type
+    # (od-datasets.json `filtered: false`); that seed's own pipeline names the ids and attributes.
+    whole = (e.get("existing") or {}).get("covers") == "whole"
+    kind = e.get("doorType", e["type"]) if whole else e["type"]
+    row["type"] = kind
     sample = []
-    doors = [d for d, types in spaces.get(e["space"], []) if e["type"] in types]
-    dataset_q = f'isPartOf=="{e["dataset"]}"'
+    doors = [e["door"]] if whole and e.get("door") else [d for d, types in spaces.get(e["space"], []) if kind in types]
+    dataset_q = None if whole else f'isPartOf=="{e["dataset"]}"'
     if not doors:
-        checks["ngsi-ld"] = check("fail", f"no public Endpoint over {e['space']} lists {e['type']}")
+        checks["ngsi-ld"] = check("fail", f"no public Endpoint over {e['space']} lists {kind}")
     else:
         base = doors[0]
-        n, why = count(http, base, e["type"], dataset_q)
-        if n is None and shared.get((e["space"], e["type"]), 0) == 1:
-            n, why = count(http, base, e["type"])
+        n, why = count(http, base, kind, dataset_q)
+        if n is None and shared.get((e["space"], kind), 0) == 1:
+            n, why = count(http, base, kind)
         row["entities"] = n
         if n is None:
             checks["ngsi-ld"] = check("fail", why)
@@ -470,18 +581,18 @@ def gate(package, e, slug, spaces, http, ask, now, shared, sdm=None):
             problems.append("the source did not answer its row count")
         elif c:
             problems.append(c)
-        status, _, sample = http.get(entities_url(base, type=e["type"], q=dataset_q, limit=SAMPLE))
+        status, _, sample = http.get(entities_url(base, type=kind, q=dataset_q, limit=SAMPLE))
         if status != 200 or not isinstance(sample, list):
-            status, _, sample = http.get(entities_url(base, type=e["type"], limit=SAMPLE))
+            status, _, sample = http.get(entities_url(base, type=kind, limit=SAMPLE))
         sample = sample if isinstance(sample, list) else []
-        problems += [p for p in (outside(org, sample), duplicates(e, sample), stale(e, sample, now)) if p]
-        total = row["rows"] or 0
-        for offset in sorted({0, total // 4, total // 2, 3 * total // 4, max(0, total - 1)}):
+        problems += [p for p in (outside(org, sample), None if whole else duplicates(e, sample), stale(e, sample, now)) if p]
+        total = 0 if whole else row["rows"] or 0
+        for offset in sorted({0, total // 4, total // 2, 3 * total // 4, max(0, total - 1)}) if not whole else ():
             source, geometry = source_row(http, e, offset)
             if source is None:
                 problems.append(f"source row {offset} could not be read")
                 continue
-            entity = find_entity(http, base, e, slug, source, dataset_q)
+            entity = find_entity(http, base, e, part_slug(e, slug, source), source, dataset_q)
             if entity is None:
                 problems.append(f"source row {offset} has no entity")
                 continue
@@ -514,14 +625,27 @@ def gate(package, e, slug, spaces, http, ask, now, shared, sdm=None):
 
 # --- the run -----------------------------------------------------------------------------------
 
-def run(packages, mapping, spaces, http, ask, now, sdm=None):
+def run(packages, mapping, spaces, http, ask, now, sdm=None, distributions=None):
     by_name = {e["name"]: e for e in mapping}
+    for name, d in (distributions or {}).items():
+        if name in by_name and d.get("filtered") is False:
+            by_name[name] = by_name[name] | {"door": f"{GATEWAY}/api/endpoint/{d['endpoint']}/", "doorType": d["type"]}
     names = slugs([e for e in mapping if e["status"] == "mapped"])
     shared = {}
     for e in mapping:
         if e["status"] == "mapped":
             shared[(e["space"], e["type"])] = shared.get((e["space"], e["type"]), 0) + 1
     return [gate(p, by_name.get(p["name"]), names.get(p["name"]), spaces, http, ask, now, shared, sdm) for p in packages]
+
+
+def stubs(names, packages, mapping):
+    """The hidden packages, from their mapping entries: the gate reads a mapped package's data
+    through the mapping, never through its catalogue record."""
+    listed = {p["name"] for p in packages}
+    by_name = {e["name"]: e for e in mapping}
+    return [{"name": n, "title": (by_name.get(n) or {}).get("title", n),
+             "organization": {"name": (by_name.get(n) or {}).get("org")}, "resources": []}
+            for n in dict.fromkeys(names) if n not in listed]
 
 
 def markdown(rows, when):
@@ -565,6 +689,9 @@ def main():
     parser.add_argument("--catalogue", default=CKAN)
     parser.add_argument("--eval", default=EVAL_ID, help="the eval copy's publicId; 'none' skips check 3")
     parser.add_argument("--sdm", type=Path, help="the vendored Smart Data Models (deployment scripts/open-data/sdm)")
+    parser.add_argument("--distributions", type=Path,
+                        help="deployment charts/ckan/files/od-datasets.json: the Endpoint of a dataset a seed reads whole")
+    parser.add_argument("--also", type=Path, help="package names the public search hides, one per line")
     parser.add_argument("--selftest", action="store_true")
     args = parser.parse_args()
     if args.selftest:
@@ -577,11 +704,15 @@ def main():
     status, _, body = http.get(f"{args.catalogue}/api/3/action/package_search?rows=1000")
     if status != 200:
         sys.exit(f"the catalogue answered {status}")
-    packages = sorted(body["result"]["results"], key=lambda p: p["name"])
     mapping = yaml.safe_load(args.mapping.read_text())["datasets"]
+    packages = body["result"]["results"]
+    if args.also:
+        packages += stubs(args.also.read_text().split(), packages, mapping)
+    packages = sorted(packages, key=lambda p: p["name"])
     ask = None if args.eval == "none" else eval_asker(GATEWAY, args.eval)
     now = dt.datetime.now(dt.timezone.utc)
-    rows = run(packages, mapping, endpoints(http), http, ask, now, args.sdm and sdm_validators(args.sdm))
+    rows = run(packages, mapping, endpoints(http), http, ask, now, args.sdm and sdm_validators(args.sdm),
+               args.distributions and json.loads(args.distributions.read_text()))
     when = now.strftime("%Y-%m-%dT%H:%MZ")
     args.out.parent.mkdir(parents=True, exist_ok=True)
     Path(f"{args.out}.json").write_text(json.dumps({"at": when, "rows": rows}, indent=1, ensure_ascii=False) + "\n")
@@ -645,7 +776,10 @@ def selftest():
     (folder / "common-schema.json").write_text(json.dumps({"definitions": {"Count": {"type": "integer", "minimum": 0}}}))
     (folder / "Education/School/schema.json").write_text(json.dumps({"type": "object", "required": ["id", "type"], "properties": {
         "type": {"enum": ["School"]}, "ziaci": {"$ref": COMMON[0] + "#/definitions/Count"}}}))
+    (folder / "extensions/Grant").mkdir(parents=True)
+    (folder / "extensions/Grant/schema.json").write_text(json.dumps({"type": "object", "properties": {"type": {"enum": ["Grant"]}}}))
     models = sdm_validators(folder)
+    assert models("extension/Grant", {"id": "g", "type": "Grant"}) == [] and models("extension/Grant", {"id": "g", "type": "School"})
 
     def verdict_of(http, ask=right, pkg=package, entry=e, sdm=models):
         return gate(pkg, entry, slug, spaces, http, ask, now, {("bb-od", "School"): 1}, sdm)
@@ -691,6 +825,78 @@ def selftest():
     # A date-time from Esri's epoch milliseconds compares as an instant.
     assert expected("datetime", 1_760_000_000_000) == dt.datetime(2025, 10, 9, 8, 53, 20, tzinfo=dt.timezone.utc)
     assert entity_id(e, slug, {"ID": 7.0}) == f"urn:ngsi-ld:School:banskabystrica.sk:bb-od:{slug}-7"
+    # A hidden package is gated from its mapping; a listed one is not stubbed twice; a removed one says why.
+    hidden = stubs(["bb-skoly", "bb-skoly", "bb-gone"], [], [e, {"name": "bb-gone", "status": "removed", "note": "no model"}])
+    assert [p["name"] for p in hidden] == ["bb-skoly", "bb-gone"] and hidden[0]["organization"]["name"] == "banskabystrica", hidden
+    assert stubs(["bb-skoly"], [package], [e]) == []
+    assert verdict_of(world(), pkg=hidden[0])["verdict"] == "keep"
+    gone = gate(hidden[1], {"name": "bb-gone", "status": "removed", "note": "no model"}, None, spaces, world(), right, now, {})
+    assert gone["verdict"] == "hide" and gone["checks"]["ngsi-ld"]["reason"] == "removed in the mapping: no model", gone
+    # An esri-layers row is found under the slug of the pipeline its page went to (generate.py `parts`).
+    layers = {"source": {"kind": "esri-layers", "layers": [{"key": "dtm-1", "rows": 500}, {"key": "dtm-2", "rows": 8546}]}}
+    assert part_slug(layers, "zelen", {"_page": ("dtm-1", 0)}) == "zelen"
+    assert part_slug(layers, "zelen", {"_page": ("dtm-2", 2000)}) == "zelen"
+    assert part_slug(layers, "zelen", {"_page": ("dtm-2", 3000)}) == "zelen-p2"
+    assert part_slug(layers, "zelen", {"_page": ("dtm-2", 12000)}) == "zelen-p3"
+    assert part_slug(e, "skoly", {"_page": ("x", 0)}) == "skoly"
+    # A zip-geojson source: its GeoJSON member's features, counted and read by offset; a broken archive answers nothing.
+    packed = io.BytesIO()
+    with zipfile.ZipFile(packed, "w") as archive:
+        archive.writestr("readme.txt", "x")
+        archive.writestr("ADRESY.GeoJSON", json.dumps({"features": [{"properties": {"ID": 1}}, {"properties": {"ID": 2}}]}))
+
+    class Zip:
+        def get(self, url, accept=None):
+            return (200, {}, packed.getvalue()) if url == "z1" else (200, {}, b"not a zip")
+    z = {"kind": "zip-geojson", "url": "z1"}
+    assert source_count(Zip(), {"source": z}) == 2 and source_row(Zip(), {"source": z}, 1) == ({"ID": 2}, None)
+    assert source_row(Zip(), {"source": z}, 2) == (None, None)
+    assert source_count(Zip(), {"source": {"kind": "zip-geojson", "url": "z2"}}) is None
+    # The hub's endpoint list is read to its last page.
+    global hub_page
+    pages = {None: {"endpoints": [{"space": "a", "dcat": "d1"}], "nextCursor": "2"}, "2": {"endpoints": [{"space": "a", "dcat": "d2", "types": ["T"]}]}}
+    real, hub_page = hub_page, lambda arguments: pages[arguments.get("cursor")]
+    try:
+        assert endpoints(None) == {"a": [("d1", []), ("d2", ["T"])]}
+    finally:
+        hub_page = real
+    # A 503 is retried; a second answer counts.
+    calls = []
+
+    class Flaky(Http):
+        def once(self, url, accept):
+            calls.append(url)
+            return (503, {}, None) if len(calls) == 1 else (200, {}, [])
+    real_sleep, time.sleep = time.sleep, lambda s: None
+    try:
+        assert Flaky().get("u")[0] == 200 and len(calls) == 2
+    finally:
+        time.sleep = real_sleep
+    # A row-hash entity is matched on its whole-number cells as number or text.
+    asked = []
+
+    class Q:
+        def get(self, url, accept=None):
+            asked.append(urllib.parse.parse_qs(urllib.parse.urlsplit(url).query)["q"][0])
+            return 200, {}, [{"id": "x"}]
+    hashed = dict(e, entityId={"rowHash": True})
+    assert find_entity(Q(), base, hashed, slug, source[0], "isPartOf==\"d\"") == {"id": "x"}
+    assert '(ziaci==410|ziaci=="410")' in asked[0] and 'nazov=="ZŠ Moskovská"' in asked[0], asked
+    # A column called like an attribute the generator sets is renamed; `name` is the model's own.
+    assert attribute("source") == "columnSource" and attribute("isPartOf") == "columnIsPartOf" and attribute("name") == "name"
+    # A dataset a seed reads whole is counted and sampled over its type, with no isPartOf filter.
+    seen = []
+
+    class Whole:
+        def get(self, url, accept=None):
+            seen.append(urllib.parse.parse_qs(urllib.parse.urlsplit(url).query))
+            return world().get(url, accept)
+    whole = verdict_of(Whole(), entry=dict(e, existing={"seed": "x.yaml", "covers": "whole"}, door="https://gw/api/endpoint/seed/", doorType="School"))
+    assert whole["verdict"] == "keep" and whole["entities"] == 3, whole
+    assert not any("q" in qs and "isPartOf" in qs["q"][0] for qs in seen), seen
+    door = run([package], [dict(e, existing={"covers": "whole"})], spaces, world(), right, now, None,
+               {"bb-skoly": {"endpoint": "seed", "type": "School", "filtered": False}})
+    assert door[0]["entities"] == 3, door
     print("publish_gate selftest: ok")
 
 
