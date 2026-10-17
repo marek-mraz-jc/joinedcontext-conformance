@@ -35,7 +35,9 @@ Where each value comes from (the task's "Data sources"):
 - the Endpoint of a space: the hub's `list_endpoints` (`space`, `types`, `dcat`);
 - entity counts: `NGSILD-Results-Count` of `GET {endpoint}ngsi-ld/v1/entities?type&q=isPartOf==…`;
 - source rows: Esri `query?returnCountOnly`, CKAN `datastore_search` `total`, WordPress
-  `X-WP-Total`; sampled rows by offset from the same services;
+  `X-WP-Total`; for an entry with a `rowFilter.keep` or a row-hash id, every row read from the same
+  services, counting the rows the keep pattern passes and, for a row hash, their distinct mapped
+  cells, as the pipeline does (T-4517); sampled rows by offset from the same services;
 - the answer: the eval copy's SSE `answer` and `citations` events.
 
 Exit 0 when the run completed (whatever the verdicts), 2 on a usage error.
@@ -393,8 +395,47 @@ def count(http, base, kind, q=None):
     return (int(n), "") if status == 200 and n is not None else (None, f"the Endpoint answered {status} {(body or {}).get('title', '') if isinstance(body, dict) else ''}".strip())
 
 
+def kept(e, row):
+    """Whether the pipeline keeps a source row: its `rowFilter.keep` column matches the pattern."""
+    keep = (e.get("rowFilter") or {}).get("keep")
+    return not keep or re.search(keep["pattern"], str(row.get(keep["column"]) or "").strip()) is not None
+
+
+def every_row(http, e):
+    """Every row of a CKAN or Esri source, page by page until an empty one, or None."""
+    s, rows = e["source"], []
+    while True:
+        if s["kind"] == "esri-featureserver":
+            params = {"where": (e.get("rowFilter") or {}).get("where", "1=1"), "outFields": "*", "resultOffset": len(rows),
+                      "resultRecordCount": 1000, "returnGeometry": "false", "f": "geojson"}
+            status, _, body = http.get(f"{s['url']}/query?{urllib.parse.urlencode(params)}")
+            page = [f.get("properties") or {} for f in (body or {}).get("features") or []] if status == 200 else None
+        elif s["kind"] == "ckan-datastore":
+            status, _, body = http.get(f"{CKAN}/api/3/action/datastore_search?resource_id={s['resource']}&limit=32000&offset={len(rows)}")
+            page = ((body or {}).get("result") or {}).get("records") if status == 200 else None
+        else:
+            return None
+        if page is None:
+            return None
+        if not page:
+            return rows
+        rows += page
+
+
 def source_count(http, e):
+    """The entities the pipeline writes for the source: its rows, less those `rowFilter.keep`
+    drops, and for a row-hash id one per distinct set of mapped cells (Research/bb-bbsk-ngsi-ld-mapping.md §4)."""
     s = e["source"]
+    if s["kind"] in ("esri-featureserver", "ckan-datastore") and (
+            (e.get("rowFilter") or {}).get("keep") or not e["entityId"].get("keys")):
+        rows = every_row(http, e)
+        if rows is None:
+            return None
+        rows = [r for r in rows if kept(e, r)]
+        if e["entityId"].get("keys"):
+            return len(rows)
+        cols = sorted({p["column"] for p in e["properties"].values()})
+        return len({json.dumps([r.get(c) for c in cols], ensure_ascii=False) for r in rows})
     if s["kind"] == "esri-featureserver":
         where = (e.get("rowFilter") or {}).get("where", "1=1")
         status, _, body = http.get(f"{s['url']}/query?{urllib.parse.urlencode({'where': where, 'returnCountOnly': 'true', 'f': 'json'})}")
@@ -591,6 +632,8 @@ def gate(package, e, slug, spaces, http, ask, now, shared, sdm=None):
             source, geometry = source_row(http, e, offset)
             if source is None:
                 problems.append(f"source row {offset} could not be read")
+                continue
+            if not kept(e, source):
                 continue
             entity = find_entity(http, base, e, part_slug(e, slug, source), source, dataset_q)
             if entity is None:
@@ -897,6 +940,15 @@ def selftest():
     door = run([package], [dict(e, existing={"covers": "whole"})], spaces, world(), right, now, None,
                {"bb-skoly": {"endpoint": "seed", "type": "School", "filtered": False}})
     assert door[0]["entities"] == 3, door
+    # The source counts what the pipeline keeps: rows a keep pattern passes, and for a row hash
+    # one per distinct set of mapped cells (T-4517).
+    schools = dict(e, rowFilter={"keep": {"column": "Nazov", "pattern": "^ZŠ "}})
+    assert source_count(world(), schools) == 2
+    assert verdict_of(world(entities=[entity_of(r) for r in source[:2]]), entry=schools)["checks"]["accurate"]["state"] == "pass"
+    assert "3 entities for 2 source rows" in verdict_of(world(), entry=schools)["checks"]["accurate"]["reason"]
+    twice = source + [dict(source[2])]
+    assert source_count(world(rows=twice), hashed) == 3 and source_count(world(rows=twice), e) == 4
+    assert source_count(world(rows=twice + [dict(source[2], ID=9)]), hashed) == 4
     print("publish_gate selftest: ok")
 
 
