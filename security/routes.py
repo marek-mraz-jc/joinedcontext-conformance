@@ -71,7 +71,7 @@ COVERAGE = [
     # Every /internal route read from the router source, each method, four kinds of stranger (T-3856).
     ("platform", "/internal/v1/projects/", "platform crates/assistant/tests/admin_tests.rs"),
     ("platform", "/d/widget.", "public: the chat widget's script and style, the same for everyone"),
-    ("platform", "/d/{public_id}/widget", "platform crates/assistant/tests/chat_tests.rs"),
+    ("platform", "/d/{public_id}", "platform crates/assistant/tests/chat_tests.rs"),
     ("platform", "/api/v1/d/", "platform crates/assistant/tests/chat_tests.rs"),
     ("platform", "/invoke", "platform crates/functions/tests/invoke_tests.rs"),
     ("platform", "/token", "platform crates/token-sidecar/tests/sidecar_tests.rs"),
