@@ -122,6 +122,15 @@
      "observed": {"value": 421418.0, "observedAt": "2026-10-18T21:39:52.976128+00:00", "year": 2026, "rows": 146, "empty": 5}},
     {"id": "od-47", "lang": "en", "kind": "catalogue", "persona": "developer", "why": "picks how to integrate the data", "q": "Which API or download formats does the Žilina air quality dataset offer?", "must": [], "source": "Kvalita ovzdušia — Žilina (zilina-ovzdusie): CKAN package_show, the distinct formats of its resources",
      "truth": {"formats": {"dataset": "zilina-ovzdusie"}, "expect": "all"},
-     "observed": {"value": ["CSV", "JSON", "JSON Schema", "JSON-LD", "LinkML", "MCP", "Markdown", "NGSI-LD", "OData", "OGCFEAT", "OWL", "RDF", "SHACL", "WebSocket"], "observedAt": "2026-10-18T21:39:53.140537+00:00"}}
+     "observed": {"value": ["CSV", "JSON", "JSON Schema", "JSON-LD", "LinkML", "MCP", "Markdown", "NGSI-LD", "OData", "OGCFEAT", "OWL", "RDF", "SHACL", "WebSocket"], "observedAt": "2026-10-18T21:39:53.140537+00:00"}},
+    {"id": "od-48", "lang": "sk", "kind": "catalogue", "persona": "cyclist", "why": "plans a ride and wants the region's map", "q": "Kde nájdem mapu cyklotrás v Banskobystrickom kraji?", "must": [], "source": "bbsk.sk, Mapový portál (https://www.bbsk.sk/mapovy-portal), read with TLS verified to a root and the pinned GeoTrust intermediate bbsk.sk does not send; the region's web source bbsk/web crawls it",
+     "truth": {"page": {"url": "https://www.bbsk.sk/mapovy-portal", "says": "Mapový portál"}, "expect": "all"},
+     "observed": {"value": ["https://www.bbsk.sk/mapovy-portal"], "observedAt": "2026-10-18T22:33:58.707899+00:00"}},
+    {"id": "od-49", "lang": "sk", "kind": "catalogue", "persona": "resident", "why": "found a broken cycle path", "q": "Kde môžem nahlásiť problém na cyklochodníku v Banskobystrickom kraji?", "must": [], "source": "bbsk.sk, Kontakty, podnety a ohlásenie problému na cyklochodníku (https://www.bbsk.sk/kontakty-podnety-ohlasenie-problemu-na-cyklochodniku), the region's web source bbsk/web",
+     "truth": {"page": {"url": "https://www.bbsk.sk/kontakty-podnety-ohlasenie-problemu-na-cyklochodniku", "says": "ohlásenie problému na cyklochodníku"}, "expect": "all"},
+     "observed": {"value": ["https://www.bbsk.sk/kontakty-podnety-ohlasenie-problemu-na-cyklochodniku"], "observedAt": "2026-10-18T22:34:00.123561+00:00"}},
+    {"id": "od-50", "lang": "sk", "kind": "count", "persona": "cyclist", "why": "the owner asked it and was told the data holds none", "q": "Sú dostupné dáta o cyklotrasách na Slovensku?", "must": [], "source": "Cykloturistické trasy - línie (BBSK): NGSI-LD CycleRoute on bbsk-otvorene-data, count=true",
+     "truth": {"count": {"slug": "6b4yqhzqieutqcoeew5rnxrx5udqeert", "type": "CycleRoute"}, "expect": "number"},
+     "observed": {"value": 1005, "observedAt": "2026-10-18T22:34:19.610212+00:00"}}
   ]
 }
