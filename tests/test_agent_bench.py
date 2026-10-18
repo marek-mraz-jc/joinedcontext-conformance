@@ -68,7 +68,100 @@ def test_pick_takes_the_newest_the_largest_and_the_sum():
 def test_every_question_names_a_read_and_a_rule():
     spec = bench.load()
     ids = [q["id"] for q in spec["questions"]]
-    assert len(ids) == 20 and len(set(ids)) == 20
+    assert len(ids) == 24 and len(set(ids)) == 24
     for question in spec["questions"]:
-        assert question["expect"]["pick"] in {"count", "sum", "max", "latest"}
+        assert question["expect"]["pick"] in {"count", "sum", "max", "latest", "text", "aggregate"}
         assert question["expect"]["pick"] == "count" or question["expect"].get("attr")
+    # T-4533: the questions about a parameter say which, and a text answer is matched as text.
+    uses = {q["id"]: q.get("uses") for q in spec["questions"] if q.get("uses")}
+    assert sorted(name for names in uses.values() for name in names[:1]) == [
+        "aggrMethods", "georel", "join", "lang"]
+    for question in spec["questions"]:
+        assert (question["expect"]["pick"] == "text") == bool(question["match"].get("text"))
+
+
+def test_a_parameter_counts_as_used_only_when_a_call_passed_it():
+    used = bench.transcript(lines("join-used.jsonl"))
+    assert used["inputs"][0]["joinLevel"] == 2
+    assert bench.used(used["inputs"], ["join", "joinLevel"])
+    assert not bench.used(used["inputs"], ["georel"])
+    unused = bench.transcript(lines("two-calls.jsonl"))
+    assert not bench.used(unused["inputs"], ["join", "joinLevel"])
+    assert not bench.used([], ["lang"])
+    # nested, as a subscription's or a fragment's argument would carry it
+    assert bench.used([{"subscription": {"lang": "sk"}}], ["lang"])
+    assert not bench.used([{"q": "lang==sk"}], ["lang"]), "a value is not a parameter"
+
+
+def test_the_table_says_whether_the_parameter_was_used(tmp_path):
+    for name in ("join-used.jsonl", "two-calls.jsonl"):
+        (tmp_path / name).write_text((FIXTURES / name).read_text(encoding="utf-8"), encoding="utf-8")
+    (tmp_path / "expected.json").write_text('{"join-used": [41.0], "two-calls": [13.9]}', encoding="utf-8")
+    questions = [
+        {"id": "join-used", "match": {}, "uses": ["join", "joinLevel"]},
+        {"id": "two-calls", "match": {"decimals": 1}, "uses": ["aggrMethods"]},
+    ]
+    rows = {row["id"]: row for row in bench.score(tmp_path, questions)}
+    assert rows["join-used"]["correct"] and rows["join-used"]["used"] is True
+    assert rows["two-calls"]["correct"] and rows["two-calls"]["used"] is False
+    table = bench.table(list(rows.values()))
+    assert "| join-used | yes | 1 | 2465 | yes | [41.0] |" in table
+    assert "| two-calls | yes | 2 | 3128 | no | [13.9] |" in table
+    rows = bench.score(tmp_path, [{"id": "two-calls", "match": {"decimals": 1}}])
+    assert rows[0]["used"] is None and "| - |" in bench.table(rows)
+
+
+def test_a_text_answer_matches_whatever_its_case_and_spacing():
+    rule = {"text": True}
+    assert bench.matches("It is called **station  SK0263A, Urban background**.", ["Station SK0263A, urban background"], rule)
+    assert not bench.matches("It is called Stanica SK0263A, mestské pozadie.", ["Station SK0263A, urban background"], rule)
+    assert not bench.matches("", ["x"], rule)
+
+
+def test_text_join_and_aggregate_picks():
+    stations = [
+        {"name": {"languageMap": {"sk": "Stanica A", "en": "Station A"}}},
+        {"name": {"languageMap": {"sk": "Stanica B"}}},
+        {"name": "Plain C"},
+    ]
+    assert bench.pick(stations, {"type": "T", "pick": "text", "attr": "name", "lang": "en"}) == ["Plain C", "Station A"]
+    with pytest.raises(ValueError):
+        bench.pick(stations[1:2], {"type": "T", "pick": "text", "attr": "name", "lang": "en"})
+    orgs = [{"refMunicipality": "urn:m1"}, {"refMunicipality": "urn:m2"}, {"refMunicipality": "urn:m1"}, {}]
+    assert bench.joined(orgs, [{"id": "urn:m1"}, {"id": "urn:m9"}], "refMunicipality") == 2
+    assert bench.joined(orgs, [], "refMunicipality") == 0
+    expect = {"attr": "pm10", "method": "avg", "entity": "urn:x"}
+    body = {"pm10": {"type": "Property", "avg": [[9.9589, "2026-10-17T00:00:00Z", "2026-10-18T00:00:00Z"]]}}
+    assert bench.aggregated(body, expect) == [9.9589]
+    with pytest.raises(ValueError):
+        bench.aggregated({"pm10": {"type": "Property", "avg": []}}, expect)
+
+
+def test_a_day_is_the_whole_utc_day():
+    now = bench.datetime(2026, 1, 1, 0, 30, tzinfo=bench.timezone.utc)
+    assert bench.day(-1, now) == ("2025-12-31T00:00:00Z", "2026-01-01T00:00:00Z")
+    assert bench.day(0, now) == ("2026-01-01T00:00:00Z", "2026-01-02T00:00:00Z")
+
+
+def test_a_count_is_read_from_the_header_whatever_its_case(monkeypatch):
+    import email.message
+    import io
+
+    class Response(io.BytesIO):
+        def __init__(self):
+            super().__init__(b"[]")
+            self.headers = email.message.Message()
+            self.headers["ngsild-results-count"] = "61"
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *_):
+            return False
+
+    asked = []
+    monkeypatch.setattr(bench.urllib.request, "urlopen", lambda url, timeout: asked.append(url) or Response())
+    expect = {"slug": "s", "type": "Organization", "pick": "count",
+              "params": {"georel": "near;maxDistance==1000", "geometry": "Point", "coordinates": "[19.1,48.7]"}}
+    assert bench.fetch("https://dev.example", expect) == [61.0]
+    assert "georel=near%3BmaxDistance%3D%3D1000" in asked[0] and "count=true" in asked[0]

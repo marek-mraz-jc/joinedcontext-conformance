@@ -4,8 +4,9 @@
 Each question of questions.json runs through `claude -p` on the subscription, with the dev MCP
 hub as its only tool server and no built-in tool, and is scored against the value its NGSI-LD
 read answers at the same moment. Recorded per question: tool calls, tokens (input, cache write,
-cache read and output, from the stream's `result` event), and whether the answer holds the
-expected value.
+cache read and output, from the stream's `result` event), whether the answer holds the
+expected value, and, for a question that names the parameters it is about (`uses`), whether a
+tool call passed one of them (T-4533).
 
     agent_bench.py expected            print the expected value of each question (no model call)
     agent_bench.py run [--only ID,...] [--model sonnet] [--out DIR]
@@ -25,6 +26,8 @@ import subprocess
 import sys
 import tempfile
 import time
+from datetime import datetime, timedelta, timezone
+from email.message import Message
 import urllib.parse
 import urllib.request
 from pathlib import Path
@@ -37,34 +40,87 @@ def load(path: Path = QUESTIONS) -> dict:
     return json.loads(path.read_text(encoding="utf-8"))
 
 
-def fetch(base: str, expect: dict) -> list[float]:
-    """The expected values of one question, read from the Endpoint now."""
-    params = {"type": expect["type"], "options": "keyValues"}
-    if expect.get("q"):
-        params["q"] = expect["q"]
-    url = f"{base}/api/endpoint/{expect['slug']}/ngsi-ld/v1/entities"
-    if expect["pick"] == "count":
-        params.update(count="true", limit="0")
-        with urllib.request.urlopen(f"{url}?{urllib.parse.urlencode(params)}", timeout=60) as r:
-            return [float(r.headers["NGSILD-Results-Count"])]
+def read(url: str, params: dict) -> tuple[object, Message]:
+    """The body and the headers (looked up whatever their case) of one GET."""
+    with urllib.request.urlopen(f"{url}?{urllib.parse.urlencode(params)}", timeout=60) as r:
+        return json.loads(r.read()), r.headers
+
+
+def every(url: str, params: dict) -> list[dict]:
     entities: list[dict] = []
     while True:
-        params.update(limit="1000", offset=str(len(entities)))
-        with urllib.request.urlopen(f"{url}?{urllib.parse.urlencode(params)}", timeout=60) as r:
-            page = json.loads(r.read())
+        page, _ = read(url, {**params, "limit": "1000", "offset": str(len(entities))})
         entities += page
         if len(page) < 1000:
-            break
+            return entities
+
+
+def day(offset: int, now: datetime | None = None) -> tuple[str, str]:
+    """The UTC day `offset` days from today, as the `timeAt` and `endTimeAt` of a read."""
+    start = (now or datetime.now(timezone.utc)).replace(hour=0, minute=0, second=0, microsecond=0)
+    start += timedelta(days=offset)
+    stamp = "%Y-%m-%dT%H:%M:%SZ"
+    return start.strftime(stamp), (start + timedelta(days=1)).strftime(stamp)
+
+
+def fetch(base: str, expect: dict) -> list[float | str]:
+    """The expected values of one question, read from the Endpoint now."""
+    url = f"{base}/api/endpoint/{expect['slug']}/ngsi-ld/v1"
+    if expect["pick"] == "aggregate":
+        # The broker's own aggregation over the day is the expected value (NGSI-LD 6.3.8).
+        start, end = day(expect["day"])
+        body, _ = read(
+            f"{url}/temporal/entities/{urllib.parse.quote(expect['entity'], safe=':')}",
+            {"attrs": expect["attr"], "timerel": "between", "timeAt": start, "endTimeAt": end,
+             "aggrMethods": expect["method"], "aggrPeriodDuration": "P1D",
+             "options": "aggregatedValues"},
+        )
+        return aggregated(body, expect)
+    params = {"type": expect["type"], "options": "keyValues", **expect.get("params", {})}
+    if expect.get("q"):
+        params["q"] = expect["q"]
+    if expect["pick"] == "count" and "via" not in expect:
+        _, headers = read(f"{url}/entities", {**params, "count": "true", "limit": "0"})
+        return [float(headers["NGSILD-Results-Count"])]
+    entities = every(f"{url}/entities", params)
+    if "via" in expect:
+        via = expect["via"]
+        related = every(f"{url}/entities", {"type": via["type"], "q": via["q"], "options": "keyValues"})
+        return [float(joined(entities, related, via["attr"]))]
     return pick(entities, expect)
 
 
-def pick(entities: list[dict], expect: dict) -> list[float]:
+def joined(entities: list[dict], related: list[dict], attr: str) -> int:
+    """How many entities name one of `related` in their Relationship `attr`."""
+    ids = {entity["id"] for entity in related}
+    return sum(1 for entity in entities if entity.get(attr) in ids)
+
+
+def aggregated(body: dict, expect: dict) -> list[float]:
+    values = body.get(expect["attr"], {}).get(expect["method"]) or []
+    if not values:
+        raise ValueError(f"no {expect['method']} of {expect['attr']} on {expect['entity']} that day")
+    return [float(values[0][0])]
+
+
+def pick(entities: list[dict], expect: dict) -> list[float | str]:
     attr = expect.get("attr")
+    kind = expect["pick"]
+    if kind == "text":
+        texts = []
+        for entity in entities:
+            value = entity.get(attr)
+            if isinstance(value, dict):
+                value = value.get("languageMap", {}).get(expect["lang"])
+            if isinstance(value, str):
+                texts.append(value)
+        if not texts:
+            raise ValueError(f"no {expect['type']} carries {attr} in {expect['lang']}")
+        return sorted(set(texts))
     values = [(e, e.get(attr)) for e in entities]
     numbers = [(e, float(v)) for e, v in values if isinstance(v, (int, float))]
     if not numbers:
         raise ValueError(f"no {expect['type']} carries a number in {attr}")
-    kind = expect["pick"]
     if kind == "sum":
         return [sum(v for _, v in numbers)]
     if kind == "max":
@@ -104,9 +160,13 @@ def numbers_in(text: str) -> set[float]:
     return out
 
 
-def matches(answer: str, expected: list[float], rule: dict) -> bool:
+def matches(answer: str, expected: list, rule: dict) -> bool:
     """Whether the answer states one of the expected values, within the rule's tolerance:
-    `decimals` (rounding), `relative` (a share of the value) or exact."""
+    `decimals` (rounding), `relative` (a share of the value) or exact; or, with `text`, one of
+    the expected texts, whatever its case and spacing."""
+    if rule.get("text"):
+        said = " ".join(answer.casefold().split())
+        return any(" ".join(str(want).casefold().split()) in said for want in expected)
     found = numbers_in(answer)
     for want in expected:
         tolerance = max(
@@ -121,16 +181,18 @@ def matches(answer: str, expected: list[float], rule: dict) -> bool:
 def transcript(lines: list[str]) -> dict:
     """Tool calls, tokens and the final answer of one `claude -p --output-format stream-json`."""
     events = [json.loads(line) for line in lines if line.strip()]
-    calls = [
-        block["name"]
+    uses = [
+        block
         for event in events
         if event.get("type") == "assistant"
         for block in event.get("message", {}).get("content", [])
         if block.get("type") == "tool_use"
     ]
+    calls = [block["name"] for block in uses]
+    inputs = [block.get("input") or {} for block in uses]
     results = [event for event in events if event.get("type") == "result"]
     if not results:
-        return {"calls": calls, "tokens": None, "answer": "", "error": "no result event"}
+        return {"calls": calls, "inputs": inputs, "tokens": None, "answer": "", "error": "no result event"}
     result = results[-1]
     usage = result.get("usage") or {}
     tokens = sum(
@@ -139,12 +201,24 @@ def transcript(lines: list[str]) -> dict:
     )
     return {
         "calls": calls,
+        "inputs": inputs,
         "tokens": tokens,
         "output_tokens": usage.get("output_tokens", 0),
         "turns": result.get("num_turns"),
         "answer": result.get("result", ""),
         "error": "the run ended in an error" if result.get("is_error") else None,
     }
+
+
+def used(inputs: list, names: list[str]) -> bool:
+    """Whether any tool call passed one of `names` as an argument, at any depth."""
+    def keys(value) -> set[str]:
+        if isinstance(value, dict):
+            return set(value) | {k for v in value.values() for k in keys(v)}
+        if isinstance(value, list):
+            return {k for v in value for k in keys(v)}
+        return set()
+    return bool(keys(inputs) & set(names))
 
 
 def ask(base: str, question: str, model: str, out: Path) -> list[str]:
@@ -166,11 +240,13 @@ def ask(base: str, question: str, model: str, out: Path) -> list[str]:
 
 
 def table(rows: list[dict]) -> str:
-    lines = ["| question | correct | calls | tokens | expected |", "|---|---|---|---|---|"]
+    lines = ["| question | correct | calls | tokens | parameter used | expected |",
+             "|---|---|---|---|---|---|"]
     for row in rows:
+        parameter = "-" if row.get("used") is None else "yes" if row["used"] else "no"
         lines.append(
             f"| {row['id']} | {'yes' if row['correct'] else 'no'} | {len(row['calls'])} | "
-            f"{row['tokens'] if row['tokens'] is not None else '-'} | {row['expected']} |"
+            f"{row['tokens'] if row['tokens'] is not None else '-'} | {parameter} | {row['expected']} |"
         )
     measured = [row for row in rows if row["tokens"] is not None]
     if measured:
@@ -197,6 +273,7 @@ def score(directory: Path, questions: list[dict]) -> list[dict]:
             id=question["id"],
             expected=want,
             correct=record["error"] is None and matches(record["answer"], want, question["match"]),
+            used=used(record["inputs"], question["uses"]) if question.get("uses") else None,
         )
         rows.append(record)
     return rows

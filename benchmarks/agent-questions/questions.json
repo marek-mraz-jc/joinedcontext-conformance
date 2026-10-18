@@ -1,5 +1,5 @@
 {
-  "about": "T-4496: twenty questions a person asks the open-data MCP hub of dev, each with the NGSI-LD read its expected answer is fetched from at run time (never typed) and how an answer is matched. `pick`: count (NGSILD-Results-Count), sum, max or latest (the `attr` of the entities with the greatest `by`).",
+  "about": "T-4496: twenty questions, and T-4533 four more that name the parameter (`uses`) a good answer reads with (join, aggrMethods, georel, lang), a person asks the open-data MCP hub of dev, each with the NGSI-LD read its expected answer is fetched from at run time (never typed) and how an answer is matched. `pick`: count (NGSILD-Results-Count; with `via`, the entities whose Relationship `via.attr` names one of the `via` entities), sum, max, latest (the `attr` of the entities with the greatest `by`), text (`attr` in `lang`) or aggregate (the broker's `method` of `attr` over the UTC day `day` from today); `params` are added to the read as given.",
   "base": "https://dev.joinedcontext.com",
   "questions": [
     {"id": "bb-pm10", "question": "What PM10 value was measured most recently in Banská Bystrica?",
@@ -41,6 +41,14 @@
     {"id": "za-monuments", "question": "How many cultural monuments in Žilina are in the open data?",
      "expect": {"slug": "ecifgir4dzgl7h45rwvty2ygyb", "type": "PointOfInterest", "pick": "count"}, "match": {}},
     {"id": "praha-air-stations", "question": "How many air-quality stations in Prague publish measurements?",
-     "expect": {"slug": "jw7tffshzip7igmzcszgffkkkuetnc6v", "type": "AirQualityObserved", "pick": "count"}, "match": {}}
+     "expect": {"slug": "jw7tffshzip7igmzcszgffkkkuetnc6v", "type": "AirQualityObserved", "pick": "count"}, "match": {}},
+    {"id": "bbsk-zvolen-organisations", "question": "How many of the Banská Bystrica Region's own organisations are located in the district of Zvolen?",
+     "expect": {"slug": "lws6dd7o56veegwxsjtvak3goeta4mfn", "type": "PublicOrganization", "pick": "count", "via": {"attr": "refMunicipality", "type": "AdministrativeArea", "q": "refParentArea==\"urn:ngsi-ld:AdministrativeArea:bbsk.sk:bbsk-registre:SK032B\""}}, "match": {}, "uses": ["join", "joinLevel"]},
+    {"id": "bb-pm10-day-average", "question": "What was the average PM10 concentration at the Banská Bystrica air-quality station SK0263A over yesterday (UTC)?",
+     "expect": {"slug": "32ea6ze7db7g6u7qnlgezpwp75", "type": "AirQualityObserved", "pick": "aggregate", "entity": "urn:ngsi-ld:AirQualityObserved:banskabystrica.sk:banskabystrica-verejne:eea-SK0263A", "attr": "pm10", "method": "avg", "day": -1}, "match": {"decimals": 1}, "uses": ["aggrMethods"]},
+    {"id": "bb-schools-near-square", "question": "How many schools and kindergartens in Banská Bystrica are within 1 km of Námestie SNP (19.1462 E, 48.7356 N)?",
+     "expect": {"slug": "bkc4g3zfirh6zae3owdike7am2upayjs", "type": "Organization", "pick": "count", "params": {"georel": "near;maxDistance==1000", "geometry": "Point", "coordinates": "[19.1462,48.7356]"}}, "match": {}, "uses": ["georel"]},
+    {"id": "bb-station-english-name", "question": "What is the English name of the Banská Bystrica air-quality station SK0263A, as the open data gives it?",
+     "expect": {"slug": "32ea6ze7db7g6u7qnlgezpwp75", "type": "AirQualityObserved", "pick": "text", "attr": "name", "lang": "en", "params": {"id": "urn:ngsi-ld:AirQualityObserved:banskabystrica.sk:banskabystrica-verejne:eea-SK0263A"}}, "match": {"text": true}, "uses": ["lang"]}
   ]
 }
