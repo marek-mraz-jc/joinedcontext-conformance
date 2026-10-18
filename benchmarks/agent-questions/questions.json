@@ -1,5 +1,5 @@
 {
-  "about": "T-4496: twenty questions, and T-4533 four more that name the parameter (`uses`) a good answer reads with (join, aggrMethods, georel, lang), a person asks the open-data MCP hub of dev, each with the NGSI-LD read its expected answer is fetched from at run time (never typed) and how an answer is matched. `pick`: count (NGSILD-Results-Count; with `via`, the entities whose Relationship `via.attr` names one of the `via` entities), sum, max, latest (the `attr` of the entities with the greatest `by`), text (`attr` in `lang`) or aggregate (the broker's `method` of `attr` over the UTC day `day` from today); `params` are added to the read as given.",
+  "about": "T-4496: twenty questions, and T-4533 four more that name the parameter (`uses`) a good answer reads with (join, aggrMethods, georel, lang), a person asks the open-data MCP hub of dev, each with the NGSI-LD read its expected answer is fetched from at run time (never typed) and how an answer is matched. `pick`: count (NGSILD-Results-Count; with `via`, the entities whose Relationship `via.attr` names one of the `via` entities), sum, max, latest (the `attr` of the entities with the greatest `by`), text (`attr` in `lang`) or aggregate (the broker's `method` of `attr` over the UTC day `day` from today); `params` are added to the read as given. T-4570: `weekend` keeps the entities whose `weekend` date falls on this Saturday or Sunday; `reads` names the Endpoint (slug or title) and the `q` pattern one call must use.",
   "base": "https://dev.joinedcontext.com",
   "questions": [
     {"id": "bb-pm10", "question": "What PM10 value was measured most recently in Banská Bystrica?",
@@ -51,6 +51,9 @@
     {"id": "bb-station-english-name", "question": "What is the English name of the Banská Bystrica air-quality station SK0263A, as the open data gives it?",
      "expect": {"slug": "32ea6ze7db7g6u7qnlgezpwp75", "type": "AirQualityObserved", "pick": "text", "attr": "name", "lang": "en", "params": {"id": "urn:ngsi-ld:AirQualityObserved:banskabystrica.sk:banskabystrica-verejne:eea-SK0263A"}}, "match": {"text": true}, "uses": ["lang"]},
     {"id": "bb-soil-50cm", "question": "What soil temperature does the SHMÚ weather station Banská Bystrica - Zelená report right now at a depth of 50 cm?",
-     "expect": {"slug": "3iasem46w7d7pxxypwdfdzheyaodv3qn", "type": "WeatherObserved", "pick": "max", "attr": "soilTemperature", "params": {"id": "urn:ngsi-ld:WeatherObserved:banskabystrica.sk:banskabystrica-verejne:shmu-11898", "datasetId": "urn:ngsi-ld:Dataset:shmu:soil-depth-50cm"}}, "match": {"decimals": 1}, "uses": ["datasetId"]}
+     "expect": {"slug": "3iasem46w7d7pxxypwdfdzheyaodv3qn", "type": "WeatherObserved", "pick": "max", "attr": "soilTemperature", "params": {"id": "urn:ngsi-ld:WeatherObserved:banskabystrica.sk:banskabystrica-verejne:shmu-11898", "datasetId": "urn:ngsi-ld:Dataset:shmu:soil-depth-50cm"}}, "match": {"decimals": 1}, "uses": ["datasetId"]},
+    {"id": "bb-events-weekend", "question": "What events are on in Banská Bystrica this weekend?",
+     "expect": {"slug": "l3nomvl5q7kikgdhhy4xiq5ofwjp4mfk", "type": "Event", "pick": "text", "attr": "name", "lang": "sk", "weekend": "startDate"}, "match": {"text": true},
+     "reads": {"endpoint": ["l3nomvl5q7kikgdhhy4xiq5ofwjp4mfk", "Events — Banská Bystrica", "Podujatia — Banská Bystrica"], "q": "startDate|endDate"}}
   ]
 }
