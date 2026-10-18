@@ -144,6 +144,8 @@ CASES: list[Case] = [
     Case("types", "list_types", {"details": True}, "types", {"details": "true"}),
     Case("attributes", "list_attributes", {"details": True}, "attributes", {"details": "true"}),
     Case("one type", "get_type", {"type": "AirQualityObserved"}, "types/AirQualityObserved", {}),
+    # get_type's row answered with its query guide, a text document (T-4537)
+    Case("type guide", "describe_type", {"type": "AirQualityObserved"}, None, {}),
     Case("one attribute", "get_attribute", {"attrId": "temperature"}, "attributes/temperature", {}),
     Case(
         "one entity",
@@ -265,6 +267,7 @@ BROKER_CASES: list[Case] = [
     Case("attributes", "list_attributes", {}, "attributes", {}),
     Case("attribute details", "list_attribute_details", {}, "attributes", {"details": "true"}),
     Case("one type", "get_type", {"type": AQ[0]}, f"types/{AQ[0]}", {}),
+    Case("type guide", "describe_type", {"type": AQ[0]}, None, {}),
     Case("one attribute", "get_attribute", {"attrId": "temperature"}, "attributes/temperature", {}),
     Case("one entity", "get_entity", {"id": "{id}", "attrs": ["temperature"]}, "entities/{id}", {"attrs": "temperature"}),
     Case("one entity's attribute", "get_attribute_value", {"id": "{id}", "attrId": "temperature"}, "entities/{id}/attrs/temperature", {}),
