@@ -99,7 +99,7 @@ jobs:
           ./node_modules/.bin/playwright test --config e2e/playwright.config.ts --list | tee "${RUNNER_TEMP}/specs"
           for spec in journeys/01-onboarding-login journeys/02-blueprint-flow journeys/03-approval-review \
                       journeys/04-map-dashboard journeys/05-deckgl-visualization journeys/06-drift-management \
-                      journeys/08-service-account-key journeys/11-access-matrix journeys/20-app-isolation \
+                      journeys/08-no-api-key journeys/11-access-matrix journeys/20-app-isolation \
                       accessibility/wcag; do
             grep -q "$spec.spec.ts" "${RUNNER_TEMP}/specs" || { echo "$spec.spec.ts is not discoverable"; exit 1; }
           done
