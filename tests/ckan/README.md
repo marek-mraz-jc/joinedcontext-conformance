@@ -37,9 +37,19 @@ table that holds rows, and that nothing the Endpoint's policy set masks reached 
   SHACL shapes. Without it the records are validated against
   `fixtures/dcat-ap-3.0.core.shapes.ttl`, which is written in this repository and is **not**
   the SEMIC distribution: it is the mandatory core of `dcat:Dataset` and `dcat:Distribution`
-  plus the `dct:accessRights` EP-69 adds. The official shapes are not vendored here — they
-  are a third-party distribution with its own licence and release cadence, and a conformance
-  claim about them should be made against the file the operator actually points at.
+  plus the `dct:accessRights` EP-69 adds. The official shapes, pinned by digest, are vendored
+  under `dcat/shapes/` for the profile report below; point this variable at
+  `dcat/shapes/dcat-ap/3.0.0/dcat-ap-SHACL.ttl` to use them here.
+
+## National profiles (T-4510)
+
+`profiles.py` holds each fixture record to DCAT-AP 3.0.0 (a gate: a violation fails), to
+DCAT-AP-SK 2.0.1 and to DCAT-AP-CZ 2026-09-23 (reported until T-4499 writes records that meet
+them), with the vendored shapes of `dcat/shapes/` (README there). `test_profiles.py` checks the
+digests, the gate, and that the committed `evidence/dcat-profiles.md` is a fresh run; after a
+change to a record or a shape, rewrite it:
+
+    python3 tests/ckan/profiles.py --write evidence/dcat-profiles.md
 
 ## Run
 

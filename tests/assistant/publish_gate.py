@@ -273,10 +273,14 @@ def outside(org, entities):
     box = BOXES.get(org)
     if not box:
         return ""
+    inside = lambda lon, lat: box[0] <= lon <= box[2] and box[1] <= lat <= box[3]
     for entity in entities:
-        for lon, lat in points(value_of(entity, "location") or {}):
-            if not (box[0] <= lon <= box[2] and box[1] <= lat <= box[3]):
-                return f"{entity.get('id')} at ({lon}, {lat}) is outside {org}'s box"
+        vertices = points(value_of(entity, "location") or {})
+        # A point lies in the territory; a route or an outline only has to reach it, since a
+        # cycle route that starts in the region may end beyond its border (T-4518).
+        if vertices and not any(inside(*v) for v in vertices) or len(vertices) == 1 and not inside(*vertices[0]):
+            lon, lat = next(v for v in vertices if not inside(*v))
+            return f"{entity.get('id')} at ({lon}, {lat}) is outside {org}'s box"
     return ""
 
 
@@ -861,6 +865,9 @@ def selftest():
     # The region's own west edge (Žarnovica, 18.53771 E) is inside bbsk's box; Bratislava is not.
     assert outside("bbsk", [entity_of(source[0], location={"type": "GeoProperty", "value": {"type": "Point", "coordinates": [18.53771, 48.313064]}})]) == ""
     assert outside("bbsk", [entity_of(source[0], location={"type": "GeoProperty", "value": {"type": "Point", "coordinates": [17.338519, 48.650915]}})])
+    route = lambda *xy: [entity_of(source[0], location={"type": "GeoProperty", "value": {"type": "LineString", "coordinates": list(xy)}})]
+    assert outside("bbsk", route([18.6, 48.4], [18.37, 48.6])) == "", "a route leaving the region"
+    assert "outside" in outside("bbsk", route([17.2, 48.4], [17.3, 48.6])), "a route nowhere near it"
     assert "same" in cases["a duplicate id"]["checks"]["accurate"]["reason"]
     assert "older than a day" in cases["stale observedAt"]["checks"]["accurate"]["reason"]
     assert "ziaci: -1 is less than the minimum of 0" in cases["not valid in its model"]["checks"]["smart-data-model"]["reason"], cases["not valid in its model"]
