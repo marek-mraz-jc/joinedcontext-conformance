@@ -89,7 +89,7 @@ jobs:
           - shard: endpoints
             specs: >-
               journeys/07-endpoints-manager.spec.ts
-              journeys/08-service-account-key.spec.ts
+              journeys/08-no-api-key.spec.ts
               journeys/10-approval-round-trip.spec.ts
               journeys/11-access-matrix.spec.ts
               journeys/17-assistant-navigation.spec.ts
