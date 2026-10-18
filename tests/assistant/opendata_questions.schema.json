@@ -52,7 +52,8 @@
               "absent",
               "injection",
               "scope",
-              "unknowable"
+              "unknowable",
+              "direct"
             ]
           },
           "q": {
@@ -179,7 +180,8 @@
             "kind": {
               "enum": [
                 "injection",
-                "unknowable"
+                "unknowable",
+                "direct"
               ]
             }
           }
