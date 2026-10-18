@@ -10,12 +10,6 @@
       "url": "https://data.example.org/api/endpoint/hsl-transport/ngsi-ld/v1/entities?type=Vehicle"
     },
     {
-      "name": "GeoJSON",
-      "format": "GEOJSON",
-      "datastore_active": false,
-      "url": "https://data.example.org/api/endpoint/hsl-transport/file.geojson"
-    },
-    {
       "name": "CSV",
       "format": "CSV",
       "datastore_active": true,

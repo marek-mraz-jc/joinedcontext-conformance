@@ -143,7 +143,10 @@ def endpoint_entities(endpoint: str, gateway: requests.Session) -> list[dict[str
 
 @pytest.fixture(scope="module")
 def endpoint_geojson(endpoint: str, gateway: requests.Session) -> dict[str, Any]:
-    return get_json(gateway, f"{endpoint}/file.geojson", "application/geo+json")
+    """The map's GeoJSON: NGSI-LD's own format (API/02 section 3); file.geojson is gone (T-4597)."""
+    return get_json(
+        gateway, f"{endpoint}/ngsi-ld/v1/entities", "application/geo+json", type=ENTITY_TYPE
+    )
 
 
 # --- 1. the feed became entities (PL-01) -----------------------------------------------

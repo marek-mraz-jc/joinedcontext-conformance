@@ -50,8 +50,9 @@ test.describe('Journey 7: the Endpoints manager publishes every representation (
         await form.getByRole('radio', { name: /public|verejn/i }).check();
       });
 
-      // EP-01: one endpoint carries several representations; both boxes of DEMO step 4 are ticked.
-      for (const representation of [/ngsi-?ld/i, /geojson/i]) {
+      // EP-01: one endpoint carries several representations; both boxes of DEMO step 4 are ticked
+      // (CSV is the one file an Endpoint publishes, T-4597).
+      for (const representation of [/ngsi-?ld/i, /csv/i]) {
         await form.getByRole('checkbox', { name: representation }).check();
       }
 
@@ -76,9 +77,10 @@ test.describe('Journey 7: the Endpoints manager publishes every representation (
         shape: (body) => expect(JSON.parse(body), 'NGSI-LD answers an array of entities').toBeInstanceOf(Array),
       },
       {
-        path: '/file.geojson',
-        mediaType: /application\/(geo\+)?json/,
-        shape: (body) => expect(JSON.parse(body).type, 'GeoJSON answers a FeatureCollection').toBe('FeatureCollection'),
+        path: '/file.csv?type=AirQualityObserved',
+        mediaType: /text\/csv/,
+        shape: (body) =>
+          expect(body.split('\n', 1)[0].split(',').map((h) => h.replace(/^"|"$/g, '')), 'CSV answers a header with an id column').toContain('id'),
       },
       {
         path: '/access',
@@ -108,7 +110,7 @@ test.describe('Journey 7: the Endpoints manager publishes every representation (
     }
   });
 
-  test('EP-05 a representation the endpoint does not offer is refused, not guessed', async ({
+  test('T-4597 a removed file is 404, never served from a default', async ({
     steward,
     request,
     baseURL,
@@ -120,12 +122,11 @@ test.describe('Journey 7: the Endpoints manager publishes every representation (
     const slug = (await row.innerText()).match(/\b[a-z2-7]{26}\b/)?.[0];
     expect(slug).toBeTruthy();
 
-    const response = await request.get(`${baseURL}/api/endpoint/${slug}/file.parquet`, {
-      failOnStatusCode: false,
-    });
-    expect(
-      response.status(),
-      'a representation that was never enabled must be refused, never served from a default',
-    ).toBeGreaterThanOrEqual(400);
+    for (const file of ['file.xlsx', 'file.zip', 'file.parquet', 'file.json', 'file.geojson']) {
+      const response = await request.get(`${baseURL}/api/endpoint/${slug}/${file}`, {
+        failOnStatusCode: false,
+      });
+      expect(response.status(), `${file} was removed (T-4597) and must answer 404`).toBe(404);
+    }
   });
 });

@@ -109,11 +109,11 @@ def schema(case: str) -> dict:
 
 
 def package(case: str, base: str) -> dict:
-    url = f"{base}/gone" if case == "dead-resource" else f"{base}/api/endpoint/x/file.geojson"
+    url = f"{base}/gone" if case == "dead-resource" else f"{base}/api/endpoint/x/file.csv"
     return {
         "name": DATASET,
         "resources": [
-            {"id": "res-geojson", "name": "GeoJSON", "url": url},
+            {"id": "res-csv", "name": "CSV", "url": url},
             {"id": "res-ngsild", "name": "NGSI-LD", "url": f"{base}/api/endpoint/x/ngsi-ld/v1/entities"},
         ],
     }
@@ -162,10 +162,13 @@ def handler(case: str, base: str):
                 self._send(200, space_entities(case))
             elif path == "/cs/air-quality/ngsi-ld/v1/entities":
                 self._send(200, federated(case))
+            # The map's GeoJSON is NGSI-LD's own format on the same path (T-4597).
+            elif path == "/api/endpoint/x/ngsi-ld/v1/entities" and "geo+json" in (self.headers.get("Accept") or ""):
+                self._send(200, geojson(case))
             elif path == "/api/endpoint/x/ngsi-ld/v1/entities":
                 self._send(200, endpoint_entities(case))
-            elif path == "/api/endpoint/x/file.geojson":
-                self._send(200, geojson(case))
+            elif path == "/api/endpoint/x/file.csv":
+                self._send(200, [])
             elif path == "/api/endpoint/x/schema/v1/json-schema":
                 self._send(200, schema(case))
             elif path == "/api/3/action/package_show":

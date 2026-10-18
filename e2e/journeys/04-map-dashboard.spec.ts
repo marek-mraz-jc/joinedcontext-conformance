@@ -5,6 +5,14 @@ import { test, expect, openView } from '../fixtures/portal.js';
  * geoQ bounding box queries, native rendering thresholds, layer toggling, feature popups,
  * and endpoint authorization — TS-12, UI-20, UI-21, UI-22, CC-37.
  */
+/**
+ * A layer's fetch: the Endpoint's NGSI-LD query asked for GeoJSON (API/02 section 3); an
+ * Endpoint publishes no file.geojson since T-4597.
+ */
+function isLayerRequest(req: import('@playwright/test').Request): boolean {
+  return req.url().includes('/ngsi-ld/v1/entities') && (req.headers()['accept'] || '').includes('application/geo+json');
+}
+
 test.describe('Journey 4: Spatial dashboard, vector layers and geoQ (T-0072)', () => {
   const dashboardName = process.env.PORTAL_DASHBOARD || 'Air Quality';
   const layerName = process.env.PORTAL_MAP_LAYER || 'Sensors';
@@ -46,7 +54,7 @@ test.describe('Journey 4: Spatial dashboard, vector layers and geoQ (T-0072)', (
     const { page } = steward;
 
     const geoRequestPromise = page.waitForRequest((req) => {
-      if (!req.url().includes('file.geojson')) return false;
+      if (!isLayerRequest(req)) return false;
       try {
         const url = new URL(req.url());
         return url.searchParams.has('geoQ');
@@ -82,7 +90,7 @@ test.describe('Journey 4: Spatial dashboard, vector layers and geoQ (T-0072)', (
     const { page } = steward;
 
     const firstReqPromise = page.waitForRequest((req) => {
-      return req.url().includes('file.geojson') && new URL(req.url()).searchParams.has('geoQ');
+      return isLayerRequest(req) && new URL(req.url()).searchParams.has('geoQ');
     }, { timeout: 30_000 });
 
     await navigateToMapDashboard(page);
@@ -90,7 +98,7 @@ test.describe('Journey 4: Spatial dashboard, vector layers and geoQ (T-0072)', (
     const firstGeoQ = new URL(firstReq.url()).searchParams.get('geoQ') || '';
 
     const secondReqPromise = page.waitForRequest((req) => {
-      if (!req.url().includes('file.geojson')) return false;
+      if (!isLayerRequest(req)) return false;
       const currentGeoQ = new URL(req.url()).searchParams.get('geoQ') || '';
       return currentGeoQ !== '' && currentGeoQ !== firstGeoQ;
     }, { timeout: 30_000 });
@@ -155,12 +163,12 @@ test.describe('Journey 4: Spatial dashboard, vector layers and geoQ (T-0072)', (
 
     let newGeoRequests = 0;
     const requestListener = (req: import('@playwright/test').Request) => {
-      if (req.url().includes('file.geojson')) newGeoRequests++;
+      if (isLayerRequest(req)) newGeoRequests++;
     };
     page.on('request', requestListener);
 
     // Switch back on — must trigger a new GeoJSON fetch for the re-enabled layer
-    const nextReqPromise = page.waitForRequest((req) => req.url().includes('file.geojson'), { timeout: 20_000 });
+    const nextReqPromise = page.waitForRequest((req) => isLayerRequest(req), { timeout: 20_000 });
     await layerToggle.click();
     await nextReqPromise;
 
@@ -202,7 +210,7 @@ test.describe('Journey 4: Spatial dashboard, vector layers and geoQ (T-0072)', (
     let privateGeoJsonUrl = '';
 
     const capturedRequest = page.waitForRequest((req) => {
-      if (req.url().includes('file.geojson')) {
+      if (isLayerRequest(req)) {
         privateGeoJsonUrl = req.url();
         return true;
       }
