@@ -72,7 +72,9 @@ def run_pytest(env: dict[str, str]) -> subprocess.CompletedProcess:
     return subprocess.run(
         # The Portal MCP suite (test_portal_mcp.py) speaks to the operation registry of a real
         # Portal (PORTAL_MCP_URL); the stub is the data plane's MCP and would only skip it.
-        [sys.executable, "-m", "pytest", "tests/mcp", "-q", "--ignore=tests/mcp/test_portal_mcp.py"],
+        # The old-host 308 (T-4632) is the edge's, which a stub on 127.0.0.1 has no apex for.
+        [sys.executable, "-m", "pytest", "tests/mcp", "-q", "--ignore=tests/mcp/test_portal_mcp.py",
+         "-k", "not test_an_anonymous_call_on_the_old_host_moves_to_the_data_host"],
         env=env,
         cwd=REPO_ROOT,
         capture_output=True,

@@ -1,7 +1,7 @@
 """python3 -m tests.datasets <ckan-dataset-name>... | --all [--json] [--ws-seconds 60]
 
 Validates each published dataset end to end, read only (see validate.py), prints one line per
-check and exits 1 on any FAIL. BASE_URL (default https://dev.joinedcontext.com) is the
+check and exits 1 on any FAIL. BASE_URL (default https://api.dev.joinedcontext.com, the data host) is the
 installation, CKAN_URL (default https://data.<BASE_URL host>) its catalogue, SEED_DIR the
 deployment seed the Pipelines' schedules and DataSources are read from, JC_GATEWAY_TOKEN an
 optional ServiceAccount token for a non-public Endpoint (never printed).
@@ -30,9 +30,9 @@ def main(argv=None) -> int:
                         help="skip the whole-dataset file.* downloads (T-4107: one took dev's gateway down)")
     parser.add_argument("--parallel", type=int, default=2, help="datasets checked at once (dev is one node)")
     args = parser.parse_args(argv)
-    base_url = os.environ.get("BASE_URL", "https://dev.joinedcontext.com").rstrip("/")
+    base_url = os.environ.get("BASE_URL", "https://api.dev.joinedcontext.com").rstrip("/")
     parts = urlsplit(base_url)
-    ckan_url = os.environ.get("CKAN_URL", f"{parts.scheme}://data.{parts.hostname}").rstrip("/")
+    ckan_url = os.environ.get("CKAN_URL", f"{parts.scheme}://data.{(parts.hostname or '').removeprefix('api.')}").rstrip("/")
     http = Http(os.environ.get("JC_GATEWAY_TOKEN") or None, parts.hostname)
 
     names = list(args.datasets)

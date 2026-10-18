@@ -203,8 +203,8 @@ def profile(tmp_path, suite, seed):
 
 
 def test_the_profile_finds_the_endpoint_that_enables_the_surface(tmp_path):
-    assert profile(tmp_path, "ogc", SEED) == "OGC=https://dev.joinedcontext.com/api/endpoint/sens1/ogc/features STA="
-    assert profile(tmp_path, "sta", SEED) == "OGC= STA=https://dev.joinedcontext.com/api/endpoint/sens1/sta/v1.1"
+    assert profile(tmp_path, "ogc", SEED) == "OGC=https://api.dev.joinedcontext.com/api/endpoint/sens1/ogc/features STA="
+    assert profile(tmp_path, "sta", SEED) == "OGC= STA=https://api.dev.joinedcontext.com/api/endpoint/sens1/sta/v1.1"
 
 
 def test_no_endpoint_with_the_surface_leaves_the_url_unset(tmp_path):

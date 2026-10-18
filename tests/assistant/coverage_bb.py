@@ -4,7 +4,7 @@
     python3 tests/assistant/coverage_bb.py \
         --mapping ../docs/Research/bb-bbsk-ngsi-ld-mapping.yaml \
         --seed ../joinedcontext-deployment/components/context-gateway/seed \
-        --base https://dev.joinedcontext.com --portal https://portal.dev.joinedcontext.com \
+        --base https://api.dev.joinedcontext.com --portal https://portal.dev.joinedcontext.com \
         --out coverage-bb
 
 `PORTAL_TOKEN` (a steward's token, never printed) lets it read the pipeline runs; without it the
@@ -227,7 +227,7 @@ def main() -> int:
     parser.add_argument("--selftest", action="store_true")
     parser.add_argument("--mapping", type=Path)
     parser.add_argument("--seed", type=Path)
-    parser.add_argument("--base", default=os.environ.get("JC_DEV_BASE", "https://dev.joinedcontext.com"))
+    parser.add_argument("--base", default=os.environ.get("JC_DEV_BASE", "https://api.dev.joinedcontext.com"))
     parser.add_argument("--portal", default=os.environ.get("JC_DEV_PORTAL"))
     parser.add_argument("--out", type=Path, default=Path("coverage-bb"))
     args = parser.parse_args()

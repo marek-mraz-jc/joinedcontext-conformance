@@ -45,5 +45,5 @@ notification.attributes, throttling), for 60 s. Every filter must notify and not
 may arrive; a gap, a close or a refused subscription fails it. Stdlib only.
 
 ```sh
-python3 tests/ws/fanout_smoke.py wss://dev.joinedcontext.com/api/endpoint/ajaezssvx3bwqgejgepmq4ig3frgan4e/ws
+python3 tests/ws/fanout_smoke.py wss://api.dev.joinedcontext.com/api/endpoint/ajaezssvx3bwqgejgepmq4ig3frgan4e/ws
 ```

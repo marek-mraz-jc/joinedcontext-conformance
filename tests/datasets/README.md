@@ -15,7 +15,7 @@ attribute, no live type, a source that needs a key) say what was not held agains
 
 ## Environment
 
-- `BASE_URL`: the installation, default `https://dev.joinedcontext.com`.
+- `BASE_URL`: the installation, default `https://api.dev.joinedcontext.com`, the data host.
 - `CKAN_URL`: its catalogue, default `https://data.<BASE_URL host>`.
 - `SEED_DIR`: the deployment seed (`joinedcontext-deployment/components/context-gateway/seed`),
   where the Pipelines' periods and the DataSources' URLs are read; without it freshness and the

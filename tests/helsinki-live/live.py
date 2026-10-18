@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """The Helsinki live feed, end to end (T-3907, AP-147).
 
-    live.py --endpoint https://dev.joinedcontext.com/api/endpoint/<slug> [--seconds 300] [--junit out.xml]
+    live.py --endpoint https://api.dev.joinedcontext.com/api/endpoint/<slug> [--seconds 300] [--junit out.xml]
 
 For `--seconds` it listens to the same HFP topics as the `hsl-hfp` DataSource (wss://mqtt.hsl.fi,
 the public feed, read only), reads the endpoint's Vehicle entities every `--poll` seconds and

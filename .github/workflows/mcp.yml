@@ -7,15 +7,15 @@ on:
       mcp_url:
         description: per-space MCP surface under test
         required: true
-        default: https://dev.joinedcontext.com/cs/ovzdusie/mcp
+        default: https://api.dev.joinedcontext.com/cs/ovzdusie/mcp
       endpoint_mcp_url:
         description: endpoint-specific MCP surface
         required: false
-        default: https://dev.joinedcontext.com/api/endpoint/mobility/mcp
+        default: https://api.dev.joinedcontext.com/api/endpoint/mobility/mcp
       other_space_mcp_url:
         description: second space MCP surface for isolation verification
         required: false
-        default: https://dev.joinedcontext.com/cs/doprava/mcp
+        default: https://api.dev.joinedcontext.com/cs/doprava/mcp
       config_mcp_url:
         description: configuration plane MCP surface
         required: false
@@ -23,7 +23,7 @@ on:
       private_mcp_url:
         description: private space MCP surface for RFC 9728 401 verification
         required: false
-        default: https://dev.joinedcontext.com/cs/secret-space/mcp
+        default: https://api.dev.joinedcontext.com/cs/secret-space/mcp
 permissions: { contents: read }
 jobs:
   mcp:
