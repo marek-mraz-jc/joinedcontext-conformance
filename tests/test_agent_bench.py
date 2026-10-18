@@ -68,14 +68,14 @@ def test_pick_takes_the_newest_the_largest_and_the_sum():
 def test_every_question_names_a_read_and_a_rule():
     spec = bench.load()
     ids = [q["id"] for q in spec["questions"]]
-    assert len(ids) == 24 and len(set(ids)) == 24
+    assert len(ids) == 25 and len(set(ids)) == 25
     for question in spec["questions"]:
         assert question["expect"]["pick"] in {"count", "sum", "max", "latest", "text", "aggregate"}
         assert question["expect"]["pick"] == "count" or question["expect"].get("attr")
     # T-4533: the questions about a parameter say which, and a text answer is matched as text.
     uses = {q["id"]: q.get("uses") for q in spec["questions"] if q.get("uses")}
     assert sorted(name for names in uses.values() for name in names[:1]) == [
-        "aggrMethods", "georel", "join", "lang"]
+        "aggrMethods", "datasetId", "georel", "join", "lang"]
     for question in spec["questions"]:
         assert (question["expect"]["pick"] == "text") == bool(question["match"].get("text"))
 

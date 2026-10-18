@@ -49,6 +49,8 @@
     {"id": "bb-schools-near-square", "question": "How many schools and kindergartens in Banská Bystrica are within 1 km of Námestie SNP (19.1462 E, 48.7356 N)?",
      "expect": {"slug": "bkc4g3zfirh6zae3owdike7am2upayjs", "type": "Organization", "pick": "count", "params": {"georel": "near;maxDistance==1000", "geometry": "Point", "coordinates": "[19.1462,48.7356]"}}, "match": {}, "uses": ["georel"]},
     {"id": "bb-station-english-name", "question": "What is the English name of the Banská Bystrica air-quality station SK0263A, as the open data gives it?",
-     "expect": {"slug": "32ea6ze7db7g6u7qnlgezpwp75", "type": "AirQualityObserved", "pick": "text", "attr": "name", "lang": "en", "params": {"id": "urn:ngsi-ld:AirQualityObserved:banskabystrica.sk:banskabystrica-verejne:eea-SK0263A"}}, "match": {"text": true}, "uses": ["lang"]}
+     "expect": {"slug": "32ea6ze7db7g6u7qnlgezpwp75", "type": "AirQualityObserved", "pick": "text", "attr": "name", "lang": "en", "params": {"id": "urn:ngsi-ld:AirQualityObserved:banskabystrica.sk:banskabystrica-verejne:eea-SK0263A"}}, "match": {"text": true}, "uses": ["lang"]},
+    {"id": "bb-soil-50cm", "question": "What soil temperature does the SHMÚ weather station Banská Bystrica - Zelená report right now at a depth of 50 cm?",
+     "expect": {"slug": "3iasem46w7d7pxxypwdfdzheyaodv3qn", "type": "WeatherObserved", "pick": "max", "attr": "soilTemperature", "params": {"id": "urn:ngsi-ld:WeatherObserved:banskabystrica.sk:banskabystrica-verejne:shmu-11898", "datasetId": "urn:ngsi-ld:Dataset:shmu:soil-depth-50cm"}}, "match": {"decimals": 1}, "uses": ["datasetId"]}
   ]
 }
