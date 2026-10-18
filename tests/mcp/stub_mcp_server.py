@@ -89,8 +89,29 @@ ANONYMOUS_TOOLS = frozenset(
         "retrieve_temporal",
         "describe_schema",
         "describe_access",
+        "search_documents",
     }
 )
+
+#: The hub's search of its knowledge sources (EP-133, T-4659), answered with one fixed hit.
+SEARCH_DOCUMENTS = {
+    "name": "search_documents",
+    "description": "Search the public pages and documents of banskabystrica.",
+    "inputSchema": {
+        "type": "object",
+        "properties": {
+            "query": {"type": "string", "minLength": 1, "maxLength": 300},
+            "limit": {"type": "integer", "minimum": 1, "maximum": 10},
+        },
+        "required": ["query"],
+    },
+    "annotations": {"readOnlyHint": True},
+}
+SEARCH_HIT = {
+    "title": "Klientske centrum", "url": "https://www.banskabystrica.sk/kc", "publisher": "banskabystrica",
+    "description": None, "published": None, "modified": "2026-09-30T08:12:00Z", "language": "sk",
+    "text": "Pondelok 8:00 až 17:00", "score": 0.03,
+}
 
 class StubMcpHandler(BaseHTTPRequestHandler):
     protocol_version = "HTTP/1.1"
@@ -341,6 +362,8 @@ class StubMcpHandler(BaseHTTPRequestHandler):
                     tool for tool in tools
                     if tool.get("annotations", {}).get("readOnlyHint") is True
                 ]
+            if self._is_hub(path) and self.server.mode != "broken":
+                tools = tools + [SEARCH_DOCUMENTS]
             if path == "/api/mcp" and self.server.mode == "broken" and tools:
                 # EP-112 / defect: the connector lists one tool under a name of its own.
                 tools = [dict(tools[0], name=tools[0]["name"] + "_v0")] + tools[1:]
@@ -356,6 +379,18 @@ class StubMcpHandler(BaseHTTPRequestHandler):
                     req_id,
                     error={"code": -32602, "message": f"{tool_name} cannot be called without a token"},
                 )
+                return
+            if tool_name == "search_documents" and self._is_hub(path) and self.server.mode != "broken":
+                invalid = next(
+                    (f"invalid parameter for tool search_documents: {e.message}"
+                     for e in jsonschema.Draft7Validator(SEARCH_DOCUMENTS["inputSchema"]).iter_errors(tool_args)),
+                    None,
+                )
+                if invalid:
+                    self._send_json_rpc(req_id, error={"code": -32602, "message": invalid})
+                else:
+                    self._send_json_rpc(req_id, result={"content": [{"type": "text", "text": "1 hit"}],
+                                                        "structuredContent": {"hits": [SEARCH_HIT]}, "isError": False})
                 return
             invalid = self._schema_violation(tool_name, tool_args, is_config_plane)
             if invalid and self.server.mode != "broken":
