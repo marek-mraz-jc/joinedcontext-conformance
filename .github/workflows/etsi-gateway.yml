@@ -5,10 +5,10 @@ name: etsi-gateway
 # platform repo just pushed. Green means: every case passes except the ones the quarantine
 # list names by task id, and none of those has started passing (that goes red too, so the
 # list cannot rot).
-# On demand only for now (private repository, metered minutes, T-0402/T-0521). Put
-# `push: { branches: [main] }` and `schedule: [{ cron: "30 3 * * *" }]` back under `on:` when the
-# minutes are back.
+# Nightly and on demand, not on every push: the shared runner queue keeps room for the Antares
+# trains (T-3289).
 on:
+  schedule: [{ cron: "30 3 * * *" }]
   workflow_dispatch:
 permissions: { contents: read }
 jobs:

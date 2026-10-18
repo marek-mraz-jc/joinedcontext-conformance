@@ -4,8 +4,7 @@ name: forge-side-door
 # those is expected to be refused. Against dev a defence that has failed would leave the
 # configuration repository changed, so the first step refuses the dev domain outright.
 #
-# Dispatch only while the private repositories' Actions minutes are metered (T-0402, T-0521).
-# To put it back on a schedule, restore the commented lines below.
+# Dispatch only: it needs the URL of a throwaway forge, which a schedule has no input for (T-3289).
 on:
   workflow_dispatch:
     inputs:
@@ -28,8 +27,6 @@ on:
         description: an organization of the same forge the reader is in no team of
         required: true
         default: mesto-kosice
-  # schedule:
-  #   - cron: "40 3 * * *"
 permissions: { contents: read }
 jobs:
   forge-side-door:

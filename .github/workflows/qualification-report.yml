@@ -2,8 +2,8 @@ name: qualification-report
 # Aggregated conformance qualification report (T-0089, TS-05, TS-07, TS-08, TS-13).
 # Without a run to pull suite reports from, every suite this repository owns is reported
 # as not run and the job goes red: an honest empty report beats a green one.
-# On demand only for now (private repository, metered minutes, T-0402/T-0521). Put
-# `schedule: [{ cron: "0 5 * * 1" }]` (Monday 05:00 UTC) back under `on:` when the minutes are back.
+# On demand only: a scheduled run has no `reports_run_id` and would be red by design each week
+# (T-3289). Dispatch it with the run whose suite reports it aggregates.
 on:
   workflow_dispatch:
     inputs:

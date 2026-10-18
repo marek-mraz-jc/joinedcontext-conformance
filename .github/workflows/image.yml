@@ -1,10 +1,10 @@
 name: image
 # builds, smoke-tests, signs and publishes the conformance runner image (T-0053, TS-23).
-# On a tag and on demand only for now: this repository is private, its Actions minutes are metered
-# (T-0402/T-0521), and a runner image built on every push was the biggest single spend. Put
-# `branches: [main]` back under `push:` when the minutes are back.
+# On every push to main, on a tag and on demand; the repository is public, so its minutes are not
+# metered (T-3289).
 on:
   push:
+    branches: [main]
     tags: ["v*"]
   workflow_dispatch:
 permissions: { contents: read }

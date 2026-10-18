@@ -2,7 +2,7 @@ name: nightly-benchmarks
 # Nightly benchmark regression gate (TS-22, OPS-18, T-0090).
 # The job needs a target: without gateway_url it runs the two self-tests and nothing else, because a nightly job that silently benchmarks nothing is worse than no job.
 # On demand only: the schedule had no gateway_url, so it ran the two self-tests every night and
-# benchmarked nothing, on metered minutes.
+# benchmarked nothing.
 on:
   workflow_dispatch:
     inputs:
