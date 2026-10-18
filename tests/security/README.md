@@ -111,7 +111,8 @@ every commit.
 
 The representation parity suite (`test_representation_parity.py`) queries the same context space or
 endpoint base across all five standardized child representations (`ngsi-ld/v1/entities`, `file.csv`,
-`file.geojson`, `ogc/features/collections/{collection}/items`, and `sta/v1.1/Observations`). It proves
+NGSI-LD's GeoJSON for a map (`Accept: application/geo+json`), `ogc/features/collections/{collection}/items`
+and `sta/v1.1/Observations`); the files T-4597 removed must answer 404 for every caller. It proves
 that the Policy Enforcement Point (PEP) decision is evaluated identically across every representation:
 entity sets match (EP-06, R20), normalized attribute projections and values agree (EP-07, TS-03), and
 any forbidden or hidden attributes (`HIDDEN_ATTR`) are never leaked through any representation in either

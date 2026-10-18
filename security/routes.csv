@@ -178,11 +178,6 @@ platform,http,GET,/api/endpoint/{slug}/,crates/context-gateway/src/app.rs:511,pl
 platform,http,GET,/api/endpoint/{slug}/.well-known/oauth-protected-resource,crates/context-gateway/src/app.rs:580,platform crates/context-gateway/tests/route_authz_sweep_tests.rs
 platform,http,GET,/api/endpoint/{slug}/access,crates/context-gateway/src/app.rs:516,platform crates/context-gateway/tests/route_authz_sweep_tests.rs
 platform,http,GET,/api/endpoint/{slug}/file.csv,crates/context-gateway/src/app.rs:538,platform crates/context-gateway/tests/route_authz_sweep_tests.rs
-platform,http,GET,/api/endpoint/{slug}/file.geojson,crates/context-gateway/src/app.rs:536,platform crates/context-gateway/tests/route_authz_sweep_tests.rs
-platform,http,GET,/api/endpoint/{slug}/file.json,crates/context-gateway/src/app.rs:537,platform crates/context-gateway/tests/route_authz_sweep_tests.rs
-platform,http,GET,/api/endpoint/{slug}/file.parquet,crates/context-gateway/src/app.rs:540,platform crates/context-gateway/tests/route_authz_sweep_tests.rs
-platform,http,GET,/api/endpoint/{slug}/file.xlsx,crates/context-gateway/src/app.rs:539,platform crates/context-gateway/tests/route_authz_sweep_tests.rs
-platform,http,GET,/api/endpoint/{slug}/file.zip,crates/context-gateway/src/app.rs:541,platform crates/context-gateway/tests/route_authz_sweep_tests.rs
 platform,http,GET,/api/endpoint/{slug}/ngsi-ld/v1,crates/context-gateway/src/app.rs:513,platform crates/context-gateway/tests/route_authz_sweep_tests.rs
 platform,http,GET,/api/endpoint/{slug}/ngsi-ld/v1/,crates/context-gateway/src/app.rs:514,platform crates/context-gateway/tests/route_authz_sweep_tests.rs
 platform,http,GET,/api/endpoint/{slug}/openapi.json,crates/context-gateway/src/app.rs:586,platform crates/context-gateway/tests/route_authz_sweep_tests.rs
@@ -198,7 +193,6 @@ platform,http,GET,/catalog.jsonld,crates/context-gateway/src/app.rs:565,platform
 platform,http,GET,/catalog.ttl,crates/context-gateway/src/app.rs:566,platform crates/context-gateway/tests/route_authz_sweep_tests.rs
 platform,http,GET,/cs,crates/context-gateway/src/app.rs:567,platform crates/context-gateway/tests/route_authz_sweep_tests.rs
 platform,http,GET,/cs/{space},crates/context-gateway/src/app.rs:568,platform crates/context-gateway/tests/route_authz_sweep_tests.rs
-platform,http,GET,/cs/{space}/dump/,crates/context-gateway/src/app.rs:575,platform crates/context-gateway/tests/route_authz_sweep_tests.rs
 platform,http,GET,/cs/{space}/schema/index.json,crates/context-gateway/src/app.rs:574,platform crates/context-gateway/tests/route_authz_sweep_tests.rs
 platform,http,GET,/cs/{space}/schema/{version}/{artifact},crates/context-gateway/src/app.rs:576,platform crates/context-gateway/tests/route_authz_sweep_tests.rs
 platform,http,GET,/d/widget.css,crates/assistant/src/chat/widget.rs:30,"public: the chat widget's script and style, the same for everyone"

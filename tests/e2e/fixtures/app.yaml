@@ -20,7 +20,7 @@ spec:
     - endpoint: hsl-transport
       representations:
         - ngsi-ld
-        - file.geojson
+        - file.csv
   limits:
     memory: 256Mi
     cpu: 200m

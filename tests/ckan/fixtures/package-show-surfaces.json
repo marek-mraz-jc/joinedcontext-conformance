@@ -63,52 +63,12 @@
     "state": "active"
    },
    {
-    "id": "res-05",
-    "name": "GeoJSON",
-    "url": "https://dev.joinedcontext.com/api/endpoint/k7m2q4hkiair/file.geojson",
-    "format": "GeoJSON",
-    "mimetype": "application/geo+json",
-    "description": "A GeoJSON feature collection that opens in QGIS, generated on each download from the endpoint's live data.",
-    "hash": "",
-    "state": "active"
-   },
-   {
     "id": "res-06",
     "name": "CSV",
     "url": "https://dev.joinedcontext.com/api/endpoint/k7m2q4hkiair/file.csv",
     "format": "CSV",
     "mimetype": "text/csv",
     "description": "A CSV table, generated on each download from the endpoint's live data.",
-    "hash": "",
-    "state": "active"
-   },
-   {
-    "id": "res-07",
-    "name": "Excel spreadsheet",
-    "url": "https://dev.joinedcontext.com/api/endpoint/k7m2q4hkiair/file.xlsx",
-    "format": "XLSX",
-    "mimetype": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-    "description": "An Excel spreadsheet that opens in Excel or LibreOffice, generated on each download from the endpoint's live data.",
-    "hash": "",
-    "state": "active"
-   },
-   {
-    "id": "res-08",
-    "name": "JSON",
-    "url": "https://dev.joinedcontext.com/api/endpoint/k7m2q4hkiair/file.json",
-    "format": "JSON",
-    "mimetype": "application/json",
-    "description": "The entities as one JSON document, generated on each download from the endpoint's live data.",
-    "hash": "",
-    "state": "active"
-   },
-   {
-    "id": "res-09",
-    "name": "Export bundle",
-    "url": "https://dev.joinedcontext.com/api/endpoint/k7m2q4hkiair/file.zip",
-    "format": "ZIP",
-    "mimetype": "application/zip",
-    "description": "Every file format of this dataset in one ZIP archive, generated on each download from the endpoint's live data.",
     "hash": "",
     "state": "active"
    },

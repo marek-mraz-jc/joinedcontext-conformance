@@ -1,14 +1,15 @@
 """Does every dataset of the catalogue list what EP-118 makes mandatory, and does each link answer (T-4324)?
 
 The owner's rule of 2026-10-16 (docs Architecture/21-open-data-catalogue.md §9): every dataset
-lists NGSI-LD, MCP, WebSocket, CSV, JSON and its data model in seven formalisms (JSON Schema,
-JSON-LD, LinkML, Markdown, OWL, RDF, SHACL); GeoJSON and OGC API - Features when its rows carry a
-location; never ZIP or Esri REST; and every listed link answers 200 to an anonymous read.
+lists NGSI-LD, MCP, WebSocket, CSV and its data model in seven formalisms (JSON Schema, JSON-LD,
+LinkML, Markdown, OWL, RDF, SHACL); OGC API - Features when its rows carry a location; never ZIP or
+Esri REST, nor a file an Endpoint no longer publishes (XLSX, Parquet, JSON or GeoJSON files, T-4597);
+and every listed link answers 200 to an anonymous read.
 
 Each link is read once, small: an Endpoint's data link with `limit=1` (`$top=1` for OData), a
 model artefact whole, the WebSocket by `x-subscribe` and MCP by `initialize`. Whether the rows
 carry a location is read off the NGSI-LD link's first entity, so a located dataset that lists no
-GeoJSON is caught. A link outside the catalogue's own resources, such as a source's download, is
+OGC API - Features is caught. A link outside the catalogue's own resources, such as a source's download, is
 read the same way.
 
     python3 tests/ckan/ep118.py --ckan https://data.dev.joinedcontext.com [--pace 0.3] [organization ...]
@@ -30,10 +31,12 @@ import requests
 from completeness import Reader
 
 TIMEOUT = 60
-ALWAYS = ["NGSI-LD", "MCP", "WebSocket", "CSV", "JSON",
+ALWAYS = ["NGSI-LD", "MCP", "WebSocket", "CSV",
           "JSON Schema", "JSON-LD", "LinkML", "Markdown", "OWL", "RDF", "SHACL"]
-LOCATED = ["GeoJSON", "OGCFEAT"]
+LOCATED = ["OGCFEAT"]
 BANNED = {"ZIP", "ESRI REST", "SHP", "SHAPEFILE"}
+#: The Endpoint files T-4597 removed: a link to one is a 404 the harvest should not write.
+REMOVED = ("/file.geojson", "/file.json", "/file.xlsx", "/file.parquet", "/file.zip")
 
 
 def small(url: str) -> str:
@@ -62,7 +65,8 @@ def entities_of(url: str, first_type: Callable[[str], str | None]) -> str | None
 
 def banned(resource: dict[str, Any]) -> bool:
     fmt = (resource.get("format") or "").strip().upper()
-    return fmt in BANNED or urlsplit(resource.get("url") or "").path.lower().endswith(".zip")
+    path = urlsplit(resource.get("url") or "").path.lower()
+    return fmt in BANNED or path.endswith(".zip") or ("/api/endpoint/" in path and path.endswith(REMOVED))
 
 
 def check(

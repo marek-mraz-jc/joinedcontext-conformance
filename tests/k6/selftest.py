@@ -63,7 +63,7 @@ ENDPOINT_BUDGETS = [
     "ep28_endpoint_overhead_ms",
     "ts05_endpoint_read_ms",
     "ts05_endpoint_reads",
-    "ep05_geojson_ttfb_ms",
+    "ep05_csv_ttfb_ms",
     "ep20_limit_headers_missing",
     "ep20_limit_shed",
     "checks",
@@ -147,39 +147,13 @@ class Stub(BaseHTTPRequestHandler):
             self.send_header("Content-Length", str(len(body)))
             self.end_headers()
             self.wfile.write(body)
-        elif path.endswith("/file.geojson"):
-            body = json.dumps(
-                {
-                    "type": "FeatureCollection",
-                    "features": [
-                        {
-                            "type": "Feature",
-                            "id": ENTITY["id"],
-                            "geometry": {"type": "Point", "coordinates": [19.15, 48.73]},
-                            "properties": {"type": ENTITY["type"]},
-                        }
-                    ],
-                }
-            ).encode()
-            self.send_response(200)
-            for name, value in self.extra_headers:
-                self.send_header(name, value)
-            self.send_header("Content-Type", "application/geo+json")
-            self.send_header("Content-Length", str(len(body)))
-            self.end_headers()
-            self.wfile.write(body)
         elif path.endswith("/file.csv"):
             rows = ["id,type,val"] + [f"urn:ngsi-ld:Item:{i},Item,{i}" for i in range(200)]
             body = ("\n".join(rows) + "\n").encode("utf-8")
             self.send_response(200)
+            for name, value in self.extra_headers:
+                self.send_header(name, value)
             self.send_header("Content-Type", "text/csv; charset=utf-8")
-            self.send_header("Content-Length", str(len(body)))
-            self.end_headers()
-            self.wfile.write(body)
-        elif path.endswith("/file.zip"):
-            body = b"PK\x03\x04" + (b"\x00" * 2048)
-            self.send_response(200)
-            self.send_header("Content-Type", "application/zip")
             self.send_header("Content-Length", str(len(body)))
             self.end_headers()
             self.wfile.write(body)
@@ -416,7 +390,7 @@ def main() -> int:
             "JC_K6_RATE": "20",
             "JC_K6_DURATION": "5s",
             "JC_K6_VUS": "5",
-            "JC_K6_GEOJSON_RATE": "2",
+            "JC_K6_CSV_RATE": "2",
             "JC_K6_OVERHEAD_RATE": "5",
             "JC_K6_WARMUP_READS": "3",
             # deliberately far above the stub's 60/s, so the limiter has to shed
@@ -429,7 +403,7 @@ def main() -> int:
         failures.append(f"the endpoint benchmark did not run against a stub endpoint:\n{endpoint_run.stdout}\n{endpoint_run.stderr}")
     else:
         endpoint_metrics = json.load(open(os.path.join(endpoint_dir, "summary.json")))["metrics"]
-        for name in ("ts05_endpoint_reads", "ep28_endpoint_overhead_ms", "ep05_geojson_ttfb_ms"):
+        for name in ("ts05_endpoint_reads", "ep28_endpoint_overhead_ms", "ep05_csv_ttfb_ms"):
             if name not in endpoint_metrics:
                 failures.append(f"the endpoint benchmark produced no {name} sample, so it measured nothing")
         # the discovery hop, the read hop and the download all answered as expected

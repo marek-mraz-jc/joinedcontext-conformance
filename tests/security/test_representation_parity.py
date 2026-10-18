@@ -64,7 +64,9 @@ def representation_responses(
     geo_attr: str,
     sta_id_field: str,
 ) -> dict[str, dict[str, Any]]:
-    """Fetch all 5 standardized representation paths."""
+    """Fetch the 5 standardized representations: NGSI-LD, file.csv, NGSI-LD's GeoJSON for a map
+    (Accept: application/geo+json, API/02 section 3; file.geojson was removed by T-4597), OGC
+    API Features and SensorThings."""
     token = os.getenv("TOKEN_VIEWER")
     headers: dict[str, str] = {}
     if token:
@@ -74,7 +76,7 @@ def representation_responses(
     paths = {
         "ngsi-ld": (f"{parity_base_url}/ngsi-ld/v1/entities", {"type": parity_type, "limit": parity_limit}),
         "csv": (f"{parity_base_url}/file.csv", {"type": parity_type, "limit": parity_limit}),
-        "geojson": (f"{parity_base_url}/file.geojson", {"type": parity_type, "limit": parity_limit}),
+        "geojson": (f"{parity_base_url}/ngsi-ld/v1/entities", {"type": parity_type, "limit": parity_limit}),
         "ogc": (f"{parity_base_url}/ogc/features/collections/{parity_collection}/items", {"limit": parity_limit}),
         "sta": (f"{parity_base_url}/sta/v1.1/Observations", {"$top": parity_limit}),
     }
@@ -82,7 +84,8 @@ def representation_responses(
     results: dict[str, dict[str, Any]] = {}
     for name, (url, params) in paths.items():
         try:
-            resp = session.get(url, headers=headers, params=params, timeout=10)
+            accept = {"Accept": "application/geo+json"} if name == "geojson" else {}
+            resp = session.get(url, headers={**headers, **accept}, params=params, timeout=10)
             records: list[Record] = []
             if resp.status_code == 200:
                 if name == "ngsi-ld":
@@ -207,3 +210,23 @@ def test_ts03_a_representation_that_answers_nothing_is_not_parity(
         f"vacuity failure: fewer than 2 representations returned records. Answered: "
         f"{ {k: (v['status_code'], len(v['records'])) for k, v in representation_responses.items()} }"
     )
+
+
+# T-4597: an Endpoint publishes one file, file.csv. The others are gone for every caller, so no
+# grant or audience can bring one back.
+REMOVED_FILES = ("file.xlsx", "file.zip", "file.parquet", "file.json", "file.geojson")
+
+
+def test_t4597_a_removed_file_is_404_for_every_caller(parity_base_url: str, parity_type: str):
+    """EP-41, EP-119 withdrawn: each removed file answers 404, anonymous and with the viewer's token."""
+    callers = {"anonymous": {}}
+    token = os.getenv("TOKEN_VIEWER")
+    if token:
+        callers["viewer"] = {"Authorization": f"Bearer {token}"}
+    wrong = []
+    for who, headers in callers.items():
+        for name in REMOVED_FILES:
+            resp = requests.get(f"{parity_base_url}/{name}", headers=headers, params={"type": parity_type}, timeout=10)
+            if resp.status_code != 404:
+                wrong.append(f"{who} GET {name}: {resp.status_code}")
+    assert not wrong, "T-4597 removed files still answer:\n" + "\n".join(wrong)

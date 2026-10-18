@@ -4,17 +4,17 @@
 For every public Endpoint in dev's DCAT feed: read its first type and one entity, pick one
 attribute (a number gives `attr >= v`, else a short string gives `attr == "v"`) and a box of
 0.1 degrees around the entity's point, then ask the same question in NGSI-LD (`q` + georel),
-OData (`$filter`), OGC API Features (CQL2 `filter` + `bbox`), STA (`$filter` on `name`, on the
-Things) and `file.geojson` (`q` + georel). A standard's answer is `ok` when every entity it
-returns satisfies the filter and its total equals NGSI-LD's (and its ids equal NGSI-LD's when
-both fit on one page of 100); else `mismatch`; `not served` when the feed lists no such
+OData (`$filter`), OGC API Features (CQL2 `filter` + `bbox`) and STA (`$filter` on `name`, on the
+Things); the Endpoint's one file takes no filter (`file.geojson` was removed, T-4597). A
+standard's answer is `ok` when every entity it returns satisfies the filter and its total equals
+NGSI-LD's (and its ids equal NGSI-LD's when both fit on one page of 100); else `mismatch`; `not served` when the feed lists no such
 distribution; `error` when it answered 5xx, timed out or was not JSON. One malformed filter per
 standard must answer 400.
 
 Data sources: the Endpoints and their distributions are `dcat:Dataset` nodes of
 `{base}/catalog.jsonld` (`dcat:distribution[].dcat:accessURL`); the type is `typeList[0]` of
 `/ngsi-ld/v1/types`; totals are the `NGSILD-Results-Count` header, `@odata.count`,
-`numberMatched`, `@iot.count` and the length of the file's `features`; every value checked is
+`numberMatched` and `@iot.count`; every value checked is
 read from the answers. Nothing is typed.
 
 Read-only and anonymous (public Endpoints need no token, so none is ever held); sequential, one
@@ -33,16 +33,14 @@ import urllib.parse
 import urllib.request
 
 PAGE = 100
-FILE_CEILING = 200  # a file is the whole filtered set: larger ones are skipped, not downloaded
 STAMP = re.compile(r"^\d{4}-\d{2}-\d{2}")
 NAME = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
-STANDARDS = ("ngsi-ld", "odata", "ogc", "sta", "file.geojson")
+STANDARDS = ("ngsi-ld", "odata", "ogc", "sta")
 MARKERS = {
     "ngsi-ld": "/ngsi-ld/v1/",
     "odata": "/odata/v4/",
     "ogc": "/ogc/features/",
     "sta": "/sta/v1.1/",
-    "file.geojson": "/file.geojson",
 }
 
 
@@ -152,8 +150,6 @@ def urls(served, t, f, bbox):
         if bbox:
             p["bbox"] = ",".join(map(str, bbox))
         out["ogc"] = f"{served['ogc']}collections/{t}/items?{enc(p)}"
-    if "file.geojson" in served:
-        out["file.geojson"] = f"{served['file.geojson']}?{enc(n)}"
     return out
 
 
@@ -172,8 +168,7 @@ def rows(standard, status, headers, body):
         return body.get("@iot.count"), [(e.get("properties", {}).get("id") or e.get("@iot.id"), e, None)
                                         for e in body.get("value", [])]
     features = body.get("features", [])
-    total = body.get("numberMatched") if standard == "ogc" else len(features)
-    return total, [(x.get("id"), x.get("properties") or {}, x.get("geometry")) for x in features]
+    return body.get("numberMatched"), [(x.get("id"), x.get("properties") or {}, x.get("geometry")) for x in features]
 
 
 def judge(reference, answer, f, bbox):
@@ -251,19 +246,13 @@ def probe(http, ep, served):
         else:
             boxed = (None if reference[0] is None or unlocated[0] is None else reference[0] + unlocated[0],
                      reference[1] + unlocated[1])
-    for s in ("odata", "ogc", "file.geojson"):
+    for s in ("odata", "ogc"):
         if s not in asks:
             continue
         if s == "ogc":
             cells[s] = judge(boxed, rows(s, *http.get(asks[s])), f, bbox)
             continue
-        if s == "odata":
-            cells[s] = judge(plain, rows(s, *http.get(asks[s])), f, None)
-            continue
-        if s == "file.geojson" and (reference[0] or 0) > FILE_CEILING:
-            cells[s] = f"skipped: {reference[0]} entities"
-            continue
-        cells[s] = judge(reference, rows(s, *http.get(asks[s])), f, bbox)
+        cells[s] = judge(plain, rows(s, *http.get(asks[s])), f, None)
     if "sta" in served:
         cells["sta"] = sta(http, served, t, entity)
     return cells

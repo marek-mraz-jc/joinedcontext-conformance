@@ -10,8 +10,14 @@
     "dcat:byteSize": {
       "@type": "xsd:nonNegativeInteger"
     },
+    "dcat:downloadURL": {
+      "@type": "@id"
+    },
     "dcat:endDate": {
       "@type": "xsd:date"
+    },
+    "dcat:endpointDescription": {
+      "@type": "@id"
     },
     "dcat:endpointURL": {
       "@type": "@id"
@@ -56,6 +62,13 @@
     },
     "eli": "http://data.europa.eu/eli/ontology#",
     "foaf": "http://xmlns.com/foaf/0.1/",
+    "foaf:homepage": {
+      "@type": "@id"
+    },
+    "foaf:page": {
+      "@type": "@id"
+    },
+    "leg": "https://data.gov.sk/def/ontology/legislation/",
     "ngsi-ld": "https://joinedcontext.com/odrl/ngsi-ld/v1#",
     "odrl": "http://www.w3.org/ns/odrl/2/",
     "odrl:action": {
@@ -77,6 +90,7 @@
       "@type": "@id"
     },
     "prov": "http://www.w3.org/ns/prov#",
+    "pu": "https://data.gov.cz/slovník/podmínky-užití/",
     "rdfs": "http://www.w3.org/2000/01/rdf-schema#",
     "skos": "http://www.w3.org/2004/02/skos/core#",
     "spdx": "http://spdx.org/rdf/terms#",
@@ -156,8 +170,13 @@
       "@type": "rdfs:Resource"
     },
     {
+      "@id": "https://data.example.org/api/endpoint/k4y7pq2mzt6vhx3nbwrs5cjd8f/openapi.json",
+      "@type": "rdfs:Resource"
+    },
+    {
       "@id": "https://data.example.org/api/endpoint/k4y7pq2mzt6vhx3nbwrs5cjd8f#service",
       "@type": "dcat:DataService",
+      "dcat:endpointDescription": "https://data.example.org/api/endpoint/k4y7pq2mzt6vhx3nbwrs5cjd8f/openapi.json",
       "dcat:endpointURL": "https://data.example.org/api/endpoint/k4y7pq2mzt6vhx3nbwrs5cjd8f/",
       "dcat:servesDataset": "https://data.example.org/api/endpoint/k4y7pq2mzt6vhx3nbwrs5cjd8f",
       "dct:accessRights": "http://publications.europa.eu/resource/authority/access-right/PUBLIC",
@@ -174,7 +193,7 @@
       "@type": "rdfs:Resource"
     },
     {
-      "@id": "https://www.iana.org/assignments/media-types/application/ld+json",
+      "@id": "https://www.iana.org/assignments/media-types/application/json",
       "@type": "dct:MediaType"
     },
     {
@@ -183,22 +202,6 @@
     },
     {
       "@id": "https://www.etsi.org/deliver/etsi_gs/CIM/001_099/009/",
-      "@type": "dct:Standard"
-    },
-    {
-      "@id": "https://data.example.org/api/endpoint/k4y7pq2mzt6vhx3nbwrs5cjd8f/file.geojson",
-      "@type": "rdfs:Resource"
-    },
-    {
-      "@id": "https://www.iana.org/assignments/media-types/application/geo+json",
-      "@type": "dct:MediaType"
-    },
-    {
-      "@id": "http://publications.europa.eu/resource/authority/file-type/GEOJSON",
-      "@type": "dct:MediaTypeOrExtent"
-    },
-    {
-      "@id": "https://www.rfc-editor.org/rfc/rfc7946",
       "@type": "dct:Standard"
     },
     {
@@ -214,44 +217,16 @@
       "@type": "dct:MediaTypeOrExtent"
     },
     {
-      "@id": "https://data.example.org/api/endpoint/k4y7pq2mzt6vhx3nbwrs5cjd8f/file.xlsx",
-      "@type": "rdfs:Resource"
-    },
-    {
-      "@id": "https://www.iana.org/assignments/media-types/application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-      "@type": "dct:MediaType"
-    },
-    {
-      "@id": "http://publications.europa.eu/resource/authority/file-type/XLSX",
-      "@type": "dct:MediaTypeOrExtent"
-    },
-    {
-      "@id": "https://data.example.org/api/endpoint/k4y7pq2mzt6vhx3nbwrs5cjd8f/file.json",
-      "@type": "rdfs:Resource"
-    },
-    {
-      "@id": "https://www.iana.org/assignments/media-types/application/json",
-      "@type": "dct:MediaType"
-    },
-    {
-      "@id": "http://publications.europa.eu/resource/authority/file-type/JSON",
-      "@type": "dct:MediaTypeOrExtent"
-    },
-    {
-      "@id": "https://data.example.org/api/endpoint/k4y7pq2mzt6vhx3nbwrs5cjd8f/file.zip",
-      "@type": "rdfs:Resource"
-    },
-    {
-      "@id": "https://www.iana.org/assignments/media-types/application/zip",
-      "@type": "dct:MediaType"
-    },
-    {
-      "@id": "http://publications.europa.eu/resource/authority/file-type/ZIP",
-      "@type": "dct:MediaTypeOrExtent"
-    },
-    {
       "@id": "https://data.example.org/api/endpoint/k4y7pq2mzt6vhx3nbwrs5cjd8f/ogc/features/",
       "@type": "rdfs:Resource"
+    },
+    {
+      "@id": "https://www.iana.org/assignments/media-types/application/geo+json",
+      "@type": "dct:MediaType"
+    },
+    {
+      "@id": "http://publications.europa.eu/resource/authority/file-type/GEOJSON",
+      "@type": "dct:MediaTypeOrExtent"
     },
     {
       "@id": "http://www.opengis.net/spec/ogcapi-features-1/1.0/conf/core",
@@ -260,6 +235,10 @@
     {
       "@id": "https://data.example.org/api/endpoint/k4y7pq2mzt6vhx3nbwrs5cjd8f/sta/v1.1/",
       "@type": "rdfs:Resource"
+    },
+    {
+      "@id": "http://publications.europa.eu/resource/authority/file-type/JSON",
+      "@type": "dct:MediaTypeOrExtent"
     },
     {
       "@id": "http://www.opengis.net/spec/sensorthings/1.1",
@@ -304,7 +283,10 @@
   ],
   "@type": "dcat:Dataset",
   "dcat:contactPoint": {
-    "@type": "vcard:Kind",
+    "@type": [
+      "vcard:Organization",
+      "vcard:Kind"
+    ],
     "vcard:fn": "Open data desk",
     "vcard:hasEmail": "mailto:opendata@city.example.org"
   },
@@ -314,7 +296,7 @@
       "@type": "dcat:Distribution",
       "dcat:accessService": "https://data.example.org/api/endpoint/k4y7pq2mzt6vhx3nbwrs5cjd8f#service",
       "dcat:accessURL": "https://data.example.org/api/endpoint/k4y7pq2mzt6vhx3nbwrs5cjd8f/ngsi-ld/v1/",
-      "dcat:mediaType": "https://www.iana.org/assignments/media-types/application/ld+json",
+      "dcat:mediaType": "https://www.iana.org/assignments/media-types/application/json",
       "dct:conformsTo": "https://www.etsi.org/deliver/etsi_gs/CIM/001_099/009/",
       "dct:format": "http://publications.europa.eu/resource/authority/file-type/JSON_LD",
       "dct:license": "http://publications.europa.eu/resource/authority/licence/CC0",
@@ -328,26 +310,6 @@
         ]
       },
       "dct:title": "NGSI-LD API"
-    },
-    {
-      "@id": "https://data.example.org/api/endpoint/k4y7pq2mzt6vhx3nbwrs5cjd8f/file.geojson",
-      "@type": "dcat:Distribution",
-      "dcat:accessService": "https://data.example.org/api/endpoint/k4y7pq2mzt6vhx3nbwrs5cjd8f#service",
-      "dcat:accessURL": "https://data.example.org/api/endpoint/k4y7pq2mzt6vhx3nbwrs5cjd8f/file.geojson",
-      "dcat:mediaType": "https://www.iana.org/assignments/media-types/application/geo+json",
-      "dct:conformsTo": "https://www.rfc-editor.org/rfc/rfc7946",
-      "dct:format": "http://publications.europa.eu/resource/authority/file-type/GEOJSON",
-      "dct:license": "http://publications.europa.eu/resource/authority/licence/CC0",
-      "dct:rights": {
-        "@type": "dct:RightsStatement",
-        "rdfs:label": [
-          {
-            "@language": "en",
-            "@value": "Source: City of Example"
-          }
-        ]
-      },
-      "dct:title": "GeoJSON"
     },
     {
       "@id": "https://data.example.org/api/endpoint/k4y7pq2mzt6vhx3nbwrs5cjd8f/file.csv",
@@ -367,63 +329,6 @@
         ]
       },
       "dct:title": "CSV"
-    },
-    {
-      "@id": "https://data.example.org/api/endpoint/k4y7pq2mzt6vhx3nbwrs5cjd8f/file.xlsx",
-      "@type": "dcat:Distribution",
-      "dcat:accessService": "https://data.example.org/api/endpoint/k4y7pq2mzt6vhx3nbwrs5cjd8f#service",
-      "dcat:accessURL": "https://data.example.org/api/endpoint/k4y7pq2mzt6vhx3nbwrs5cjd8f/file.xlsx",
-      "dcat:mediaType": "https://www.iana.org/assignments/media-types/application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-      "dct:format": "http://publications.europa.eu/resource/authority/file-type/XLSX",
-      "dct:license": "http://publications.europa.eu/resource/authority/licence/CC0",
-      "dct:rights": {
-        "@type": "dct:RightsStatement",
-        "rdfs:label": [
-          {
-            "@language": "en",
-            "@value": "Source: City of Example"
-          }
-        ]
-      },
-      "dct:title": "Excel workbook"
-    },
-    {
-      "@id": "https://data.example.org/api/endpoint/k4y7pq2mzt6vhx3nbwrs5cjd8f/file.json",
-      "@type": "dcat:Distribution",
-      "dcat:accessService": "https://data.example.org/api/endpoint/k4y7pq2mzt6vhx3nbwrs5cjd8f#service",
-      "dcat:accessURL": "https://data.example.org/api/endpoint/k4y7pq2mzt6vhx3nbwrs5cjd8f/file.json",
-      "dcat:mediaType": "https://www.iana.org/assignments/media-types/application/json",
-      "dct:format": "http://publications.europa.eu/resource/authority/file-type/JSON",
-      "dct:license": "http://publications.europa.eu/resource/authority/licence/CC0",
-      "dct:rights": {
-        "@type": "dct:RightsStatement",
-        "rdfs:label": [
-          {
-            "@language": "en",
-            "@value": "Source: City of Example"
-          }
-        ]
-      },
-      "dct:title": "JSON"
-    },
-    {
-      "@id": "https://data.example.org/api/endpoint/k4y7pq2mzt6vhx3nbwrs5cjd8f/file.zip",
-      "@type": "dcat:Distribution",
-      "dcat:accessService": "https://data.example.org/api/endpoint/k4y7pq2mzt6vhx3nbwrs5cjd8f#service",
-      "dcat:accessURL": "https://data.example.org/api/endpoint/k4y7pq2mzt6vhx3nbwrs5cjd8f/file.zip",
-      "dcat:mediaType": "https://www.iana.org/assignments/media-types/application/zip",
-      "dct:format": "http://publications.europa.eu/resource/authority/file-type/ZIP",
-      "dct:license": "http://publications.europa.eu/resource/authority/licence/CC0",
-      "dct:rights": {
-        "@type": "dct:RightsStatement",
-        "rdfs:label": [
-          {
-            "@language": "en",
-            "@value": "Source: City of Example"
-          }
-        ]
-      },
-      "dct:title": "Bundle of every representation"
     },
     {
       "@id": "https://data.example.org/api/endpoint/k4y7pq2mzt6vhx3nbwrs5cjd8f/ogc/features/",

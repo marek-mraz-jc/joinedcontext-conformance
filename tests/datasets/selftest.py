@@ -2,14 +2,14 @@
 """Proof that the dataset validator goes red on each break it is there to catch (T-4087).
 
 A recorded dataset (one CKAN package, one Endpoint serving three OffStreetParking entities in
-every representation, the seed in fixtures/seed) is served from memory, no network, and broken
+every representation it has, the seed in fixtures/seed) is served from memory, no network, and broken
 one way at a time. Each case names the only checks that may FAIL:
 
 1. a coherent dataset                -> nothing fails (also with OGC items paged, no numberMatched)
 2. an attribute with an empty value  -> ngsi.<Type>.values
 3. the same id twice                 -> ngsi.<Type>.ids
 4. file.csv two rows short           -> rep.<Type>.csv (a live type has one of slack)
-5. file.json answering 403           -> rep.<Type>.json and its CKAN resource line
+5. file.csv answering 403            -> rep.<Type>.csv and its CKAN resource line
 6. the newest write 3 h old          -> fresh.<Type> (a 5 min schedule)
 7. no notification while it changed  -> ws.notify
 8. the endpoint extra on another host and an entity missing from its source -> both lines
@@ -26,11 +26,9 @@ from __future__ import annotations
 import copy
 import datetime as dt
 import hashlib
-import io
 import json
 import sys
 import tempfile
-import zipfile
 from pathlib import Path
 from urllib.parse import parse_qs, urlsplit
 
@@ -61,14 +59,6 @@ ENTITIES = [
 ]
 
 
-def xlsx(rows: int) -> bytes:
-    sheet = "".join(f'<row r="{i}"><c r="A{i}"/></row>' for i in range(1, rows + 2))
-    buffer = io.BytesIO()
-    with zipfile.ZipFile(buffer, "w") as book:
-        book.writestr("xl/worksheets/sheet1.xml", f"<worksheet><sheetData>{sheet}</sheetData></worksheet>")
-    return buffer.getvalue()
-
-
 def good() -> dict:
     """The knobs a case turns: everything here is what a coherent publication answers."""
     return {
@@ -78,7 +68,7 @@ def good() -> dict:
         "expected": {TYPE: {"maxAge": "20m"}},
         "ogc_paged": False,
         "whole_exports": True,
-        "json_status": 200,
+        "csv_status": 200,
         "notifications": 1,
         "endpoint_host": BASE_URL,
         "source": " ".join(f'{{"id": "pr-{n}", "name": "P+R Station {n}"}}' for n in range(3)),
@@ -112,9 +102,6 @@ class Recorded(Http):
         resources = [
             {"name": "NGSI-LD API", "format": "NGSI-LD", "url": f"{BASE}ngsi-ld/v1/"},
             {"name": "CSV", "format": "CSV", "url": f"{BASE}file.csv"},
-            {"name": "JSON", "format": "JSON", "url": f"{BASE}file.json"},
-            {"name": "GeoJSON", "format": "GeoJSON", "url": f"{BASE}file.geojson"},
-            {"name": "Excel spreadsheet", "format": "XLSX", "url": f"{BASE}file.xlsx"},
             {"name": "Model Context Protocol", "format": "MCP", "url": f"{BASE}mcp"},
             {"name": "Live updates over WebSocket", "format": "WebSocket", "url": f"{BASE}ws"},
             {"name": "OGC API - Features", "format": "OGCFEAT", "url": f"{BASE}ogc/features/"},
@@ -144,10 +131,7 @@ class Recorded(Http):
         answers = {
             "ngsi-ld/v1/": (200, {"type": "EntityTypeList"}),
             "ngsi-ld/v1/types": (200, {"type": "EntityTypeList", "typeList": [TYPE]}),
-            "file.csv": (200, csv.encode()),
-            "file.json": (s["json_status"], rows if s["json_status"] == 200 else {"title": "AccessDenied"}),
-            "file.geojson": (200, {"type": "FeatureCollection", "features": features}),
-            "file.xlsx": (200, xlsx(n)),
+            "file.csv": (s["csv_status"], csv.encode() if s["csv_status"] == 200 else {"title": "AccessDenied"}),
             "mcp": (200 if method == "POST" else 405, {"jsonrpc": "2.0", "id": 1, "result": {}}),
             "ogc/features/": (200, {"links": []}),
             "ogc/features/conformance": (200, {"conformsTo": []}),
@@ -186,8 +170,8 @@ CASES = {
     "ogc counted over its pages": (lambda s: s.update(ogc_paged=True), set()),
     "an expected type missing": (lambda s: s["expected"].update(GtfsStop={"maxAge": None}), {"expected.types"}),
     "older than expected": (lambda s: s["expected"][TYPE].update(maxAge="30s"), {f"fresh.{TYPE}"}),
-    # The whole-dataset JSON answers 403, but it is not fetched: only the per-type line fails.
-    "403 export, whole exports skipped": (lambda s: s.update(json_status=403, whole_exports=False), {f"rep.{TYPE}.json"}),
+    # The whole-dataset CSV answers 403, but it is not fetched: only the per-type line fails.
+    "403 export, whole exports skipped": (lambda s: s.update(csv_status=403, whole_exports=False), {f"rep.{TYPE}.csv"}),
     "an empty value the dataset declares": (
         lambda s: (s["entities"][1]["totalSpotNumber"].update(value=""),
                    s["expected"][TYPE].update(emptyAllowed=["totalSpotNumber"])),
@@ -202,7 +186,7 @@ CASES = {
     "empty value": (lambda s: s["entities"][1]["totalSpotNumber"].update(value=""), {f"ngsi.{TYPE}.values"}),
     "duplicate id": (lambda s: s["entities"][2].update(id=s["entities"][1]["id"]), {f"ngsi.{TYPE}.ids"}),
     "count mismatch": (lambda s: s.update(csv_rows=1), {f"rep.{TYPE}.csv"}),
-    "403 export": (lambda s: s.update(json_status=403), {f"rep.{TYPE}.json", "ckan.resource JSON"}),
+    "403 export": (lambda s: s.update(csv_status=403), {f"rep.{TYPE}.csv", "ckan.resource CSV"}),
     # No expectation: the bound comes from the seed Pipeline's 5 min period.
     "stale type": (lambda s: s.update(written_ago=dt.timedelta(hours=3), expected={}), {f"fresh.{TYPE}"}),
     "ws silence": (lambda s: s.update(notifications=0, written_ago=dt.timedelta(0)), {"ws.notify"}),

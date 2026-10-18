@@ -53,12 +53,11 @@ SURFACES = {
     "ogc-features": ("/ogc/features/", "OGCFEAT"),
     "odata": ("/odata/v4/", "OData"),
     "sta": ("/sta/v1.1/", "STA"),
-    "geojson": ("/file.geojson", "GeoJSON"),
+    # The one file an Endpoint publishes: geojson, xlsx, json, parquet and zip were removed (T-4597).
     "csv": ("/file.csv", "CSV"),
-    "xlsx": ("/file.xlsx", "XLSX"),
-    "json": ("/file.json", "JSON"),
-    "zip": ("/file.zip", "ZIP"),
 }
+#: The files an Endpoint no longer publishes (T-4597): a resource pointing at one points at a 404.
+REMOVED = ("/file.geojson", "/file.xlsx", "/file.json", "/file.parquet", "/file.zip")
 #: A credential where a URL or a text should name none (EP-110).
 SECRET = re.compile(r"(?i)(?:[?&](?:token|access_token|apikey|api_key|key)=|bearer[ .]+(?!\$TOKEN\b)[A-Za-z0-9._~+/=-]{16,}|\beyJ[A-Za-z0-9_-]{8,}\.)")
 
@@ -74,7 +73,7 @@ def served(spec: dict[str, Any]) -> set[str]:
         surfaces = {name for name in SURFACES if name != "sta" and name not in disabled}
         if not mcp_on:
             surfaces.discard("mcp")
-    surfaces |= {"ngsi-ld", "geojson"} | ({"mcp"} if mcp_on else set())
+    surfaces |= {"ngsi-ld"} | ({"mcp"} if mcp_on else set())
     return surfaces
 
 
@@ -114,6 +113,7 @@ def compare(spec: dict[str, Any], url: str, package: dict[str, Any] | None) -> l
                 problems.append(f"{name}: format {resource.get('format')!r}, not {form!r}")
             if not (resource.get("description") or "").strip():
                 problems.append(f"{name}: no usage description")
+    problems += [f"{path[1:]}: removed (T-4597) and still listed" for path in REMOVED if url + path in by_url]
     for resource in resources:
         address = resource.get("url") or ""
         if SECRET.search(address) or SECRET.search(resource.get("description") or ""):

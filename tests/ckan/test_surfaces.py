@@ -21,10 +21,10 @@ def without(package, suffix):
     return trimmed
 
 
-def test_the_default_set_is_every_standard_but_sta_and_the_always_three_stay():
+def test_the_default_set_is_every_standard_but_sta_and_the_always_two_stay():
     assert served(PUBLIC) == set(SURFACES) - {"sta"}
     assert served({**PUBLIC, "disabledRepresentations": ["websocket", "csv"]}) == set(SURFACES) - {"sta", "websocket", "csv"}
-    assert served({**PUBLIC, "enabledRepresentations": ["csv"]}) == {"csv", "ngsi-ld", "geojson", "mcp"}
+    assert served({**PUBLIC, "enabledRepresentations": ["csv"]}) == {"csv", "ngsi-ld", "mcp"}
     assert "mcp" not in served({**PUBLIC, "mcp": False})
     assert served({**PUBLIC, "disabledRepresentations": ["ngsi-ld"]}) >= {"ngsi-ld"}
 
@@ -40,6 +40,12 @@ def test_a_missing_surface_resource_fails():
 def test_a_resource_for_a_surface_the_endpoint_no_longer_serves_fails():
     spec = {**PUBLIC, "disabledRepresentations": ["odata"]}
     assert compare(spec, URL, PACKAGE) == ["odata: listed and not served"]
+
+
+def test_a_resource_for_a_removed_file_fails():
+    stale = copy.deepcopy(PACKAGE)
+    stale["resources"].append({"name": "Excel", "format": "XLSX", "url": URL + "/file.xlsx", "description": "x"})
+    assert compare(PUBLIC, URL, stale) == ["file.xlsx: removed (T-4597) and still listed"]
 
 
 def test_a_surface_without_its_usage_text_or_with_the_wrong_format_fails():
@@ -105,8 +111,8 @@ def test_an_internal_endpoint_with_a_dataset_fails_and_one_without_passes():
 def test_a_published_endpoint_is_compared_with_its_own_dataset():
     report = check_endpoint(Recorded({"hki-air": PACKAGE}), manifest(PUBLIC), "", probe=False)
     assert report.ok, report.markdown()
-    report = check_endpoint(Recorded({"hki-air": without(PACKAGE, "/file.zip")}), manifest(PUBLIC), "", probe=False)
-    assert not report.ok and "zip: no resource at /file.zip" in report.markdown()
+    report = check_endpoint(Recorded({"hki-air": without(PACKAGE, "/file.csv")}), manifest(PUBLIC), "", probe=False)
+    assert not report.ok and "csv: no resource at /file.csv" in report.markdown()
 
 
 def test_the_lag_percentiles_are_the_median_and_the_nearest_rank():
