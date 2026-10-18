@@ -13,3 +13,6 @@ robotframework-mqttlibrary==0.7.1.post3
 websockets==17.1
 # tests/linkml: the LinkML surface suite (Antares T-3512); its generators and lint
 linkml==1.12.0
+# transitive (requests, pyshex), held at the fix: CVE-2026-97687 and CVE-2026-97689 (HIGH) are
+# fixed in 2.8.0 (T-4614)
+urllib3>=2.8.0
