@@ -68,7 +68,7 @@ def test_pick_takes_the_newest_the_largest_and_the_sum():
 def test_every_question_names_a_read_and_a_rule():
     spec = bench.load()
     ids = [q["id"] for q in spec["questions"]]
-    assert len(ids) == 25 and len(set(ids)) == 25
+    assert len(ids) == 26 and len(set(ids)) == 26
     for question in spec["questions"]:
         assert question["expect"]["pick"] in {"count", "sum", "max", "latest", "text", "aggregate"}
         assert question["expect"]["pick"] == "count" or question["expect"].get("attr")
@@ -78,6 +78,9 @@ def test_every_question_names_a_read_and_a_rule():
         "aggrMethods", "datasetId", "georel", "join", "lang"]
     for question in spec["questions"]:
         assert (question["expect"]["pick"] == "text") == bool(question["match"].get("text"))
+    # T-4570: the events question names the Event Endpoint and a date filter.
+    events = next(q for q in spec["questions"] if q["id"] == "bb-events-weekend")
+    assert events["expect"]["type"] == "Event" and events["expect"]["slug"] in events["reads"]["endpoint"]
 
 
 def test_a_parameter_counts_as_used_only_when_a_call_passed_it():
@@ -165,3 +168,47 @@ def test_a_count_is_read_from_the_header_whatever_its_case(monkeypatch):
               "params": {"georel": "near;maxDistance==1000", "geometry": "Point", "coordinates": "[19.1,48.7]"}}
     assert bench.fetch("https://dev.example", expect) == [61.0]
     assert "georel=near%3BmaxDistance%3D%3D1000" in asked[0] and "count=true" in asked[0]
+
+
+def test_this_weekend_is_today_on_a_weekend_and_the_coming_one_otherwise():
+    at = lambda d: bench.datetime(2026, 10, d, 12, tzinfo=bench.timezone.utc)
+    assert bench.weekend(at(14)) == ("2026-10-17", "2026-10-19"), "a Wednesday"
+    assert bench.weekend(at(17)) == ("2026-10-17", "2026-10-19"), "the Saturday"
+    assert bench.weekend(at(18)) == ("2026-10-17", "2026-10-19"), "the Sunday"
+    assert bench.weekend(at(19)) == ("2026-10-24", "2026-10-26"), "the Monday after"
+
+
+def test_a_weekend_question_reads_with_its_dates(monkeypatch):
+    import io
+
+    asked = []
+
+    class Response(io.BytesIO):
+        headers = None
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *_):
+            return False
+
+    def urlopen(url, timeout):
+        asked.append(url)
+        body = b'[{"id": "urn:ngsi-ld:Event:1", "name": {"languageMap": {"sk": "Sila rastl\xc3\xadn"}}}]' if not asked[1:] else b"[]"
+        return Response(body)
+
+    monkeypatch.setattr(bench.urllib.request, "urlopen", urlopen)
+    monkeypatch.setattr(bench, "weekend", lambda: ("2026-10-24", "2026-10-26"))
+    expect = {"slug": "s", "type": "Event", "pick": "text", "attr": "name", "lang": "sk", "weekend": "startDate"}
+    assert bench.fetch("https://dev.example", expect) == ["Sila rastlín"]
+    query = bench.urllib.parse.parse_qs(bench.urllib.parse.urlsplit(asked[0]).query)
+    assert query["q"] == ['startDate>="2026-10-24";startDate<"2026-10-26"']
+
+
+def test_a_read_counts_only_on_the_named_endpoint_with_a_matching_filter():
+    reads = {"endpoint": ["l3nomv", "Events — Banská Bystrica"], "q": "startDate|endDate"}
+    assert bench.read_as([{"endpoint": "l3nomv", "type": ["Event"], "q": 'startDate>="2026-10-24"'}], reads)
+    assert bench.read_as([{}, {"endpoint": "Events — Banská Bystrica", "q": 'endDate<"2026-10-26"'}], reads)
+    assert not bench.read_as([{"endpoint": "l3nomv", "type": ["Event"]}], reads), "no date filter"
+    assert not bench.read_as([{"endpoint": "news", "q": 'startDate>="2026-10-24"'}], reads), "another Endpoint"
+    assert not bench.read_as([], reads)

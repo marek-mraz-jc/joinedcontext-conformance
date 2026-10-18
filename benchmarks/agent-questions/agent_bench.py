@@ -6,7 +6,8 @@ hub as its only tool server and no built-in tool, and is scored against the valu
 read answers at the same moment. Recorded per question: tool calls, tokens (input, cache write,
 cache read and output, from the stream's `result` event), whether the answer holds the
 expected value, and, for a question that names the parameters it is about (`uses`), whether a
-tool call passed one of them (T-4533).
+tool call passed one of them (T-4533); for one that names the read it needs (`reads`), whether
+a call named that Endpoint with a matching `q` (T-4570).
 
     agent_bench.py expected            print the expected value of each question (no model call)
     agent_bench.py run [--only ID,...] [--model sonnet] [--out DIR]
@@ -63,6 +64,14 @@ def day(offset: int, now: datetime | None = None) -> tuple[str, str]:
     return start.strftime(stamp), (start + timedelta(days=1)).strftime(stamp)
 
 
+def weekend(now: datetime | None = None) -> tuple[str, str]:
+    """This weekend's Saturday and the Monday after, as dates: today's when it is Saturday or
+    Sunday, else the coming one."""
+    today = (now or datetime.now(timezone.utc)).date()
+    saturday = today + timedelta(days=5 - today.weekday())
+    return saturday.isoformat(), (saturday + timedelta(days=2)).isoformat()
+
+
 def fetch(base: str, expect: dict) -> list[float | str]:
     """The expected values of one question, read from the Endpoint now."""
     url = f"{base}/api/endpoint/{expect['slug']}/ngsi-ld/v1"
@@ -77,8 +86,12 @@ def fetch(base: str, expect: dict) -> list[float | str]:
         )
         return aggregated(body, expect)
     params = {"type": expect["type"], "options": "keyValues", **expect.get("params", {})}
-    if expect.get("q"):
-        params["q"] = expect["q"]
+    filters = [expect["q"]] if expect.get("q") else []
+    if expect.get("weekend"):
+        saturday, monday = weekend()
+        filters += [f'{expect["weekend"]}>="{saturday}"', f'{expect["weekend"]}<"{monday}"']
+    if filters:
+        params["q"] = ";".join(filters)
     if expect["pick"] == "count" and "via" not in expect:
         _, headers = read(f"{url}/entities", {**params, "count": "true", "limit": "0"})
         return [float(headers["NGSILD-Results-Count"])]
@@ -221,6 +234,17 @@ def used(inputs: list, names: list[str]) -> bool:
     return bool(keys(inputs) & set(names))
 
 
+def read_as(inputs: list, reads: dict) -> bool:
+    """Whether a tool call named one of `reads.endpoint` and filtered with a `q` matching
+    `reads.q`, as a question about a date range is read (T-4570)."""
+    return any(
+        isinstance(call, dict)
+        and call.get("endpoint") in reads["endpoint"]
+        and re.search(reads["q"], str(call.get("q", "")))
+        for call in inputs
+    )
+
+
 def ask(base: str, question: str, model: str, out: Path) -> list[str]:
     config = {"mcpServers": {"opendata": {"type": "http", "url": f"{base}/api/mcp"}}}
     with tempfile.TemporaryDirectory() as cwd:
@@ -273,7 +297,8 @@ def score(directory: Path, questions: list[dict]) -> list[dict]:
             id=question["id"],
             expected=want,
             correct=record["error"] is None and matches(record["answer"], want, question["match"]),
-            used=used(record["inputs"], question["uses"]) if question.get("uses") else None,
+            used=(used(record["inputs"], question["uses"]) if question.get("uses")
+                  else read_as(record["inputs"], question["reads"]) if question.get("reads") else None),
         )
         rows.append(record)
     return rows
