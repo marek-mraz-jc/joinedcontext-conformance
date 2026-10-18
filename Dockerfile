@@ -7,16 +7,20 @@ FROM node:22-bookworm-slim@sha256:83f487e0a63425e5b4d146fb5e5be574bcbe1b7b843d3e
 # k6 is built from source rather than taken from the release tarball: the published binary is
 # linked against an older Go, so trivy reports every Go stdlib advisory fixed since. `go install`
 # verifies each module against the Go checksum database.
-FROM golang:1-bookworm@sha256:648f440f42a0958804efb24df176f806f9d353b41f1c0627f666428e40310f6b AS k6
+# Go 1.27.2 (CVE-2026-78667, CVE-2026-78669, CVE-2026-97031 in the stdlib; T-4614).
+FROM golang:1-bookworm@sha256:5cf287a799e6b94384bad13d16b14904c531f51ba65792237e122ce42b392f61 AS k6
 ARG K6_VERSION=2.2.0
-# k6 2.2.0 pins google.golang.org/grpc 1.83.0 (CVE-2026-84445, fixed in 1.83.2). A throwaway
-# module requiring both lets minimum version selection build k6 against the fixed module;
-# drop the extra `go get` the day k6 ships a release that pins it itself.
+# k6 2.2.0 pins google.golang.org/grpc 1.83.0 (CVE-2026-84445, fixed in 1.83.2) and
+# golang.org/x/net 0.58.0 (CVE-2026-78669, fixed in 0.60.0). A throwaway module requiring them
+# lets minimum version selection build k6 against the fixed modules; drop each extra `go get`
+# the day k6 ships a release that pins it itself.
 ARG GRPC_GO_VERSION=1.83.2
+ARG X_NET_VERSION=0.60.0
 ENV CGO_ENABLED=0
 WORKDIR /src
 RUN go mod init k6build \
  && go get go.k6.io/k6/v2@v${K6_VERSION} google.golang.org/grpc@v${GRPC_GO_VERSION} \
+    golang.org/x/net@v${X_NET_VERSION} \
  && go build -o /go/bin/k6 go.k6.io/k6/v2
 
 FROM python:3.12-slim-bookworm@sha256:782412e85d0f0984994c290652577d4018aff08145c85b262bb63dc0c7522254
