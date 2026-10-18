@@ -13,6 +13,7 @@ validation instead of creating anything, so the suite never writes to the system
 from __future__ import annotations
 
 import os
+from urllib.parse import urlsplit, urlunsplit
 
 import pytest
 
@@ -62,3 +63,20 @@ def test_an_anonymous_write_is_refused_before_it_reaches_the_broker(anonymous, t
     assert "error" in frame, f"{surface}: {tool} without a token answered {frame}"
     assert frame["error"]["code"] == -32602, f"{surface}: {frame}"
     assert "without a token" in frame["error"]["message"], f"{surface}: {frame}"
+
+
+@pytest.mark.parametrize("surface", SURFACES)
+def test_an_anonymous_call_on_the_old_host_moves_to_the_data_host(surface, http_session):
+    """T-4632, ADR-N-052 §2.1: a surface handed out on `api.{domain}` answers an anonymous POST
+    on the apex with a 308 to the same path there, so a client configured before the move keeps
+    its body and its method."""
+    url = os.getenv(surface, "").strip().rstrip("/")
+    parts = urlsplit(url)
+    if not (parts.hostname or "").startswith("api."):
+        pytest.skip(f"{surface} is not on a data host ({url or 'not set'})")
+    old = urlunsplit(parts._replace(netloc=parts.netloc.removeprefix("api.")))
+    response = http_session.post(old + "?probe=1", json={"jsonrpc": "2.0", "id": 0, "method": "ping"},
+                                 headers={"Accept": "application/json, text/event-stream"},
+                                 allow_redirects=False, timeout=30)
+    assert response.status_code == 308, f"{old}: {response.status_code}"
+    assert response.headers.get("Location") == url + "?probe=1", f"{old}: {response.headers.get('Location')}"

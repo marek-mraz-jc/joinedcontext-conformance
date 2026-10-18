@@ -7,11 +7,11 @@ on:
       landing_url:
         description: OGC Features landing page of the endpoint
         required: true
-        default: https://dev.joinedcontext.com/api/endpoint/ovzdusie/ogc/features
+        default: https://api.dev.joinedcontext.com/api/endpoint/ovzdusie/ogc/features
       sta_url:
         description: SensorThings root of the endpoint
         required: true
-        default: https://dev.joinedcontext.com/api/endpoint/ovzdusie/sta/v1.1
+        default: https://api.dev.joinedcontext.com/api/endpoint/ovzdusie/sta/v1.1
       collections:
         description: how many collections the OGC Abstract Test Suite covers (-1 = all)
         required: false

@@ -11,7 +11,7 @@ import pytest
 from surfaces import SURFACES, check_endpoint, compare, percentiles, served
 
 PACKAGE = json.loads((Path(__file__).parent / "fixtures/package-show-surfaces.json").read_text())["result"]
-URL = "https://dev.joinedcontext.com/api/endpoint/k7m2q4hkiair"
+URL = "https://api.dev.joinedcontext.com/api/endpoint/k7m2q4hkiair"
 PUBLIC = {"slug": "k7m2q4hkiair", "audience": "public", "publish": {"ckan": {"name": "hki-air"}}}
 
 

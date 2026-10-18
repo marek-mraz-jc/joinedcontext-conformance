@@ -8,7 +8,7 @@ on:
       ngsild_url:
         description: NGSI-LD API root of the system under test
         required: true
-        default: https://dev.joinedcontext.com/cs/ovzdusie/ngsi-ld/v1
+        default: https://api.dev.joinedcontext.com/cs/ovzdusie/ngsi-ld/v1
       legs:
         description: suite folders under TP/NGSI-LD, space separated
         required: false

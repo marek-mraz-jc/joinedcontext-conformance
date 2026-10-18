@@ -1,6 +1,6 @@
 {
   "about": "T-4496: twenty questions, and T-4533 four more that name the parameter (`uses`) a good answer reads with (join, aggrMethods, georel, lang), a person asks the open-data MCP hub of dev, each with the NGSI-LD read its expected answer is fetched from at run time (never typed) and how an answer is matched. `pick`: count (NGSILD-Results-Count; with `via`, the entities whose Relationship `via.attr` names one of the `via` entities), sum, max, latest (the `attr` of the entities with the greatest `by`), text (`attr` in `lang`) or aggregate (the broker's `method` of `attr` over the UTC day `day` from today); `params` are added to the read as given. T-4570: `weekend` keeps the entities whose `weekend` date falls on this Saturday or Sunday; `reads` names the Endpoint (slug or title) and the `q` pattern one call must use.",
-  "base": "https://dev.joinedcontext.com",
+  "base": "https://api.dev.joinedcontext.com",
   "questions": [
     {"id": "bb-pm10", "question": "What PM10 value was measured most recently in Banská Bystrica?",
      "expect": {"slug": "32ea6ze7db7g6u7qnlgezpwp75", "type": "AirQualityObserved", "pick": "latest", "attr": "pm10", "by": "dateObserved"}, "match": {"decimals": 1}},

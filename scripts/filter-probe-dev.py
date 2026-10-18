@@ -286,7 +286,7 @@ def table(results):
 
 def main(argv=None):
     a = argparse.ArgumentParser()
-    a.add_argument("--base", default="https://dev.joinedcontext.com")
+    a.add_argument("--base", default="https://api.dev.joinedcontext.com")
     a.add_argument("--pace", type=float, default=1.0)
     a.add_argument("--only")
     a.add_argument("--json")

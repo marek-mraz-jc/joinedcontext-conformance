@@ -8,7 +8,7 @@ import json
 import requests
 from standards_sweep import probe_http, rows, sweep, table
 
-ROOT = "https://dev.joinedcontext.com/api/endpoint/abc/"
+ROOT = "https://api.dev.joinedcontext.com/api/endpoint/abc/"
 
 
 class Answer:
@@ -66,7 +66,7 @@ def test_the_sweep_routes_ws_and_mcp_and_lists_a_dataset_without_apis():
         {"name": "bbsk-b", "resources": [{"url": "https://opendata.bbsk.sk/x.csv", "format": "CSV"}]},
         {"name": "bbsk-a", "resources": [
             resource("file.csv", "text/csv", "CSV (Supplier)"),
-            {"name": "WebSocket (Supplier)", "url": "wss://dev.joinedcontext.com/api/endpoint/abc/ws", "resource_type": "api"},
+            {"name": "WebSocket (Supplier)", "url": "wss://api.dev.joinedcontext.com/api/endpoint/abc/ws", "resource_type": "api"},
             {"name": "Model Context Protocol (Supplier)", "url": ROOT + "mcp", "resource_type": "api"}]},
     ]
     seen = []

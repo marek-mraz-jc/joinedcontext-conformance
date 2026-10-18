@@ -793,7 +793,7 @@ def main(argv=None):
                         help="an origin the deployments allow (the chat refuses others with 403)")
     parser.add_argument("--deployment", action="append", default=[], metavar="PUBLIC_ID=MODEL",
                         help="a public deployment and the model it answers with; repeat per model")
-    parser.add_argument("--gateway", default=os.environ.get("JC_GATEWAY_URL", "https://dev.joinedcontext.com"),
+    parser.add_argument("--gateway", default=os.environ.get("JC_GATEWAY_URL", "https://api.dev.joinedcontext.com"),
                         help="where the multi-step checks read the Endpoints, anonymously")
     parser.add_argument("--only", nargs="*", help="ask only these question ids")
     parser.add_argument("--pace", type=float, default=8.0, help="seconds between questions (rate limit 10/min)")

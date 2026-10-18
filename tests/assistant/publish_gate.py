@@ -65,8 +65,8 @@ import yaml
 TIMEOUT = 60
 PAGE, PART_ROWS = 1000, 4000  # the generator's rows per Esri page and per esri-layers pipeline
 CKAN = "https://data.dev.joinedcontext.com"
-HUB = "https://dev.joinedcontext.com/api/mcp"
-GATEWAY = "https://dev.joinedcontext.com"
+HUB = "https://api.dev.joinedcontext.com/api/mcp"
+GATEWAY = "https://api.dev.joinedcontext.com"
 EVAL_ID = "bb-eval-gemini"
 SAMPLE = 100
 # Publisher -> (west, south, east, north), a little wider than the body's territory.

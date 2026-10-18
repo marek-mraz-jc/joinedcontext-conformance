@@ -228,7 +228,7 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("project")
     parser.add_argument("--languages", default="en", help="keyword languages every record must carry")
-    parser.add_argument("--base", default=os.environ.get("JC_DEV_BASE", "https://dev.joinedcontext.com"))
+    parser.add_argument("--base", default=os.environ.get("JC_DEV_BASE", "https://api.dev.joinedcontext.com"))
     parser.add_argument("--namespace", default=os.environ.get("JC_DEV_NS", "dev"))
     args = parser.parse_args(argv)
     if not args.base.startswith("https://"):
