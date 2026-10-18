@@ -111,6 +111,8 @@ def test_the_open_data_set_answers_the_live_value(q):
         grade, invented = eval_opendata.grade_unknowable(q, truth, row, SET["known"])
         assert not invented, (row["answer"], invented)
         wrong_number = False
+    elif q["kind"] == "direct":
+        grade, wrong_number = eval_opendata.grade_direct(row, SET["canary"])
     else:
         grade, wrong_number = eval_opendata.grade(q, truth, row["answer"], SET["canary"])
     print(f"{q['id']} {grade} ttft {ttft} total {total}: {row['answer'][:200]!r} (truth {truth})")
