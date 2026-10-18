@@ -18,7 +18,7 @@ export const EXPORT_TIMEOUTS = 'ep44_export_timeouts';
 export const ENDPOINT_OVERHEAD_MS = 'ep28_endpoint_overhead_ms';
 export const ENDPOINT_MS = 'ts05_endpoint_read_ms';
 export const ENDPOINT_READS = 'ts05_endpoint_reads';
-export const GEOJSON_TTFB_MS = 'ep05_geojson_ttfb_ms';
+export const CSV_TTFB_MS = 'ep05_csv_ttfb_ms';
 // answers that arrived without the standard RateLimit field on an endpoint that declares a limit
 export const LIMIT_HEADERS_MISSING = 'ep20_limit_headers_missing';
 // 429s: none while the offered rate stays under the endpoint's limit, at least one when a
@@ -108,7 +108,7 @@ export function enduranceBudgets({ rate, duration }) {
  * The 5 ms is the gateway's own overhead, paired against the broker on the same entity, which
  * is what EP-28 budgets: a total read latency of 5 ms would be a budget on the broker, the
  * network and the dataset size rather than on anything this platform controls. The total read
- * keeps the OPS-18 ingress budget, and a `file.geojson` download is budgeted on its first byte,
+ * keeps the OPS-18 ingress budget, and a `file.csv` download is budgeted on its first byte,
  * because the rest of it is the size of the dataset.
  */
 export function endpointBudgets({ rate, duration, measureOverhead, proveRateLimit }) {
@@ -119,7 +119,7 @@ export function endpointBudgets({ rate, duration, measureOverhead, proveRateLimi
     // OPS-18: p95 ingress latency <= 50 ms for a cached read
     [ENDPOINT_MS]: ['p(95)<50'],
     // EP-05: the download starts answering within a second, whatever its total size
-    [GEOJSON_TTFB_MS]: ['p(95)<1000'],
+    [CSV_TTFB_MS]: ['p(95)<1000'],
     [ENDPOINT_READS]: [`count>=${Math.floor(rate * seconds * 0.95)}`],
     dropped_iterations: ['count<1'],
     // the task's zero dropped connections: under 0.01% of the sustained phase, and the burst

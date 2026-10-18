@@ -1,6 +1,7 @@
 // Sustained load on one Endpoint's representations (T-0332, EP-05, EP-20, EP-28, TS-05).
 //
-// The task asks for 100 rps against `/ngsi-ld/v1/entities` and `/file.geojson` with a p99
+// The task asks for 100 rps against `/ngsi-ld/v1/entities` and the Endpoint's one file, `/file.csv`
+// (file.geojson was removed, T-4597), with a p99
 // under 5.0 ms. The 5 ms is EP-28's budget on the gateway's own *overhead*, so the run pairs
 // each measured read against the broker's internal listener and asserts the difference; a
 // p99 on the total read would be a budget on the broker, the network and the size of the
@@ -19,7 +20,7 @@ import {
   ENDPOINT_OVERHEAD_MS,
   ENDPOINT_READS,
   BROKER_MS,
-  GEOJSON_TTFB_MS,
+  CSV_TTFB_MS,
   LIMIT_HEADERS_MISSING,
   LIMIT_SHED,
   endpointBudgets,
@@ -30,7 +31,7 @@ const stripSlash = (value) => (value || '').replace(/\/+$/, '');
 
 const ENDPOINT_URL = stripSlash(__ENV.ENDPOINT_URL);
 const NGSI_URL = `${ENDPOINT_URL}/ngsi-ld/v1`;
-const GEOJSON_URL = `${ENDPOINT_URL}/file.geojson`;
+const CSV_URL = `${ENDPOINT_URL}/file.csv`;
 const BROKER_URL = stripSlash(__ENV.BROKER_URL);
 const BROKER_TENANT = __ENV.BROKER_TENANT || '';
 const TOKEN = __ENV.GATEWAY_TOKEN || '';
@@ -39,7 +40,7 @@ const TOKEN = __ENV.GATEWAY_TOKEN || '';
 const RATE = Number(__ENV.JC_K6_RATE || 100); // the task's sustained 100 rps
 const DURATION = __ENV.JC_K6_DURATION || '1m';
 const VUS = Number(__ENV.JC_K6_VUS || 20);
-const GEOJSON_RATE = Number(__ENV.JC_K6_GEOJSON_RATE || 5);
+const CSV_RATE = Number(__ENV.JC_K6_CSV_RATE || 5);
 const OVERHEAD_RATE = Number(__ENV.JC_K6_OVERHEAD_RATE || 10);
 const BURST_RATE = Number(__ENV.JC_K6_BURST_RATE || 0);
 const BURST_DURATION = __ENV.JC_K6_BURST_DURATION || '10s';
@@ -48,7 +49,7 @@ const WARMUP_READS = Number(__ENV.JC_K6_WARMUP_READS || 20); // EP-28 budgets *c
 const endpointMs = new Trend(ENDPOINT_MS);
 const brokerMs = new Trend(BROKER_MS);
 const overheadMs = new Trend(ENDPOINT_OVERHEAD_MS);
-const geojsonTtfbMs = new Trend(GEOJSON_TTFB_MS);
+const csvTtfbMs = new Trend(CSV_TTFB_MS);
 const endpointReads = new Counter(ENDPOINT_READS);
 const limitHeadersMissing = new Counter(LIMIT_HEADERS_MISSING);
 const limitShed = new Counter(LIMIT_SHED);
@@ -64,14 +65,14 @@ const scenarios = {
     exec: 'entitiesRead',
     gracefulStop: '10s',
   },
-  ep05_geojson: {
+  ep05_csv: {
     executor: 'constant-arrival-rate',
-    rate: GEOJSON_RATE,
+    rate: CSV_RATE,
     timeUnit: '1s',
     duration: DURATION,
     preAllocatedVUs: 5,
     maxVUs: 50,
-    exec: 'geojsonRead',
+    exec: 'csvRead',
     gracefulStop: '30s',
   },
 };
@@ -191,17 +192,18 @@ export function entitiesRead(data) {
   });
 }
 
-export function geojsonRead() {
-  const res = http.get(GEOJSON_URL, params('sustained', 'geojson'));
+export function csvRead() {
+  const res = http.get(CSV_URL, params('sustained', 'csv'));
   // the first byte, not the whole download: the rest of it is the size of the dataset
-  geojsonTtfbMs.add(res.timings.waiting);
+  csvTtfbMs.add(res.timings.waiting);
   countLimitHeaders(res);
   if (res.status === 429) limitShed.add(1);
   check(res, {
-    'EP-05 geojson download is 200': (r) => r.status === 200,
-    'EP-05 geojson download is a FeatureCollection': (r) => {
-      const body = r.json();
-      return body !== null && body.type === 'FeatureCollection';
+    'EP-05 csv download is 200': (r) => r.status === 200,
+    'EP-05 csv download is text/csv with an id column': (r) => {
+      const type = r.headers['Content-Type'] || r.headers['content-type'] || '';
+      const header = (r.body || '').split('\n', 1)[0].split(',').map((h) => h.trim().replace(/^"|"$/g, ''));
+      return type.startsWith('text/csv') && header.indexOf('id') !== -1;
     },
   });
 }

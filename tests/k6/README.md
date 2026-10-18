@@ -131,8 +131,8 @@ The 30-minute soak belongs on dedicated hardware; running it on shared CI runner
 
 ## 3. Bulk Export Streaming (`bulk-export.js`, T-0067)
 
-Validates high-volume streaming exports across tabular (`file.csv`, EP-45) and archive bundle
-(`file.zip`, EP-41) representations under concurrent streams (EP-44, OPS-18), asserting time to first
+Validates high-volume streaming of the Endpoint's one file, `file.csv` (EP-44, EP-45; `file.zip` was
+removed by T-4597), under concurrent streams (EP-44, OPS-18), asserting time to first
 byte (TTFB), total export completion time, zero timeouts, and complete payload integrity.
 
 ### Budget Table
@@ -144,7 +144,7 @@ byte (TTFB), total export completion time, zero timeouts, and complete payload i
 | `ep44_export_timeouts count<1` | EP-44 — zero HTTP 504 / gateway read timeouts |
 | `ep41_export_rows count>=rows*streams` | EP-41 — full dataset streamed without row truncation |
 | `http_req_failed rate<0.001` | zero dropped HTTP connections |
-| `checks rate==1.0` | 100% check pass rate on format headers, CSV columns, and ZIP magic |
+| `checks rate==1.0` | 100% check pass rate on the CSV Content-Type, its id column and its row count |
 
 ### Environment Variables
 
@@ -152,7 +152,7 @@ byte (TTFB), total export completion time, zero timeouts, and complete payload i
 |---|---|
 | `EXPORT_URL` | Endpoint base URL, e.g. `https://host/api/endpoint/{slug}` (required) |
 | `EXPORT_ROWS` | minimum expected rows per export stream, default 50 000 |
-| `JC_K6_EXPORT_STREAMS` | concurrent streams per format, default 3 |
+| `JC_K6_EXPORT_STREAMS` | concurrent CSV streams, default 3 |
 | `GATEWAY_TOKEN` | bearer token for authorized endpoint access |
 
 ---
@@ -160,7 +160,7 @@ byte (TTFB), total export completion time, zero timeouts, and complete payload i
 ## 4. Endpoint Sustained Load (`transport_endpoint_load.js`, T-0332)
 
 Holds `JC_K6_RATE` requests per second against one Endpoint's `ngsi-ld/v1/entities` while a
-second scenario downloads its `file.geojson`, and afterwards offers a burst the endpoint's own
+second scenario downloads its `file.csv` (its one file since T-4597), and afterwards offers a burst the endpoint's own
 rate limit has to shed.
 
 **What the 5 ms is.** The task this script answers asks for a p99 under 5.0 ms. That number is
@@ -183,7 +183,7 @@ asserted on the sustained phase only: the burst's 429s are the point rather than
 |---|---|
 | `ep28_endpoint_overhead_ms p(99)<5` | EP-28 — p99 gateway overhead ≤ 5.0 ms on the endpoint surface |
 | `ts05_endpoint_read_ms p(95)<50` | OPS-18 — p95 ingress latency ≤ 50 ms for a cached read |
-| `ep05_geojson_ttfb_ms p(95)<1000` | EP-05 — the download answers its first byte within a second |
+| `ep05_csv_ttfb_ms p(95)<1000` | EP-05 — the download answers its first byte within a second |
 | `ts05_endpoint_reads count>=95% of rate×duration` | TS-05 — the offered rate was actually served |
 | `dropped_iterations count<1` | the arrival rate was delivered without dropped iterations |
 | `http_req_failed{phase:sustained} rate<0.0001` | error rate under 0.01% while under the limit |
@@ -204,7 +204,7 @@ asserted on the sustained phase only: the burst's 429s are the point rather than
 | `JC_K6_RATE` | sustained arrival rate, default 100 req/s |
 | `JC_K6_DURATION` | duration of the sustained phase, default `1m` |
 | `JC_K6_VUS` | pre-allocated virtual users, default 20 |
-| `JC_K6_GEOJSON_RATE` | download rate running beside the reads, default 5/s |
+| `JC_K6_CSV_RATE` | download rate running beside the reads, default 5/s |
 | `JC_K6_OVERHEAD_RATE` | paired-read overhead sampling rate, default 10/s |
 | `JC_K6_BURST_RATE` | burst rate after the sustained phase; unset leaves EP-20 unproven |
 | `JC_K6_BURST_DURATION` | how long to hold the burst, default `10s` |
@@ -226,6 +226,6 @@ The self-test runs eight distinct validation suites:
 3. `gateway-latency-load.js`: live benchmark execution with `--no-thresholds` against an in-process stub space asserting paired hop reads and metric emission.
 4. `selftest.js (endurance & export)`: proves the endurance budgets and bulk export budgets against conforming and failing distributions (RSS regression slope calculated via `slopePercent`).
 5. `gateway-endurance.js`: wiring runs against local stubs with flat RSS (confirming count 0 on `ts22_memory_growth`) and climbing RSS (confirming `ts22_memory_growth >= 1`).
-6. `bulk-export.js`: wiring run against streaming CSV and ZIP stubs asserting TTFB, row counting, and check passing.
+6. `bulk-export.js`: wiring run against a streaming CSV stub asserting TTFB, row counting, and check passing.
 7. `selftest.js (endpoint)`: proves the endpoint budgets against conforming and failing distributions.
-8. `transport_endpoint_load.js`: wiring run against a stub endpoint that carries its own token bucket, asserting type and entity discovery, the paired hop, the GeoJSON download, and that a burst four hundred a second past a sixty a second bucket is shed while nothing under the limit is.
+8. `transport_endpoint_load.js`: wiring run against a stub endpoint that carries its own token bucket, asserting type and entity discovery, the paired hop, the CSV download, and that a burst four hundred a second past a sixty a second bucket is shed while nothing under the limit is.

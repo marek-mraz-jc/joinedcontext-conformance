@@ -1,8 +1,7 @@
 // Endpoint bulk export streaming benchmark (T-0067, EP-41, EP-44, OPS-18).
 //
-// Validates high-volume streaming exports across tabular (file.csv) and archive
-// (file.zip) representations under concurrent load, asserting TTFB, total duration,
-// and complete payload integrity.
+// Validates high-volume streaming of the Endpoint's one file, file.csv (file.zip was removed,
+// T-4597), under concurrent load, asserting TTFB, total duration and complete payload integrity.
 import http from 'k6/http';
 import { check, fail } from 'k6';
 import { Counter, Trend } from 'k6/metrics';
@@ -35,14 +34,6 @@ export const options = {
       iterations: 1,
       maxDuration: '310s',
       exec: 'exportCsv',
-      gracefulStop: '10s',
-    },
-    ep44_zip: {
-      executor: 'per-vu-iterations',
-      vus: STREAMS,
-      iterations: 1,
-      maxDuration: '310s',
-      exec: 'exportZip',
       gracefulStop: '10s',
     },
   },
@@ -115,49 +106,11 @@ export function exportCsv() {
   });
 }
 
-export function exportZip() {
-  const url = `${EXPORT_URL}/file.zip`;
-  const res = http.get(url, {
-    headers: authHeaders(),
-    timeout: '300s',
-    responseType: 'binary',
-    tags: { format: 'zip' },
-  });
-
-  exportTtfbMs.add(res.timings.waiting);
-  exportMs.add(res.timings.duration);
-
-  const timedOut = recordTimeout(res);
-  check(timedOut, {
-    'EP-44 ZIP export completed without timeout': (t) => !t,
-  });
-
-  const contentType = res.headers['Content-Type'] || res.headers['content-type'] || '';
-  let isZipMagic = false;
-  let bodyLen = 0;
-
-  if (res.status === 200 && res.body) {
-    const bytes = new Uint8Array(res.body);
-    bodyLen = bytes.length;
-    // PK\x03\x04 signature: 0x50, 0x4b, 0x03, 0x04
-    if (bytes.length >= 4 && bytes[0] === 0x50 && bytes[1] === 0x4b && bytes[2] === 0x03 && bytes[3] === 0x04) {
-      isZipMagic = true;
-    }
-  }
-
-  check(res, {
-    'EP-41 ZIP export answered 200': (r) => r.status === 200,
-    'EP-41 ZIP Content-Type is application/zip': () => contentType.startsWith('application/zip'),
-    'EP-41 ZIP payload begins with PK local file header': () => isZipMagic,
-    'EP-41 ZIP payload size is greater than 1KB': () => bodyLen > 1024,
-  });
-}
-
 export function handleSummary(data) {
   const dir = __ENV.JC_REPORTS_DIR || '.';
   const text = summarize(
     data,
-    `k6 bulk export benchmark (T-0067): ${STREAMS} streams per format against ${EXPORT_URL}`,
+    `k6 bulk export benchmark (T-0067): ${STREAMS} CSV streams against ${EXPORT_URL}`,
   );
   return {
     stdout: text,

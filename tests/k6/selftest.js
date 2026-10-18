@@ -10,7 +10,7 @@ import {
   ENDPOINT_MS,
   ENDPOINT_OVERHEAD_MS,
   ENDPOINT_READS,
-  GEOJSON_TTFB_MS,
+  CSV_TTFB_MS,
   LIMIT_HEADERS_MISSING,
   LIMIT_SHED,
   endpointBudgets,
@@ -47,7 +47,7 @@ const exportTimeouts = new Counter(EXPORT_TIMEOUTS);
 const endpointOverheadMs = new Trend(ENDPOINT_OVERHEAD_MS);
 const endpointMs = new Trend(ENDPOINT_MS);
 const endpointReads = new Counter(ENDPOINT_READS);
-const geojsonTtfbMs = new Trend(GEOJSON_TTFB_MS);
+const csvTtfbMs = new Trend(CSV_TTFB_MS);
 const limitHeadersMissing = new Counter(LIMIT_HEADERS_MISSING);
 const limitShed = new Counter(LIMIT_SHED);
 
@@ -141,7 +141,7 @@ export function samples() {
     }
     // EP-05: the download answers its first byte quickly, or takes three and a half seconds
     for (let i = 0; i < 100; i++) {
-      geojsonTtfbMs.add(good ? 60 + (i % 40) : 3500 + (i % 40));
+      csvTtfbMs.add(good ? 60 + (i % 40) : 3500 + (i % 40));
     }
     endpointReads.add(good ? READS : Math.floor(READS * 0.66));
     // EP-20: a burst that was shed and answers that named the limit, or a limiter nobody reached
