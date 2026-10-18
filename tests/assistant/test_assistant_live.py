@@ -14,6 +14,8 @@ import urllib.request
 
 import pytest
 
+import visitor
+
 BASE = os.environ.get("JC_ASSISTANT_URL", "")
 PUBLIC_ID = os.environ.get("JC_ASSISTANT_PUBLIC_ID", "helsinki-public")
 
@@ -30,6 +32,9 @@ def ask(url, body, origin=None):
     headers = {"Content-Type": "application/json", "Accept": "text/event-stream"}
     if origin:
         headers["Origin"] = origin
+    # Every question carries a visitor token (T-4653), earned without an Origin.
+    base, rest = url.rsplit("/api/v1/d/", 1)
+    headers["X-JC-Visitor"] = visitor.token(base, rest.split("/")[0])
     request = urllib.request.Request(url, data=json.dumps(body).encode(), headers=headers, method="POST")
     try:
         with urllib.request.urlopen(request, timeout=120) as response:

@@ -63,6 +63,8 @@ import urllib.request
 from html import unescape
 from pathlib import Path
 
+import visitor
+
 HERE = Path(__file__).resolve().parent
 QUESTIONS = HERE / "bb_questions.json"
 # bbsk.sk serves its leaf without the intermediate; the assistant's crawler pins the same file.
@@ -249,7 +251,13 @@ def ask(base, public_id, origin, message, history=()):
     request = urllib.request.Request(
         f"{base.rstrip('/')}/api/v1/d/{public_id}/chat",
         data=json.dumps(body).encode(),
-        headers={"Content-Type": "application/json", "Accept": "text/event-stream", "Origin": origin},
+        headers={
+            "Content-Type": "application/json",
+            "Accept": "text/event-stream",
+            "Origin": origin,
+            # Every question carries a visitor token (T-4653); one token is one visitor.
+            "X-JC-Visitor": visitor.token(base, public_id),
+        },
         method="POST",
     )
     start = time.monotonic()

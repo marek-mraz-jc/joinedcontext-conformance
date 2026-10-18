@@ -28,8 +28,14 @@ import re
 import time
 import uuid
 
+import sys
+from pathlib import Path
+
 import pytest
 import requests
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "assistant"))
+import visitor  # noqa: E402
 
 TIMEOUT = 30
 AGENT = {"User-Agent": "jc-conformance/test_public_assistant_surfaces"}
@@ -150,7 +156,7 @@ def test_an_overlong_question_is_refused_before_anything_is_spent(
     route refuses with a status, never with an answer stream (AG-98, T-4166)."""
     answer = requests.post(
         f"{assistant}/api/v1/d/{public_id}/chat",
-        headers={**AGENT, "Origin": allowed_origin},
+        headers={**AGENT, "Origin": allowed_origin, "X-JC-Visitor": visitor.token(assistant, public_id)},
         json={"message": "a" * 4_001},
         timeout=TIMEOUT,
     )
@@ -161,9 +167,10 @@ def test_an_overlong_question_is_refused_before_anything_is_spent(
 def test_a_forged_forwarded_for_buys_no_new_rate_window(
     assistant: str, public_id: str, allowed_origin: str
 ) -> None:
-    """The per-client limit keys on the address the edge saw, not on what the caller wrote."""
+    """The per-client limit keys on the visitor token (T-4653), never on what the caller wrote in
+    X-Forwarded-For."""
     per_client = int(os.getenv("ASSISTANT_PER_CLIENT", "6"))
-    time.sleep(61)  # a fresh fixed window for this client
+    held = visitor.earn(assistant, public_id)  # a visitor of its own, so a fresh window
     codes = []
     for i in range(per_client + 2):
         answer = requests.post(
@@ -172,6 +179,7 @@ def test_a_forged_forwarded_for_buys_no_new_rate_window(
                 **AGENT,
                 "Origin": allowed_origin,
                 "X-Forwarded-For": f"203.0.113.{i + 1}",
+                "X-JC-Visitor": held,
             },
             json={"message": "test", "conversation": str(uuid.uuid4())},
             timeout=TIMEOUT,
@@ -179,6 +187,32 @@ def test_a_forged_forwarded_for_buys_no_new_rate_window(
         codes.append(answer.status_code)
     assert codes[:per_client] == [400] * per_client, codes
     assert 429 in codes[per_client:], f"a forged X-Forwarded-For bypassed the limit: {codes}"
+
+
+def test_a_question_needs_a_visitor_token_and_a_wrong_proof_earns_none(
+    assistant: str, public_id: str, allowed_origin: str
+) -> None:
+    """No token, a forged one or a wrong proof buys no question and spends nothing (T-4653)."""
+    for token in (None, "0123456789abcdef0123456789abcdef.4102444800.00"):
+        headers = {**AGENT, "Origin": allowed_origin}
+        if token:
+            headers["X-JC-Visitor"] = token
+        answer = requests.post(
+            f"{assistant}/api/v1/d/{public_id}/chat", headers=headers, json={"message": "test"}, timeout=TIMEOUT
+        )
+        assert answer.status_code == 401, (token, answer.status_code)
+        assert "text/event-stream" not in answer.headers.get("content-type", "")
+    challenge = requests.get(f"{assistant}/api/v1/d/{public_id}/challenge", headers=AGENT, timeout=TIMEOUT).json()
+    nonce = 0
+    while visitor.zero_bits(visitor.hashlib.sha256(f"{challenge['challenge']}:{nonce}".encode()).digest()) != 0:
+        nonce += 1
+    wrong = requests.post(
+        f"{assistant}/api/v1/d/{public_id}/token",
+        headers=AGENT,
+        json={"challenge": challenge["challenge"], "nonce": str(nonce)},
+        timeout=TIMEOUT,
+    )
+    assert wrong.status_code == 400, wrong.status_code
 
 
 def _mcp_urls() -> list[str]:
