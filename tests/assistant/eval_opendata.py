@@ -212,6 +212,7 @@ def km(a, b):
 
 
 TRUTH_LIFE = timedelta(minutes=5)
+LATEST_YEARS = 15
 
 
 def read_truth(q, now=None):
@@ -267,10 +268,27 @@ def _read_truth(q, now=None):
             return {"value": [body["result"][f] for f in t["ckanShow"]["fields"] if body["result"].get(f)]}
         if "count" in t:
             c = t["count"]
-            params = {"type": c["type"], "count": "true", "limit": "1", **({"q": c["q"]} if c.get("q") else {})}
-            headers, _ = endpoint(c["slug"], "entities", **params)
-            n = headers.get("NGSILD-Results-Count")
-            return {"value": int(n)} if n and n.isdigit() else {"unavailable": "no NGSILD-Results-Count"}
+
+            def counted(q):
+                params = {"type": c["type"], "count": "true", "limit": "1", **({"q": q} if q else {})}
+                headers, _ = endpoint(c["slug"], "entities", **params)
+                n = headers.get("NGSILD-Results-Count")
+                return int(n) if n and n.isdigit() else None
+
+            if not c.get("latestYear"):
+                n = counted(c.get("q"))
+                return {"value": n} if n is not None else {"unavailable": "no NGSILD-Results-Count"}
+            # "The latest year the data lists": the newest calendar year of `latestYear` that has
+            # an entity, counted back from this one, at most LATEST_YEARS of them.
+            year = (now or datetime.now(timezone.utc)).year
+            for y in range(year, year - LATEST_YEARS, -1):
+                window = f'{c["latestYear"]}>="{y}-01-01T00:00:00Z";{c["latestYear"]}<"{y + 1}-01-01T00:00:00Z"'
+                n = counted(";".join(filter(None, [c.get("q"), window])))
+                if n is None:
+                    return {"unavailable": "no NGSILD-Results-Count"}
+                if n:
+                    return {"value": n, "year": y}
+            return {"unavailable": f"no {c['latestYear']} in the last {LATEST_YEARS} years"}
         if "attr" in t:
             a = t["attr"]
             if a.get("id"):
@@ -626,6 +644,21 @@ def selftest():
         assert "unavailable" in datastore_truth({"resource": "r", "sumLatestYear": {"year": "Rok", "amount": "Suma"}})
     finally:
         http_json = real
+    global endpoint
+    real_endpoint, years = endpoint, {2023: 4126, 2024: 0}
+    def counting(slug, path, **params):
+        y = re.search(r'>="(\d{4})-', params.get("q", ""))
+        n = years.get(int(y.group(1)), 0) if y else 9
+        return {"NGSILD-Results-Count": str(n)}, []
+    endpoint = counting
+    try:
+        accidents = {"id": "t", "truth": {"count": {"slug": "s", "type": "RoadAccident", "q": "a==1", "latestYear": "datumACas"}}}
+        assert read_truth(accidents, read)["value"] == 4126 and read_truth(accidents, read)["year"] == 2023
+        assert read_truth({"id": "t", "truth": {"count": {"slug": "s", "type": "X"}}}, read)["value"] == 9
+        years = {}
+        assert "unavailable" in read_truth(accidents, read)
+    finally:
+        endpoint = real_endpoint
     every = {"id": "t", "q": "Ktoré formáty?", "must": [], "truth": {"formats": {}, "expect": "all"}}
     import jsonschema
 
