@@ -199,6 +199,24 @@
                   }
                 ]
               },
+              "page": {
+                "type": "object",
+                "required": [
+                  "url",
+                  "says"
+                ],
+                "additionalProperties": false,
+                "properties": {
+                  "url": {
+                    "type": "string",
+                    "pattern": "^https://"
+                  },
+                  "says": {
+                    "type": "string",
+                    "minLength": 3
+                  }
+                }
+              },
               "formats": {
                 "type": "object",
                 "required": [
@@ -321,7 +339,7 @@
             "if": {
               "properties": {
                 "id": {
-                  "pattern": "^od-(3[3-9]|4[0-9])$"
+                  "pattern": "^od-(3[3-9]|[45][0-9])$"
                 }
               }
             },

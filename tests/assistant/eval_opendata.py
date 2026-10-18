@@ -44,7 +44,7 @@ from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
-from eval_bb import ABSTAIN, ask, cost, eval_deployment, honest, listed_prices, norm, percentile, record, turn_corpus  # noqa: E402
+from eval_bb import ABSTAIN, ask, cost, eval_deployment, honest, listed_prices, norm, page_text, percentile, record, turn_corpus  # noqa: E402
 
 QUESTIONS = HERE / "opendata_questions.json"
 SCHEMA = HERE / "opendata_questions.schema.json"
@@ -263,6 +263,16 @@ def _read_truth(q, now=None):
             if not found:
                 return {"unavailable": "the catalogue answers no dataset"}
             return {"value": [p["title"] for p in found] + [p["name"] for p in found], "datasets": found}
+        if "page" in t:
+            # A publisher's own page (T-4680): it holds while it still says what the truth names;
+            # the answer gives its address.
+            pg = t["page"]
+            text = page_text(pg["url"])
+            if not text:
+                return {"unavailable": f"{pg['url']} could not be read"}
+            if not has(text, pg["says"]):
+                return {"unavailable": f"{pg['url']} no longer says {pg['says']!r}"}
+            return {"value": [pg["url"]]}
         if "ckanShow" in t:
             _, body = http_json(f"{CKAN.rstrip('/')}/api/3/action/package_show?id={t['ckanShow']['id']}")
             return {"value": [body["result"][f] for f in t["ckanShow"]["fields"] if body["result"].get(f)]}
@@ -659,6 +669,20 @@ def selftest():
         assert "unavailable" in read_truth(accidents, read)
     finally:
         endpoint = real_endpoint
+    global page_text
+    real_page, pages = page_text, {"https://www.bbsk.sk/mapovy-portal": "Mapový portál | BBSK ArcGIS"}
+    page_text = lambda url: pages.get(url, "")
+    try:
+        portal = {"id": "t", "truth": {"page": {"url": "https://www.bbsk.sk/mapovy-portal", "says": "Mapový portál"}, "expect": "all"}}
+        assert read_truth(portal, read)["value"] == ["https://www.bbsk.sk/mapovy-portal"]
+        pages["https://www.bbsk.sk/mapovy-portal"] = "Stránka sa nenašla"
+        assert "no longer says" in read_truth(portal, read)["unavailable"]
+        assert "could not be read" in read_truth({"id": "t", "truth": {"page": {"url": "https://x.example/", "says": "x"}}}, read)["unavailable"]
+        asked = {**portal, "q": "Kde je mapa?", "must": []}
+        assert grade(asked, {"value": ["https://www.bbsk.sk/mapovy-portal"]}, "Mapa je na [Mapovom portáli](https://www.bbsk.sk/mapovy-portal).", "")[0] == "correct"
+        assert grade(asked, {"value": ["https://www.bbsk.sk/mapovy-portal"]}, "Mapu nájdete na stránke kraja.", "")[0] == "wrong"
+    finally:
+        page_text = real_page
     every = {"id": "t", "q": "Ktoré formáty?", "must": [], "truth": {"formats": {}, "expect": "all"}}
     import jsonschema
 
