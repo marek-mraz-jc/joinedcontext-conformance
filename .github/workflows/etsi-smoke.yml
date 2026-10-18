@@ -12,7 +12,7 @@ on:
       ngsild_url:
         description: NGSI-LD API root of the system under test
         required: true
-        default: https://dev.joinedcontext.com/api/endpoint/mluyob4nz52lok3ssk7pgn5vwt/ngsi-ld/v1
+        default: https://api.dev.joinedcontext.com/api/endpoint/mluyob4nz52lok3ssk7pgn5vwt/ngsi-ld/v1
       tenant:
         description: NGSILD-Tenant header (vanilla broker matrix only; empty for a context space)
         required: false

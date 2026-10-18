@@ -4,7 +4,7 @@ Ten anonymous sockets (EP-107 allows a caller ten) hold two filters each, one of
 fan-out serves, for 60 s. Each filter must notify at least once and nothing outside it may
 arrive. It is also the regression check for T-4131 (a socket held, no drop) and T-4132.
 
-    python3 tests/ws/fanout_smoke.py wss://dev.joinedcontext.com/api/endpoint/<slug>/ws
+    python3 tests/ws/fanout_smoke.py wss://api.dev.joinedcontext.com/api/endpoint/<slug>/ws
     python3 tests/ws/fanout_smoke.py --selftest
 
 Stdlib only (the conformance image carries no WebSocket package): the client of

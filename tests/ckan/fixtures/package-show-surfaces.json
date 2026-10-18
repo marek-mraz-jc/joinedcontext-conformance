@@ -15,37 +15,37 @@
    {
     "id": "res-00",
     "name": "NGSI-LD API",
-    "url": "https://dev.joinedcontext.com/api/endpoint/k7m2q4hkiair/ngsi-ld/v1/",
+    "url": "https://api.dev.joinedcontext.com/api/endpoint/k7m2q4hkiair/ngsi-ld/v1/",
     "format": "NGSI-LD",
     "mimetype": "application/ld+json",
-    "description": "The NGSI-LD API (ETSI GS CIM 009) of this dataset: query, filter and page its entities. The first ten of a type:\n\n    curl -H 'Accept: application/ld+json' 'https://dev.joinedcontext.com/api/endpoint/k7m2q4hkiair/ngsi-ld/v1/entities?type=<Type>&limit=10'\n\nAlways live: the catalogue holds this link, never a copy. Open to anyone, with no sign-in.",
+    "description": "The NGSI-LD API (ETSI GS CIM 009) of this dataset: query, filter and page its entities. The first ten of a type:\n\n    curl -H 'Accept: application/ld+json' 'https://api.dev.joinedcontext.com/api/endpoint/k7m2q4hkiair/ngsi-ld/v1/entities?type=<Type>&limit=10'\n\nAlways live: the catalogue holds this link, never a copy. Open to anyone, with no sign-in.",
     "hash": "",
     "state": "active"
    },
    {
     "id": "res-01",
     "name": "Live updates over WebSocket",
-    "url": "https://dev.joinedcontext.com/api/endpoint/k7m2q4hkiair/ws",
+    "url": "https://api.dev.joinedcontext.com/api/endpoint/k7m2q4hkiair/ws",
     "format": "WebSocket",
     "mimetype": "application/json",
-    "description": "Live updates: open one WebSocket, subscribe to the entities you want, and each change arrives as a message, with no server of your own. With websocat, then type the subscription:\n\n    websocat 'wss://dev.joinedcontext.com/api/endpoint/k7m2q4hkiair/ws'\n    {\"metadata\":{\"x-op\":\"x-subscribe\",\"x-id\":\"s1\"},\"body\":{\"type\":\"Subscription\",\"entities\":[{\"type\":\"<Type>\"}]}}\n\nAlways live: the catalogue holds this link, never a copy. Open to anyone, with no sign-in.",
+    "description": "Live updates: open one WebSocket, subscribe to the entities you want, and each change arrives as a message, with no server of your own. With websocat, then type the subscription:\n\n    websocat 'wss://api.dev.joinedcontext.com/api/endpoint/k7m2q4hkiair/ws'\n    {\"metadata\":{\"x-op\":\"x-subscribe\",\"x-id\":\"s1\"},\"body\":{\"type\":\"Subscription\",\"entities\":[{\"type\":\"<Type>\"}]}}\n\nAlways live: the catalogue holds this link, never a copy. Open to anyone, with no sign-in.",
     "hash": "",
     "state": "active"
    },
    {
     "id": "res-02",
     "name": "Model Context Protocol",
-    "url": "https://dev.joinedcontext.com/api/endpoint/k7m2q4hkiair/mcp",
+    "url": "https://api.dev.joinedcontext.com/api/endpoint/k7m2q4hkiair/mcp",
     "format": "MCP",
     "mimetype": "application/json",
-    "description": "For AI assistants: a Model Context Protocol server over this dataset's endpoint https://dev.joinedcontext.com/api/endpoint/k7m2q4hkiair. It answers anyone, with no sign-in, what the endpoint serves the public.",
+    "description": "For AI assistants: a Model Context Protocol server over this dataset's endpoint https://api.dev.joinedcontext.com/api/endpoint/k7m2q4hkiair. It answers anyone, with no sign-in, what the endpoint serves the public.",
     "hash": "",
     "state": "active"
    },
    {
     "id": "res-03",
     "name": "OGC API - Features",
-    "url": "https://dev.joinedcontext.com/api/endpoint/k7m2q4hkiair/ogc/features/",
+    "url": "https://api.dev.joinedcontext.com/api/endpoint/k7m2q4hkiair/ogc/features/",
     "format": "OGCFEAT",
     "mimetype": "application/geo+json",
     "description": "OGC API - Features, read-only: Part 1 (Core: collections and items), Part 2 (coordinate reference systems by reference) and Part 3 (Filtering with CQL2).",
@@ -55,7 +55,7 @@
    {
     "id": "res-04",
     "name": "OData v4",
-    "url": "https://dev.joinedcontext.com/api/endpoint/k7m2q4hkiair/odata/v4/",
+    "url": "https://api.dev.joinedcontext.com/api/endpoint/k7m2q4hkiair/odata/v4/",
     "format": "OData",
     "mimetype": "application/json",
     "description": "OData v4, read-only. In Excel: Data, Get Data, From Other Sources, From OData Feed. In Power BI: Get data, OData feed.",
@@ -65,7 +65,7 @@
    {
     "id": "res-06",
     "name": "CSV",
-    "url": "https://dev.joinedcontext.com/api/endpoint/k7m2q4hkiair/file.csv",
+    "url": "https://api.dev.joinedcontext.com/api/endpoint/k7m2q4hkiair/file.csv",
     "format": "CSV",
     "mimetype": "text/csv",
     "description": "A CSV table, generated on each download from the endpoint's live data.",
@@ -75,7 +75,7 @@
    {
     "id": "res-10",
     "name": "Schema artifacts",
-    "url": "https://dev.joinedcontext.com/api/endpoint/k7m2q4hkiair/schema/index.json",
+    "url": "https://api.dev.joinedcontext.com/api/endpoint/k7m2q4hkiair/schema/index.json",
     "format": "JSON",
     "mimetype": "application/json",
     "description": "The data model in every formalism, for every model version, each artifact with its sha256 (EP-68).",
@@ -85,7 +85,7 @@
    {
     "id": "res-11",
     "name": "hki-air model.linkml.yaml",
-    "url": "https://dev.joinedcontext.com/api/endpoint/k7m2q4hkiair/schema/v1/model.linkml.yaml",
+    "url": "https://api.dev.joinedcontext.com/api/endpoint/k7m2q4hkiair/schema/v1/model.linkml.yaml",
     "format": "LinkML",
     "mimetype": "application/yaml",
     "description": "The data model as LinkML; sha256 3f1c.",

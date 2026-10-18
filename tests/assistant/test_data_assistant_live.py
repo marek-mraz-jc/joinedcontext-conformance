@@ -50,7 +50,7 @@ CATALOGUE = [
     # A licence, as the dataset's record states it.
     ("Pod akou licenciou je dataset Žilina — verejné dáta?", ["creative commons", "cc by", "cc-by"], True),
     # The portal guide, not the catalogue: the one MCP address and where Claude takes it.
-    ("Ako pripojím katalóg cez MCP do Clauda?", ["dev.joinedcontext.com/api/mcp"], False),
+    ("Ako pripojím katalóg cez MCP do Clauda?", ["api.dev.joinedcontext.com/api/mcp"], False),
 ]
 
 

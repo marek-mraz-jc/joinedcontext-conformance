@@ -15,7 +15,7 @@
 # Without a kubeconfig the profile still sets every public URL and names what it could not
 # mint, so an anonymous run works and reports the rest as skipped rather than as failed.
 
-JC_DEV_BASE="${JC_DEV_BASE:-https://dev.joinedcontext.com}"
+JC_DEV_BASE="${JC_DEV_BASE:-https://api.dev.joinedcontext.com}"
 JC_DEV_IDM="${JC_DEV_IDM:-https://idm.dev.joinedcontext.com}"
 JC_DEV_PORTAL="${JC_DEV_PORTAL:-https://portal.dev.joinedcontext.com}"
 JC_DEV_CKAN="${JC_DEV_CKAN:-https://data.dev.joinedcontext.com}"

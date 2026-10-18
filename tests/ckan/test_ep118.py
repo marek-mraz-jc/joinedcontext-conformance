@@ -8,7 +8,7 @@ import json
 import requests
 from ep118 import ALWAYS, check, small, table
 
-ROOT = "https://dev.joinedcontext.com/api/endpoint/abc/"
+ROOT = "https://api.dev.joinedcontext.com/api/endpoint/abc/"
 MODEL = {"JSON Schema": "model.schema.json", "JSON-LD": "context.jsonld", "LinkML": "model.linkml.yaml",
          "Markdown": "model.md", "OWL": "model.owl.ttl", "RDF": "model.rdf.ttl", "SHACL": "model.shacl.ttl"}
 
@@ -28,7 +28,7 @@ def dataset(*extra, drop=(), rows=None):
         {"format": "NGSI-LD", "url": ROOT + "ngsi-ld/v1/entities?type=Supplier&q=isPartOf%3D%3D%22d%22"},
         {"format": "CSV", "url": ROOT + "file.csv?type=Supplier"},
         {"format": "MCP", "url": ROOT + "mcp"},
-        {"format": "WebSocket", "name": "WebSocket (Supplier)", "url": "wss://dev.joinedcontext.com/api/endpoint/abc/ws"},
+        {"format": "WebSocket", "name": "WebSocket (Supplier)", "url": "wss://api.dev.joinedcontext.com/api/endpoint/abc/ws"},
     ] + [{"format": label, "url": ROOT + "schema/v1/" + file} for label, file in MODEL.items()]
     return {"name": "bbsk-dodavatelia", "resources": [r for r in resources if r["format"] not in drop] + list(extra)}
 
