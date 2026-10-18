@@ -11,18 +11,17 @@
 @prefix eli: <http://data.europa.eu/eli/ontology#> .
 @prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
 @prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+@prefix leg: <https://data.gov.sk/def/ontology/legislation/> .
+@prefix pu: <https://data.gov.cz/slovník/podmínky-užití/> .
 
 <https://data.example.org/api/endpoint/k4y7pq2mzt6vhx3nbwrs5cjd8f> a dcat:Dataset ;
-    dcat:contactPoint [ a vcard:Kind ;
+    dcat:contactPoint [ a vcard:Organization ;
+        a vcard:Kind ;
         vcard:fn "Open data desk" ;
         vcard:hasEmail <mailto:opendata@city.example.org>
     ] ;
     dcat:distribution <https://data.example.org/api/endpoint/k4y7pq2mzt6vhx3nbwrs5cjd8f/ngsi-ld/v1/> ;
-    dcat:distribution <https://data.example.org/api/endpoint/k4y7pq2mzt6vhx3nbwrs5cjd8f/file.geojson> ;
     dcat:distribution <https://data.example.org/api/endpoint/k4y7pq2mzt6vhx3nbwrs5cjd8f/file.csv> ;
-    dcat:distribution <https://data.example.org/api/endpoint/k4y7pq2mzt6vhx3nbwrs5cjd8f/file.xlsx> ;
-    dcat:distribution <https://data.example.org/api/endpoint/k4y7pq2mzt6vhx3nbwrs5cjd8f/file.json> ;
-    dcat:distribution <https://data.example.org/api/endpoint/k4y7pq2mzt6vhx3nbwrs5cjd8f/file.zip> ;
     dcat:distribution <https://data.example.org/api/endpoint/k4y7pq2mzt6vhx3nbwrs5cjd8f/ogc/features/> ;
     dcat:distribution <https://data.example.org/api/endpoint/k4y7pq2mzt6vhx3nbwrs5cjd8f/sta/v1.1/> ;
     dcat:distribution <https://data.example.org/api/endpoint/k4y7pq2mzt6vhx3nbwrs5cjd8f/mcp> ;
@@ -80,7 +79,10 @@
 
 <https://data.example.org/api/endpoint/k4y7pq2mzt6vhx3nbwrs5cjd8f/> a rdfs:Resource .
 
+<https://data.example.org/api/endpoint/k4y7pq2mzt6vhx3nbwrs5cjd8f/openapi.json> a rdfs:Resource .
+
 <https://data.example.org/api/endpoint/k4y7pq2mzt6vhx3nbwrs5cjd8f#service> a dcat:DataService ;
+    dcat:endpointDescription <https://data.example.org/api/endpoint/k4y7pq2mzt6vhx3nbwrs5cjd8f/openapi.json> ;
     dcat:endpointURL <https://data.example.org/api/endpoint/k4y7pq2mzt6vhx3nbwrs5cjd8f/> ;
     dcat:servesDataset <https://data.example.org/api/endpoint/k4y7pq2mzt6vhx3nbwrs5cjd8f> ;
     dct:accessRights <http://publications.europa.eu/resource/authority/access-right/PUBLIC> ;
@@ -89,19 +91,11 @@
 
 <https://data.example.org/api/endpoint/k4y7pq2mzt6vhx3nbwrs5cjd8f/ngsi-ld/v1/> a rdfs:Resource .
 
-<https://www.iana.org/assignments/media-types/application/ld+json> a dct:MediaType .
+<https://www.iana.org/assignments/media-types/application/json> a dct:MediaType .
 
 <http://publications.europa.eu/resource/authority/file-type/JSON_LD> a dct:MediaTypeOrExtent .
 
 <https://www.etsi.org/deliver/etsi_gs/CIM/001_099/009/> a dct:Standard .
-
-<https://data.example.org/api/endpoint/k4y7pq2mzt6vhx3nbwrs5cjd8f/file.geojson> a rdfs:Resource .
-
-<https://www.iana.org/assignments/media-types/application/geo+json> a dct:MediaType .
-
-<http://publications.europa.eu/resource/authority/file-type/GEOJSON> a dct:MediaTypeOrExtent .
-
-<https://www.rfc-editor.org/rfc/rfc7946> a dct:Standard .
 
 <https://data.example.org/api/endpoint/k4y7pq2mzt6vhx3nbwrs5cjd8f/file.csv> a rdfs:Resource .
 
@@ -109,29 +103,17 @@
 
 <http://publications.europa.eu/resource/authority/file-type/CSV> a dct:MediaTypeOrExtent .
 
-<https://data.example.org/api/endpoint/k4y7pq2mzt6vhx3nbwrs5cjd8f/file.xlsx> a rdfs:Resource .
-
-<https://www.iana.org/assignments/media-types/application/vnd.openxmlformats-officedocument.spreadsheetml.sheet> a dct:MediaType .
-
-<http://publications.europa.eu/resource/authority/file-type/XLSX> a dct:MediaTypeOrExtent .
-
-<https://data.example.org/api/endpoint/k4y7pq2mzt6vhx3nbwrs5cjd8f/file.json> a rdfs:Resource .
-
-<https://www.iana.org/assignments/media-types/application/json> a dct:MediaType .
-
-<http://publications.europa.eu/resource/authority/file-type/JSON> a dct:MediaTypeOrExtent .
-
-<https://data.example.org/api/endpoint/k4y7pq2mzt6vhx3nbwrs5cjd8f/file.zip> a rdfs:Resource .
-
-<https://www.iana.org/assignments/media-types/application/zip> a dct:MediaType .
-
-<http://publications.europa.eu/resource/authority/file-type/ZIP> a dct:MediaTypeOrExtent .
-
 <https://data.example.org/api/endpoint/k4y7pq2mzt6vhx3nbwrs5cjd8f/ogc/features/> a rdfs:Resource .
+
+<https://www.iana.org/assignments/media-types/application/geo+json> a dct:MediaType .
+
+<http://publications.europa.eu/resource/authority/file-type/GEOJSON> a dct:MediaTypeOrExtent .
 
 <http://www.opengis.net/spec/ogcapi-features-1/1.0/conf/core> a dct:Standard .
 
 <https://data.example.org/api/endpoint/k4y7pq2mzt6vhx3nbwrs5cjd8f/sta/v1.1/> a rdfs:Resource .
+
+<http://publications.europa.eu/resource/authority/file-type/JSON> a dct:MediaTypeOrExtent .
 
 <http://www.opengis.net/spec/sensorthings/1.1> a dct:Standard .
 
@@ -156,7 +138,7 @@
 <https://data.example.org/api/endpoint/k4y7pq2mzt6vhx3nbwrs5cjd8f/ngsi-ld/v1/> a dcat:Distribution ;
     dcat:accessService <https://data.example.org/api/endpoint/k4y7pq2mzt6vhx3nbwrs5cjd8f#service> ;
     dcat:accessURL <https://data.example.org/api/endpoint/k4y7pq2mzt6vhx3nbwrs5cjd8f/ngsi-ld/v1/> ;
-    dcat:mediaType <https://www.iana.org/assignments/media-types/application/ld+json> ;
+    dcat:mediaType <https://www.iana.org/assignments/media-types/application/json> ;
     dct:conformsTo <https://www.etsi.org/deliver/etsi_gs/CIM/001_099/009/> ;
     dct:format <http://publications.europa.eu/resource/authority/file-type/JSON_LD> ;
     dct:license <http://publications.europa.eu/resource/authority/licence/CC0> ;
@@ -164,18 +146,6 @@
         rdfs:label "Source: City of Example"@en
     ] ;
     dct:title "NGSI-LD API" .
-
-<https://data.example.org/api/endpoint/k4y7pq2mzt6vhx3nbwrs5cjd8f/file.geojson> a dcat:Distribution ;
-    dcat:accessService <https://data.example.org/api/endpoint/k4y7pq2mzt6vhx3nbwrs5cjd8f#service> ;
-    dcat:accessURL <https://data.example.org/api/endpoint/k4y7pq2mzt6vhx3nbwrs5cjd8f/file.geojson> ;
-    dcat:mediaType <https://www.iana.org/assignments/media-types/application/geo+json> ;
-    dct:conformsTo <https://www.rfc-editor.org/rfc/rfc7946> ;
-    dct:format <http://publications.europa.eu/resource/authority/file-type/GEOJSON> ;
-    dct:license <http://publications.europa.eu/resource/authority/licence/CC0> ;
-    dct:rights [ a dct:RightsStatement ;
-        rdfs:label "Source: City of Example"@en
-    ] ;
-    dct:title "GeoJSON" .
 
 <https://data.example.org/api/endpoint/k4y7pq2mzt6vhx3nbwrs5cjd8f/file.csv> a dcat:Distribution ;
     dcat:accessService <https://data.example.org/api/endpoint/k4y7pq2mzt6vhx3nbwrs5cjd8f#service> ;
@@ -187,39 +157,6 @@
         rdfs:label "Source: City of Example"@en
     ] ;
     dct:title "CSV" .
-
-<https://data.example.org/api/endpoint/k4y7pq2mzt6vhx3nbwrs5cjd8f/file.xlsx> a dcat:Distribution ;
-    dcat:accessService <https://data.example.org/api/endpoint/k4y7pq2mzt6vhx3nbwrs5cjd8f#service> ;
-    dcat:accessURL <https://data.example.org/api/endpoint/k4y7pq2mzt6vhx3nbwrs5cjd8f/file.xlsx> ;
-    dcat:mediaType <https://www.iana.org/assignments/media-types/application/vnd.openxmlformats-officedocument.spreadsheetml.sheet> ;
-    dct:format <http://publications.europa.eu/resource/authority/file-type/XLSX> ;
-    dct:license <http://publications.europa.eu/resource/authority/licence/CC0> ;
-    dct:rights [ a dct:RightsStatement ;
-        rdfs:label "Source: City of Example"@en
-    ] ;
-    dct:title "Excel workbook" .
-
-<https://data.example.org/api/endpoint/k4y7pq2mzt6vhx3nbwrs5cjd8f/file.json> a dcat:Distribution ;
-    dcat:accessService <https://data.example.org/api/endpoint/k4y7pq2mzt6vhx3nbwrs5cjd8f#service> ;
-    dcat:accessURL <https://data.example.org/api/endpoint/k4y7pq2mzt6vhx3nbwrs5cjd8f/file.json> ;
-    dcat:mediaType <https://www.iana.org/assignments/media-types/application/json> ;
-    dct:format <http://publications.europa.eu/resource/authority/file-type/JSON> ;
-    dct:license <http://publications.europa.eu/resource/authority/licence/CC0> ;
-    dct:rights [ a dct:RightsStatement ;
-        rdfs:label "Source: City of Example"@en
-    ] ;
-    dct:title "JSON" .
-
-<https://data.example.org/api/endpoint/k4y7pq2mzt6vhx3nbwrs5cjd8f/file.zip> a dcat:Distribution ;
-    dcat:accessService <https://data.example.org/api/endpoint/k4y7pq2mzt6vhx3nbwrs5cjd8f#service> ;
-    dcat:accessURL <https://data.example.org/api/endpoint/k4y7pq2mzt6vhx3nbwrs5cjd8f/file.zip> ;
-    dcat:mediaType <https://www.iana.org/assignments/media-types/application/zip> ;
-    dct:format <http://publications.europa.eu/resource/authority/file-type/ZIP> ;
-    dct:license <http://publications.europa.eu/resource/authority/licence/CC0> ;
-    dct:rights [ a dct:RightsStatement ;
-        rdfs:label "Source: City of Example"@en
-    ] ;
-    dct:title "Bundle of every representation" .
 
 <https://data.example.org/api/endpoint/k4y7pq2mzt6vhx3nbwrs5cjd8f/ogc/features/> a dcat:Distribution ;
     dcat:accessService <https://data.example.org/api/endpoint/k4y7pq2mzt6vhx3nbwrs5cjd8f#service> ;

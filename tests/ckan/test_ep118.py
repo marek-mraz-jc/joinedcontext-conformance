@@ -27,7 +27,6 @@ def dataset(*extra, drop=(), rows=None):
     resources = [
         {"format": "NGSI-LD", "url": ROOT + "ngsi-ld/v1/entities?type=Supplier&q=isPartOf%3D%3D%22d%22"},
         {"format": "CSV", "url": ROOT + "file.csv?type=Supplier"},
-        {"format": "JSON", "url": ROOT + "file.json?type=Supplier"},
         {"format": "MCP", "url": ROOT + "mcp"},
         {"format": "WebSocket", "name": "WebSocket (Supplier)", "url": "wss://dev.joinedcontext.com/api/endpoint/abc/ws"},
     ] + [{"format": label, "url": ROOT + "schema/v1/" + file} for label, file in MODEL.items()]
@@ -59,7 +58,7 @@ def test_a_conforming_dataset_passes_and_every_link_is_read_small():
     assert socket == ["Supplier"]
     assert small(ROOT + "odata/v4/Supplier") == ROOT + "odata/v4/Supplier?$top=1"
     assert small(ROOT + "ogc/features/collections/Supplier/items") == ROOT + "ogc/features/collections/Supplier/items?limit=1"
-    for root in ("ngsi-ld/v1/", "ogc/features/", "odata/v4/", "file.csv", "file.geojson"):
+    for root in ("ngsi-ld/v1/", "ogc/features/", "odata/v4/", "file.csv"):
         assert small(ROOT + root) == ROOT + root, root
     assert small("https://example.org/x.csv") == "https://example.org/x.csv"
 
@@ -91,18 +90,19 @@ def test_a_missing_mandatory_distribution_fails_and_is_named():
         assert not verdict["ok"] and verdict["missing"] == [fmt], (fmt, verdict)
 
 
-def test_located_rows_need_geojson_and_ogc_features():
+def test_located_rows_need_ogc_features():
     located = [{"id": "urn:ngsi-ld:Supplier:1", "location": {"type": "GeoProperty"}}]
     verdict, _, _ = run(dataset(), rows=located)
-    assert verdict["located"] and verdict["missing"] == ["GeoJSON", "OGCFEAT"]
-    full = dataset({"format": "GeoJSON", "url": ROOT + "file.geojson"},
-                   {"format": "OGCFEAT", "url": ROOT + "ogc/features/collections/Supplier/items"})
+    assert verdict["located"] and verdict["missing"] == ["OGCFEAT"]
+    full = dataset({"format": "OGCFEAT", "url": ROOT + "ogc/features/collections/Supplier/items"})
     assert run(full, rows=located)[0]["ok"]
 
 
-def test_zip_esri_rest_and_a_zip_url_are_banned():
+def test_zip_esri_rest_a_zip_url_and_a_removed_endpoint_file_are_banned():
     for extra in ({"format": "ZIP", "url": ROOT + "file.zip"}, {"format": "Esri REST", "url": "https://x/FeatureServer"},
-                  {"format": "", "url": "https://dtm.example/opendata/ulice.zip"}):
+                  {"format": "", "url": "https://dtm.example/opendata/ulice.zip"},
+                  {"format": "XLSX", "url": ROOT + "file.xlsx"}, {"format": "GeoJSON", "url": ROOT + "file.geojson"},
+                  {"format": "JSON", "url": ROOT + "file.json?type=Supplier"}):
         verdict, _, _ = run(dataset(extra))
         assert not verdict["ok"] and verdict["banned"], (extra, verdict)
 

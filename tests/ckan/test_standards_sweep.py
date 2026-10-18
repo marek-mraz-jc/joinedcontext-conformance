@@ -9,8 +9,6 @@ import requests
 from standards_sweep import probe_http, rows, sweep, table
 
 ROOT = "https://dev.joinedcontext.com/api/endpoint/abc/"
-XLSX = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-PARQUET = "application/vnd.apache.parquet"
 
 
 class Answer:
@@ -40,16 +38,11 @@ def resource(path, media, name="NGSI-LD API (Supplier)"):
 
 def test_each_media_type_is_counted_by_its_own_shape():
     assert rows(ROOT + "file.csv", "text/csv", "﻿a,b\n1,2\n3,4\n".encode(), {}) == 2
-    assert rows(ROOT + "file.geojson", "application/geo+json", b'{"features": [{}, {}, {}]}', {}) == 3
+    assert rows(ROOT + "ogc/features/collections/T/items", "application/geo+json", b'{"features": [{}, {}, {}]}', {}) == 3
     assert rows(ROOT + "odata/v4/T", "application/json", b'{"value": [{}]}', {}) == 1
-    assert rows(ROOT + "file.json", "application/json", b"[{}, {}]", {}) == 2
+    assert rows(ROOT + "ngsi-ld/v1/entities?type=T", "application/json", b"[{}, {}]", {}) == 2
     assert rows(ROOT + "ngsi-ld/v1/entities?type=T", "application/ld+json", b"[{}]", {"NGSILD-Results-Count": "57"}) == 57
-    assert rows(ROOT + "file.xlsx", XLSX, b"PK\x03\x04rest", {}) == 8
-    assert rows(ROOT + "file.xlsx", XLSX, b"<html>", {}) is None
-    assert rows(ROOT + "file.parquet", PARQUET, b"PAR1rowsPAR1", {}) == 12
-    assert rows(ROOT + "file.parquet", PARQUET, b"PAR1", {}) is None
-    assert rows(ROOT + "file.parquet", PARQUET, b"PAR1 cut off", {}) is None
-    assert rows(ROOT + "file.json", "application/json", b"<html>", {}) is None
+    assert rows(ROOT + "odata/v4/T", "application/json", b"<html>", {}) is None
 
 
 def test_the_ngsi_ld_count_is_asked_for_and_an_empty_answer_is_not_ok():

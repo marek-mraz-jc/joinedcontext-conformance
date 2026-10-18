@@ -6,7 +6,7 @@ is called over its own URL, once, paced. That is a resource the harvest wrote as
 publisher wrote under its `/api/endpoint/` URL (jcctl ckan.rs, which sets no resource_type; its
 schema artefacts are files, not APIs, T-4429). Each is probed with an HTTP `GET` (200, a body of the media type it declares, and how
 many rows: NGSI-LD from `NGSILD-Results-Count`, GeoJSON features, OData `value`, JSON items, CSV
-lines; XLSX and Parquet by their size; a base URL ending in `/` by a JSON landing page), the WebSocket
+lines; a base URL ending in `/` by a JSON landing page), the WebSocket
 by an `x-subscribe` answered 201, MCP by `initialize`.
 
     python3 tests/ckan/standards_sweep.py --ckan https://data.dev.joinedcontext.com bbsk banskabystrica
@@ -46,11 +46,6 @@ RETRY_AFTER_CAP = 60.0
 
 def rows(url: str, media: str, body: bytes, headers: dict[str, str]) -> int | None:
     """How many rows `body` carries, or None when it is not what `media` says."""
-    if media.endswith("spreadsheetml.sheet"):
-        return len(body) if body.startswith(b"PK") else None
-    if media == "application/vnd.apache.parquet":
-        # A Parquet file opens and closes with its magic; the rows sit in the footer's thrift.
-        return len(body) if len(body) >= 8 and body[:4] == body[-4:] == b"PAR1" else None
     if media == "text/csv":
         lines = list(csv.reader(io.StringIO(body.decode("utf-8-sig", "replace"))))
         return max(len(lines) - 1, 0)

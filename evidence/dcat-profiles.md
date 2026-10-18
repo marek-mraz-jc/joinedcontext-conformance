@@ -10,14 +10,13 @@ Written by `python3 tests/ckan/profiles.py --write evidence/dcat-profiles.md`; `
 
 ### catalog-restricted-bare.jsonld: 0
 
-## DCAT-AP-SK 3.0.0 (reported, gate from T-4499): 135 violation(s)
+## DCAT-AP-SK 3.0.0 (reported, gate from T-4499): 97 violation(s)
 
-### catalog-organization-cc-by-sa.jsonld: 47
+### catalog-organization-cc-by-sa.jsonld: 34
 
 | n | focus | path | message |
 |---|---|---|---|
 | 1 | `https://data.example.org/api/endpoint/k4y7pq2mzt6vhx3nbwrs5cjd8f` | `` | Node <https://data.example.org/api/endpoint/k4y7pq2mzt6vhx3nbwrs5cjd8f> must conform to exactly one shape in [ sh:not [ sh:property sha-dcatapsk:dataset_applicableLegislation_hvd ], [ sh:property sha-dcatapsk:dataset_type_hvd ] ; sh:property sha-dcatapsk:dataset_hvdCategory_none ] , [ sh:property sha-dcatapsk:dataset_applicableLegislation_hvd, sha-dcatapsk:dataset_hvdCategory, sha-dcatapsk:dataset_type_hvd ] |
-| 1 | `https://data.example.org/api/endpoint/k4y7pq2mzt6vhx3nbwrs5cjd8f` | `dcat:contactPoint` | Node [ rdf:type vcard:Kind ; vcard:fn Literal("Open data desk") ; vcard:hasEmail <mailto:opendata@city.example.org> ] must conform to one or more shapes in [ sh:class vcard:Individual ] , [ sh:class vcard:Organization ] |
 | 1 | `https://data.example.org/api/endpoint/k4y7pq2mzt6vhx3nbwrs5cjd8f` | `dct:description` | Focus node does not conform to shape MinCount 1: [ sh:datatype rdf:langString ; sh:languageIn ( Literal("sk") ) ] |
 | 1 | `https://data.example.org/api/endpoint/k4y7pq2mzt6vhx3nbwrs5cjd8f` | `dct:publisher` | Value does not match pattern '^https://data.gov.sk/id/legal-subject/' |
 | 1 | `https://data.example.org/api/endpoint/k4y7pq2mzt6vhx3nbwrs5cjd8f` | `dct:title` | Focus node does not conform to shape MinCount 1: [ sh:datatype rdf:langString ; sh:languageIn ( Literal("sk") ) ] |
@@ -25,18 +24,6 @@ Written by `python3 tests/ckan/profiles.py --write evidence/dcat-profiles.md`; `
 | 1 | `https://data.example.org/api/endpoint/k4y7pq2mzt6vhx3nbwrs5cjd8f/file.csv` | `` | Node <https://data.example.org/api/endpoint/k4y7pq2mzt6vhx3nbwrs5cjd8f/file.csv> must conform to exactly one shape in ([ sh:property sha-dcatapsk:distribution_accessService_none, sha-dcatapsk:distribution_accessURL_download, sha-dcatapsk:distribution_downloadURL, sha-dcatapsk:distribution_format, sha-dcatapsk:distribution_mediaType ] , [ sh:property sha-dcatapsk:distribution_accessService, sha-dcatapsk:distribution_accessURL_service, sha-dcatapsk:distribution_downloadURL_none, sha-dcatapsk:distribution_format_optional, sha-dcatapsk:distribution_mediaType_optional ]) and ([ sh:property sha-dcatapsk:distribution_applicableLegislation_hvd, sha-dcatapsk:distribution_dataset_hvd ] , [ sh:not [ sh:property sha-dcatapsk:distribution_applicableLegislation_hvd ], [ sh:property sha-dcatapsk:distribution_dataset_hvd ] ]) |
 | 1 | `https://data.example.org/api/endpoint/k4y7pq2mzt6vhx3nbwrs5cjd8f/file.csv` | `dct:title` | Value is not Literal with datatype rdf:langString |
 | 1 | `https://data.example.org/api/endpoint/k4y7pq2mzt6vhx3nbwrs5cjd8f/file.csv` | `leg:termsOfUse` | Less than 1 values |
-| 1 | `https://data.example.org/api/endpoint/k4y7pq2mzt6vhx3nbwrs5cjd8f/file.geojson` | `` | Node <https://data.example.org/api/endpoint/k4y7pq2mzt6vhx3nbwrs5cjd8f/file.geojson> must conform to exactly one shape in ([ sh:property sha-dcatapsk:distribution_accessService_none, sha-dcatapsk:distribution_accessURL_download, sha-dcatapsk:distribution_downloadURL, sha-dcatapsk:distribution_format, sha-dcatapsk:distribution_mediaType ] , [ sh:property sha-dcatapsk:distribution_accessService, sha-dcatapsk:distribution_accessURL_service, sha-dcatapsk:distribution_downloadURL_none, sha-dcatapsk:distribution_format_optional, sha-dcatapsk:distribution_mediaType_optional ]) and ([ sh:property sha-dcatapsk:distribution_applicableLegislation_hvd, sha-dcatapsk:distribution_dataset_hvd ] , [ sh:not [ sh:property sha-dcatapsk:distribution_applicableLegislation_hvd ], [ sh:property sha-dcatapsk:distribution_dataset_hvd ] ]) |
-| 1 | `https://data.example.org/api/endpoint/k4y7pq2mzt6vhx3nbwrs5cjd8f/file.geojson` | `dct:title` | Value is not Literal with datatype rdf:langString |
-| 1 | `https://data.example.org/api/endpoint/k4y7pq2mzt6vhx3nbwrs5cjd8f/file.geojson` | `leg:termsOfUse` | Less than 1 values |
-| 1 | `https://data.example.org/api/endpoint/k4y7pq2mzt6vhx3nbwrs5cjd8f/file.json` | `` | Node <https://data.example.org/api/endpoint/k4y7pq2mzt6vhx3nbwrs5cjd8f/file.json> must conform to exactly one shape in ([ sh:property sha-dcatapsk:distribution_accessService_none, sha-dcatapsk:distribution_accessURL_download, sha-dcatapsk:distribution_downloadURL, sha-dcatapsk:distribution_format, sha-dcatapsk:distribution_mediaType ] , [ sh:property sha-dcatapsk:distribution_accessService, sha-dcatapsk:distribution_accessURL_service, sha-dcatapsk:distribution_downloadURL_none, sha-dcatapsk:distribution_format_optional, sha-dcatapsk:distribution_mediaType_optional ]) and ([ sh:property sha-dcatapsk:distribution_applicableLegislation_hvd, sha-dcatapsk:distribution_dataset_hvd ] , [ sh:not [ sh:property sha-dcatapsk:distribution_applicableLegislation_hvd ], [ sh:property sha-dcatapsk:distribution_dataset_hvd ] ]) |
-| 1 | `https://data.example.org/api/endpoint/k4y7pq2mzt6vhx3nbwrs5cjd8f/file.json` | `dct:title` | Value is not Literal with datatype rdf:langString |
-| 1 | `https://data.example.org/api/endpoint/k4y7pq2mzt6vhx3nbwrs5cjd8f/file.json` | `leg:termsOfUse` | Less than 1 values |
-| 1 | `https://data.example.org/api/endpoint/k4y7pq2mzt6vhx3nbwrs5cjd8f/file.xlsx` | `` | Node <https://data.example.org/api/endpoint/k4y7pq2mzt6vhx3nbwrs5cjd8f/file.xlsx> must conform to exactly one shape in ([ sh:property sha-dcatapsk:distribution_accessService_none, sha-dcatapsk:distribution_accessURL_download, sha-dcatapsk:distribution_downloadURL, sha-dcatapsk:distribution_format, sha-dcatapsk:distribution_mediaType ] , [ sh:property sha-dcatapsk:distribution_accessService, sha-dcatapsk:distribution_accessURL_service, sha-dcatapsk:distribution_downloadURL_none, sha-dcatapsk:distribution_format_optional, sha-dcatapsk:distribution_mediaType_optional ]) and ([ sh:property sha-dcatapsk:distribution_applicableLegislation_hvd, sha-dcatapsk:distribution_dataset_hvd ] , [ sh:not [ sh:property sha-dcatapsk:distribution_applicableLegislation_hvd ], [ sh:property sha-dcatapsk:distribution_dataset_hvd ] ]) |
-| 1 | `https://data.example.org/api/endpoint/k4y7pq2mzt6vhx3nbwrs5cjd8f/file.xlsx` | `dct:title` | Value is not Literal with datatype rdf:langString |
-| 1 | `https://data.example.org/api/endpoint/k4y7pq2mzt6vhx3nbwrs5cjd8f/file.xlsx` | `leg:termsOfUse` | Less than 1 values |
-| 1 | `https://data.example.org/api/endpoint/k4y7pq2mzt6vhx3nbwrs5cjd8f/file.zip` | `` | Node <https://data.example.org/api/endpoint/k4y7pq2mzt6vhx3nbwrs5cjd8f/file.zip> must conform to exactly one shape in ([ sh:property sha-dcatapsk:distribution_accessService_none, sha-dcatapsk:distribution_accessURL_download, sha-dcatapsk:distribution_downloadURL, sha-dcatapsk:distribution_format, sha-dcatapsk:distribution_mediaType ] , [ sh:property sha-dcatapsk:distribution_accessService, sha-dcatapsk:distribution_accessURL_service, sha-dcatapsk:distribution_downloadURL_none, sha-dcatapsk:distribution_format_optional, sha-dcatapsk:distribution_mediaType_optional ]) and ([ sh:property sha-dcatapsk:distribution_applicableLegislation_hvd, sha-dcatapsk:distribution_dataset_hvd ] , [ sh:not [ sh:property sha-dcatapsk:distribution_applicableLegislation_hvd ], [ sh:property sha-dcatapsk:distribution_dataset_hvd ] ]) |
-| 1 | `https://data.example.org/api/endpoint/k4y7pq2mzt6vhx3nbwrs5cjd8f/file.zip` | `dct:title` | Value is not Literal with datatype rdf:langString |
-| 1 | `https://data.example.org/api/endpoint/k4y7pq2mzt6vhx3nbwrs5cjd8f/file.zip` | `leg:termsOfUse` | Less than 1 values |
 | 1 | `https://data.example.org/api/endpoint/k4y7pq2mzt6vhx3nbwrs5cjd8f/mcp` | `` | Node <https://data.example.org/api/endpoint/k4y7pq2mzt6vhx3nbwrs5cjd8f/mcp> must conform to exactly one shape in ([ sh:property sha-dcatapsk:distribution_accessService_none, sha-dcatapsk:distribution_accessURL_download, sha-dcatapsk:distribution_downloadURL, sha-dcatapsk:distribution_format, sha-dcatapsk:distribution_mediaType ] , [ sh:property sha-dcatapsk:distribution_accessService, sha-dcatapsk:distribution_accessURL_service, sha-dcatapsk:distribution_downloadURL_none, sha-dcatapsk:distribution_format_optional, sha-dcatapsk:distribution_mediaType_optional ]) and ([ sh:property sha-dcatapsk:distribution_applicableLegislation_hvd, sha-dcatapsk:distribution_dataset_hvd ] , [ sh:not [ sh:property sha-dcatapsk:distribution_applicableLegislation_hvd ], [ sh:property sha-dcatapsk:distribution_dataset_hvd ] ]) |
 | 1 | `https://data.example.org/api/endpoint/k4y7pq2mzt6vhx3nbwrs5cjd8f/mcp` | `dct:title` | Value is not Literal with datatype rdf:langString |
 | 1 | `https://data.example.org/api/endpoint/k4y7pq2mzt6vhx3nbwrs5cjd8f/mcp` | `leg:termsOfUse` | Less than 1 values |
@@ -64,12 +51,11 @@ Written by `python3 tests/ckan/profiles.py --write evidence/dcat-profiles.md`; `
 | 1 | `https://opendata.example.org/dataset/events` | `dct:spatial` | Less than 1 values |
 | 1 | `https://opendata.example.org/dataset/events` | `dct:title` | Focus node does not conform to shape MinCount 1: [ sh:datatype rdf:langString ; sh:languageIn ( Literal("sk") ) ] |
 
-### catalog-public-cc0.jsonld: 47
+### catalog-public-cc0.jsonld: 34
 
 | n | focus | path | message |
 |---|---|---|---|
 | 1 | `https://data.example.org/api/endpoint/k4y7pq2mzt6vhx3nbwrs5cjd8f` | `` | Node <https://data.example.org/api/endpoint/k4y7pq2mzt6vhx3nbwrs5cjd8f> must conform to exactly one shape in [ sh:not [ sh:property sha-dcatapsk:dataset_applicableLegislation_hvd ], [ sh:property sha-dcatapsk:dataset_type_hvd ] ; sh:property sha-dcatapsk:dataset_hvdCategory_none ] , [ sh:property sha-dcatapsk:dataset_applicableLegislation_hvd, sha-dcatapsk:dataset_hvdCategory, sha-dcatapsk:dataset_type_hvd ] |
-| 1 | `https://data.example.org/api/endpoint/k4y7pq2mzt6vhx3nbwrs5cjd8f` | `dcat:contactPoint` | Node [ rdf:type vcard:Kind ; vcard:fn Literal("Open data desk") ; vcard:hasEmail <mailto:opendata@city.example.org> ] must conform to one or more shapes in [ sh:class vcard:Individual ] , [ sh:class vcard:Organization ] |
 | 1 | `https://data.example.org/api/endpoint/k4y7pq2mzt6vhx3nbwrs5cjd8f` | `dct:description` | Focus node does not conform to shape MinCount 1: [ sh:datatype rdf:langString ; sh:languageIn ( Literal("sk") ) ] |
 | 1 | `https://data.example.org/api/endpoint/k4y7pq2mzt6vhx3nbwrs5cjd8f` | `dct:publisher` | Value does not match pattern '^https://data.gov.sk/id/legal-subject/' |
 | 1 | `https://data.example.org/api/endpoint/k4y7pq2mzt6vhx3nbwrs5cjd8f` | `dct:title` | Focus node does not conform to shape MinCount 1: [ sh:datatype rdf:langString ; sh:languageIn ( Literal("sk") ) ] |
@@ -77,18 +63,6 @@ Written by `python3 tests/ckan/profiles.py --write evidence/dcat-profiles.md`; `
 | 1 | `https://data.example.org/api/endpoint/k4y7pq2mzt6vhx3nbwrs5cjd8f/file.csv` | `` | Node <https://data.example.org/api/endpoint/k4y7pq2mzt6vhx3nbwrs5cjd8f/file.csv> must conform to exactly one shape in ([ sh:property sha-dcatapsk:distribution_accessService_none, sha-dcatapsk:distribution_accessURL_download, sha-dcatapsk:distribution_downloadURL, sha-dcatapsk:distribution_format, sha-dcatapsk:distribution_mediaType ] , [ sh:property sha-dcatapsk:distribution_accessService, sha-dcatapsk:distribution_accessURL_service, sha-dcatapsk:distribution_downloadURL_none, sha-dcatapsk:distribution_format_optional, sha-dcatapsk:distribution_mediaType_optional ]) and ([ sh:property sha-dcatapsk:distribution_applicableLegislation_hvd, sha-dcatapsk:distribution_dataset_hvd ] , [ sh:not [ sh:property sha-dcatapsk:distribution_applicableLegislation_hvd ], [ sh:property sha-dcatapsk:distribution_dataset_hvd ] ]) |
 | 1 | `https://data.example.org/api/endpoint/k4y7pq2mzt6vhx3nbwrs5cjd8f/file.csv` | `dct:title` | Value is not Literal with datatype rdf:langString |
 | 1 | `https://data.example.org/api/endpoint/k4y7pq2mzt6vhx3nbwrs5cjd8f/file.csv` | `leg:termsOfUse` | Less than 1 values |
-| 1 | `https://data.example.org/api/endpoint/k4y7pq2mzt6vhx3nbwrs5cjd8f/file.geojson` | `` | Node <https://data.example.org/api/endpoint/k4y7pq2mzt6vhx3nbwrs5cjd8f/file.geojson> must conform to exactly one shape in ([ sh:property sha-dcatapsk:distribution_accessService_none, sha-dcatapsk:distribution_accessURL_download, sha-dcatapsk:distribution_downloadURL, sha-dcatapsk:distribution_format, sha-dcatapsk:distribution_mediaType ] , [ sh:property sha-dcatapsk:distribution_accessService, sha-dcatapsk:distribution_accessURL_service, sha-dcatapsk:distribution_downloadURL_none, sha-dcatapsk:distribution_format_optional, sha-dcatapsk:distribution_mediaType_optional ]) and ([ sh:property sha-dcatapsk:distribution_applicableLegislation_hvd, sha-dcatapsk:distribution_dataset_hvd ] , [ sh:not [ sh:property sha-dcatapsk:distribution_applicableLegislation_hvd ], [ sh:property sha-dcatapsk:distribution_dataset_hvd ] ]) |
-| 1 | `https://data.example.org/api/endpoint/k4y7pq2mzt6vhx3nbwrs5cjd8f/file.geojson` | `dct:title` | Value is not Literal with datatype rdf:langString |
-| 1 | `https://data.example.org/api/endpoint/k4y7pq2mzt6vhx3nbwrs5cjd8f/file.geojson` | `leg:termsOfUse` | Less than 1 values |
-| 1 | `https://data.example.org/api/endpoint/k4y7pq2mzt6vhx3nbwrs5cjd8f/file.json` | `` | Node <https://data.example.org/api/endpoint/k4y7pq2mzt6vhx3nbwrs5cjd8f/file.json> must conform to exactly one shape in ([ sh:property sha-dcatapsk:distribution_accessService_none, sha-dcatapsk:distribution_accessURL_download, sha-dcatapsk:distribution_downloadURL, sha-dcatapsk:distribution_format, sha-dcatapsk:distribution_mediaType ] , [ sh:property sha-dcatapsk:distribution_accessService, sha-dcatapsk:distribution_accessURL_service, sha-dcatapsk:distribution_downloadURL_none, sha-dcatapsk:distribution_format_optional, sha-dcatapsk:distribution_mediaType_optional ]) and ([ sh:property sha-dcatapsk:distribution_applicableLegislation_hvd, sha-dcatapsk:distribution_dataset_hvd ] , [ sh:not [ sh:property sha-dcatapsk:distribution_applicableLegislation_hvd ], [ sh:property sha-dcatapsk:distribution_dataset_hvd ] ]) |
-| 1 | `https://data.example.org/api/endpoint/k4y7pq2mzt6vhx3nbwrs5cjd8f/file.json` | `dct:title` | Value is not Literal with datatype rdf:langString |
-| 1 | `https://data.example.org/api/endpoint/k4y7pq2mzt6vhx3nbwrs5cjd8f/file.json` | `leg:termsOfUse` | Less than 1 values |
-| 1 | `https://data.example.org/api/endpoint/k4y7pq2mzt6vhx3nbwrs5cjd8f/file.xlsx` | `` | Node <https://data.example.org/api/endpoint/k4y7pq2mzt6vhx3nbwrs5cjd8f/file.xlsx> must conform to exactly one shape in ([ sh:property sha-dcatapsk:distribution_accessService_none, sha-dcatapsk:distribution_accessURL_download, sha-dcatapsk:distribution_downloadURL, sha-dcatapsk:distribution_format, sha-dcatapsk:distribution_mediaType ] , [ sh:property sha-dcatapsk:distribution_accessService, sha-dcatapsk:distribution_accessURL_service, sha-dcatapsk:distribution_downloadURL_none, sha-dcatapsk:distribution_format_optional, sha-dcatapsk:distribution_mediaType_optional ]) and ([ sh:property sha-dcatapsk:distribution_applicableLegislation_hvd, sha-dcatapsk:distribution_dataset_hvd ] , [ sh:not [ sh:property sha-dcatapsk:distribution_applicableLegislation_hvd ], [ sh:property sha-dcatapsk:distribution_dataset_hvd ] ]) |
-| 1 | `https://data.example.org/api/endpoint/k4y7pq2mzt6vhx3nbwrs5cjd8f/file.xlsx` | `dct:title` | Value is not Literal with datatype rdf:langString |
-| 1 | `https://data.example.org/api/endpoint/k4y7pq2mzt6vhx3nbwrs5cjd8f/file.xlsx` | `leg:termsOfUse` | Less than 1 values |
-| 1 | `https://data.example.org/api/endpoint/k4y7pq2mzt6vhx3nbwrs5cjd8f/file.zip` | `` | Node <https://data.example.org/api/endpoint/k4y7pq2mzt6vhx3nbwrs5cjd8f/file.zip> must conform to exactly one shape in ([ sh:property sha-dcatapsk:distribution_accessService_none, sha-dcatapsk:distribution_accessURL_download, sha-dcatapsk:distribution_downloadURL, sha-dcatapsk:distribution_format, sha-dcatapsk:distribution_mediaType ] , [ sh:property sha-dcatapsk:distribution_accessService, sha-dcatapsk:distribution_accessURL_service, sha-dcatapsk:distribution_downloadURL_none, sha-dcatapsk:distribution_format_optional, sha-dcatapsk:distribution_mediaType_optional ]) and ([ sh:property sha-dcatapsk:distribution_applicableLegislation_hvd, sha-dcatapsk:distribution_dataset_hvd ] , [ sh:not [ sh:property sha-dcatapsk:distribution_applicableLegislation_hvd ], [ sh:property sha-dcatapsk:distribution_dataset_hvd ] ]) |
-| 1 | `https://data.example.org/api/endpoint/k4y7pq2mzt6vhx3nbwrs5cjd8f/file.zip` | `dct:title` | Value is not Literal with datatype rdf:langString |
-| 1 | `https://data.example.org/api/endpoint/k4y7pq2mzt6vhx3nbwrs5cjd8f/file.zip` | `leg:termsOfUse` | Less than 1 values |
 | 1 | `https://data.example.org/api/endpoint/k4y7pq2mzt6vhx3nbwrs5cjd8f/mcp` | `` | Node <https://data.example.org/api/endpoint/k4y7pq2mzt6vhx3nbwrs5cjd8f/mcp> must conform to exactly one shape in ([ sh:property sha-dcatapsk:distribution_accessService_none, sha-dcatapsk:distribution_accessURL_download, sha-dcatapsk:distribution_downloadURL, sha-dcatapsk:distribution_format, sha-dcatapsk:distribution_mediaType ] , [ sh:property sha-dcatapsk:distribution_accessService, sha-dcatapsk:distribution_accessURL_service, sha-dcatapsk:distribution_downloadURL_none, sha-dcatapsk:distribution_format_optional, sha-dcatapsk:distribution_mediaType_optional ]) and ([ sh:property sha-dcatapsk:distribution_applicableLegislation_hvd, sha-dcatapsk:distribution_dataset_hvd ] , [ sh:not [ sh:property sha-dcatapsk:distribution_applicableLegislation_hvd ], [ sh:property sha-dcatapsk:distribution_dataset_hvd ] ]) |
 | 1 | `https://data.example.org/api/endpoint/k4y7pq2mzt6vhx3nbwrs5cjd8f/mcp` | `dct:title` | Value is not Literal with datatype rdf:langString |
 | 1 | `https://data.example.org/api/endpoint/k4y7pq2mzt6vhx3nbwrs5cjd8f/mcp` | `leg:termsOfUse` | Less than 1 values |
@@ -116,7 +90,7 @@ Written by `python3 tests/ckan/profiles.py --write evidence/dcat-profiles.md`; `
 | 1 | `https://opendata.example.org/dataset/events` | `dct:spatial` | Less than 1 values |
 | 1 | `https://opendata.example.org/dataset/events` | `dct:title` | Focus node does not conform to shape MinCount 1: [ sh:datatype rdf:langString ; sh:languageIn ( Literal("sk") ) ] |
 
-### catalog-restricted-bare.jsonld: 41
+### catalog-restricted-bare.jsonld: 29
 
 | n | focus | path | message |
 |---|---|---|---|
@@ -131,18 +105,6 @@ Written by `python3 tests/ckan/profiles.py --write evidence/dcat-profiles.md`; `
 | 1 | `https://data.example.org/api/endpoint/k4y7pq2mzt6vhx3nbwrs5cjd8f/file.csv` | `` | Node <https://data.example.org/api/endpoint/k4y7pq2mzt6vhx3nbwrs5cjd8f/file.csv> must conform to exactly one shape in ([ sh:property sha-dcatapsk:distribution_accessService_none, sha-dcatapsk:distribution_accessURL_download, sha-dcatapsk:distribution_downloadURL, sha-dcatapsk:distribution_format, sha-dcatapsk:distribution_mediaType ] , [ sh:property sha-dcatapsk:distribution_accessService, sha-dcatapsk:distribution_accessURL_service, sha-dcatapsk:distribution_downloadURL_none, sha-dcatapsk:distribution_format_optional, sha-dcatapsk:distribution_mediaType_optional ]) and ([ sh:property sha-dcatapsk:distribution_applicableLegislation_hvd, sha-dcatapsk:distribution_dataset_hvd ] , [ sh:not [ sh:property sha-dcatapsk:distribution_applicableLegislation_hvd ], [ sh:property sha-dcatapsk:distribution_dataset_hvd ] ]) |
 | 1 | `https://data.example.org/api/endpoint/k4y7pq2mzt6vhx3nbwrs5cjd8f/file.csv` | `dct:title` | Value is not Literal with datatype rdf:langString |
 | 1 | `https://data.example.org/api/endpoint/k4y7pq2mzt6vhx3nbwrs5cjd8f/file.csv` | `leg:termsOfUse` | Less than 1 values |
-| 1 | `https://data.example.org/api/endpoint/k4y7pq2mzt6vhx3nbwrs5cjd8f/file.geojson` | `` | Node <https://data.example.org/api/endpoint/k4y7pq2mzt6vhx3nbwrs5cjd8f/file.geojson> must conform to exactly one shape in ([ sh:property sha-dcatapsk:distribution_accessService_none, sha-dcatapsk:distribution_accessURL_download, sha-dcatapsk:distribution_downloadURL, sha-dcatapsk:distribution_format, sha-dcatapsk:distribution_mediaType ] , [ sh:property sha-dcatapsk:distribution_accessService, sha-dcatapsk:distribution_accessURL_service, sha-dcatapsk:distribution_downloadURL_none, sha-dcatapsk:distribution_format_optional, sha-dcatapsk:distribution_mediaType_optional ]) and ([ sh:property sha-dcatapsk:distribution_applicableLegislation_hvd, sha-dcatapsk:distribution_dataset_hvd ] , [ sh:not [ sh:property sha-dcatapsk:distribution_applicableLegislation_hvd ], [ sh:property sha-dcatapsk:distribution_dataset_hvd ] ]) |
-| 1 | `https://data.example.org/api/endpoint/k4y7pq2mzt6vhx3nbwrs5cjd8f/file.geojson` | `dct:title` | Value is not Literal with datatype rdf:langString |
-| 1 | `https://data.example.org/api/endpoint/k4y7pq2mzt6vhx3nbwrs5cjd8f/file.geojson` | `leg:termsOfUse` | Less than 1 values |
-| 1 | `https://data.example.org/api/endpoint/k4y7pq2mzt6vhx3nbwrs5cjd8f/file.json` | `` | Node <https://data.example.org/api/endpoint/k4y7pq2mzt6vhx3nbwrs5cjd8f/file.json> must conform to exactly one shape in ([ sh:property sha-dcatapsk:distribution_accessService_none, sha-dcatapsk:distribution_accessURL_download, sha-dcatapsk:distribution_downloadURL, sha-dcatapsk:distribution_format, sha-dcatapsk:distribution_mediaType ] , [ sh:property sha-dcatapsk:distribution_accessService, sha-dcatapsk:distribution_accessURL_service, sha-dcatapsk:distribution_downloadURL_none, sha-dcatapsk:distribution_format_optional, sha-dcatapsk:distribution_mediaType_optional ]) and ([ sh:property sha-dcatapsk:distribution_applicableLegislation_hvd, sha-dcatapsk:distribution_dataset_hvd ] , [ sh:not [ sh:property sha-dcatapsk:distribution_applicableLegislation_hvd ], [ sh:property sha-dcatapsk:distribution_dataset_hvd ] ]) |
-| 1 | `https://data.example.org/api/endpoint/k4y7pq2mzt6vhx3nbwrs5cjd8f/file.json` | `dct:title` | Value is not Literal with datatype rdf:langString |
-| 1 | `https://data.example.org/api/endpoint/k4y7pq2mzt6vhx3nbwrs5cjd8f/file.json` | `leg:termsOfUse` | Less than 1 values |
-| 1 | `https://data.example.org/api/endpoint/k4y7pq2mzt6vhx3nbwrs5cjd8f/file.xlsx` | `` | Node <https://data.example.org/api/endpoint/k4y7pq2mzt6vhx3nbwrs5cjd8f/file.xlsx> must conform to exactly one shape in ([ sh:property sha-dcatapsk:distribution_accessService_none, sha-dcatapsk:distribution_accessURL_download, sha-dcatapsk:distribution_downloadURL, sha-dcatapsk:distribution_format, sha-dcatapsk:distribution_mediaType ] , [ sh:property sha-dcatapsk:distribution_accessService, sha-dcatapsk:distribution_accessURL_service, sha-dcatapsk:distribution_downloadURL_none, sha-dcatapsk:distribution_format_optional, sha-dcatapsk:distribution_mediaType_optional ]) and ([ sh:property sha-dcatapsk:distribution_applicableLegislation_hvd, sha-dcatapsk:distribution_dataset_hvd ] , [ sh:not [ sh:property sha-dcatapsk:distribution_applicableLegislation_hvd ], [ sh:property sha-dcatapsk:distribution_dataset_hvd ] ]) |
-| 1 | `https://data.example.org/api/endpoint/k4y7pq2mzt6vhx3nbwrs5cjd8f/file.xlsx` | `dct:title` | Value is not Literal with datatype rdf:langString |
-| 1 | `https://data.example.org/api/endpoint/k4y7pq2mzt6vhx3nbwrs5cjd8f/file.xlsx` | `leg:termsOfUse` | Less than 1 values |
-| 1 | `https://data.example.org/api/endpoint/k4y7pq2mzt6vhx3nbwrs5cjd8f/file.zip` | `` | Node <https://data.example.org/api/endpoint/k4y7pq2mzt6vhx3nbwrs5cjd8f/file.zip> must conform to exactly one shape in ([ sh:property sha-dcatapsk:distribution_accessService_none, sha-dcatapsk:distribution_accessURL_download, sha-dcatapsk:distribution_downloadURL, sha-dcatapsk:distribution_format, sha-dcatapsk:distribution_mediaType ] , [ sh:property sha-dcatapsk:distribution_accessService, sha-dcatapsk:distribution_accessURL_service, sha-dcatapsk:distribution_downloadURL_none, sha-dcatapsk:distribution_format_optional, sha-dcatapsk:distribution_mediaType_optional ]) and ([ sh:property sha-dcatapsk:distribution_applicableLegislation_hvd, sha-dcatapsk:distribution_dataset_hvd ] , [ sh:not [ sh:property sha-dcatapsk:distribution_applicableLegislation_hvd ], [ sh:property sha-dcatapsk:distribution_dataset_hvd ] ]) |
-| 1 | `https://data.example.org/api/endpoint/k4y7pq2mzt6vhx3nbwrs5cjd8f/file.zip` | `dct:title` | Value is not Literal with datatype rdf:langString |
-| 1 | `https://data.example.org/api/endpoint/k4y7pq2mzt6vhx3nbwrs5cjd8f/file.zip` | `leg:termsOfUse` | Less than 1 values |
 | 1 | `https://data.example.org/api/endpoint/k4y7pq2mzt6vhx3nbwrs5cjd8f/mcp` | `` | Node <https://data.example.org/api/endpoint/k4y7pq2mzt6vhx3nbwrs5cjd8f/mcp> must conform to exactly one shape in ([ sh:property sha-dcatapsk:distribution_accessService_none, sha-dcatapsk:distribution_accessURL_download, sha-dcatapsk:distribution_downloadURL, sha-dcatapsk:distribution_format, sha-dcatapsk:distribution_mediaType ] , [ sh:property sha-dcatapsk:distribution_accessService, sha-dcatapsk:distribution_accessURL_service, sha-dcatapsk:distribution_downloadURL_none, sha-dcatapsk:distribution_format_optional, sha-dcatapsk:distribution_mediaType_optional ]) and ([ sh:property sha-dcatapsk:distribution_applicableLegislation_hvd, sha-dcatapsk:distribution_dataset_hvd ] , [ sh:not [ sh:property sha-dcatapsk:distribution_applicableLegislation_hvd ], [ sh:property sha-dcatapsk:distribution_dataset_hvd ] ]) |
 | 1 | `https://data.example.org/api/endpoint/k4y7pq2mzt6vhx3nbwrs5cjd8f/mcp` | `dct:title` | Value is not Literal with datatype rdf:langString |
 | 1 | `https://data.example.org/api/endpoint/k4y7pq2mzt6vhx3nbwrs5cjd8f/mcp` | `leg:termsOfUse` | Less than 1 values |
@@ -162,30 +124,17 @@ Written by `python3 tests/ckan/profiles.py --write evidence/dcat-profiles.md`; `
 | 1 | `https://data.example.org/api/endpoint/k4y7pq2mzt6vhx3nbwrs5cjd8f/sta/v1.1/` | `dct:title` | Value is not Literal with datatype rdf:langString |
 | 1 | `https://data.example.org/api/endpoint/k4y7pq2mzt6vhx3nbwrs5cjd8f/sta/v1.1/` | `leg:termsOfUse` | Less than 1 values |
 
-## DCAT-AP-CZ 2026-09-23 (reported, gate from T-4499): 125 violation(s)
+## DCAT-AP-CZ 2026-09-23 (reported, gate from T-4499): 88 violation(s)
 
-### catalog-organization-cc-by-sa.jsonld: 42
+### catalog-organization-cc-by-sa.jsonld: 30
 
 | n | focus | path | message |
 |---|---|---|---|
-| 1 | `[blank]` | `vcard:fn` | Value is not Literal with datatype rdf:langString |
-| 1 | `https://data.example.org/api/endpoint/k4y7pq2mzt6vhx3nbwrs5cjd8f#service` | `dcat:endpointDescription` | Less than 1 values |
+| 2 | `[blank]` | `vcard:fn` | Value is not Literal with datatype rdf:langString |
 | 1 | `https://data.example.org/api/endpoint/k4y7pq2mzt6vhx3nbwrs5cjd8f#service` | `r5r:applicableLegislation` | Less than 1 values |
 | 1 | `https://data.example.org/api/endpoint/k4y7pq2mzt6vhx3nbwrs5cjd8f/file.csv` | `dct:title` | Value is not Literal with datatype rdf:langString |
 | 1 | `https://data.example.org/api/endpoint/k4y7pq2mzt6vhx3nbwrs5cjd8f/file.csv` | `pu:specifikace` | Less than 1 values |
 | 1 | `https://data.example.org/api/endpoint/k4y7pq2mzt6vhx3nbwrs5cjd8f/file.csv` | `r5r:applicableLegislation` | Less than 1 values |
-| 1 | `https://data.example.org/api/endpoint/k4y7pq2mzt6vhx3nbwrs5cjd8f/file.geojson` | `dct:title` | Value is not Literal with datatype rdf:langString |
-| 1 | `https://data.example.org/api/endpoint/k4y7pq2mzt6vhx3nbwrs5cjd8f/file.geojson` | `pu:specifikace` | Less than 1 values |
-| 1 | `https://data.example.org/api/endpoint/k4y7pq2mzt6vhx3nbwrs5cjd8f/file.geojson` | `r5r:applicableLegislation` | Less than 1 values |
-| 1 | `https://data.example.org/api/endpoint/k4y7pq2mzt6vhx3nbwrs5cjd8f/file.json` | `dct:title` | Value is not Literal with datatype rdf:langString |
-| 1 | `https://data.example.org/api/endpoint/k4y7pq2mzt6vhx3nbwrs5cjd8f/file.json` | `pu:specifikace` | Less than 1 values |
-| 1 | `https://data.example.org/api/endpoint/k4y7pq2mzt6vhx3nbwrs5cjd8f/file.json` | `r5r:applicableLegislation` | Less than 1 values |
-| 1 | `https://data.example.org/api/endpoint/k4y7pq2mzt6vhx3nbwrs5cjd8f/file.xlsx` | `dct:title` | Value is not Literal with datatype rdf:langString |
-| 1 | `https://data.example.org/api/endpoint/k4y7pq2mzt6vhx3nbwrs5cjd8f/file.xlsx` | `pu:specifikace` | Less than 1 values |
-| 1 | `https://data.example.org/api/endpoint/k4y7pq2mzt6vhx3nbwrs5cjd8f/file.xlsx` | `r5r:applicableLegislation` | Less than 1 values |
-| 1 | `https://data.example.org/api/endpoint/k4y7pq2mzt6vhx3nbwrs5cjd8f/file.zip` | `dct:title` | Value is not Literal with datatype rdf:langString |
-| 1 | `https://data.example.org/api/endpoint/k4y7pq2mzt6vhx3nbwrs5cjd8f/file.zip` | `pu:specifikace` | Less than 1 values |
-| 1 | `https://data.example.org/api/endpoint/k4y7pq2mzt6vhx3nbwrs5cjd8f/file.zip` | `r5r:applicableLegislation` | Less than 1 values |
 | 1 | `https://data.example.org/api/endpoint/k4y7pq2mzt6vhx3nbwrs5cjd8f/mcp` | `dct:title` | Value is not Literal with datatype rdf:langString |
 | 1 | `https://data.example.org/api/endpoint/k4y7pq2mzt6vhx3nbwrs5cjd8f/mcp` | `pu:specifikace` | Less than 1 values |
 | 1 | `https://data.example.org/api/endpoint/k4y7pq2mzt6vhx3nbwrs5cjd8f/mcp` | `r5r:applicableLegislation` | Less than 1 values |
@@ -211,28 +160,15 @@ Written by `python3 tests/ckan/profiles.py --write evidence/dcat-profiles.md`; `
 | 1 | `https://opendata.example.org/dataset/events` | `dct:spatial` | Less than 1 values |
 | 1 | `https://opendata.example.org/dataset/events` | `r5r:applicableLegislation` | Less than 1 values |
 
-### catalog-public-cc0.jsonld: 42
+### catalog-public-cc0.jsonld: 30
 
 | n | focus | path | message |
 |---|---|---|---|
-| 1 | `[blank]` | `vcard:fn` | Value is not Literal with datatype rdf:langString |
-| 1 | `https://data.example.org/api/endpoint/k4y7pq2mzt6vhx3nbwrs5cjd8f#service` | `dcat:endpointDescription` | Less than 1 values |
+| 2 | `[blank]` | `vcard:fn` | Value is not Literal with datatype rdf:langString |
 | 1 | `https://data.example.org/api/endpoint/k4y7pq2mzt6vhx3nbwrs5cjd8f#service` | `r5r:applicableLegislation` | Less than 1 values |
 | 1 | `https://data.example.org/api/endpoint/k4y7pq2mzt6vhx3nbwrs5cjd8f/file.csv` | `dct:title` | Value is not Literal with datatype rdf:langString |
 | 1 | `https://data.example.org/api/endpoint/k4y7pq2mzt6vhx3nbwrs5cjd8f/file.csv` | `pu:specifikace` | Less than 1 values |
 | 1 | `https://data.example.org/api/endpoint/k4y7pq2mzt6vhx3nbwrs5cjd8f/file.csv` | `r5r:applicableLegislation` | Less than 1 values |
-| 1 | `https://data.example.org/api/endpoint/k4y7pq2mzt6vhx3nbwrs5cjd8f/file.geojson` | `dct:title` | Value is not Literal with datatype rdf:langString |
-| 1 | `https://data.example.org/api/endpoint/k4y7pq2mzt6vhx3nbwrs5cjd8f/file.geojson` | `pu:specifikace` | Less than 1 values |
-| 1 | `https://data.example.org/api/endpoint/k4y7pq2mzt6vhx3nbwrs5cjd8f/file.geojson` | `r5r:applicableLegislation` | Less than 1 values |
-| 1 | `https://data.example.org/api/endpoint/k4y7pq2mzt6vhx3nbwrs5cjd8f/file.json` | `dct:title` | Value is not Literal with datatype rdf:langString |
-| 1 | `https://data.example.org/api/endpoint/k4y7pq2mzt6vhx3nbwrs5cjd8f/file.json` | `pu:specifikace` | Less than 1 values |
-| 1 | `https://data.example.org/api/endpoint/k4y7pq2mzt6vhx3nbwrs5cjd8f/file.json` | `r5r:applicableLegislation` | Less than 1 values |
-| 1 | `https://data.example.org/api/endpoint/k4y7pq2mzt6vhx3nbwrs5cjd8f/file.xlsx` | `dct:title` | Value is not Literal with datatype rdf:langString |
-| 1 | `https://data.example.org/api/endpoint/k4y7pq2mzt6vhx3nbwrs5cjd8f/file.xlsx` | `pu:specifikace` | Less than 1 values |
-| 1 | `https://data.example.org/api/endpoint/k4y7pq2mzt6vhx3nbwrs5cjd8f/file.xlsx` | `r5r:applicableLegislation` | Less than 1 values |
-| 1 | `https://data.example.org/api/endpoint/k4y7pq2mzt6vhx3nbwrs5cjd8f/file.zip` | `dct:title` | Value is not Literal with datatype rdf:langString |
-| 1 | `https://data.example.org/api/endpoint/k4y7pq2mzt6vhx3nbwrs5cjd8f/file.zip` | `pu:specifikace` | Less than 1 values |
-| 1 | `https://data.example.org/api/endpoint/k4y7pq2mzt6vhx3nbwrs5cjd8f/file.zip` | `r5r:applicableLegislation` | Less than 1 values |
 | 1 | `https://data.example.org/api/endpoint/k4y7pq2mzt6vhx3nbwrs5cjd8f/mcp` | `dct:title` | Value is not Literal with datatype rdf:langString |
 | 1 | `https://data.example.org/api/endpoint/k4y7pq2mzt6vhx3nbwrs5cjd8f/mcp` | `pu:specifikace` | Less than 1 values |
 | 1 | `https://data.example.org/api/endpoint/k4y7pq2mzt6vhx3nbwrs5cjd8f/mcp` | `r5r:applicableLegislation` | Less than 1 values |
@@ -258,7 +194,7 @@ Written by `python3 tests/ckan/profiles.py --write evidence/dcat-profiles.md`; `
 | 1 | `https://opendata.example.org/dataset/events` | `dct:spatial` | Less than 1 values |
 | 1 | `https://opendata.example.org/dataset/events` | `r5r:applicableLegislation` | Less than 1 values |
 
-### catalog-restricted-bare.jsonld: 41
+### catalog-restricted-bare.jsonld: 28
 
 | n | focus | path | message |
 |---|---|---|---|
@@ -268,23 +204,10 @@ Written by `python3 tests/ckan/profiles.py --write evidence/dcat-profiles.md`; `
 | 1 | `https://data.example.org/api/endpoint/k4y7pq2mzt6vhx3nbwrs5cjd8f` | `dct:publisher` | Less than 1 values |
 | 1 | `https://data.example.org/api/endpoint/k4y7pq2mzt6vhx3nbwrs5cjd8f` | `dct:spatial` | Less than 1 values |
 | 1 | `https://data.example.org/api/endpoint/k4y7pq2mzt6vhx3nbwrs5cjd8f` | `r5r:applicableLegislation` | Less than 1 values |
-| 1 | `https://data.example.org/api/endpoint/k4y7pq2mzt6vhx3nbwrs5cjd8f#service` | `dcat:endpointDescription` | Less than 1 values |
 | 1 | `https://data.example.org/api/endpoint/k4y7pq2mzt6vhx3nbwrs5cjd8f#service` | `r5r:applicableLegislation` | Less than 1 values |
 | 1 | `https://data.example.org/api/endpoint/k4y7pq2mzt6vhx3nbwrs5cjd8f/file.csv` | `dct:title` | Value is not Literal with datatype rdf:langString |
 | 1 | `https://data.example.org/api/endpoint/k4y7pq2mzt6vhx3nbwrs5cjd8f/file.csv` | `pu:specifikace` | Less than 1 values |
 | 1 | `https://data.example.org/api/endpoint/k4y7pq2mzt6vhx3nbwrs5cjd8f/file.csv` | `r5r:applicableLegislation` | Less than 1 values |
-| 1 | `https://data.example.org/api/endpoint/k4y7pq2mzt6vhx3nbwrs5cjd8f/file.geojson` | `dct:title` | Value is not Literal with datatype rdf:langString |
-| 1 | `https://data.example.org/api/endpoint/k4y7pq2mzt6vhx3nbwrs5cjd8f/file.geojson` | `pu:specifikace` | Less than 1 values |
-| 1 | `https://data.example.org/api/endpoint/k4y7pq2mzt6vhx3nbwrs5cjd8f/file.geojson` | `r5r:applicableLegislation` | Less than 1 values |
-| 1 | `https://data.example.org/api/endpoint/k4y7pq2mzt6vhx3nbwrs5cjd8f/file.json` | `dct:title` | Value is not Literal with datatype rdf:langString |
-| 1 | `https://data.example.org/api/endpoint/k4y7pq2mzt6vhx3nbwrs5cjd8f/file.json` | `pu:specifikace` | Less than 1 values |
-| 1 | `https://data.example.org/api/endpoint/k4y7pq2mzt6vhx3nbwrs5cjd8f/file.json` | `r5r:applicableLegislation` | Less than 1 values |
-| 1 | `https://data.example.org/api/endpoint/k4y7pq2mzt6vhx3nbwrs5cjd8f/file.xlsx` | `dct:title` | Value is not Literal with datatype rdf:langString |
-| 1 | `https://data.example.org/api/endpoint/k4y7pq2mzt6vhx3nbwrs5cjd8f/file.xlsx` | `pu:specifikace` | Less than 1 values |
-| 1 | `https://data.example.org/api/endpoint/k4y7pq2mzt6vhx3nbwrs5cjd8f/file.xlsx` | `r5r:applicableLegislation` | Less than 1 values |
-| 1 | `https://data.example.org/api/endpoint/k4y7pq2mzt6vhx3nbwrs5cjd8f/file.zip` | `dct:title` | Value is not Literal with datatype rdf:langString |
-| 1 | `https://data.example.org/api/endpoint/k4y7pq2mzt6vhx3nbwrs5cjd8f/file.zip` | `pu:specifikace` | Less than 1 values |
-| 1 | `https://data.example.org/api/endpoint/k4y7pq2mzt6vhx3nbwrs5cjd8f/file.zip` | `r5r:applicableLegislation` | Less than 1 values |
 | 1 | `https://data.example.org/api/endpoint/k4y7pq2mzt6vhx3nbwrs5cjd8f/mcp` | `dct:title` | Value is not Literal with datatype rdf:langString |
 | 1 | `https://data.example.org/api/endpoint/k4y7pq2mzt6vhx3nbwrs5cjd8f/mcp` | `pu:specifikace` | Less than 1 values |
 | 1 | `https://data.example.org/api/endpoint/k4y7pq2mzt6vhx3nbwrs5cjd8f/mcp` | `r5r:applicableLegislation` | Less than 1 values |
