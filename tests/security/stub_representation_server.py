@@ -70,12 +70,19 @@ class RepresentationStubHandler(BaseHTTPRequestHandler):
         mode = getattr(self.server, "mode", "conforming")
         stub_only = getattr(self.server, "stub_only", None)
 
+        # A map reads NGSI-LD's own GeoJSON (API/02 section 3, T-4597): the same path, another Accept.
+        geo = "application/geo+json" in (self.headers.get("Accept") or "")
         if stub_only:
-            if stub_only == "ngsi-ld" and not path.endswith("ngsi-ld/v1/entities"):
+            if stub_only == "ngsi-ld" and (geo or not path.endswith("ngsi-ld/v1/entities")):
                 return self._send(404, "application/json", b'{"detail": "disabled"}')
 
+        # The files T-4597 removed: 404 like any unknown path, unless the stub plays a gateway
+        # that still serves one.
+        if mode == "removed-served" and path.endswith("file.xlsx"):
+            return self._send(200, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", b"PK")
+
         # 1. NGSI-LD
-        if path.endswith("ngsi-ld/v1/entities"):
+        if path.endswith("ngsi-ld/v1/entities") and not geo:
             entities = [project_entity(e, drop_hidden=True) for e in FIXTURE_ENTITIES]
             return self._send(200, "application/ld+json", json.dumps(entities).encode("utf-8"))
 
@@ -100,8 +107,8 @@ class RepresentationStubHandler(BaseHTTPRequestHandler):
                 writer.writerow(row)
             return self._send(200, "text/csv; charset=utf-8", out.getvalue().encode("utf-8"))
 
-        # 3. GeoJSON
-        if path.endswith("file.geojson"):
+        # 3. GeoJSON for a map: NGSI-LD with Accept: application/geo+json
+        if path.endswith("ngsi-ld/v1/entities") and geo:
             entities = [project_entity(e, drop_hidden=True) for e in FIXTURE_ENTITIES]
             if mode == "divergent":
                 # Drop station-002 and round station-001 pm25 to 10

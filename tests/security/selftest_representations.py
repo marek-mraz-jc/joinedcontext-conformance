@@ -6,6 +6,7 @@ Asserts that:
 2. 'leaky' -> test_ep07_r20_a_hidden_attribute_leaks_through_no_representation fails, naming CSV and the attribute.
 3. 'divergent' -> id-set test and value test both fail, naming the missing id and rounded value.
 4. 'conforming' with JC_STUB_ONLY=ngsi-ld -> vacuity guard fails rather than passing on one representation.
+5. 'removed-served' -> the T-4597 check fails, naming the file a gateway still serves.
 """
 
 from __future__ import annotations
@@ -54,10 +55,10 @@ def main() -> int:
         if code != 0:
             print(f"FAIL case 1: conforming stub failed unexpectedly:\n{out}", file=sys.stderr)
             return 1
-        if "5 passed" not in out:
-            print(f"FAIL case 1: expected 5 passed tests, got:\n{out}", file=sys.stderr)
+        if "6 passed" not in out:
+            print(f"FAIL case 1: expected 6 passed tests, got:\n{out}", file=sys.stderr)
             return 1
-        print("case 1 ok: conforming stub passes all 5 tests across 5 representations")
+        print("case 1 ok: conforming stub passes all 6 tests across 5 representations")
     finally:
         server1.shutdown()
 
@@ -117,6 +118,18 @@ def main() -> int:
         print("case 4 ok: single representation stub fails vacuity test")
     finally:
         server4.shutdown()
+
+    # Case 5: a gateway that still serves a removed file (T-4597)
+    server5 = serve(port=0, mode="removed-served")
+    port5 = server5.server_address[1]
+    try:
+        code, out = run_pytest(f"http://127.0.0.1:{port5}")
+        if code == 0 or "test_t4597_a_removed_file_is_404_for_every_caller" not in out or "file.xlsx: 200" not in out:
+            print(f"FAIL case 5: a served file.xlsx was not reported:\n{out}", file=sys.stderr)
+            return 1
+        print("case 5 ok: a served removed file fails the 404 check and is named")
+    finally:
+        server5.shutdown()
 
     print("ok: representation parity conformance selftest passed all negative and positive cases")
     return 0
