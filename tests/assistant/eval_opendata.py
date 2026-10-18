@@ -243,6 +243,32 @@ def read_truth(q, now=None):
     return {"unavailable": "no reader for this truth"}
 
 
+def key_usage():
+    """The OpenRouter key's spend so far in USD, or None without the key or an answer. The eval's
+    channel is anonymous, so `done` carries no cost (T-4654); the key's usage before and after a
+    configuration is the measured spend, an upper bound because other callers share the key."""
+    key = os.environ.get("OPENROUTER_API_KEY")
+    if not key:
+        return None
+    request = urllib.request.Request("https://openrouter.ai/api/v1/key", headers={"Authorization": f"Bearer {key}"})
+    try:
+        with urllib.request.urlopen(request, timeout=20) as answer:
+            usage = json.load(answer)["data"]["usage"]
+    except (urllib.error.URLError, OSError, KeyError, TypeError, ValueError):
+        return None
+    return usage if isinstance(usage, (int, float)) else None
+
+
+def per_question(costs, before, after, asked):
+    """(USD per question, basis): the answers' own costs when they carry them, else the key's
+    usage delta over the questions asked; None when neither was measured."""
+    if costs:
+        return sum(costs) / len(costs), None
+    if before is None or after is None or not asked or after < before:
+        return None, "unknown"
+    return (after - before) / asked, "key delta, shared key (upper bound)"
+
+
 def catalogue_endpoints():
     """Every name and slug of a dataset data.dev lists: what the scope gate allows."""
     _, body = http_json(f"{CKAN.rstrip('/')}/api/3/action/package_search?rows=1000")
@@ -370,6 +396,7 @@ def run(args):
     results = {}
     for public_id, model in pairs:
         rows, warm = [], []
+        before = key_usage()
         for q in questions:
             truth = read_truth(q)
             for pass_rows in (rows, warm) if args.warm else (rows,):
@@ -391,12 +418,15 @@ def run(args):
                 time.sleep(args.pace)
         cold = [r for r in rows if not r["cached"]]
         costs = [r["costUsd"] for r in cold if r["costUsd"] is not None]
+        # The key's usage lags the answers by a few seconds.
+        time.sleep(10 if before is not None else 0)
+        usd, basis = per_question(costs, before, key_usage(), len(rows) + len(warm))
         results[f"{public_id} ({model})"] = {
             "judged": judge({**spec, "questions": questions}, rows, allowed),
             "cold": speed(cold),
             "warm": speed([r for r in warm if r["cached"]]),
-            "usdPerQuestion": sum(costs) / len(costs) if costs else None,
-            "costBasis": next((r["costBasis"] for r in cold if r["costUsd"] is not None), "unknown"),
+            "usdPerQuestion": usd,
+            "costBasis": basis or next(r["costBasis"] for r in cold if r["costUsd"] is not None),
             "rows": [{k: v for k, v in r.items() if k != "events"} | {"events": r["events"]} for r in rows],
             "warmRows": [{k: v for k, v in r.items() if k != "events"} for r in warm],
         }
@@ -412,6 +442,10 @@ def run(args):
 
 
 def selftest():
+    # T-4680: an anonymous answer carries no cost; the key's delta is the measure, never $0.
+    assert per_question([], 4.0, 4.45, 56) == ((4.45 - 4.0) / 56, "key delta, shared key (upper bound)")
+    assert per_question([0.01, 0.03], 4.0, 9.0, 2) == (0.02, None)
+    assert per_question([], None, 4.4, 56) == (None, "unknown") and per_question([], 4.0, 3.0, 5)[0] is None
     import jsonschema
 
     spec = json.loads(QUESTIONS.read_text())

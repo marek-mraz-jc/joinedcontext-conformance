@@ -345,7 +345,8 @@ def listed_prices():
 def cost(done, model, prices):
     if isinstance(done.get("costUsd"), (int, float)):
         return done["costUsd"], "usage"
-    if model in prices:
+    # An anonymous channel's `done` carries no tokens (T-4654): nothing measured is no cost, not $0.
+    if model in prices and isinstance(done.get("tokensIn"), int) and isinstance(done.get("tokensOut"), int):
         prompt, completion = prices[model]
         return done.get("tokensIn", 0) * prompt + done.get("tokensOut", 0) * completion, "listed"
     return None, "unknown"
@@ -672,6 +673,7 @@ def selftest():
     assert answer_text(events) == "Ahoj svet"
     assert cost({"tokensIn": 1000, "tokensOut": 100}, "m", {"m": (1e-6, 4e-6)}) == (1000e-6 + 400e-6, "listed")
     assert cost({"costUsd": 0.002}, "m", {}) == (0.002, "usage")
+    assert cost({"totalMs": 900}, "m", {"m": (1e-6, 4e-6)}) == (None, "unknown"), "no tokens is no cost (T-4680)"
 
     # One model passes every gate, a cheaper one fails the history injection: the passing one wins.
     def rows(canary_in_history, ttft=900.0):
