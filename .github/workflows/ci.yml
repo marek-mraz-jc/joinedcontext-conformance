@@ -127,6 +127,8 @@ jobs:
         run: python3 -m pytest tests/test_compliance_script.py -q
       - name: the security gate still goes red on a missing and on a switched-off test (T-1722)
         run: python3 -m pytest tests/test_security_gate.py -q
+      - name: the CKAN assistant eval scores a wrong, uncited or wrong-language answer as a failure (T-3153)
+        run: python3 -m pytest tests/test_ckan_assistant_eval.py -q
       - name: the scheduled dev runs report a suite that measured nothing as an error (T-2798)
         run: python3 -m pytest tests/test_scheduled_dev.py -q
       - name: the live authorization matrix sends reads and only the writes a row marks live (T-2797)
