@@ -37,9 +37,9 @@
           },
           "lang": {
             "enum": [
-              "sk",
+              "cs",
               "en",
-              "cs"
+              "sk"
             ]
           },
           "kind": {
@@ -95,7 +95,9 @@
                   "number",
                   "name",
                   "none",
-                  "scope"
+                  "scope",
+                  "date",
+                  "all"
                 ]
               },
               "ckan": {
@@ -170,28 +172,168 @@
                     ]
                   }
                 ]
+              },
+              "list": {
+                "allOf": [
+                  {
+                    "$ref": "#/definitions/read"
+                  },
+                  {
+                    "required": [
+                      "type"
+                    ]
+                  }
+                ]
+              },
+              "latest": {
+                "allOf": [
+                  {
+                    "$ref": "#/definitions/read"
+                  },
+                  {
+                    "required": [
+                      "type",
+                      "sort",
+                      "attr"
+                    ]
+                  }
+                ]
+              },
+              "formats": {
+                "type": "object",
+                "required": [
+                  "dataset"
+                ],
+                "additionalProperties": false,
+                "properties": {
+                  "dataset": {
+                    "type": "string"
+                  }
+                }
+              },
+              "datastore": {
+                "type": "object",
+                "required": [
+                  "resource"
+                ],
+                "additionalProperties": false,
+                "properties": {
+                  "resource": {
+                    "type": "string",
+                    "pattern": "^[0-9a-f-]{36}$"
+                  },
+                  "latestDate": {
+                    "type": "string"
+                  },
+                  "sumLatestYear": {
+                    "type": "object",
+                    "required": [
+                      "year",
+                      "amount"
+                    ],
+                    "additionalProperties": false,
+                    "properties": {
+                      "year": {
+                        "type": "string"
+                      },
+                      "amount": {
+                        "type": "string"
+                      }
+                    }
+                  }
+                },
+                "oneOf": [
+                  {
+                    "required": [
+                      "latestDate"
+                    ]
+                  },
+                  {
+                    "required": [
+                      "sumLatestYear"
+                    ]
+                  }
+                ]
+              }
+            },
+            "additionalProperties": false
+          },
+          "persona": {
+            "type": "string"
+          },
+          "why": {
+            "type": "string"
+          },
+          "source": {
+            "type": "string",
+            "minLength": 10
+          },
+          "observed": {
+            "type": "object",
+            "required": [
+              "observedAt"
+            ],
+            "properties": {
+              "value": {},
+              "observedAt": {
+                "type": "string"
+              },
+              "unavailable": {
+                "type": "string"
+              },
+              "of": {
+                "type": "object"
+              },
+              "year": {
+                "type": "integer"
+              },
+              "rows": {
+                "type": "integer"
+              },
+              "empty": {
+                "type": "integer"
               }
             },
             "additionalProperties": false
           }
         },
-        "if": {
-          "properties": {
-            "kind": {
-              "enum": [
-                "injection",
-                "unknowable",
-                "direct"
+        "allOf": [
+          {
+            "if": {
+              "properties": {
+                "kind": {
+                  "enum": [
+                    "injection",
+                    "unknowable",
+                    "direct"
+                  ]
+                }
+              }
+            },
+            "then": {},
+            "else": {
+              "required": [
+                "truth"
+              ]
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "id": {
+                  "pattern": "^od-(3[3-9]|4[0-9])$"
+                }
+              }
+            },
+            "then": {
+              "required": [
+                "source",
+                "persona",
+                "why"
               ]
             }
           }
-        },
-        "then": {},
-        "else": {
-          "required": [
-            "truth"
-          ]
-        }
+        ]
       }
     },
     "known": {
@@ -237,6 +379,24 @@
           "type": "integer",
           "minimum": 1,
           "maximum": 168
+        },
+        "match": {
+          "type": "string"
+        },
+        "sort": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "minItems": 1
+        },
+        "via": {
+          "type": "string"
+        },
+        "within": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 50000
         }
       },
       "anyOf": [

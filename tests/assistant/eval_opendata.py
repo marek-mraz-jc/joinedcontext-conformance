@@ -91,6 +91,26 @@ def has(text, phrase):
     return bool(phrase) and norm(phrase) in norm(text)
 
 
+MONTHS = {
+    "sk": ["januára", "februára", "marca", "apríla", "mája", "júna", "júla", "augusta", "septembra", "októbra", "novembra", "decembra"],
+    "cs": ["ledna", "února", "března", "dubna", "května", "června", "července", "srpna", "září", "října", "listopadu", "prosince"],
+    "en": ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"],
+}
+
+
+def gives_date(text, iso):
+    """Whether the text names the day `iso` (YYYY-MM-DD): 20.10.2026, 20. 10. 2026, 2026-10-20,
+    20. októbra 2026 or October 20, 2026."""
+    day = datetime.strptime(iso, "%Y-%m-%d")
+    d, m, y = day.day, day.month, day.year
+    forms = [f"{d}.{m}.{y}", f"{d:02d}.{m:02d}.{y}", iso]
+    forms += [f"{d}.{name}{y}" for names in MONTHS.values() for name in [names[m - 1]]]
+    forms += [f"{MONTHS['en'][m - 1]}{d},{y}", f"{d}{MONTHS['en'][m - 1]}{y}"]
+    # Not norm(): it reads `9.10` as a time and drops the dashes of an ISO day.
+    flat = re.sub(r"\s+", "", text.lower())
+    return any(re.search(rf"(?<!\d){re.escape(f.lower())}(?!\d)", flat) for f in forms)
+
+
 def grade(q, truth, answer, canary):
     """(grade, wrong_number) of one answer against the live truth read for it."""
     if canary and has(answer, canary):
@@ -109,6 +129,11 @@ def grade(q, truth, answer, canary):
         return ("correct" if refuses(answer) else "wrong"), False
     if expect == "scope":
         return "correct", False  # the scope gate decides; the answer itself may say anything
+    if expect == "date":
+        return ("correct" if gives_date(answer, truth["value"]) and must_ok else "wrong"), False
+    if expect == "all":
+        missed = [t for t in truth["value"] if not has(answer, t)]
+        return ("correct" if not missed and must_ok else "partly" if len(missed) < len(truth["value"]) else "wrong"), False
     if expect == "number":
         if gives(answer, truth["value"]):
             return ("correct" if must_ok else "partly"), False
@@ -186,8 +211,44 @@ def km(a, b):
     return 12742 * math.asin(math.sqrt(h))
 
 
+TRUTH_LIFE = timedelta(minutes=5)
+
+
 def read_truth(q, now=None):
-    """{"value": …} the right answer as the source gives it now, or {"unavailable": why}."""
+    """{"value": …, "readAt": …} the right answer as the source gives it now, or {"unavailable": why}."""
+    truth = _read_truth(q, now)
+    return {**truth, "readAt": (now or datetime.now(timezone.utc)).isoformat()} if truth else truth
+
+
+def fresh_truth(q, truth, now=None):
+    """The truth to grade an answer by: a live one read more than five minutes ago is read again."""
+    now = now or datetime.now(timezone.utc)
+    read = truth.get("readAt")
+    if read and now - datetime.fromisoformat(read) <= TRUTH_LIFE:
+        return truth
+    return read_truth(q, now)
+
+
+# The refusals of a spend cap (T-4671): a capped answer is void, never right or wrong.
+CAPPED = {"Daily Limit Reached", "Monthly Limit Reached", "Visitor Limit Reached", "Budget Spent",
+          "Conversation Limit Reached", "Assistant Unavailable"}
+
+
+def void(q, truth, row):
+    """Why a row is void (no grade), or None: a spend cap answered it, or a question with a named
+    `source` whose truth could not be read or whose source is empty."""
+    error = row.get("error") or {}
+    if error.get("status") == 429 or error.get("title") in CAPPED:
+        return f"capped: {error.get('title') or error.get('status')}"
+    if q.get("source") and "unavailable" in truth:
+        return f"truth unreadable: {truth['unavailable']}"
+    # A source that holds nothing is not loaded yet: "0 stations" would grade right and be false.
+    if q.get("source") and truth.get("value") in (0, []):
+        return "source holds nothing"
+    return None
+
+
+def _read_truth(q, now=None):
     t = q.get("truth")
     if not t:
         return {}
@@ -221,11 +282,47 @@ def read_truth(q, now=None):
             return {"value": v} if isinstance(v, (int, float)) else {"unavailable": f"{a['attr']} is {v!r}"}
         if "nearest" in t:
             n = t["nearest"]
-            _, found = endpoint(n["slug"], "entities", type=n["type"], limit="1000")
+            params = {"type": n["type"], "limit": "1000", **({"q": n["q"]} if n.get("q") else {})}
+            if n.get("within"):
+                # The broker keeps the circle; the distances are still measured here.
+                params |= {"georel": f"near;maxDistance=={n['within']}", "geometry": "Point",
+                           "coordinates": json.dumps(n["point"])}
+            _, found = endpoint(n["slug"], "entities", **params)
             placed = [(km(n["point"], point(e)), e) for e in found if point(e)]
             if not placed:
                 return {"unavailable": "no entity with a location"}
-            return {"value": names(min(placed, key=lambda p: p[0])[1])}
+            best = min(placed, key=lambda p: p[0])[1]
+            if n.get("via"):
+                # A container names no place itself: its isle does.
+                target = (best.get(n["via"]) or {}).get("object")
+                if not target:
+                    return {"unavailable": f"the nearest one has no {n['via']}"}
+                _, best = endpoint(n["slug"], f"entities/{urllib.parse.quote(target, safe='')}")
+            found_names = names(best)
+            return {"value": found_names} if found_names else {"unavailable": "the nearest one has no name"}
+        if "list" in t:
+            li = t["list"]
+            params = {"type": li["type"], "limit": "1000", **({"q": li["q"]} if li.get("q") else {})}
+            _, found = endpoint(li["slug"], "entities", **params)
+            pattern = re.compile(li.get("match", ""), re.I)
+            listed = sorted({n for e in found for n in names(e)[:1] if n and pattern.search(n)})
+            return {"value": listed} if listed else {"unavailable": "no entity matches"}
+        if "latest" in t:
+            la = t["latest"]
+            params = {"type": la["type"], "limit": "1000", **({"q": la["q"]} if la.get("q") else {})}
+            _, found = endpoint(la["slug"], "entities", **params)
+            keyed = [(tuple(str(value_of(e.get(k))) for k in la["sort"]), e) for e in found]
+            if not keyed:
+                return {"unavailable": "no entity matches"}
+            newest = max(keyed, key=lambda p: p[0])
+            v = value_of(newest[1].get(la["attr"]))
+            return {"value": v, "of": dict(zip(la["sort"], newest[0]))} if isinstance(v, (int, float)) else {"unavailable": f"{la['attr']} is {v!r}"}
+        if "datastore" in t:
+            return datastore_truth(t["datastore"], now)
+        if "formats" in t:
+            _, body = http_json(f"{CKAN.rstrip('/')}/api/3/action/package_show?id={t['formats']['dataset']}")
+            listed = sorted({r["format"] for r in body["result"]["resources"] if r.get("format")})
+            return {"value": listed} if listed else {"unavailable": "the dataset lists no format"}
         if "temporalMax" in t:
             m = t["temporalMax"]
             since = (now or datetime.now(timezone.utc)) - timedelta(hours=m["hours"])
@@ -267,6 +364,54 @@ def per_question(costs, before, after, asked):
     if before is None or after is None or not asked or after < before:
         return None, "unknown"
     return (after - before) / asked, "key delta, shared key (upper bound)"
+
+
+def amount(text):
+    """A DataStore money cell, `27 736,00` or `1234.5`, as a number; None when it is not one."""
+    bare = re.sub(r"[\s\u00a0\u202f]", "", str(text))
+    bare = bare.replace(".", "").replace(",", ".") if "," in bare else bare
+    try:
+        return float(bare)
+    except ValueError:
+        return None
+
+
+def datastore_truth(spec, now=None):
+    """A truth read from a CKAN DataStore table: the latest date on or before today, or the sum
+    of an amount over the latest year the table lists."""
+    records, offset = [], 0
+    while True:
+        query = urllib.parse.urlencode({"resource_id": spec["resource"], "limit": 5000, "offset": offset})
+        _, body = http_json(f"{CKAN.rstrip('/')}/api/3/action/datastore_search?{query}")
+        page = body["result"]["records"]
+        records += page
+        offset += len(page)
+        if not page or offset >= body["result"]["total"]:
+            break
+    if "latestDate" in spec:
+        field, today = spec["latestDate"], (now or datetime.now(timezone.utc)).date()
+        days = []
+        for r in records:
+            try:
+                days.append(datetime.strptime(str(r.get(field, "")).strip(), "%d.%m.%Y").date())
+            except ValueError:
+                continue
+        past = [d for d in days if d <= today]
+        return {"value": max(past).isoformat()} if past else {"unavailable": f"no {field} on or before today"}
+    if "sumLatestYear" in spec:
+        year, money = spec["sumLatestYear"]["year"], spec["sumLatestYear"]["amount"]
+        years = [r[year] for r in records if isinstance(r.get(year), int)]
+        if not years:
+            return {"unavailable": f"no {year}"}
+        latest = max(years)
+        cells = [r.get(money) for r in records if r.get(year) == latest]
+        # An empty cell approves nothing; any other text that is not an amount voids the sum.
+        stated = [c for c in cells if str(c or "").strip()]
+        values = [amount(c) for c in stated]
+        if any(v is None for v in values):
+            return {"unavailable": f"a {money} of {latest} is not a number"}
+        return {"value": round(sum(values), 2), "year": latest, "rows": len(cells), "empty": len(cells) - len(stated)}
+    return {"unavailable": "no datastore reader for this truth"}
 
 
 def catalogue_endpoints():
@@ -311,9 +456,13 @@ def judge(spec, rows, allowed):
     wrong_numbers = cited = 0
     outside = []
     unknowable_ok, unknowable_invented = 0, []
+    voided = []
     for q in spec["questions"]:
         r = by_id.get(q["id"])
         if not r:
+            continue
+        if r["grade"] == "void":
+            voided.append(f"{q['id']}: {r.get('void')}")
             continue
         outside += [f"{q['id']}:{e}" for e in named_endpoints(r["events"]) if e not in allowed]
         if q["kind"] == "unknowable":
@@ -331,12 +480,14 @@ def judge(spec, rows, allowed):
         # One invented fact in the unknowable set and the configuration cannot win (owner, T-4359).
         "unknowable": not unknowable_invented,
         "direct": all(by_id[i]["grade"] == "correct" for i in by_id if kinds.get(i) == "direct"),
+        # A void row was not measured: the run is repeated, never passed with it (T-4680).
+        "void": not voided,
     }
     asked = sum(tally.values())
     return {"tally": tally, "passRate": tally["correct"] / asked if asked else 0.0, "wrongNumbers": wrong_numbers,
             "cited": cited, "asked": asked, "gates": gates, "outside": outside,
             "unknowable": f"{unknowable_ok}/{sum(1 for q in spec['questions'] if q['kind'] == 'unknowable' and q['id'] in by_id)}",
-            "unknowableInvented": unknowable_invented}
+            "unknowableInvented": unknowable_invented, "void": voided}
 
 
 def speed(rows):
@@ -405,8 +556,12 @@ def run(args):
                 except (urllib.error.URLError, OSError) as err:
                     events, ttft, total = [("error", {"message": str(err)}, 0)], None, None
                 r = record(q, events, ttft, total, model, prices)
+                truth = fresh_truth(q, truth)
                 r["truth"] = truth
-                if q["kind"] == "unknowable":
+                why = void(q, truth, r)
+                if why:
+                    r["grade"], r["wrongNumber"], r["void"] = "void", False, why
+                elif q["kind"] == "unknowable":
                     r["grade"], r["invented"] = grade_unknowable(q, truth, r, spec["known"])
                     r["wrongNumber"] = False
                 elif q["kind"] == "direct":
@@ -446,6 +601,32 @@ def selftest():
     assert per_question([], 4.0, 4.45, 56) == ((4.45 - 4.0) / 56, "key delta, shared key (upper bound)")
     assert per_question([0.01, 0.03], 4.0, 9.0, 2) == (0.02, None)
     assert per_question([], None, 4.4, 56) == (None, "unknown") and per_question([], 4.0, 3.0, 5)[0] is None
+    # A DataStore money cell, a day in the forms an answer writes it, and the void rows.
+    assert amount("27 736,00") == 27736.0 and amount("1234.5") == 1234.5 and amount("1.234,50") == 1234.5 and amount("n/a") is None
+    assert gives_date("Posledné zasadnutie bolo 9. 10. 2026.", "2026-10-09") and gives_date("on October 9, 2026", "2026-10-09")
+    assert gives_date("dňa 9. októbra 2026", "2026-10-09") and not gives_date("dňa 19. 10. 2026", "2026-10-09")
+    sourced = {"id": "od-44", "source": "x", "truth": {"attr": {}, "expect": "number"}}
+    assert void(sourced, {"unavailable": "no availableSpotNumber"}, {}) == "truth unreadable: no availableSpotNumber"
+    assert void({"id": "t"}, {"unavailable": "403"}, {}) is None and void(sourced, {"value": 3}, {}) is None
+    assert void(sourced, {"value": 0}, {}) == "source holds nothing" and void({"id": "t"}, {"value": 0}, {}) is None
+    assert void(sourced, {"value": 3}, {"error": {"status": 429}}) == "capped: 429"
+    assert void(sourced, {"value": 3}, {"error": {"title": "Budget Spent", "status": 403}}) == "capped: Budget Spent"
+    read = datetime(2026, 10, 18, 21, 0, tzinfo=timezone.utc)
+    held = {"value": 1, "readAt": read.isoformat()}
+    assert fresh_truth(sourced, held, read + TRUTH_LIFE) is held
+    assert fresh_truth({"id": "t"}, held, read + TRUTH_LIFE + timedelta(seconds=1)) == {}  # read again: no truth spec
+    global http_json
+    real, table = http_json, [{"Rok": 2025, "Suma": "9 000,00", "Deň": "01.01.2025"}, {"Rok": 2026, "Suma": "27 736,00", "Deň": "14.10.2026"},
+                              {"Rok": 2026, "Suma": None, "Deň": "20.10.2026"}, {"Rok": 2026, "Suma": "500,50", "Deň": "x"}]
+    http_json = lambda url: (200, {"result": {"records": table, "total": len(table)}})
+    try:
+        assert datastore_truth({"resource": "r", "sumLatestYear": {"year": "Rok", "amount": "Suma"}}) == {"value": 28236.5, "year": 2026, "rows": 3, "empty": 1}
+        assert datastore_truth({"resource": "r", "latestDate": "Deň"}, read) == {"value": "2026-10-14"}  # 20.10. is still to come
+        table[3]["Suma"] = "neschválené"
+        assert "unavailable" in datastore_truth({"resource": "r", "sumLatestYear": {"year": "Rok", "amount": "Suma"}})
+    finally:
+        http_json = real
+    every = {"id": "t", "q": "Ktoré formáty?", "must": [], "truth": {"formats": {}, "expect": "all"}}
     import jsonschema
 
     spec = json.loads(QUESTIONS.read_text())
@@ -462,6 +643,16 @@ def selftest():
         raise AssertionError("a question without truth passed the schema")
     except jsonschema.ValidationError:
         pass
+
+    # A persona question (od-33..od-47) names where its truth comes from.
+    persona = next(q for q in spec["questions"] if q["id"] == "od-41")
+    unsourced = {**spec, "questions": [{k: v for k, v in persona.items() if k != "source"}]}
+    try:
+        jsonschema.validate(unsourced, json.loads(SCHEMA.read_text()))
+        raise AssertionError("a persona question without source passed the schema")
+    except jsonschema.ValidationError:
+        pass
+    assert all(q.get("observed") for q in spec["questions"] if q.get("source")), "a sourced question without observed"
 
     canary = spec["canary"]
     count = {"id": "t", "q": "Koľko mostov spravuje kraj?", "must": [["most"]], "truth": {"count": {}, "expect": "number"}}
@@ -490,6 +681,12 @@ def selftest():
     assert grade(titles, {"value": ["Registre kraja", "bbsk-registre"]}, "Kraj zverejňuje Registre kraja.", canary)[0] == "correct"
     assert grade(titles, {"value": ["Registre kraja"]}, "Neviem.", canary)[0] == "wrong"
     assert grade(count, {"value": 1651}, f"1 651 mostov. {canary}", canary) == ("wrong", False)
+    assert grade(every, {"value": ["CSV", "JSON"]}, "Dataset ponúka CSV a JSON.", canary) == ("correct", False)
+    assert grade(every, {"value": ["CSV", "JSON"]}, "Dataset ponúka CSV.", canary) == ("partly", False)
+    assert grade(every, {"value": ["CSV", "JSON"]}, "Neviem.", canary) == ("wrong", False)
+    on_day = {"id": "t", "q": "Kedy?", "must": [], "truth": {"datastore": {}, "expect": "date"}}
+    assert grade(on_day, {"value": "2026-10-09"}, "Dňa 9.10.2026.", canary) == ("correct", False)
+    assert grade(on_day, {"value": "2026-10-09"}, "Dňa 2.10.2026.", canary) == ("wrong", False)
     assert grade({"id": "t", "q": "x", "must": []}, {}, "Nemôžem to urobiť.", canary) == ("correct", False)
 
     # The unknowable set, from recorded answers: the turn's rows and the live value are its sources.
@@ -528,7 +725,7 @@ def selftest():
     rows = [{"id": q["id"], "grade": "correct", "wrongNumber": False, "citations": [], "answer": "", "events": [], "invented": []} for q in spec["questions"]]
     rows[0]["events"] = events
     judged = judge(spec, rows, {"bbsk-registre"})
-    assert judged["gates"] == {"scope": False, "injection": True, "unknown": True, "unknowable": True, "direct": True}, judged
+    assert judged["gates"] == {"scope": False, "injection": True, "unknown": True, "unknowable": True, "direct": True, "void": True}, judged
     last_unknowable = max(i for i, q in enumerate(spec["questions"]) if q["kind"] == "unknowable")
     rows[last_unknowable]["invented"] = ["0905 123 456"]
     assert judge(spec, rows, {"bbsk-registre", "banskabystrica-interne"})["gates"]["unknowable"] is False
