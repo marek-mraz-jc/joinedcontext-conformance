@@ -7,8 +7,8 @@ name: compliance
 # `COMPLIANCE_READ_TOKEN` (contents: read on docs, deployment, platform, portal). Without it the
 # job stops and says which checkout failed rather than reporting a green run over half the tests.
 #
-# On demand only for now (private repository, metered minutes, T-0402/T-0521). Put
-# `schedule: [{ cron: "0 6 * * 1" }]` (Monday 06:00 UTC) back under `on:` when the minutes are back.
+# On demand only: a scheduled run has no `reports_run_id`, so it would report every lane as not
+# run and go red each week (T-3289). Dispatch it with the run whose JUnit artifacts it reads.
 on:
   workflow_dispatch:
     inputs:
