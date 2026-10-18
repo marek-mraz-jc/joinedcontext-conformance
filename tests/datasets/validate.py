@@ -11,8 +11,8 @@ was not held against it and why):
    publisher's area is a WARN: HSL, PID and region polygons reach past a city);
 3. fresh: per type the newest write (`modifiedAt`, `observedAt`, `dateObserved`, ...) against the
    period of the Pipeline that writes it, from the DataSource manifests of the deployment seed;
-4. rep: file.csv, file.json, file.geojson and file.xlsx per type, the OGC items' numberMatched and
-   the CKAN DataStore total, each within 1 % of the NGSI-LD count, each export within 10 s;
+4. rep: file.csv per type (the Endpoint's one file since T-4597), the OGC items' numberMatched
+   and the CKAN DataStore total, each within 1 % of the NGSI-LD count, each export within 10 s;
 5. schema: schema/index.json and every artifact it lists answer, match their sha256 and parse;
 6. ws: x-subscribe answers 201, a live type sends an x-notification within the window when it
    changed in it, an invalid q answers x-result 400;
@@ -41,7 +41,6 @@ import re
 import time
 import urllib.error
 import urllib.request
-import zipfile
 from collections import Counter
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
@@ -346,23 +345,7 @@ def count_csv(body: bytes) -> int:
     return max(0, sum(1 for _ in csv.reader(io.StringIO(body.decode("utf-8-sig")))) - 1)
 
 
-def count_json(body: bytes) -> int:
-    data = json.loads(body)
-    return len(data if isinstance(data, list) else data.get("features") or data.get("items") or [])
-
-
-def count_geojson(body: bytes) -> int:
-    return len(json.loads(body)["features"])
-
-
-def count_xlsx(body: bytes) -> int:
-    with zipfile.ZipFile(io.BytesIO(body)) as book:
-        sheet = book.read("xl/worksheets/sheet1.xml")
-    return max(0, len(re.findall(rb"<row[ >]", sheet)) - 1)
-
-
-EXPORTS = (("csv", "file.csv", count_csv), ("json", "file.json", count_json),
-           ("geojson", "file.geojson", count_geojson), ("xlsx", "file.xlsx", count_xlsx))
+EXPORTS = (("csv", "file.csv", count_csv),)
 
 
 def parses(name: str, body: bytes) -> bool:

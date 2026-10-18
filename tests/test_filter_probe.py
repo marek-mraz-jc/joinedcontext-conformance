@@ -62,12 +62,12 @@ def test_a_failed_answer_is_an_error_never_a_verdict():
 
 def test_the_requests_say_the_same_filter_in_each_standard():
     served = {"ngsi-ld": "https://x/e/ngsi-ld/v1/", "odata": "https://x/e/odata/v4/",
-              "ogc": "https://x/e/ogc/features/", "file.geojson": "https://x/e/file.geojson"}
+              "ogc": "https://x/e/ogc/features/"}
     asks = fp.urls(served, "AirQualityObserved", ("name", "==", "O'Neil"), [1, 2, 3, 4])
     assert "q=name%3D%3D%22O%27Neil%22" in asks["ngsi-ld"] and "georel=intersects" in asks["ngsi-ld"]
     assert "%24filter=name%20eq%20%27O%27%27Neil%27" in asks["odata"]
     assert "bbox=1%2C2%2C3%2C4" in asks["ogc"] and "filter-lang=cql2-text" in asks["ogc"]
-    assert asks["file.geojson"].startswith("https://x/e/file.geojson?type=")
+    assert set(asks) == {"ngsi-ld", "odata", "ogc"}  # file.geojson is gone (T-4597)
 
 
 def test_the_feed_lists_each_endpoint_with_what_it_serves():
@@ -108,7 +108,7 @@ def test_odata_is_held_to_the_query_without_the_box_it_cannot_say():
     cells = fp.probe(recorded(base, ENTITY, other), base, served)
     # OGC's box also keeps the unlocated entity: held to NGSI-LD's boxed plus unlocated answer.
     assert cells["ngsi-ld"] == "ok" and cells["odata"] == "ok" and cells["ogc"] == "ok", cells
-    assert cells["file.geojson"] == "not served"
+    assert "file.geojson" not in cells
     empty = type("Empty", (), {"get": staticmethod(lambda url: (200, {}, {"typeList": []}))})()
     assert fp.probe(empty, base, served)["odata"] == "skipped: the Endpoint holds no type"
 
