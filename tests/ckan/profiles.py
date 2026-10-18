@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Every Endpoint record against the national DCAT-AP profiles (T-4510, T-4586, EP-27, EP-78,
-EP-125).
+EP-127).
 
 `dcat.py` holds a record to DCAT-AP 3.0; this holds the same record to each profile whose shapes
 are vendored under `dcat/shapes/` (README there: source, version, digest of every file) and

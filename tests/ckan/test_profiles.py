@@ -1,4 +1,4 @@
-"""The national DCAT-AP profiles over the gateway's records (T-4510, T-4586, EP-27, EP-78, EP-125).
+"""The national DCAT-AP profiles over the gateway's records (T-4510, T-4586, EP-27, EP-78, EP-127).
 
 DCAT-AP 3.0.0 is a gate on every fixture; DCAT-AP-SK and DCAT-AP-CZ are reported until T-4499,
 and the committed report is today's. A publisher's catalogue is a gate on the profile it is
