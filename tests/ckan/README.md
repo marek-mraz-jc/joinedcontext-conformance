@@ -44,12 +44,18 @@ table that holds rows, and that nothing the Endpoint's policy set masks reached 
 ## National profiles (T-4510)
 
 `profiles.py` holds each fixture record to DCAT-AP 3.0.0 (a gate: a violation fails), to
-DCAT-AP-SK 2.0.1 and to DCAT-AP-CZ 2026-09-23 (reported until T-4499 writes records that meet
-them), with the vendored shapes of `dcat/shapes/` (README there). `test_profiles.py` checks the
-digests, the gate, and that the committed `evidence/dcat-profiles.md` is a fresh run; after a
-change to a record or a shape, rewrite it:
+DCAT-AP-SK 3.0.0 and to DCAT-AP-CZ 2026-09-23 (reported until T-4499 writes records that meet
+them), with the vendored shapes of `dcat/shapes/` (README there). A publisher's catalogue
+(`fixtures/publisher-*.jsonld`, T-4586) is a gate on the profile it is rendered in, except the
+upstream defects `UPSTREAM` names. `test_profiles.py` checks the digests, the gates, and that the
+committed `evidence/dcat-profiles.md` is a fresh run; after a change to a record or a shape,
+rewrite it:
 
     python3 tests/ckan/profiles.py --write evidence/dcat-profiles.md
+
+The publisher fixtures are the gateway's own output: in joinedcontext-platform,
+`DCAT_RECORDS_DIR=/tmp/r cargo test -p context-gateway --test publisher_catalog_tests` writes
+them to `/tmp/r/publisher-*.jsonld`.
 
 ## Run
 

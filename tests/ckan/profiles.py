@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
-"""Every Endpoint record against the national DCAT-AP profiles (T-4510, EP-27, EP-78).
+"""Every Endpoint record against the national DCAT-AP profiles (T-4510, T-4586, EP-27, EP-78,
+EP-125).
 
 `dcat.py` holds a record to DCAT-AP 3.0; this holds the same record to each profile whose shapes
 are vendored under `dcat/shapes/` (README there: source, version, digest of every file) and
@@ -8,11 +9,17 @@ DCAT-AP-CZ are reported, not gated, until T-4499 writes records that meet them; 
 committed (`evidence/dcat-profiles.md`) and the test holds it equal to a fresh run, so the list
 of what a record lacks for a national catalogue is always today's.
 
+A publisher's catalogue (`/catalog/{project}.jsonld?profile=…`, the gateway's
+`publisher-*.jsonld` fixtures) is what a national catalogue harvests, so each one is a gate on
+its own profile, except the upstream defects `UPSTREAM` names: rows a published shape gets
+wrong, reported apart and never counted.
+
     python3 tests/ckan/profiles.py                    report for the committed fixtures
     python3 tests/ckan/profiles.py --write FILE       and write it
     python3 tests/ckan/profiles.py RECORD.jsonld ...  report for these records
 
-Exit 1 when a vendored file is not its pinned digest or a gate profile reports a violation.
+Exit 1 when a vendored file is not its pinned digest, a gate profile reports a violation or a
+publisher's catalogue fails its profile.
 """
 
 from __future__ import annotations
@@ -43,8 +50,7 @@ REPEATED = re.compile(r"( on )?(<[^>]*>|Node \[.*\])->\S+ ?")
 #: meet; the vendored HVD and catalogue shapes apply to an HVD dataset and to a catalogue.
 PROFILES: dict[str, tuple[bool, tuple[str, ...]]] = {
     "DCAT-AP 3.0.0": (True, ("dcat-ap/3.0.0/dcat-ap-SHACL.ttl",)),
-    "DCAT-AP-SK 2.0.1": (False, ("dcat-ap/2.1.1/dcat-ap_2.1.1_shacl_shapes.ttl",
-                                 "dcat-ap-sk/2.0.1/sk-additions.shacl.ttl")),
+    "DCAT-AP-SK 3.0.0": (False, ("dcat-ap-sk/3.0.0/dcat-ap-sk-3.0.0-shapes.ttl",)),
     "DCAT-AP-CZ 2026-09-23": (False, ("dcat-ap-cz/2026-09-23/otevrena-data/shacl.ttl",
                                       "dcat-ap-cz/2026-09-23/cz-additions.shacl.ttl")),
 }
@@ -54,14 +60,29 @@ PROFILES: dict[str, tuple[bool, tuple[str, ...]]] = {
 DIGESTS = {
     "dcat-ap/3.0.0/dcat-ap-SHACL.ttl":
         "92f76609d78d257123e75bc6b7155df5cc0a63f14c29fbc12b0ac95c56af2059",
-    "dcat-ap/2.1.1/dcat-ap_2.1.1_shacl_shapes.ttl":
-        "467ace005196e261b9299422e921aba079c279a9e914e3a2d499e048cbc7cd0b",
+    "dcat-ap-sk/3.0.0/dcat-ap-sk-3.0.0-shapes.ttl":
+        "e2d2c01e4e3966af003121db41b378018241fcd1cd40a459cbbeb4c128caf31c",
+    "dcat-ap-sk/3.0.0/dcat-ap-sk-3.0.0-hvd-shapes.ttl":
+        "b7774e877d19870c442563bd28a7ad85720318227c602299142a40a73d21eb2c",
     "dcat-ap-cz/2026-09-23/otevrena-data/shacl.ttl":
         "3c21e6977a2199e44a7dd6f594311d453f444687f32fe84707ab3c9c4069adc2",
     "dcat-ap-cz/2026-09-23/hvd/shacl.ttl":
         "aa4a4640f60d62c040ffe5a65874d0b388d1ca95c330a31710c9372d7c46d915",
     "dcat-ap-cz/2026-09-23/rozhrani-katalogu-dat/shacl.ttl":
         "7aba774c0519534a46b15bf48c2942f84cac20ef51b2403f0fe882ecd1d61ff6",
+}
+
+#: publisher fixture -> the profile it is rendered in and gated on.
+PUBLISHERS = {
+    "publisher-sk-banskabystrica.jsonld": "DCAT-AP-SK 3.0.0",
+    "publisher-cz-praha.jsonld": "DCAT-AP-CZ 2026-09-23",
+}
+
+#: (profile, path, message) of a published shape that contradicts its own specification. The
+#: SK 3.0.0 `catalog_dataset` says `sh:maxCount 1`, while a catalogue lists every dataset and the
+#: profile's own `katalóg.ttl` example lists three (docs: API/08, "upstream defect").
+UPSTREAM = {
+    ("DCAT-AP-SK 3.0.0", "dcat:dataset", "More than 1 values"),
 }
 
 
@@ -112,11 +133,31 @@ def run(records: dict[str, dict]) -> dict[str, dict[str, list[tuple[str, str, st
     return out
 
 
-def report(results: dict[str, dict[str, list[tuple[str, str, str]]]]) -> str:
+def publisher_results() -> dict[str, tuple[list, list]]:
+    """fixture -> (violations of its profile, the upstream defects among them)."""
+    out = {}
+    for name, profile in PUBLISHERS.items():
+        record = json.loads((FIXTURES / name).read_text(encoding="utf-8"))
+        found = violations(record, shapes_graph(PROFILES[profile][1]))
+        known = [row for row in found if (profile, row[1], row[2]) in UPSTREAM]
+        out[name] = ([row for row in found if row not in known], known)
+    return out
+
+
+def table(found: list[tuple[str, str, str]]) -> list[str]:
+    lines = ["", "| n | focus | path | message |", "|---|---|---|---|"]
+    for (focus, path, message), n in sorted(collections.Counter(found).items()):
+        lines.append(f"| {n} | `{focus}` | `{path}` | {message.replace('|', '/')} |")
+    return lines
+
+
+def report(results: dict[str, dict[str, list[tuple[str, str, str]]]],
+           publishers: dict[str, tuple[list, list]] | None = None) -> str:
     lines = ["# DCAT-AP profiles: what each Endpoint record lacks (T-4510)", "",
              "Written by `python3 tests/ckan/profiles.py --write evidence/dcat-profiles.md`; "
              "`tests/ckan/test_profiles.py` holds it equal to a fresh run. Records: the gateway's "
-             "fixtures in `tests/ckan/fixtures/catalog-*.jsonld`. Shapes: `dcat/shapes/` "
+             "fixtures in `tests/ckan/fixtures/catalog-*.jsonld`, and its publisher catalogues in "
+             "`publisher-*.jsonld`. Shapes: `dcat/shapes/` "
              "(README there).", ""]
     for profile, per_record in results.items():
         gate = PROFILES[profile][0]
@@ -126,9 +167,16 @@ def report(results: dict[str, dict[str, list[tuple[str, str, str]]]]) -> str:
         for name, found in per_record.items():
             lines.append(f"### {name}: {len(found)}")
             if found:
-                lines += ["", "| n | focus | path | message |", "|---|---|---|---|"]
-                for (focus, path, message), n in sorted(collections.Counter(found).items()):
-                    lines.append(f"| {n} | `{focus}` | `{path}` | {message.replace('|', '/')} |")
+                lines += table(found)
+            lines.append("")
+    if publishers is not None:
+        lines += ["## Publisher catalogues (gate, T-4586): each in the profile it is rendered in", ""]
+        for name, (found, known) in publishers.items():
+            lines.append(f"### {name} against {PUBLISHERS[name]}: {len(found)}")
+            if found:
+                lines += table(found)
+            if known:
+                lines += ["", f"Upstream defects, not counted: {len(known)}"] + table(known)
             lines.append("")
     return "\n".join(lines).rstrip() + "\n"
 
@@ -149,12 +197,14 @@ def main(argv: list[str]) -> int:
     records = ({p.name: json.loads(p.read_text(encoding="utf-8")) for p in args.records}
                if args.records else fixtures())
     results = run(records)
-    text = report(results)
+    publishers = None if args.records else publisher_results()
+    text = report(results, publishers)
     if args.write:
         args.write.write_text(text, encoding="utf-8")
     print(text)
     gated = [p for p, (gate, _) in PROFILES.items() if gate and any(results[p].values())]
-    return 1 if bad or gated else 0
+    failed = [name for name, (found, _) in (publishers or {}).items() if found]
+    return 1 if bad or gated or failed else 0
 
 
 if __name__ == "__main__":
