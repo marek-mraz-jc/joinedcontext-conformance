@@ -149,6 +149,8 @@
      "observed": {"value": 607581, "observedAt": "2026-10-19T05:10:00+00:00"}},
     {"id": "od-58", "lang": "sk", "kind": "value", "persona": "resident", "why": "two cities in one question: each city's own stations are read and named (owner, 2026-10-19)", "q": "Kvalita ovzdušia v Žiline a B. Bystrici?", "must": [], "source": "Ovzdušie Žilina (zilina-ovzdusie) and Ovzdušie Banská Bystrica (public-air): NGSI-LD AirQualityObserved, the EEA stations SK0020A and SK0263A",
      "truth": {"each": [{"slug": "rhnhewwotdngtrsb7gnzpj63ysnkutwl", "endpoint": "zilina-ovzdusie", "type": "AirQualityObserved"}, {"slug": "mluyob4nz52lok3ssk7pgn5vwt", "endpoint": "public-air", "type": "AirQualityObserved"}], "expect": "each"},
-     "observed": {"value": [["SK0020A", "Stanica SK0020A, mestské pozadie"], ["SK0263A"]], "observedAt": "2026-10-19T05:10:00+00:00"}}
+     "observed": {"value": [["SK0020A", "Stanica SK0020A, mestské pozadie"], ["SK0263A"]], "observedAt": "2026-10-19T05:10:00+00:00"}},
+    {"id": "od-60", "lang": "sk", "kind": "catalogue", "persona": "resident", "why": "the owner's transcript on dev (2026-10-19 07:34Z): routed to rag, four datasets listed, a false warning, schema links (T-4729); every transport dataset of the catalogue, grouped by publisher", "q": "Aké dáta máte o doprave?", "must": [],
+     "truth": {"ckan": {"q": ["doprava", "transport", "cyklotrasy", "parkovanie", "bikes", "vlaky"], "atLeast": 8}, "expect": "titles"}}
   ]
 }

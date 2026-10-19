@@ -108,10 +108,26 @@
                 "additionalProperties": false,
                 "properties": {
                   "q": {
-                    "type": "string"
+                    "oneOf": [
+                      {
+                        "type": "string"
+                      },
+                      {
+                        "type": "array",
+                        "minItems": 1,
+                        "items": {
+                          "type": "string"
+                        }
+                      }
+                    ]
                   },
                   "fq": {
                     "type": "string"
+                  },
+                  "atLeast": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "description": "T-4729: the answer names at least this many of the datasets found, else it is partly right"
                   }
                 }
               },

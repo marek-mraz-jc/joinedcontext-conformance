@@ -1,0 +1,9 @@
+{
+  "about": "Frozen question sets of the assistant's iterations (T-4729, owner 2026-10-19 08:05Z and 08:08Z). `iteration` is asked before and after each change, one change at a time; `opendata25` and `rag25` are the final before/after rerun. Ids name questions of opendata_questions.json (data-eval-gemini) and bbsk_web_questions.json (bbsk-web-eval-gemini). Never edit a set after its baseline: add a new set.",
+  "iteration": {
+    "opendata": ["od-60", "od-01", "od-02", "od-04", "od-05", "od-07", "od-08", "od-09", "od-10", "od-13", "od-18", "od-20", "od-32", "od-36", "od-51", "od-21", "od-23", "od-26", "od-27", "ou-01", "ou-04"],
+    "rag": ["bw-01", "bw-06", "bwu-04"]
+  },
+  "opendata25": ["od-60", "od-01", "od-02", "od-04", "od-05", "od-07", "od-12", "od-36", "od-08", "od-09", "od-10", "od-13", "od-57", "od-58", "od-18", "od-19", "od-20", "od-32", "od-51", "od-52", "od-44", "od-31", "od-27", "ou-01", "ou-04"],
+  "rag25": ["bw-01", "bw-02", "bw-03", "bw-04", "bw-05", "bw-06", "bw-07", "bw-09", "bw-10", "bw-12", "bw-16", "bw-18", "bw-20", "bw-22", "bw-24", "bw-26", "bw-28", "bwu-01", "bwu-02", "bwu-04", "bwu-05", "bwu-07", "bwu-10", "bwu-12", "bwu-16"]
+}

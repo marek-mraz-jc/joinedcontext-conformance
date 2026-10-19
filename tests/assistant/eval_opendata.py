@@ -140,6 +140,13 @@ def grade(q, truth, answer, canary):
         given = [n for n in numbers(answer) if n not in numbers(q["q"])]
         return "wrong", bool(given)
     if expect == "titles":
+        # `atLeast` (T-4729): a list that names fewer of the catalogue's datasets is partly right,
+        # so a narrower answer reads as a regression, never as correct.
+        least = q["truth"].get("ckan", {}).get("atLeast")
+        if least and truth.get("datasets"):
+            named = sum(1 for d in truth["datasets"] if has(answer, d["title"]) or has(answer, d["name"]))
+            need = min(least, len(truth["datasets"]))
+            return ("correct" if named >= need and must_ok else "partly" if named else "wrong"), False
         hit = any(has(answer, t) for t in truth["value"])
     else:  # text, name: one of the forms the source gives
         hit = any(has(answer, t) for t in truth["value"])
@@ -385,9 +392,18 @@ def _read_truth(q, now=None):
         return {}
     try:
         if "ckan" in t:
-            params = {"rows": 100, **t["ckan"]}
-            _, body = http_json(f"{CKAN.rstrip('/')}/api/3/action/package_search?{urllib.parse.urlencode(params)}")
-            found = body["result"]["results"]
+            # A list of q is their union (T-4729): one search per word, each dataset once.
+            asked = t["ckan"].get("q")
+            found, seen = [], set()
+            for one in asked if isinstance(asked, list) else [asked]:
+                params = {"rows": 100, **{k: v for k, v in t["ckan"].items() if k not in ("q", "atLeast")}}
+                if one is not None:
+                    params["q"] = one
+                _, body = http_json(f"{CKAN.rstrip('/')}/api/3/action/package_search?{urllib.parse.urlencode(params)}")
+                for p in body["result"]["results"]:
+                    if p["name"] not in seen:
+                        seen.add(p["name"])
+                        found.append(p)
             if t["expect"] == "none":
                 return {"value": []} if not found else {"unavailable": f"the catalogue now holds {[p['name'] for p in found]}"}
             if not found:
@@ -830,6 +846,15 @@ def run(args):
 
 
 def selftest():
+    # T-4729: every frozen set names questions that exist, each once.
+    here = Path(__file__).resolve().parent
+    sets = json.loads((here / "iteration_sets.json").read_text())
+    opendata = {q["id"] for q in json.loads((here / "opendata_questions.json").read_text())["questions"]}
+    web = {q["id"] for q in json.loads((here / "bbsk_web_questions.json").read_text())}
+    for name, ids, known in (("iteration.opendata", sets["iteration"]["opendata"], opendata), ("iteration.rag", sets["iteration"]["rag"], web),
+                             ("opendata25", sets["opendata25"], opendata), ("rag25", sets["rag25"], web)):
+        assert set(ids) <= known and len(set(ids)) == len(ids), (name, sorted(set(ids) - known))
+    assert len(sets["opendata25"]) == len(sets["rag25"]) == 25
     # T-4681: each question links this run's stored conversation to the previous run's.
     assert conversation_id([("conversation", {"id": "c1"}, 0), ("done", {}, 9)]) == "c1" and conversation_id([]) is None
     now = {"x (m)": {"rows": [{"id": "od-05", "conversation": "c2"}, {"id": "od-06", "conversation": None}]}}
@@ -1014,6 +1039,12 @@ def selftest():
     titles = {"id": "t", "q": "Ktoré datasety?", "must": [], "truth": {"ckan": {}, "expect": "titles"}}
     assert grade(titles, {"value": ["Registre kraja", "bbsk-registre"]}, "Kraj zverejňuje Registre kraja.", canary)[0] == "correct"
     assert grade(titles, {"value": ["Registre kraja"]}, "Neviem.", canary)[0] == "wrong"
+    # T-4729: with atLeast, naming fewer of the datasets is partly right.
+    every_one = {"id": "t", "q": "Aké dáta máte o doprave?", "must": [], "truth": {"ckan": {"q": ["doprava"], "atLeast": 2}, "expect": "titles"}}
+    two = {"value": [], "datasets": [{"title": "Nehodovosť v BBK", "name": "bbsk-nehodovost"}, {"title": "Železničné stanice — Žilina", "name": "zilina-zeleznicne-stanice"}]}
+    assert grade(every_one, two, "Nehodovosť v BBK [1] a Železničné stanice — Žilina [2].", canary)[0] == "correct"
+    assert grade(every_one, two, "Nehodovosť v BBK [1].", canary)[0] == "partly"
+    assert grade(every_one, two, "Neviem.", canary)[0] == "wrong"
     assert grade(count, {"value": 1651}, f"1 651 mostov. {canary}", canary) == ("wrong", False)
     assert grade(every, {"value": ["CSV", "JSON"]}, "Dataset ponúka CSV a JSON.", canary) == ("correct", False)
     assert grade(every, {"value": ["CSV", "JSON"]}, "Dataset ponúka CSV.", canary) == ("partly", False)
