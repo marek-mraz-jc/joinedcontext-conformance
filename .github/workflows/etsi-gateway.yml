@@ -1,6 +1,7 @@
 name: etsi-gateway
 # The ETSI smoke suite through a real Context Gateway (matrix 3 of docs/Testing/02 §1; T-0276).
-# The broker is the fixed reference and is pinned by digest; the gateway is the system under
+# The broker is the fixed reference and is pinned by digest (the image dev runs, its views and
+# `joinedcontext` engine on: the gateway serves every Endpoint through the broker's view, T-3643); the gateway is the system under
 # test and is deliberately the latest main image, because the lane exists to catch what the
 # platform repo just pushed. Green means: every case passes except the ones the quarantine
 # list names by task id, and none of those has started passing (that goes red too, so the
@@ -17,7 +18,7 @@ jobs:
     timeout-minutes: 10
     env:
       SLUG: adldef3aksndswos6ug4pv5cpf  # the fixed slug of tests/etsi/gateway-lab
-      PROJECTED_SLUG: pr0jectedaksndswos6ug4pv5cpf
+      PROJECTED_SLUG: projectedaksndswos6ug4pv5cpf
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
       - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5.6.0
@@ -27,8 +28,10 @@ jobs:
         run: |
           set -eu
           docker network create jclab
-          docker run -d --name jc-broker --network jclab -e ANTARES_STORE=memory \
-            ghcr.io/marek-mraz/antares-broker@sha256:c049084076e389d2cb85be2b22235a9f64b810cd4a71b63bddf9a460b7f762b9
+          docker run -d --name jc-broker --network jclab -p 9090:9090 -e ANTARES_STORE=memory -e ANTARES_API_SURFACES=admin,views,access \
+            -e ANTARES_POLICY=joinedcontext \
+            -e ANTARES_POLICY_SUBJECT_HEADERS=x-jc-subject,x-jc-groups,x-jc-roles,x-jc-client,x-jc-restricted,x-jc-did \
+            ghcr.io/marek-mraz-jc/antares-broker-jc@sha256:507437a9a902fa5b24d67dfa5a19c5a281dc11892185bb603fd8c667e12a4111
           docker run -d --name jc-gw --network jclab -p 8080:8080 \
             -v "$PWD/tests/etsi/gateway-lab:/repo:ro" \
             -e JC_GATEWAY_BROKER_URL=http://jc-broker:9090 \
@@ -36,12 +39,14 @@ jobs:
             -e JC_GATEWAY_REPO_DIR=/repo \
             ghcr.io/marek-mraz-jc/joinedcontext-platform:main
           for i in $(seq 1 30); do
-            curl -fsS "http://localhost:8080/healthz" >/dev/null 2>&1 && break
+            curl -fsS "http://localhost:9090/q/health" >/dev/null 2>&1 \
+              && curl -fsS "http://localhost:8080/healthz" >/dev/null 2>&1 && break
             sleep 1
           done
-          curl -fsS "http://localhost:8080/api/endpoint/$SLUG/access" | grep -q '"space":"ovzdusie"' \
+          tests/etsi/gateway-lab/seed.sh http://localhost:9090
+          curl -fsS "http://localhost:8080/api/endpoint/$SLUG/access" | grep -q '"space":"bb-ovzdusie-ovzdusie"' \
             || { echo "the gateway did not load tests/etsi/gateway-lab"; docker logs jc-gw; exit 1; }
-          curl -fsS "http://localhost:8080/api/endpoint/$PROJECTED_SLUG/access" | grep -q '"space":"ovzdusie"' \
+          curl -fsS "http://localhost:8080/api/endpoint/$PROJECTED_SLUG/access" | grep -q '"space":"bb-ovzdusie-ovzdusie"' \
             || { echo "the gateway did not load projected endpoint in tests/etsi/gateway-lab"; docker logs jc-gw; exit 1; }
       - name: the smoke suite through the gateway, quarantine applied
         env:

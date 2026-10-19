@@ -1,0 +1,43 @@
+{
+ "id": "adldef3aksndswos6ug4pv5cpf",
+ "operations": [
+  "append_attributes",
+  "batch_create",
+  "batch_delete",
+  "create_entity",
+  "delete_attribute",
+  "delete_entity",
+  "merge_entity",
+  "partial_attribute_update",
+  "query_entities",
+  "query_entities_post",
+  "replace_attribute",
+  "replace_entity",
+  "retrieve_attribute_details",
+  "retrieve_attribute_info",
+  "retrieve_attribute_value",
+  "retrieve_attributes",
+  "retrieve_entity",
+  "retrieve_entity_type_details",
+  "retrieve_entity_type_info",
+  "retrieve_entity_types",
+  "temporal_query",
+  "temporal_query_post",
+  "temporal_retrieve",
+  "update_attributes"
+ ],
+ "rules": [
+  {
+   "attributes": [
+    "*"
+   ],
+   "types": [
+    "*"
+   ]
+  }
+ ],
+ "selector": [
+  "*"
+ ],
+ "tenant": "bb-ovzdusie-ovzdusie"
+}

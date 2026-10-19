@@ -81,12 +81,17 @@ it answers differently from a bare broker: it checks the entity id against the e
 organization and space, it rewrites the query it forwards, and it raises its own errors. Give it a
 manifest repository — `gateway-lab/` here is the smallest one that works: a `ContextSpace`, a
 public `Endpoint`, and a `Policy` granting `redirectionOps` and the batch operations to the role
-`public` — and point the suite at the endpoint's slug.
+`public` — write the views and rule document the Portal's reconciler would write
+(`gateway-lab/seed.sh`: the gateway serves every Endpoint through the broker's view of it), and
+point the suite at the endpoint's slug.
 
 ```bash
 docker network create jclab
-docker run -d --name jc-broker --network jclab -e ANTARES_STORE=memory \
-  ghcr.io/marek-mraz/antares-broker@sha256:c049084076e389d2cb85be2b22235a9f64b810cd4a71b63bddf9a460b7f762b9
+docker run -d --name jc-broker --network jclab -p 9090:9090 -e ANTARES_STORE=memory -e ANTARES_API_SURFACES=admin,views,access \
+  -e ANTARES_POLICY=joinedcontext \
+  -e ANTARES_POLICY_SUBJECT_HEADERS=x-jc-subject,x-jc-groups,x-jc-roles,x-jc-client,x-jc-restricted,x-jc-did \
+  ghcr.io/marek-mraz-jc/antares-broker-jc@sha256:507437a9a902fa5b24d67dfa5a19c5a281dc11892185bb603fd8c667e12a4111
+tests/etsi/gateway-lab/seed.sh http://localhost:9090
 docker run -d --name jc-gw --network jclab --platform linux/amd64 \
   -v "$PWD/tests/etsi/gateway-lab:/repo:ro" \
   -e JC_GATEWAY_BROKER_URL=http://jc-broker:9090 \

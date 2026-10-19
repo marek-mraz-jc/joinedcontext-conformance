@@ -5,7 +5,7 @@ metadata:
   namespace: bb-ovzdusie
 spec:
   contextSpaceRef: ovzdusie
-  slug: pr0jectedaksndswos6ug4pv5cpf
+  slug: projectedaksndswos6ug4pv5cpf
   audience: public
   enabledRepresentations:
     - ngsi-ld
