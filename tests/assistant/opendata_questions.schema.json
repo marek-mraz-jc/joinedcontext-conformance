@@ -33,13 +33,16 @@
         "properties": {
           "id": {
             "type": "string",
-            "pattern": "^o[du]-[0-9]{2}$"
+            "pattern": "^o[dusi]-[0-9]{2}$"
           },
           "lang": {
             "enum": [
               "cs",
+              "de",
               "en",
-              "sk"
+              "hu",
+              "sk",
+              "uk"
             ]
           },
           "kind": {
@@ -54,7 +57,9 @@
               "scope",
               "unknowable",
               "direct",
-              "area"
+              "area",
+              "out",
+              "in"
             ]
           },
           "q": {
@@ -390,7 +395,9 @@
                   "enum": [
                     "injection",
                     "unknowable",
-                    "direct"
+                    "direct",
+                    "out",
+                    "in"
                   ]
                 }
               }
