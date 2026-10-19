@@ -105,6 +105,8 @@ jobs:
                       accessibility/wcag; do
             grep -q "$spec.spec.ts" "${RUNNER_TEMP}/specs" || { echo "$spec.spec.ts is not discoverable"; exit 1; }
           done
+      - name: the widget pictures keep the answer's own words, not a Windows-1252 double decoding (T-4680)
+        run: node tests/assistant/screens.mjs --selftest
       - name: the chaos verdict rejects an outage, a slow recovery and a run with no fault (T-0088)
         run: python3 tests/chaos/check_chaos_results.py --selftest
       - name: a lossy ODRL mapping and a disclosing access document go red (T-0086, T-0087)

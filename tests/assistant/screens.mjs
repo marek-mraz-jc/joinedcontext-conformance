@@ -6,6 +6,7 @@
 //   node tests/assistant/screens.mjs --base https://assistant.dev.joinedcontext.com --deployment data-eval-gemini \
 //     --out tasks/evidence/T-4680/screens/<run-ts> [--only od-57 od-58]
 // The page is the anonymous visitor's: no token, no cookie and no personal data reach a picture.
+import assert from "node:assert/strict";
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -31,6 +32,42 @@ function args(argv) {
   }
   if (!/eval/.test(out.deployment)) throw new Error(`only an eval copy is asked, not ${out.deployment}`);
   return out;
+}
+
+// Chromium hands Playwright an event stream decoded as Windows-1252 (no charset on
+// text/event-stream), and the bytes come back UTF-8 encoded a second time: "Niektoré" was saved as
+// "NiektorÃ©" (T-4680 before pass). Each character maps back to its Windows-1252 byte; the five
+// bytes that code page leaves undefined decode to their own code point, so they map back too.
+const CP1252 = new Map(
+  [...new TextDecoder("windows-1252").decode(Uint8Array.from({ length: 256 }, (_, i) => i))].map((c, i) => [c, i]),
+);
+
+/** The text as it was sent: repaired when it round-trips through Windows-1252 to valid UTF-8. */
+export function undouble(text) {
+  const bytes = [];
+  for (const c of text) {
+    const byte = CP1252.get(c);
+    if (byte === undefined) return text;
+    bytes.push(byte);
+  }
+  try {
+    return new TextDecoder("utf-8", { fatal: true }).decode(Uint8Array.from(bytes));
+  } catch {
+    return text;
+  }
+}
+
+function selftest() {
+  const sent = "Niektoré dátové zdroje – „Žilina“ 11,506 µg/m³ €";
+  const doubled = new TextDecoder("windows-1252").decode(new TextEncoder().encode(sent));
+  assert.notEqual(doubled, sent);
+  assert.equal(undouble(doubled), sent);
+  // Text that arrived right is left alone, with or without characters outside Windows-1252.
+  assert.equal(undouble(sent), sent);
+  assert.equal(undouble("Banská Bystrica é"), "Banská Bystrica é");
+  assert.equal(undouble("event: done\ndata: {}\n\n"), "event: done\ndata: {}\n\n");
+  assert.equal(undouble(""), "");
+  console.error("screens.mjs selftest ok");
 }
 
 /** Grows the viewport to the conversation's whole height, so one picture holds every turn. */
@@ -70,7 +107,7 @@ async function ask(browser, base, deployment, q) {
   let stream = Promise.resolve("");
   page.on("response", (response) => {
     if (response.request().method() === "POST" && response.url().endsWith(`/api/v1/d/${deployment}/chat`)) {
-      stream = response.body().then((bytes) => bytes.toString("utf8")).catch(() => "");
+      stream = response.body().then((bytes) => undouble(bytes.toString("utf8"))).catch(() => "");
     }
   });
   await page.goto(`${base.replace(/\/$/, "")}/d/${deployment}`, { waitUntil: "networkidle" });
@@ -123,7 +160,11 @@ async function main() {
   }
 }
 
-main().catch((err) => {
-  console.error(err);
-  process.exit(1);
-});
+if (process.argv.includes("--selftest")) {
+  selftest();
+} else {
+  main().catch((err) => {
+    console.error(err);
+    process.exit(1);
+  });
+}
