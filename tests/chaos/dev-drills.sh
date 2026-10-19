@@ -13,8 +13,9 @@
 # This script WRITES to a cluster. Dev only, never prod: it refuses without CHAOS_I_MEAN_IT=yes,
 # refuses a context whose name does not contain CHAOS_CONTEXT_MATCH (default `dev`), announces each
 # drill in AI_shared_folder.md before it starts, and skips a drill while a node is over 90 % memory,
-# a Helm release is pending or a rollout is under way. It holds CHAOS_LOCK for the whole run, the
-# lock the hourly apply can take too, so the two never overlap.
+# a Helm release is pending or a rollout is under way. It holds CHAOS_LOCK for the whole run, so
+# two drills never overlap; `just dev-apply` takes no lock, so an apply shows as a pending release
+# or a rollout and the drill waits its turn as skipped.
 set -euo pipefail
 here=$(cd -- "$(dirname -- "$0")" && pwd)
 out=${JC_REPORTS_DIR:-$here/reports}

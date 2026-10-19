@@ -24,7 +24,7 @@ A NetworkPolicy only ever allows, so the partition takes the allow away rather t
 a connection already open when it goes may survive, and the visitor's errors show whether one did.
 Each drill is skipped, with the reason recorded, while a node is over 90 % memory
 (`CHAOS_MAX_MEMORY`), a Helm release is pending or a rollout is under way, and the whole run holds
-`CHAOS_LOCK` (`/workspace/.cache/dev-cluster.lock`) so the hourly apply can wait on the same lock.
+`CHAOS_LOCK` (`/workspace/.cache/dev-cluster.lock`) so two runs never overlap; `just dev-apply` takes no lock, so an apply in flight shows as a pending release or a rollout.
 
 `check_chaos_results.py --profile dev` is the verdict: every drill that ran is Ready again within
 120 s (`--max-recovery`), the gateway answers again after each fault, and the broker's `entities`
