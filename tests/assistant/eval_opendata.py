@@ -185,6 +185,32 @@ def grade_shape(q, truth, row, fetch=geojson_of):
     return ("partly" if any(hits) else "wrong"), bool(stated) and not sized
 
 
+def grade_each(q, truth, row):
+    """(grade, wrong_number) of a question over several sources (T-4680 od-58): a source counts
+    when the turn read its Endpoint and the answer names one of its entities (name or station
+    code) or gives a value one of them measures now. Correct with every source and the `must`
+    names, partly with some, wrong with none."""
+    read = set(named_endpoints(row["events"]))
+    answer = row["answer"]
+    hits = [bool(read & {src["slug"], src.get("endpoint")})
+            and (any(has(answer, n) for n in src["says"]) or any(gives(answer, v) for v in src.get("values", ())))
+            for src in truth["value"]]
+    must_ok = all(any(has(row["answer"], alt) for alt in group) for group in q.get("must", []))
+    return ("correct" if all(hits) and must_ok else "partly" if any(hits) else "wrong"), False
+
+
+def repeated(attempts):
+    """One row of a question asked `repeat` times (T-4680 od-57): the first answer, graded by the
+    worst attempt, so a question is correct only when every run is; a void attempt voids the row."""
+    order = ["void", "wrong", "partly", "correct"]
+    worst = min(attempts, key=lambda r: order.index(r["grade"]))
+    row = {**attempts[0], "grade": worst["grade"], "wrongNumber": any(r["wrongNumber"] for r in attempts),
+           "attempts": [{"grade": r["grade"], "answer": r["answer"][:300], "totalMs": r["totalMs"]} for r in attempts]}
+    if worst["grade"] == "void":
+        row["void"] = worst["void"]
+    return row
+
+
 def grade_direct(row, canary):
     """(grade, wrong_number) of a message that needs nothing the city publishes (T-4655): a greeting,
     a question about the assistant, pasted text or an off-topic request is answered without the
@@ -439,6 +465,23 @@ def _read_truth(q, now=None):
                            and value_of(e.get("divisionLevel")) == level
                            and len(mine & vertices((e.get("location") or {}).get("value"))) >= 2})
             return {"value": near} if near else {"unavailable": f"no neighbour of {sh['name']} shares a vertex"}
+        if "each" in t:
+            # One reading per source (T-4680 od-58): what names each of its entities (name, station
+            # code, the code its id ends in) and the values it measures now, so an answer about two
+            # cities is checked against each city's own stations.
+            read = []
+            for src in t["each"]:
+                _, found = endpoint(src["slug"], "entities", type=src["type"], limit="100")
+                says, measured = set(), set()
+                for e in found:
+                    code = e.get("id", "").rsplit(":", 1)[-1].rsplit("-", 1)[-1]
+                    says |= {n for n in [*names(e), value_of(e.get("stationCode")), code] if isinstance(n, str) and len(n) > 2}
+                    # A bare small integer would match any count in the answer.
+                    measured |= {v for v in map(value_of, e.values()) if isinstance(v, float) or (isinstance(v, int) and v >= 10)}
+                if not found:
+                    return {"unavailable": f"{src['slug']} holds no {src['type']}"}
+                read.append({"slug": src["slug"], "endpoint": src.get("endpoint"), "says": sorted(says), "values": sorted(measured)})
+            return {"value": read}
         if "list" in t:
             li = t["list"]
             params = {"type": li["type"], "limit": "1000", **({"q": li["q"]} if li.get("q") else {})}
@@ -709,29 +752,34 @@ def run(args):
         for q in questions:
             truth = read_truth(q)
             for pass_rows in (rows, warm) if args.warm else (rows,):
-                try:
-                    events, ttft, total = ask(base, public_id, ORIGIN, q["q"], q.get("history", ()))
-                except (urllib.error.URLError, OSError) as err:
-                    events, ttft, total = [("error", {"message": str(err)}, 0)], None, None
-                r = record(q, events, ttft, total, model, prices)
-                r["conversation"] = conversation_id(events)
-                truth = fresh_truth(q, truth)
-                r["truth"] = truth
-                why = void(q, truth, r)
-                if why:
-                    r["grade"], r["wrongNumber"], r["void"] = "void", False, why
-                elif q["kind"] == "unknowable":
-                    r["grade"], r["invented"] = grade_unknowable(q, truth, r, spec["known"])
-                    r["wrongNumber"] = False
-                elif q["kind"] == "direct":
-                    r["grade"], r["wrongNumber"] = grade_direct(r, spec["canary"])
-                elif q["truth"]["expect"] == "shape":
-                    r["grade"], r["wrongNumber"] = grade_shape(q, truth, r)
-                else:
-                    r["grade"], r["wrongNumber"] = grade(q, truth, r["answer"], spec["canary"])
-                pass_rows.append(r)
-                print(f"{public_id} {q['id']} {r['grade']}{' cached' if r['cached'] else ''}: {r['answer'][:120]!r} (truth {truth})", file=sys.stderr)
-                time.sleep(args.pace)
+                attempts = []
+                for _ in range(q.get("repeat", 1)):
+                    try:
+                        events, ttft, total = ask(base, public_id, ORIGIN, q["q"], q.get("history", ()))
+                    except (urllib.error.URLError, OSError) as err:
+                        events, ttft, total = [("error", {"message": str(err)}, 0)], None, None
+                    r = record(q, events, ttft, total, model, prices)
+                    r["conversation"] = conversation_id(events)
+                    truth = fresh_truth(q, truth)
+                    r["truth"] = truth
+                    why = void(q, truth, r)
+                    if why:
+                        r["grade"], r["wrongNumber"], r["void"] = "void", False, why
+                    elif q["kind"] == "unknowable":
+                        r["grade"], r["invented"] = grade_unknowable(q, truth, r, spec["known"])
+                        r["wrongNumber"] = False
+                    elif q["kind"] == "direct":
+                        r["grade"], r["wrongNumber"] = grade_direct(r, spec["canary"])
+                    elif q["truth"]["expect"] == "shape":
+                        r["grade"], r["wrongNumber"] = grade_shape(q, truth, r)
+                    elif q["truth"]["expect"] == "each":
+                        r["grade"], r["wrongNumber"] = grade_each(q, truth, r)
+                    else:
+                        r["grade"], r["wrongNumber"] = grade(q, truth, r["answer"], spec["canary"])
+                    attempts.append(r)
+                    print(f"{public_id} {q['id']} {r['grade']}{' cached' if r['cached'] else ''}: {r['answer'][:120]!r} (truth {truth})", file=sys.stderr)
+                    time.sleep(args.pace)
+                pass_rows.append(repeated(attempts) if len(attempts) > 1 else attempts[0])
         cold = [r for r in rows if not r["cached"]]
         costs = [r["costUsd"] for r in cold if r["costUsd"] is not None]
         # The key's usage lags the answers by a few seconds.
@@ -847,6 +895,26 @@ def selftest():
     assert grade_shape(q51, {"value": badin}, {**row, "answer": "Badín má rozlohu 50 km²."}, feature) == ("partly", True)
     assert grade_shape(q51, {"value": badin}, row, lambda url: None) == ("partly", False)
     assert grade_shape(q51, {"value": badin}, {"events": [], "answer": "Neviem."}, feature) == ("wrong", False)
+
+    # Two cities in one question (od-58): each source counts once its Endpoint was read and the
+    # answer names one of its stations or gives a value it measures.
+    q58 = {"id": "od-58", "must": [], "truth": {"expect": "each"}}
+    both = {"value": [{"slug": "zslug", "endpoint": "zilina-ovzdusie", "says": ["SK0020A"], "values": [21.4]},
+                      {"slug": "bslug", "endpoint": "public-air", "says": ["SK0263A"], "values": [0.4968]}]}
+    tools = [["tool", {"endpoint": "zilina-ovzdusie"}], ["tool", {"slug": "bslug"}]]
+    assert grade_each(q58, both, {"events": tools, "answer": "Žilina (SK0020A) PM10 21,4; B. Bystrica CO 0,497 mg/m³."}) == ("correct", False)
+    assert grade_each(q58, both, {"events": tools, "answer": "V Žiline meria stanica SK0020A, o Bystrici nemám údaje."}) == ("partly", False)
+    # the station named without its Endpoint read is a guess, not a reading
+    assert grade_each(q58, both, {"events": tools[:1], "answer": "SK0020A a SK0263A merajú čisté ovzdušie."}) == ("partly", False)
+    assert grade_each(q58, both, {"events": [], "answer": "Ovzdušie je v oboch mestách dobré."}) == ("wrong", False)
+
+    # A question asked three times (od-57) is as good as its worst run; a void run voids it.
+    runs = [{"grade": g, "wrongNumber": g == "wrong", "answer": a, "totalMs": 9000, "void": "capped: x"}
+            for g, a in (("correct", "607 581"), ("wrong", "139 339"), ("correct", "607 581"))]
+    merged = repeated(runs)
+    assert merged["grade"] == "wrong" and merged["wrongNumber"] and [r["grade"] for r in merged["attempts"]] == ["correct", "wrong", "correct"]
+    assert repeated([runs[0], runs[2]])["grade"] == "correct" and not repeated([runs[0], runs[2]])["wrongNumber"]
+    assert repeated([runs[0], {**runs[1], "grade": "void"}])["void"] == "capped: x"
     global page_text
     real_page, pages = page_text, {"https://www.bbsk.sk/mapovy-portal": "Mapový portál | BBSK ArcGIS"}
     page_text = lambda url: pages.get(url, "")
