@@ -23,6 +23,11 @@ JC_K6_SCRIPT=assistant-chats.js \
 JC_ASSISTANT_URL=https://assistant.dev.joinedcontext.com JC_ASSISTANT_PUBLIC_ID=helsinki-public JC_K6_CHATS=40 \
 jc-conformance k6
 
+# T-4714: distinct requests over NGSI-LD, OData, OGC, MCP, schema, CSV and CKAN at 100/s for a
+# minute, with WebSocket subscribers held open (the list: kind, method, url[, probed status])
+JC_K6_SCRIPT=api-mix-100rps.js JC_K6_REQUESTS=requests-mix-dev.tsv JC_K6_RATE=100 JC_K6_DURATION=1m \
+jc-conformance k6
+
 # T-0065: Latency and throughput (default)
 GATEWAY_URL=https://host/cs/ovzdusie/ngsi-ld/v1 \
 BROKER_URL=http://broker:9090/ngsi-ld/v1 \

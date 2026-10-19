@@ -418,6 +418,41 @@ def main() -> int:
         if missing != 0:
             failures.append(f"{missing} answers arrived without the standard RateLimit field")
 
+    # 8. T-4714: the request list's parser, and a wiring run of the API mix against the stub
+    parser = k6(budget_run, {"JC_K6_CASE": "requests"}, workdir)
+    if parser.returncode != 0:
+        failures.append(f"the request list parser failed its cases:\n{parser.stdout}\n{parser.stderr}")
+    mix_dir = os.path.join(workdir, "mix")
+    os.makedirs(mix_dir, exist_ok=True)
+    stub = f"http://127.0.0.1:{gateway_port}/mix"
+    listing = os.path.join(mix_dir, "requests.tsv")
+    with open(listing, "w", encoding="utf-8") as out:
+        out.write(f"ngsi\tGET\t{stub}/ngsi-ld/v1/entities?type=Item\n")
+        out.write(f"csv\tGET\t{stub}/file.csv\n")
+        out.write(f"schema\tGET\t{stub}/schema/index.json\t404\n")
+    mix = k6(
+        ["k6", "run", "--quiet", os.path.join(HERE, "api-mix-100rps.js")],
+        {
+            "JC_K6_REQUESTS": listing,
+            "JC_REPORTS_DIR": mix_dir,
+            "JC_K6_RATE": "10",
+            "JC_K6_DURATION": "3s",
+            "JC_K6_VUS": "5",
+        },
+        workdir,
+    )
+    if mix.returncode != 0:
+        failures.append(f"the API mix did not hold 10/s against the stub:\n{mix.stdout}\n{mix.stderr}")
+    else:
+        mix_metrics = json.load(open(os.path.join(mix_dir, "summary.json")))["metrics"]
+        for kind in ("ngsi", "csv"):
+            if mix_metrics.get(f"http_reqs{{kind:{kind}}}", {}).get("values", {}).get("count", 0) < 1:
+                failures.append(f"the API mix sent no {kind} request")
+        if "http_reqs{kind:schema}" in mix_metrics:
+            failures.append("the API mix sent the row the list marked 404")
+        if "1 skipped" not in mix.stdout:
+            failures.append(f"the API mix summary does not name the skipped row:\n{mix.stdout}")
+
     for failure in failures:
         print(f"FAIL {failure}", file=sys.stderr)
     if failures:
