@@ -64,7 +64,7 @@ import yaml
 
 TIMEOUT = 60
 PAGE, PART_ROWS = 1000, 4000  # the generator's rows per Esri page and per esri-layers pipeline
-CKAN = "https://data.dev.joinedcontext.com"
+CKAN = "https://opendata.dev.joinedcontext.com"
 HUB = "https://api.dev.joinedcontext.com/api/mcp"
 GATEWAY = "https://api.dev.joinedcontext.com"
 EVAL_ID = "bb-eval-gemini"
@@ -733,7 +733,7 @@ def eval_asker(base, public_id):
         time.sleep(max(0.0, last[0] + 61 - time.monotonic()))  # 60 per client per hour
         last[0] = time.monotonic()
         try:
-            events, _, _ = eval_bb.ask(base, public_id, "https://data.dev.joinedcontext.com", question)
+            events, _, _ = eval_bb.ask(base, public_id, "https://opendata.dev.joinedcontext.com", question)
         except (urllib.error.URLError, OSError) as error:
             return f"(no answer: {error})", []
         citations = next((d for n, d, *_ in events if n == "citations"), []) or []

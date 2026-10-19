@@ -35,7 +35,7 @@ const ANSWER = stream([
     type: 'AirQualityObserved',
     columns: ['name', 'pm10'],
     rows: [['Námestie SNP', 21]],
-    dataset: 'https://data.dev.joinedcontext.com/dataset/ovzdusie',
+    dataset: 'https://opendata.dev.joinedcontext.com/dataset/ovzdusie',
     download: 'javascript:alert(1)',
   }],
   ['delta', { text: 'Zber odpadu je ' }],
@@ -319,7 +319,7 @@ test('a page on another site is refused before anything is spent (AG-100, AG-114
   expect(refused.status()).toBe(403);
 });
 
-const CATALOGUE = (process.env.JC_CKAN_URL || 'https://data.dev.joinedcontext.com').replace(/\/$/, '');
+const CATALOGUE = (process.env.JC_CKAN_URL || 'https://opendata.dev.joinedcontext.com').replace(/\/$/, '');
 
 test('the catalogue offers its assistant, which opens by keyboard and frames the assistant host (AG-114)', async ({ page }) => {
   await page.goto(`${CATALOGUE}/`);

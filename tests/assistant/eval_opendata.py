@@ -48,7 +48,7 @@ from eval_bb import ABSTAIN, ask, cost, eval_deployment, honest, listed_prices, 
 
 QUESTIONS = HERE / "opendata_questions.json"
 SCHEMA = HERE / "opendata_questions.schema.json"
-ORIGIN = "https://data.dev.joinedcontext.com"
+ORIGIN = "https://opendata.dev.joinedcontext.com"
 GATEWAY = os.environ.get("JC_GATEWAY_URL", "https://api.dev.joinedcontext.com")
 CKAN = os.environ.get("JC_CKAN_URL", ORIGIN)
 STAGES = ("route", "search", "judge", "answer")
