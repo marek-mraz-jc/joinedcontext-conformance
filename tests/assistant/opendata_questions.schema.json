@@ -99,7 +99,8 @@
                   "scope",
                   "date",
                   "all",
-                  "shape"
+                  "shape",
+                  "each"
                 ]
               },
               "ckan": {
@@ -300,6 +301,22 @@
                     ]
                   }
                 ]
+              },
+              "each": {
+                "type": "array",
+                "minItems": 2,
+                "items": {
+                  "allOf": [
+                    {
+                      "$ref": "#/definitions/read"
+                    },
+                    {
+                      "required": [
+                        "type"
+                      ]
+                    }
+                  ]
+                }
               }
             },
             "additionalProperties": false
@@ -341,6 +358,12 @@
               }
             },
             "additionalProperties": false
+          },
+          "repeat": {
+            "type": "integer",
+            "minimum": 2,
+            "maximum": 5,
+            "description": "asked this many times in a row; the question is correct only when every attempt is (T-4680)"
           }
         },
         "allOf": [
@@ -451,6 +474,10 @@
         "name": {
           "type": "string",
           "minLength": 1
+        },
+        "endpoint": {
+          "type": "string",
+          "pattern": "^[a-z0-9-]+$"
         }
       },
       "anyOf": [
