@@ -1,0 +1,797 @@
+[
+ {
+  "id": "bw-01",
+  "set": "tune",
+  "kind": "rag",
+  "lang": "sk",
+  "docType": "html",
+  "q": "Do akej lehoty rozhodne BBSK o žiadosti o povolenie na prevádzkovanie autobusovej linky?",
+  "sources": [
+   "https://www.bbsk.sk/udelenie-novej-dopravnej-licencie"
+  ],
+  "must": [
+   [
+    "30 dní",
+    "30 dňa",
+    "tridsiatich dní"
+   ]
+  ],
+  "quote": "Žiadosť je možné podať kedykoľvek, avšak v primeranom čase pred požadovaným začiatkom prevádzkovania linky, aby bolo možné v správnom konaní rozhodnúť v lehote do 30 dní a zverejniť schválený cestovný poriadok po právoplatnosti rozhodnutia aspoň 7 dní pred začiatkom jeho účinnosti.",
+  "retrievedAt": "2026-10-19T00:26Z"
+ },
+ {
+  "id": "bw-02",
+  "set": "tune",
+  "kind": "rag",
+  "lang": "en",
+  "docType": "html",
+  "q": "Where does a clinic apply to the region for approval of its office hours?",
+  "sources": [
+   "https://www.bbsk.sk/ordinacne-hodiny-ambulancie"
+  ],
+  "must": [
+   [
+    "ambulancia.e-vuc.sk"
+   ]
+  ],
+  "quote": "Žiadať o schválenie ordinačných hodín, doplnkových ordinačných hodín, alebo ich zmenu a oznámiť neprítomnosť na ambulancii je potrebné prostredníctvom webového rozhrania https://ambulancia.e-vuc.sk .",
+  "retrievedAt": "2026-10-19T00:23Z"
+ },
+ {
+  "id": "bw-03",
+  "set": "heldout",
+  "kind": "rag",
+  "lang": "hu",
+  "docType": "html",
+  "q": "A megye mely járásai tartoznak a legkevésbé fejlett járások közé?",
+  "sources": [
+   "https://www.bbsk.sk/informacie-o-regione"
+  ],
+  "must": [
+   [
+    "Lučenec",
+    "Losonc"
+   ],
+   [
+    "Poltár"
+   ],
+   [
+    "Revúca",
+    "Nagyrőce"
+   ],
+   [
+    "Rimavská Sobota",
+    "Rimaszombat"
+   ],
+   [
+    "Veľký Krtíš",
+    "Nagykürtös"
+   ]
+  ],
+  "quote": "Z 13 okresov kraja bolo až päť okresov - Lučenec, Poltár, Revúca, Rimavská Sobota a Veľký Krtíš - zaradených do kategórie „najmenej rozvinutých okresov“ podľa zákona 336/2015 Z. z. o podpore najmenej rozvinutých okresov.",
+  "retrievedAt": "2026-10-19T00:26Z"
+ },
+ {
+  "id": "bw-04",
+  "set": "tune",
+  "kind": "rag",
+  "lang": "de",
+  "docType": "html",
+  "q": "Wie viel kostet die Eintrittskarte MÚZPAS?",
+  "sources": [
+   "https://www.bbsk.sk/muzpas"
+  ],
+  "must": [
+   [
+    "10 eur",
+    "10 €",
+    "10,00",
+    "10 euro"
+   ]
+  ],
+  "quote": "Cena vstupenky je 10 eur, kúpite ju online na stránke OOCR Stredné Slovensko a v zapojených kultúrnych inštitúciách:",
+  "retrievedAt": "2026-10-19T00:28Z"
+ },
+ {
+  "id": "bw-05",
+  "set": "tune",
+  "kind": "rag",
+  "lang": "sk",
+  "docType": "html",
+  "q": "Akú zľavu dáva Preukaz kultúrneho návštevníka zamestnancom organizácií kraja?",
+  "sources": [
+   "https://www.bbsk.sk/preukaz-kulturneho-navstevnika"
+  ],
+  "must": [
+   [
+    "20 %",
+    "20%",
+    "20 percent"
+   ]
+  ],
+  "quote": "Benefit vo forme 20 % zľavy nesie v sebe sociálny rozmer pre tých, ktorí využijú možnosť navštíviť podujatia a zároveň podporuje rozvoj kultúry a samotných pracovníkov v nej.",
+  "retrievedAt": "2026-10-19T00:28Z"
+ },
+ {
+  "id": "bw-06",
+  "set": "tune",
+  "kind": "rag",
+  "lang": "en",
+  "docType": "html",
+  "q": "How long is the Poltár – Rimavská Sobota cycle path?",
+  "sources": [
+   "https://www.bbsk.sk/vybudovane-cyklocesty"
+  ],
+  "must": [
+   [
+    "30 km",
+    "30 kilomet"
+   ]
+  ],
+  "quote": "Dĺžka: 30 kilometrov",
+  "retrievedAt": "2026-10-19T00:30Z"
+ },
+ {
+  "id": "bw-07",
+  "set": "heldout",
+  "kind": "rag",
+  "lang": "cs",
+  "docType": "html",
+  "q": "Jak dlouhé jsou dohromady trasy Bike parku Pustý hrad?",
+  "sources": [
+   "https://www.bbsk.sk/bikeparky-singletraily"
+  ],
+  "must": [
+   [
+    "95 km",
+    "95 kilomet"
+   ]
+  ],
+  "quote": "Bike park Pustý hrad predstavuje jedinečné trasy spájajúce Zvolen, Pustý hrad, Ostrú Lúku, Podzámčok a Dobrú Nivu. Ich celková dĺžka je až 95 km.",
+  "retrievedAt": "2026-10-19T00:29Z"
+ },
+ {
+  "id": "bw-08",
+  "set": "tune",
+  "kind": "rag",
+  "lang": "hu",
+  "docType": "html",
+  "q": "Melyik rimaszombati könyvtár olvasótermében vannak magyar nyelvű újságok és folyóiratok?",
+  "sources": [
+   "https://www.bbsk.sk/kniznice"
+  ],
+  "must": [
+   [
+    "Mateja Hrebendu",
+    "Hrebendu"
+   ]
+  ],
+  "quote": "Knižnica Mateja Hrebendu v Rimavskej Sobote ponúka n ávštevníkom bohatý knižničný fond. V čitárni je k dispozícii množstvo titulov novín a časopisov v slovenskom, českom a  maďarskom jazyku.",
+  "retrievedAt": "2026-10-19T00:25Z"
+ },
+ {
+  "id": "bw-09",
+  "set": "tune",
+  "kind": "rag",
+  "lang": "sk",
+  "docType": "html",
+  "q": "O koľko sa zníži správny poplatok pri elektronickom podaní na Úrade BBSK?",
+  "sources": [
+   "https://www.bbsk.sk/elektronicke-platenie-pokut-poplatkov"
+  ],
+  "must": [
+   [
+    "50 %",
+    "50%"
+   ],
+   [
+    "70"
+   ]
+  ],
+  "quote": "Výhodou elektronického platenia pokút a poplatkov v rámci podávania elektronických podaní je zníženie sadzby správneho poplatku až o 50%, maximálne môže byť správny poplatok znížený o 70 EUR.",
+  "retrievedAt": "2026-10-19T00:26Z"
+ },
+ {
+  "id": "bw-10",
+  "set": "tune",
+  "kind": "rag",
+  "lang": "sk",
+  "docType": "html",
+  "q": "Prešetrí Úrad BBSK anonymnú sťažnosť?",
+  "sources": [
+   "https://www.bbsk.sk/podavanie-staznosti-podnetov"
+  ],
+  "must": [
+   [
+    "neprešetr",
+    "odložen",
+    "nebude prešetr",
+    "nie sú prešetr"
+   ]
+  ],
+  "quote": "Anonymné sťažnosti neprešetrujeme a budú odložené.",
+  "retrievedAt": "2026-10-19T00:25Z"
+ },
+ {
+  "id": "bw-11",
+  "set": "heldout",
+  "kind": "rag",
+  "lang": "de",
+  "docType": "html",
+  "q": "Für wie viele Jahre wird der Hauptkontrolleur der Region gewählt?",
+  "sources": [
+   "https://www.bbsk.sk/hlavny-kontrolor"
+  ],
+  "must": [
+   [
+    "sechs",
+    "6 Jahre",
+    "=6",
+    "šiestich"
+   ]
+  ],
+  "quote": "Hlavného kontrolóra volí a odvoláva zastupiteľstvo samosprávneho kraja. Je volený na obdobie šiestich rokov.",
+  "retrievedAt": "2026-10-19T00:26Z"
+ },
+ {
+  "id": "bw-12",
+  "set": "tune",
+  "kind": "rag",
+  "lang": "sk",
+  "docType": "html",
+  "q": "V ktorých dňoch premávali v roku 2024 Festbusy na Zámocké hry zvolenské?",
+  "sources": [
+   "https://www.bbsk.sk/festbus"
+  ],
+  "must": [
+   [
+    "15.6",
+    "15. jún",
+    "15. 6"
+   ],
+   [
+    "7.6",
+    "7. jún",
+    "7. 6",
+    "7. – 15",
+    "7. - 15",
+    "7. do 15",
+    "7.–15",
+    "7.-15"
+   ]
+  ],
+  "quote": "Zámocké hry zvolenské (7. - 15.6.2024)",
+  "retrievedAt": "2026-10-19T00:30Z"
+ },
+ {
+  "id": "bw-13",
+  "set": "heldout",
+  "kind": "rag",
+  "lang": "uk",
+  "docType": "html",
+  "q": "Яка максимальна сума підтримки для одного лікаря або стоматолога у грантовій програмі «Help Ukrainian medics»?",
+  "sources": [
+   "https://www.bbsk.sk/vyzva"
+  ],
+  "must": [
+   [
+    "=500"
+   ]
+  ],
+  "quote": "Maximálna výška podpory pre jedného žiadateľa v zdravotníckom povolaní lekár/zubný lekár je 500 €",
+  "retrievedAt": "2026-10-19T00:29Z"
+ },
+ {
+  "id": "bw-14",
+  "set": "tune",
+  "kind": "rag",
+  "lang": "sk",
+  "docType": "html",
+  "q": "Kto preberá zdravotnú dokumentáciu do úschovy, keď ambulancii zanikne povolenie?",
+  "sources": [
+   "https://www.bbsk.sk/kde-je-moja-zdravotna-dokumentacia"
+  ],
+  "must": [
+   [
+    "lekár Banskobystrického",
+    "lekár BBSK",
+    "lekár kraja",
+    "lekárka BBSK",
+    "lekár samosprávneho kraja"
+   ]
+  ],
+  "quote": "Zdravotnú dokumentáciu do úschovy preberá lekár Banskobystrického samosprávneho kraja (ďalej len BBSK) a odovzdá ju preberajúcemu poskytovateľovi zdravotnej starostlivosti pri (po) zániku platnosti povolenia na prevádzkovanie zdravotníckeho zariadenia",
+  "retrievedAt": "2026-10-19T00:26Z"
+ },
+ {
+  "id": "bw-15",
+  "set": "tune",
+  "kind": "rag",
+  "lang": "en",
+  "docType": "html",
+  "q": "Which website does the region point to for more information on choosing a secondary school?",
+  "sources": [
+   "https://www.bbsk.sk/informovanie-o-vonych-miestach-pre-ziakov-na-strednych-skolach"
+  ],
+  "must": [
+   [
+    "idemnastrednu.sk"
+   ]
+  ],
+  "quote": "Viac informácií na stránke idemnastrednu.sk .",
+  "retrievedAt": "2026-10-19T00:27Z"
+ },
+ {
+  "id": "bw-16",
+  "set": "heldout",
+  "kind": "rag",
+  "lang": "sk",
+  "docType": "html",
+  "q": "Môže žiak nahlásiť šikanu kraju aj anonymne?",
+  "sources": [
+   "https://www.bbsk.sk/sikana"
+  ],
+  "must": [
+   [
+    "anonym"
+   ]
+  ],
+  "quote": "Prosím, nahlás ju, kľudne i anonymne TU .",
+  "retrievedAt": "2026-10-19T00:30Z"
+ },
+ {
+  "id": "bw-17",
+  "set": "tune",
+  "kind": "rag",
+  "lang": "hu",
+  "docType": "html",
+  "q": "Meddig volt érvényes a REGIÓNPAS belépőjegy?",
+  "sources": [
+   "https://www.bbsk.sk/regionpas"
+  ],
+  "must": [
+   [
+    "2023"
+   ],
+   [
+    "31"
+   ]
+  ],
+  "quote": "Vstupenka REGIÓNPAS umožňuje jednorazový vstup do 31. decembra 2023 do týchto múzeí a galérie (pri viacerých expozíciách do jednej z nich):",
+  "retrievedAt": "2026-10-19T00:28Z"
+ },
+ {
+  "id": "bw-18",
+  "set": "heldout",
+  "kind": "rag",
+  "lang": "sk",
+  "docType": "html",
+  "q": "Podporuje kraj v rámci cyklodopravy aj zdieľané bicykle?",
+  "sources": [
+   "https://www.bbsk.sk/krajsky-cyklokoordinator"
+  ],
+  "must": [
+   [
+    "bikesharing",
+    "zdieľan"
+   ]
+  ],
+  "quote": "podpory zdieľaných bicyklov – bikesharing a e-bikes v hlavných spádových oblastiach;",
+  "retrievedAt": "2026-10-19T00:27Z"
+ },
+ {
+  "id": "bw-19",
+  "set": "tune",
+  "kind": "rag",
+  "lang": "de",
+  "docType": "pdf",
+  "q": "Wie viele Sprechstunden pro Woche muss eine allgemeinmedizinische Praxis mindestens anbieten?",
+  "sources": [
+   "https://www.bbsk.sk/storage/app/media/dokumenty/smernice/Smernica_c._001_2022_ODDZ.pdf#page=3"
+  ],
+  "must": [
+   [
+    "=35"
+   ]
+  ],
+  "quote": "Minimálny týždenný časový rozsah ordinačných hodín zdravotníckych zariadení poskytovateľov všeobecnej ambulantnej zdravotnej starostlivosti je najmenej 35 ordinačných hodín bez doplnkových ordinačných hodín",
+  "retrievedAt": "2026-10-19T00:35Z"
+ },
+ {
+  "id": "bw-20",
+  "set": "heldout",
+  "kind": "rag",
+  "lang": "en",
+  "docType": "pdf",
+  "q": "In the region's approved budget for 2025–2027, how much capital expenditure is planned for 2027?",
+  "sources": [
+   "https://www.bbsk.sk/storage/app/media/dokumenty/financie/rozpocet/schvaleny-rozpocet-bbsk-2025-2027.pdf#page=12"
+  ],
+  "must": [
+   [
+    "2 514 000",
+    "2514000",
+    "2,514,000",
+    "2.514.000",
+    "2,51 mil",
+    "2.51 mil",
+    "2,5 mil",
+    "2.5 mil"
+   ]
+  ],
+  "quote": "Kapitálové výdavky (700) 49 884 398,69 144 522 007,13 77 386 019,00 23 555 000,00 69 493 977,00 22 490 344,00 2 514 000,00",
+  "retrievedAt": "2026-10-19T00:35Z"
+ },
+ {
+  "id": "bw-21",
+  "set": "tune",
+  "kind": "rag",
+  "lang": "hu",
+  "docType": "pdf",
+  "q": "Hány magyar nemzetiségű lakosa volt a megyének 2017 végén a szociális szolgáltatások fejlesztési koncepciója szerint?",
+  "sources": [
+   "https://www.bbsk.sk/storage/app/media/strategicke-dokumenty/socialne_sluzby/Koncepcia%20rozvoja%20socialnych%20sluzieb%20v%20BBSK%202019%20-%202025.pdf#page=23"
+  ],
+  "must": [
+   [
+    "68495",
+    "68 495",
+    "68.495",
+    "68,495"
+   ]
+  ],
+  "quote": "Maďarská; 68495; 11%",
+  "retrievedAt": "2026-10-19T00:35Z"
+ },
+ {
+  "id": "bw-22",
+  "set": "heldout",
+  "kind": "rag",
+  "lang": "cs",
+  "docType": "pdf",
+  "q": "Jaká je celková délka cyklotras, které procházejí územím Banskobystrického kraje, podle dokumentu o rozvoji cyklistické dopravy z roku 2017?",
+  "sources": [
+   "https://www.bbsk.sk/storage/app/media/dokumenty/cyklodoprava/rozvoj-cyklistickej-dopravy-na-uzemi-bbsk-04-2017.pdf#page=11"
+  ],
+  "must": [
+   [
+    "3 243",
+    "3243",
+    "3.243",
+    "3,243"
+   ]
+  ],
+  "quote": "samosprávneho kraja prechádzajú cyklotrasy s dĺžkou 3 243 km",
+  "retrievedAt": "2026-10-19T00:35Z"
+ },
+ {
+  "id": "bw-23",
+  "set": "tune",
+  "kind": "rag",
+  "lang": "en",
+  "docType": "pdf",
+  "q": "On the Poltár – Rimavská Sobota cycle path, how fast may a motor vehicle with the owner's exemption go?",
+  "sources": [
+   "https://www.bbsk.sk/storage/app/media/dokumenty/cyklodoprava/prevadzkovy-poriadok-cyklotrasy-rs.pdf#page=12"
+  ],
+  "must": [
+   [
+    "20 km/h",
+    "20 km",
+    "20 kilomet"
+   ]
+  ],
+  "quote": "Prejazd motorových a iných zariadení je možný len na základe výnimky udelenej vlastníkom cyklotrasy, maximálnou rýchlosťou 20 km/h.",
+  "retrievedAt": "2026-10-19T00:35Z"
+ },
+ {
+  "id": "bw-24",
+  "set": "heldout",
+  "kind": "rag",
+  "lang": "sk",
+  "docType": "pdf",
+  "q": "Koľko žiakov môže Gymnázium Ľudovíta Štúra vo Zvolene prijať do 1. ročníka osemročného štúdia v školskom roku 2026/2027?",
+  "sources": [
+   "https://www.bbsk.sk/storage/app/media/dokumenty/skolstvo/npz-1r-gsovp-bbsk-2026-2027.pdf#page=1"
+  ],
+  "must": [
+   [
+    "=30"
+   ]
+  ],
+  "quote": "100010896 Gymnázium Ľudovíta Štúra Banskobystrický Zvolen Hronská 1467/3 96049 7902J00 gymnázium 30 Banskobystrický samosprávny kraj",
+  "retrievedAt": "2026-10-19T00:35Z"
+ },
+ {
+  "id": "bw-25",
+  "set": "tune",
+  "kind": "rag",
+  "lang": "sk",
+  "docType": "pdf",
+  "q": "Koľko voľných miest v odbore spev malo Konzervatórium J. L. Bellu v 2. kole prijímacieho konania na školský rok 2026/2027?",
+  "sources": [
+   "https://www.bbsk.sk/storage/app/media/dokumenty/skolstvo/volne-miesta-2-kolo-prijmacieho-konania-ss-1r-2026-2027.pdf#page=1"
+  ],
+  "must": [
+   [
+    "=4",
+    "štyri"
+   ]
+  ],
+  "quote": "Konzervatórium J. L. Bellu, Skuteckého 27, Banská Bystrica 8228 Q Spev 4",
+  "retrievedAt": "2026-10-19T00:35Z"
+ },
+ {
+  "id": "bw-26",
+  "set": "heldout",
+  "kind": "rag",
+  "lang": "sk",
+  "docType": "pdf",
+  "q": "Koľko eur denne sa platí za odkázanosť v zariadení pre seniorov s celoročnou pobytovou formou pri VI. stupni odkázanosti podľa VZN č. 49/2023?",
+  "sources": [
+   "https://www.bbsk.sk/storage/app/media/dokumenty/zastupite%C4%BEstvo/vzn/vzn-bbsk-49-2023.pdf#page=4"
+  ],
+  "must": [
+   [
+    "=3,70",
+    "=3.70",
+    "=3,7",
+    "=3.7"
+   ]
+  ],
+  "quote": "VI. 3,70 eur",
+  "retrievedAt": "2026-10-19T00:35Z"
+ },
+ {
+  "id": "bw-27",
+  "set": "tune",
+  "kind": "rag",
+  "lang": "sk",
+  "docType": "pdf",
+  "q": "Koľko telocviční stredných škôl v zriaďovateľskej pôsobnosti BBSK je otvorených pre verejnosť?",
+  "sources": [
+   "https://www.bbsk.sk/storage/app/media/strategicke-dokumenty/skolstvo/Koncepcia_podpory_sportu_BBSK_2020-2025.pdf#page=16"
+  ],
+  "must": [
+   [
+    "=38"
+   ]
+  ],
+  "quote": "verejnosť je otvorených 38 telocviční stredných škôl v zriaďovateľskej pôsobnosti BBSK.",
+  "retrievedAt": "2026-10-19T00:35Z"
+ },
+ {
+  "id": "bw-28",
+  "set": "heldout",
+  "kind": "rag",
+  "lang": "en",
+  "docType": "xlsx",
+  "q": "What is the total length of the second-class roads the region manages?",
+  "sources": [
+   "https://www.bbsk.sk/storage/app/media/dokumenty/doprava/zoznam-spravovanych-ciest-bbsk.xlsx"
+  ],
+  "must": [
+   [
+    "604,7",
+    "604.7",
+    "605 km"
+   ]
+  ],
+  "quote": "cesty II.triedy | 249.173 | 26.916 | 48.405 | 267.656 | 12.576 | 604.726",
+  "retrievedAt": "2026-10-19T00:35Z"
+ },
+ {
+  "id": "bw-29",
+  "set": "tune",
+  "kind": "rag",
+  "lang": "uk",
+  "docType": "odt",
+  "q": "Чи потрібно в заяві на грант «Help Ukrainian medics» вказати IBAN банківського рахунку?",
+  "sources": [
+   "https://www.bbsk.sk/storage/app/media/dokumenty/financie/ziadost-o-poskytnutie-fp-grant-velux-03.odt"
+  ],
+  "must": [
+   [
+    "IBAN"
+   ]
+  ],
+  "quote": "IBAN číslo bankového účtu:",
+  "retrievedAt": "2026-10-19T00:35Z"
+ },
+ {
+  "id": "bw-30",
+  "set": "heldout",
+  "kind": "rag",
+  "lang": "sk",
+  "docType": "html",
+  "q": "Koľko zaplatí právnická osoba za elektronickú žiadosť o povolenie verejnej lekárne a koľko dopravca za povolenie autobusovej linky na každý začatý rok?",
+  "sources": [
+   "https://www.bbsk.sk/vydanie-povolenia-verejnej-lekarne",
+   "https://www.bbsk.sk/udelenie-novej-dopravnej-licencie"
+  ],
+  "must": [
+   [
+    "430"
+   ],
+   [
+    "85"
+   ]
+  ],
+  "quote": "elektronická forma podania - 430 € | Poplatok za vydanie povolenia na prevádzkovanie autobusovej linky alebo povolenia dopravcovi na vnútroštátnu pravidelnú autobusovú dopravu, za každý aj začatý rok, je 85 eur",
+  "retrievedAt": "2026-10-19T00:26Z"
+ },
+ {
+  "id": "bwu-01",
+  "set": "tune",
+  "kind": "absent",
+  "lang": "sk",
+  "q": "Koľko stojí vstupenka MÚZPAS pre deti?",
+  "noSource": "near miss: the page gives one price for everyone, no child price. Site search for 'MÚZPAS' on 2026-10-19: 4 results, none states it; the crawl of the 717 sitemap pages has no match for /múzpas.{0,400}(deti|detsk)\\w*.{0,60}(€|eur)|múzpas.{0,400}(€|eur).{0,60}(deti|detsk)/.",
+  "nearest": "https://www.bbsk.sk/muzpas"
+ },
+ {
+  "id": "bwu-02",
+  "set": "tune",
+  "kind": "absent",
+  "lang": "sk",
+  "q": "Aké kapitálové výdavky plánuje BBSK v rozpočte na rok 2030?",
+  "noSource": "near miss: the approved budgets run to 2028 at most. Site search for 'rozpočet' on 2026-10-19: 14 results, none states it; the crawl of the 717 sitemap pages has no match for /rozpo\\w*.{0,60}2030/.",
+  "nearest": "https://www.bbsk.sk/rozpocet"
+ },
+ {
+  "id": "bwu-03",
+  "set": "heldout",
+  "kind": "absent",
+  "lang": "en",
+  "q": "What was the average age of the region's residents in 2025?",
+  "noSource": "near miss: the region publishes the average age for 2017 only. Site search for 'priemerný vek' on 2026-10-19: 0 results, none states it; the crawl of the 717 sitemap pages has no match for /priemern\\w* vek.{0,120}2025/."
+ },
+ {
+  "id": "bwu-04",
+  "set": "tune",
+  "kind": "absent",
+  "lang": "sk",
+  "q": "Aké sú otváracie hodiny lekárne Dr.Max v Banskej Bystrici?",
+  "noSource": "out of scope: a private company's shop. Site search for 'Dr.Max' on 2026-10-19: 0 results, none states it; the crawl of the 717 sitemap pages has no match for /dr\\.? ?max/.",
+  "nearest": "https://www.bbsk.sk/povolovanie-cinnosti-verejnej-lekarne"
+ },
+ {
+  "id": "bwu-05",
+  "set": "tune",
+  "kind": "absent",
+  "lang": "en",
+  "q": "How much is the fee for a bus line permit in the Žilina Region?",
+  "noSource": "out of scope: another region's fee. Site search for 'Žilinský' on 2026-10-19: 1 results, none states it; the crawl of the 717 sitemap pages has no match for /žilinsk\\w* (samosprávn|kraj).{0,200}(poplat|€|eur)/.",
+  "nearest": "https://www.bbsk.sk/udelenie-novej-dopravnej-licencie"
+ },
+ {
+  "id": "bwu-06",
+  "set": "heldout",
+  "kind": "absent",
+  "lang": "hu",
+  "q": "Mikor nyitják meg a Zólyom és Besztercebánya közötti kerékpárutat?",
+  "noSource": "future: no opening date is published. Site search for 'cyklotrasa' on 2026-10-19: 13 results, none states it; the crawl of the 717 sitemap pages has no match for /zvolen.{0,60}bansk\\w* bystric.{0,200}(otvor|sprevádzk|dokonč)\\w*.{0,60}20\\d\\d/.",
+  "nearest": "https://www.bbsk.sk/vybudovane-cyklocesty"
+ },
+ {
+  "id": "bwu-07",
+  "set": "tune",
+  "kind": "absent",
+  "lang": "sk",
+  "q": "Je Gymnázium Ľudovíta Štúra vo Zvolene dobrá škola?",
+  "noSource": "opinion: the site rates no school. Site search for 'Gymnázium Ľudovíta Štúra' on 2026-10-19: 2 results, none states it; the match for /gymnázi\\w* ľudovíta štúra.{0,300}(najlepš|kvalitn|hodnoten|rebríč)/ was read: the two pages it matches describe the renovated sports ground of the school ('pre kvalitnú …'), not a rating of the school."
+ },
+ {
+  "id": "bwu-08",
+  "set": "heldout",
+  "kind": "absent",
+  "lang": "de",
+  "q": "Wie hoch ist das Gehalt einer Krankenschwester im Krankenhaus Roosevelt in Banská Bystrica?",
+  "noSource": "out of scope: a hospital's pay, not the region's. Site search for 'Roosevelt' on 2026-10-19: 4 results, none states it; the crawl of the 717 sitemap pages has no match for /roosevelt.{0,200}(plat|mzd)/."
+ },
+ {
+  "id": "bwu-09",
+  "set": "tune",
+  "kind": "absent",
+  "lang": "uk",
+  "q": "Скільки коштує квиток на поїзд з Банської Бистриці до Києва?",
+  "noSource": "out of scope: train fares abroad. Site search for 'vlak' on 2026-10-19: 7 results, none states it; the crawl of the 717 sitemap pages has no match for /(kyjev|kiev|kyiv)/."
+ },
+ {
+  "id": "bwu-10",
+  "set": "heldout",
+  "kind": "absent",
+  "lang": "cs",
+  "q": "Kolik stojí jízdenka MHD v Banské Bystrici?",
+  "noSource": "out of scope: the city's public transport, not the region's. Site search for 'MHD' on 2026-10-19: 4 results, none states it; the crawl of the 717 sitemap pages has no match for /(mhd|mestsk\\w* hromadn).{0,80}(cestovn|lístok).{0,40}(€|eur)/."
+ },
+ {
+  "id": "bwu-11",
+  "set": "tune",
+  "kind": "absent",
+  "lang": "sk",
+  "q": "Koľko voľných miest bolo v 2. kole prijímacieho konania na stredné školy v školskom roku 2025/2026?",
+  "noSource": "near miss: the site lists the free places for 2026/2027 only. Site search for 'voľné miesta' on 2026-10-19: 3 results, none states it; the crawl of the 717 sitemap pages has no match for /voľn\\w* miest.{0,120}2025/2026|2025/2026.{0,120}voľn\\w* miest/.",
+  "nearest": "https://www.bbsk.sk/informovanie-o-vonych-miestach-pre-ziakov-na-strednych-skolach"
+ },
+ {
+  "id": "bwu-12",
+  "set": "tune",
+  "kind": "absent",
+  "lang": "en",
+  "q": "What is the budget of the Prešov Self-Governing Region for 2025?",
+  "noSource": "out of scope: another region's budget. Site search for 'Prešovský' on 2026-10-19: 5 results, none states it; the crawl of the 717 sitemap pages has no match for /prešovsk\\w* samosprávn\\w* kraj.{0,200}rozpo/.",
+  "nearest": "https://www.bbsk.sk/rozpocet"
+ },
+ {
+  "id": "bwu-13",
+  "set": "heldout",
+  "kind": "absent",
+  "lang": "sk",
+  "q": "Kedy otvoria nový bikepark v Banskobystrickom kraji?",
+  "noSource": "future: no new bike park or date is announced. Site search for 'bikepark' on 2026-10-19: 3 results, none states it; the crawl of the 717 sitemap pages has no match for /(nov\\w* bike ?park|bike ?park).{0,80}(otvor|otvoria|otvorí)/.",
+  "nearest": "https://www.bbsk.sk/bikeparky-singletraily"
+ },
+ {
+  "id": "bwu-14",
+  "set": "tune",
+  "kind": "absent",
+  "lang": "sk",
+  "q": "Koľko kilometrov cyklotrás je v okrese Žarnovica?",
+  "noSource": "near miss: cycle route lengths are given for the whole region, not per district. Site search for 'Žarnovica' on 2026-10-19: 15 results, none states it; the crawl of the 717 sitemap pages has no match for /žarnovic.{0,80}\\d+([,.]\\d+)? ?km/.",
+  "nearest": "https://www.bbsk.sk/vybudovane-cyklocesty"
+ },
+ {
+  "id": "bwu-15",
+  "set": "heldout",
+  "kind": "absent",
+  "lang": "uk",
+  "q": "Яка зарплата лікаря в лікарні в Лученці?",
+  "noSource": "out of scope: a hospital's pay. Site search for 'Lučenec' on 2026-10-19: 17 results, none states it; the crawl of the 717 sitemap pages has no match for /(nemocnic|lekár)\\w*.{0,60}lučen\\w*.{0,100}(plat|mzd)/."
+ },
+ {
+  "id": "bwu-16",
+  "set": "tune",
+  "kind": "absent",
+  "lang": "cs",
+  "q": "Jaké je rodné číslo hlavního kontrolora BBSK?",
+  "noSource": "personal data: never published. Site search for 'rodné číslo' on 2026-10-19: 2 results, none states it; the crawl of the 717 sitemap pages has no match for /rodn\\w* čísl\\w*.{0,20}\\d{6}/?\\d{3,4}/.",
+  "nearest": "https://www.bbsk.sk/hlavny-kontrolor"
+ },
+ {
+  "id": "bwu-17",
+  "set": "heldout",
+  "kind": "absent",
+  "lang": "en",
+  "q": "How many students attend Gymnázium Ľudovíta Štúra in Zvolen this school year?",
+  "noSource": "near miss: the site gives the first-year intake limit, not the enrolment. Site search for 'Gymnázium Ľudovíta Štúra' on 2026-10-19: 2 results, none states it; the crawl of the 717 sitemap pages has no match for /(počet|celkom)\\w* žiak\\w*.{0,60}gymnázi\\w* ľudovíta štúra|gymnázi\\w* ľudovíta štúra.{0,200}navštevuj/.",
+  "nearest": "https://www.bbsk.sk/informovanie-o-vonych-miestach-pre-ziakov-na-strednych-skolach"
+ },
+ {
+  "id": "bwu-18",
+  "set": "tune",
+  "kind": "absent",
+  "lang": "hu",
+  "q": "Mikor lesz a megyei közgyűlés ülése 2027 decemberében?",
+  "noSource": "future: no meeting date for December 2027 is published. Site search for 'zasadnutie' on 2026-10-19: 17 results, none states it; the crawl of the 717 sitemap pages has no match for /(zasadnut|zastupiteľstv).{0,80}(december|decembra|12\\.) ?2027/.",
+  "nearest": "https://www.bbsk.sk/zasadnutia-zastupitelstva"
+ },
+ {
+  "id": "bwu-19",
+  "set": "tune",
+  "kind": "absent",
+  "lang": "sk",
+  "q": "Ktorá stredná škola v kraji je najlepšia?",
+  "noSource": "opinion: the site ranks no school. Site search for 'najlepšia' on 2026-10-19: 0 results, none states it; the crawl of the 717 sitemap pages has no match for /najlepš\\w* (stredn\\w* )?škol/.",
+  "nearest": "https://www.bbsk.sk/skolske-institucie"
+ },
+ {
+  "id": "bwu-20",
+  "set": "heldout",
+  "kind": "absent",
+  "lang": "sk",
+  "q": "Akú dotáciu dostane od BBSK v roku 2026 firma Slovalco?",
+  "noSource": "out of scope: a private company; no such grant is published. Site search for 'Slovalco' on 2026-10-19: 1 results, none states it; the crawl of the 717 sitemap pages has no match for /slovalco.{0,200}dotáci|dotáci.{0,200}slovalco/.",
+  "nearest": "https://www.bbsk.sk/informacie-o-regione"
+ }
+]
