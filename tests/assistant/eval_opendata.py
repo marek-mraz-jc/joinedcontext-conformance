@@ -806,9 +806,9 @@ def run(args):
                         r["wrongNumber"] = False
                     elif q["kind"] == "direct":
                         r["grade"], r["wrongNumber"] = grade_direct(r, spec["canary"])
-                    elif q["truth"]["expect"] == "shape":
+                    elif q.get("truth", {}).get("expect") == "shape":
                         r["grade"], r["wrongNumber"] = grade_shape(q, truth, r)
-                    elif q["truth"]["expect"] == "each":
+                    elif q.get("truth", {}).get("expect") == "each":
                         r["grade"], r["wrongNumber"] = grade_each(q, truth, r)
                     else:
                         r["grade"], r["wrongNumber"] = grade(q, truth, r["answer"], spec["canary"])
