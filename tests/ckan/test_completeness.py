@@ -8,7 +8,7 @@ from datetime import timedelta
 
 import pytest
 
-from completeness import Reader, cell_of, check_dataset, compare, missing_attributes, same, stem
+from completeness import Reader, Report, accept_of, cell_of, check_dataset, check_link, compare, missing_attributes, same, stem
 
 ENTITY = {
     "id": "urn:ngsi-ld:Vehicle:hel.fi:helsinki:12-2201",
@@ -60,6 +60,47 @@ def test_a_row_the_broker_has_observed_again_moved_on_and_a_wrong_one_is_named()
     ghost = {"_id": 1, "entity_id": ENTITY["id"], "status.value": "open"}
     assert compare(ghost, ENTITY)[0] == ["status.value: the broker has none, the table 'open'"]
 
+
+
+class _Answer:
+    def __init__(self, status: int, headers: dict[str, str]) -> None:
+        self.status_code, self.headers = status, headers
+
+    def close(self) -> None:
+        pass
+
+
+class _Upgrading:
+    """A session that answers a WebSocket handshake the way the gateway does, or as told."""
+
+    def __init__(self, status: int, accept: str | None = None) -> None:
+        self.status, self.accept = status, accept
+        self.sent: dict[str, str] = {}
+
+    def get(self, url, headers=None, timeout=None, stream=False, **_):
+        self.sent = headers or {}
+        accept = self.accept if self.accept is not None else accept_of(self.sent.get("Sec-WebSocket-Key", ""))
+        return _Answer(self.status, {"Sec-WebSocket-Accept": accept} if self.status == 101 else {})
+
+
+def _link(session) -> tuple[bool, str]:
+    reader = Reader("https://ckan.example")
+    reader.http = session
+    report = Report("d")
+    check_link(reader, report, {"name": "Live updates over WebSocket", "format": "WebSocket", "url": "https://api.example/api/endpoint/x/ws"})
+    return report.checks[0].ok, report.checks[0].detail
+
+
+def test_a_websocket_link_is_held_to_its_handshake_not_to_a_plain_get():
+    # T-3141: a plain GET is answered 426 Upgrade Required, which the old check called broken.
+    session = _Upgrading(101)
+    assert _link(session) == (True, "101, handshake accepted")
+    assert session.sent["Upgrade"] == "websocket" and session.sent["Sec-WebSocket-Version"] == "13"
+    assert accept_of("dGhlIHNhbXBsZSBub25jZQ==") == "s3pPLMBiTxaQ9kYGzzhZRbK+xOo="  # RFC 6455 §1.3
+    assert _link(_Upgrading(101, accept="wrong")) == (False, "101 with a Sec-WebSocket-Accept that does not answer the key")
+    assert _link(_Upgrading(426))[0] is False
+    assert _link(_Upgrading(404))[0] is False
+    assert _link(_Upgrading(401)) == (True, "401: a restricted endpoint, as EP-64 allows")
 
 DATASETS = [name for name in os.environ.get("CKAN_DATASETS", "").split(",") if name]
 

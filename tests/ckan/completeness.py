@@ -23,6 +23,8 @@ prints one table per dataset and exits 1 when any check fails.
 from __future__ import annotations
 
 import argparse
+import base64
+import hashlib
 import json
 import os
 import re
@@ -322,6 +324,9 @@ def check_link(reader: Reader, report: Report, resource: dict[str, Any]) -> None
         ok = answer.status_code in (200, 401)
         report.add(f"link {name}", ok, f"{answer.status_code}")
         return
+    if fmt == "WEBSOCKET":
+        check_websocket(reader, report, str(name), url)
+        return
     answer = reader.get(url)
     if answer.status_code == 401:
         report.add(f"link {name}", True, "401: a restricted endpoint, as EP-64 allows")
@@ -339,6 +344,30 @@ def check_link(reader: Reader, report: Report, resource: dict[str, Any]) -> None
         report.add(f"link {name}", False, "200 with an empty body")
         return
     report.add(f"link {name}", True, f"200, {len(answer.content)} bytes")
+
+
+def accept_of(key: str) -> str:
+    """The `Sec-WebSocket-Accept` a server answers `key` with (RFC 6455 §4.2.2)."""
+    digest = hashlib.sha1((key + "258EAFA5-E914-47DA-95CA-C5AB0DC85B11").encode()).digest()
+    return base64.b64encode(digest).decode()
+
+
+def check_websocket(reader: Reader, report: Report, name: str, url: str) -> None:
+    """A WebSocket link opens with a handshake: a plain GET is rightly answered 426 (T-3141)."""
+    key = base64.b64encode(os.urandom(16)).decode()
+    headers = {"Connection": "Upgrade", "Upgrade": "websocket", "Sec-WebSocket-Version": "13", "Sec-WebSocket-Key": key}
+    if reader.bearer:
+        headers["Authorization"] = f"Bearer {reader.bearer}"
+    answer = reader.http.get(url, headers=headers, timeout=TIMEOUT, stream=True)
+    answer.close()
+    if answer.status_code == 401:
+        report.add(f"link {name}", True, "401: a restricted endpoint, as EP-64 allows")
+    elif answer.status_code != 101:
+        report.add(f"link {name}", False, f"{answer.status_code} for {url}: no WebSocket handshake")
+    elif answer.headers.get("Sec-WebSocket-Accept") != accept_of(key):
+        report.add(f"link {name}", False, "101 with a Sec-WebSocket-Accept that does not answer the key")
+    else:
+        report.add(f"link {name}", True, "101, handshake accepted")
 
 
 def main(argv: list[str]) -> int:
