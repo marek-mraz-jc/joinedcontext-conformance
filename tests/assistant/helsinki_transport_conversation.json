@@ -1,0 +1,15 @@
+{
+  "about": "T-4734 dev proof: the owner's dev conversation of 2026-10-19 11:15-11:16 local, asked through the widget in one conversation, five times (screens.mjs keeps the last turn's stream; the picture holds every turn). Done when every run lists HSL among the transport datasets, answers MHD with HSL, and never says Helsinki could not be checked.",
+  "questions": [
+    {
+      "id": "hel-mhd",
+      "lang": "sk",
+      "repeat": 5,
+      "history": [
+        { "role": "user", "text": "Aké dáta máte o doprave?" },
+        { "role": "user", "text": "Máte dáta o mestskej hromadnej doprave?" }
+      ],
+      "q": "ale veď Helsinki majú data"
+    }
+  ]
+}
