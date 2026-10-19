@@ -189,6 +189,7 @@ platform,http,GET,/api/endpoint/{slug}/ws,crates/context-gateway/src/app.rs:549,
 platform,http,GET,/api/endpoints,crates/context-gateway/src/app.rs:520,platform crates/context-gateway/tests/route_authz_sweep_tests.rs
 platform,http,GET,/api/mcp/.well-known/oauth-protected-resource,crates/context-gateway/src/app.rs:521,platform crates/context-gateway/tests/route_authz_sweep_tests.rs
 platform,http,GET,/api/mcp/{project}/{name}/.well-known/oauth-protected-resource,crates/context-gateway/src/app.rs:527,platform crates/context-gateway/tests/route_authz_sweep_tests.rs
+platform,http,GET,/api/v1/d/{public_id}/turns/{turn}/resume,crates/assistant/src/chat/mod.rs:360,platform crates/assistant/tests/chat_tests.rs
 platform,http,GET,/catalog.jsonld,crates/context-gateway/src/app.rs:565,platform crates/context-gateway/tests/route_authz_sweep_tests.rs
 platform,http,GET,/catalog.ttl,crates/context-gateway/src/app.rs:566,platform crates/context-gateway/tests/route_authz_sweep_tests.rs
 platform,http,GET,/cs,crates/context-gateway/src/app.rs:567,platform crates/context-gateway/tests/route_authz_sweep_tests.rs
@@ -222,6 +223,7 @@ platform,http,GET,/v1/packages/{host}/{*rest},crates/agent-proxy/src/lib.rs:112,
 platform,http,GET,/v1/runs/inbox,crates/agent-proxy/src/lib.rs:122,platform crates/agent-proxy/tests/edge_routes_inbox_handler_tests.rs
 platform,http,OPTIONS,/api/v1/d/{public_id}/chat,crates/assistant/src/chat/mod.rs:277,platform crates/assistant/tests/chat_tests.rs
 platform,http,OPTIONS,/api/v1/d/{public_id}/feedback,crates/assistant/src/chat/mod.rs:278,platform crates/assistant/tests/chat_tests.rs
+platform,http,OPTIONS,/api/v1/d/{public_id}/turns/{turn}/resume,crates/assistant/src/chat/mod.rs:360,platform crates/assistant/tests/chat_tests.rs
 platform,http,POST,/api/endpoint/{slug}/access/check,crates/context-gateway/src/app.rs:531,platform crates/context-gateway/tests/route_authz_sweep_tests.rs
 platform,http,POST,/api/endpoint/{slug}/access/simulate,crates/context-gateway/src/app.rs:532,platform crates/context-gateway/tests/route_authz_sweep_tests.rs
 platform,http,POST,/api/endpoint/{slug}/mcp,crates/context-gateway/src/app.rs:517,platform crates/context-gateway/tests/route_authz_sweep_tests.rs
