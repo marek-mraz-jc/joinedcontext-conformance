@@ -53,7 +53,8 @@
               "injection",
               "scope",
               "unknowable",
-              "direct"
+              "direct",
+              "area"
             ]
           },
           "q": {
@@ -97,7 +98,8 @@
                   "none",
                   "scope",
                   "date",
-                  "all"
+                  "all",
+                  "shape"
                 ]
               },
               "ckan": {
@@ -272,6 +274,32 @@
                     ]
                   }
                 ]
+              },
+              "shape": {
+                "allOf": [
+                  {
+                    "$ref": "#/definitions/read"
+                  },
+                  {
+                    "required": [
+                      "type",
+                      "name"
+                    ]
+                  }
+                ]
+              },
+              "touches": {
+                "allOf": [
+                  {
+                    "$ref": "#/definitions/read"
+                  },
+                  {
+                    "required": [
+                      "type",
+                      "name"
+                    ]
+                  }
+                ]
               }
             },
             "additionalProperties": false
@@ -419,6 +447,10 @@
         "latestYear": {
           "type": "string",
           "pattern": "^[A-Za-z][A-Za-z0-9_]*$"
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1
         }
       },
       "anyOf": [
