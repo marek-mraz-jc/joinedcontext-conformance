@@ -22,6 +22,9 @@ from pathlib import Path
 MAX_ERROR_RATE = 0.001          # 0.1 %
 MAX_OUTAGE_SECONDS = 30.0       # recovery window after a disruption
 MIN_REQUESTS = 100              # a run this small measured nothing
+# dev runs one replica of each workload (T-0088, owner 2026-10-18): a killed pod is an outage
+# until its replacement is Ready, so the dev profile bounds the recovery and reports the errors.
+MAX_RECOVERY_DEV = 120.0
 
 
 @dataclass(frozen=True)
@@ -140,6 +143,85 @@ def verdict(samples: list[Sample], disruptions: list[Disruption]) -> list[str]:
     return problems
 
 
+@dataclass(frozen=True)
+class Drill:
+    what: str
+    started: float
+    ended: float
+    ready_after_s: float | None
+    skipped: str | None
+
+
+def read_drills(path: Path) -> list[Drill]:
+    """One JSON object per line, written by dev-drills.sh."""
+    drills = []
+    for number, line in enumerate(path.read_text(encoding="utf-8").splitlines(), start=1):
+        if not line.strip():
+            continue
+        try:
+            raw = json.loads(line)
+            drills.append(Drill(raw["what"], float(raw["started"]), float(raw["ended"]),
+                                raw.get("ready_after_s"), raw.get("skipped")))
+        except (ValueError, KeyError, TypeError) as bad:
+            raise ValueError(f"{path}:{number}: unreadable drill {line!r}: {bad}") from None
+    return drills
+
+
+def errors_during(samples: list[Sample], drill: Drill, tail: float) -> tuple[int, int]:
+    """(failed, total) of the requests from the drill's start to `tail` seconds after its end."""
+    window = [s for s in samples if drill.started <= s.at <= drill.ended + tail]
+    return sum(1 for s in window if s.failed), len(window)
+
+
+def dev_verdict(
+    samples: list[Sample],
+    disruptions: list[Disruption],
+    drills: list[Drill],
+    before: dict[str, int],
+    after: dict[str, int],
+    max_recovery: float = MAX_RECOVERY_DEV,
+) -> list[str]:
+    """The owner's drills on dev: every drill that ran came back in time, the gateway answered
+    again after each, and the broker lost no row. Visitor errors are reported, not budgeted."""
+    problems: list[str] = []
+    ran = [d for d in drills if not d.skipped]
+    if not ran:
+        problems.append("no drill ran: every one was skipped or none was recorded, which proves nothing")
+    for drill in ran:
+        if drill.ready_after_s is None:
+            problems.append(f"'{drill.what}': the target was not Ready again within the drill's timeout")
+        elif drill.ready_after_s > max_recovery:
+            problems.append(f"'{drill.what}' took {drill.ready_after_s:.0f}s to be Ready, over {max_recovery:.0f}s")
+    if samples:
+        for disruption in disruptions:
+            if recovery_after(samples, disruption) is None:
+                problems.append(f"no request succeeded after '{disruption.what}': the gateway never answered again")
+    else:
+        problems.append("no request was recorded: the visitor's view of the drills is missing")
+    if not before:
+        problems.append("no row count before the drills: data loss cannot be ruled out")
+    for table, rows in sorted(before.items()):
+        if table not in after:
+            problems.append(f"no row count of {table} after the drills: data loss cannot be ruled out")
+        elif after[table] < rows:
+            problems.append(f"{table} lost {rows - after[table]} rows ({rows} before, {after[table]} after)")
+    return problems
+
+
+def dev_report(samples: list[Sample], drills: list[Drill], before: dict[str, int], after: dict[str, int]) -> str:
+    lines = []
+    for drill in drills:
+        if drill.skipped:
+            lines.append(f"{drill.what}: skipped, {drill.skipped}")
+            continue
+        failed, total = errors_during(samples, drill, MAX_RECOVERY_DEV)
+        ready = f"{drill.ready_after_s:.0f}s" if drill.ready_after_s is not None else "never"
+        lines.append(f"{drill.what}: Ready again after {ready}, the visitor saw {failed} of {total} requests fail")
+    for table in sorted(before):
+        lines.append(f"{table}: {before[table]} rows before, {after.get(table, 'no count')} after")
+    return "\n".join(lines)
+
+
 def report(samples: list[Sample], disruptions: list[Disruption]) -> str:
     failed = sum(1 for sample in samples if sample.failed)
     outage, _ = longest_outage(samples)
@@ -199,6 +281,26 @@ def selftest() -> int:
     # a run too small to mean anything
     assert any("fewer than" in problem for problem in run([(1.0, False), (2.0, False)], [(1.5, "x")]))
 
+    # the dev profile: a killed pod back in 20 s with errors meanwhile, no row lost, holds
+    steady = [(float(t), 100 <= t < 115) for t in range(0, 400)]
+    samples = [Sample(at=at, failed=failed) for at, failed in steady]
+    kill = Disruption(100.0, "kill one portal pod")
+    back = Drill("kill one portal pod", 100.0, 120.0, 20.0, None)
+    counts = {"entities": 10, "attr_instances": 50}
+    assert not dev_verdict(samples, [kill], [back], counts, {"entities": 10, "attr_instances": 55})
+    # a lost row, a slow or missing recovery, a missing count and an all-skipped run each fail
+    lost = dev_verdict(samples, [kill], [back], counts, {"entities": 9, "attr_instances": 50})
+    assert lost == ["entities lost 1 rows (10 before, 9 after)"], lost
+    slow = Drill("kill one portal pod", 100.0, 300.0, 200.0, None)
+    assert any("over 120s" in p for p in dev_verdict(samples, [kill], [slow], counts, counts))
+    never = Drill("lose the postgres primary", 100.0, 400.0, None, None)
+    assert any("not Ready again" in p for p in dev_verdict(samples, [kill], [never], counts, counts))
+    assert any("data loss cannot be ruled out" in p for p in dev_verdict(samples, [kill], [back], counts, {}))
+    skipped = Drill("kill one portal pod", 100.0, 100.0, None, "node memory at 93 %")
+    assert any("no drill ran" in p for p in dev_verdict(samples, [], [skipped], counts, counts))
+    assert errors_during(samples, back, 0) == (15, 21), errors_during(samples, back, 0)
+    assert "skipped, node memory at 93 %" in dev_report(samples, [skipped], counts, counts)
+
     print("ok: the chaos verdict accepts a survivable disruption and rejects an outage, a slow "
           "recovery, a raised error rate, a dead surface, a tiny run and a run with no fault")
     return 0
@@ -210,6 +312,13 @@ def main() -> int:
     parser.add_argument("disruptions", nargs="?", help="the disruption log written by run.sh")
     parser.add_argument("--json", help="write the machine-readable verdict here")
     parser.add_argument("--selftest", action="store_true", help="check the verdict logic itself")
+    parser.add_argument("--profile", choices=["cc55", "dev"], default="cc55",
+                        help="cc55: the multi-replica budget; dev: the owner's drills on one replica")
+    parser.add_argument("--drills", help="dev: the drills.jsonl written by dev-drills.sh")
+    parser.add_argument("--counts", nargs=2, metavar=("BEFORE", "AFTER"),
+                        help="dev: the broker's row counts before and after, as JSON objects")
+    parser.add_argument("--max-recovery", type=float, default=MAX_RECOVERY_DEV,
+                        help="dev: seconds a target may take to be Ready again")
     args = parser.parse_args()
 
     if args.selftest:
@@ -219,6 +328,27 @@ def main() -> int:
 
     samples = read_samples(Path(args.csv))
     disruptions = read_disruptions(Path(args.disruptions))
+    if args.profile == "dev":
+        if not args.drills or not args.counts:
+            parser.error("--profile dev needs --drills and --counts")
+        drills = read_drills(Path(args.drills))
+        before, after = (json.loads(Path(p).read_text(encoding="utf-8") or "{}") for p in args.counts)
+        problems = dev_verdict(samples, disruptions, drills, before, after, args.max_recovery)
+        print(dev_report(samples, drills, before, after))
+        if args.json:
+            Path(args.json).write_text(json.dumps({
+                "problems": problems, "requests": len(samples),
+                "drills": [d.__dict__ for d in drills], "before": before, "after": after,
+            }, indent=2), encoding="utf-8")
+        for problem in problems:
+            print(f"  {problem}", file=sys.stderr)
+        skipped = sum(1 for d in drills if d.skipped)
+        if problems:
+            print("\nthe drills did not hold", file=sys.stderr)
+        else:
+            print(f"\nthe {len(drills) - skipped} drills that ran came back in time and no row was lost; "
+                  f"{skipped} skipped")
+        return 1 if problems else 0
     problems = verdict(samples, disruptions)
 
     print(report(samples, disruptions))
