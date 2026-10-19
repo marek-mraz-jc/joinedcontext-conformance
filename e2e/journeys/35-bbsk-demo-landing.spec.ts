@@ -5,7 +5,7 @@ import { join } from 'node:path';
 /**
  * T-4740: the BBSK demo's landing page as a visitor meets it, at `JC_BBSK_DEMO_URL` (prod
  * https://bbsk.smartcity.joinedcontext.com, the dev preview https://bbsk-demo.apps.dev.joinedcontext.com).
- * The DEMO ribbon on every width, bbsk.sk's own sections, the six question cards, the assistant
+ * The DEMO ribbon on every width, bbsk.sk's own sections, the hero's button and the four question cards (owner 2026-10-19T13:49Z), the assistant
  * docked beside the page on a wide screen and full-screen on a phone, and no request to any host but the page's own and the
  * assistant's. It asks the assistant nothing, so it spends no model token. With `JC_EVIDENCE_DIR`
  * set it keeps one screenshot per width there.
@@ -21,7 +21,7 @@ const RIBBON = {
 
 for (const width of [1440, 390]) {
   for (const [path, ribbon] of Object.entries(RIBBON)) {
-    test(`BBSK demo ${path} at ${width} px: DEMO, six cards, the docked assistant, no third party`, async ({ page }) => {
+    test(`BBSK demo ${path} at ${width} px: DEMO, four cards, the docked assistant in Slovak, no third party`, async ({ page }) => {
       await page.setViewportSize({ width, height: width > 600 ? 900 : 844 });
       const hosts = new Set<string>();
       page.on('request', (request) => hosts.add(new URL(request.url()).host));
@@ -31,8 +31,12 @@ for (const width of [1440, 390]) {
 
       await expect(page.locator('.ribbon')).toHaveText(ribbon);
       await expect(page.locator('.ribbon')).toBeVisible();
+      // One line on a phone too: the short form, nothing wraps into the navigation (owner 13:50Z item 6).
+      const ribbonBox = await page.locator('.ribbon').boundingBox();
+      expect(ribbonBox && ribbonBox.height).toBeLessThanOrEqual(40);
+      await expect(page.locator('.ribbon__long')).toBeVisible({ visible: width > 640 });
       await expect(page.locator('meta[name="robots"]')).toHaveAttribute('content', 'noindex, nofollow');
-      await expect(page.locator('.cards button')).toHaveCount(6);
+      await expect(page.locator('.cards button')).toHaveCount(4);
       await expect(page.locator('#sluzby')).toHaveText('Služby');
       await expect(page.locator('img')).toHaveCount(0);
       if (EVIDENCE) {
@@ -40,11 +44,14 @@ for (const width of [1440, 390]) {
         await page.screenshot({ path: join(EVIDENCE, `landing-sk-${width}.png`), fullPage: true });
       }
 
-      await page.locator('.cards button').first().click();
+      await page.locator('.hero__ask').click();
       const frame = page.locator('#jc-assistant iframe');
       await expect(frame).toBeVisible();
       // The assistant's own page loads inside: its frame-ancestors admit this host.
       await expect(page.frameLocator('#jc-assistant iframe').locator('body')).not.toBeEmpty({ timeout: 20_000 });
+      // The page is Slovak, so the panel is, whatever the browser's language (owner 13:50Z item 3).
+      await expect(frame).toHaveAttribute('src', /[?&]lang=sk(&|$)/);
+      await expect(page.frameLocator('#jc-assistant iframe').locator('html')).toHaveAttribute('lang', 'sk');
       const docked = await page.evaluate(() => document.documentElement.classList.contains('jc-docked'));
       expect(docked).toBe(width >= 1100);
       if (width >= 1100) {
