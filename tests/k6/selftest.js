@@ -181,6 +181,17 @@ export function samples() {
       'an unknown kind is refused': () => refuses('graphql\tGET\thttps://h/e'),
       'an unknown method is refused': () => refuses('ngsi\tPUT\thttps://h/e'),
       'a row without a url is refused': () => refuses('ngsi\tGET'),
+      'a body on a GET is refused': () => refuses('ngsi\tGET\thttps://h/e\t200\t{}'),
+      'a body that is not JSON is refused': () => refuses('mcp\tPOST\thttps://h/e/mcp\t200\t{call'),
+    });
+    // T-4754: geo and temporal are kinds of their own, and an MCP row may carry its tools/call.
+    const call = '{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"query_entities"}}';
+    const typed = parseRequests(
+      `geo\tGET\thttps://h/e/ngsi-ld/v1/entities?type=T&georel=near\ntemporal\tGET\thttps://h/e/ngsi-ld/v1/temporal/entities?type=T&lastN=5\nmcp\tPOST\thttps://h/e/mcp\t200\t${call}`,
+    ).requests;
+    check(typed, {
+      'geo and temporal rows are kept': (r) => r[0].kind === 'geo' && r[1].kind === 'temporal',
+      'an MCP row keeps its body': (r) => r[2].body === call && r[0].body === undefined,
     });
   }
 }

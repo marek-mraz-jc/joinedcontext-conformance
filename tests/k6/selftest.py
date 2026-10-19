@@ -453,6 +453,37 @@ def main() -> int:
         if "1 skipped" not in mix.stdout:
             failures.append(f"the API mix summary does not name the skipped row:\n{mix.stdout}")
 
+    # 9. T-4754: the 50 -> 500 ramp, geo and temporal as kinds of their own, and the p95 budget
+    # going red when the stack misses it.
+    ramp_list = os.path.join(mix_dir, "ramp.tsv")
+    with open(ramp_list, "w", encoding="utf-8") as out:
+        out.write(f"geo\tGET\t{stub}/ngsi-ld/v1/entities?type=Item&georel=near%3BmaxDistance%3D%3D500\n")
+        out.write(f"temporal\tGET\t{stub}/ngsi-ld/v1/temporal/entities?type=Item&lastN=5\n")
+    ramp_env = {
+        "JC_K6_REQUESTS": ramp_list,
+        "JC_REPORTS_DIR": mix_dir,
+        "JC_K6_RAMP": "4:12:2s",
+        "JC_K6_DURATION": "2s",
+        "JC_K6_VUS": "5",
+    }
+    ramp_args = ["k6", "run", "--quiet", os.path.join(HERE, "api-mix-100rps.js")]
+    ramp = k6(ramp_args, {**ramp_env, "JC_K6_P95_MS": "500"}, workdir)
+    if ramp.returncode != 0:
+        failures.append(f"the ramp did not run against the stub:\n{ramp.stdout}\n{ramp.stderr}")
+    else:
+        ramp_metrics = json.load(open(os.path.join(mix_dir, "summary.json")))["metrics"]
+        for kind in ("geo", "temporal"):
+            if ramp_metrics.get(f"http_reqs{{kind:{kind}}}", {}).get("values", {}).get("count", 0) < 1:
+                failures.append(f"the ramp sent no {kind} request")
+        if "4→12/s over 2s" not in ramp.stdout or "p95 budget 500 ms" not in ramp.stdout:
+            failures.append(f"the ramp's summary does not name the ramp and the budget:\n{ramp.stdout}")
+    missed = k6(ramp_args, {**ramp_env, "JC_K6_P95_MS": "0"}, workdir)
+    if missed.returncode == 0 or "http_req_duration{kind:geo}" not in missed.stdout:
+        failures.append(f"a p95 budget no request can meet did not go red:\n{missed.stdout}")
+    bad_ramp = k6(ramp_args, {**ramp_env, "JC_K6_RAMP": "500:50:1m"}, workdir)
+    if bad_ramp.returncode == 0 or "JC_K6_RAMP" not in bad_ramp.stdout + bad_ramp.stderr:
+        failures.append("a ramp that falls was not refused")
+
     for failure in failures:
         print(f"FAIL {failure}", file=sys.stderr)
     if failures:

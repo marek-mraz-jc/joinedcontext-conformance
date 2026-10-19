@@ -8,6 +8,11 @@
 //   JC_K6_VUS        pre-allocated VUs (default 60: 100/s at 0.3 s each needs 30)
 //   JC_K6_WS_SUBS    WebSocket subscribers spread over the list's ws rows (default 10, the
 //                    gateway's per-caller cap EP-107)
+//   JC_K6_RAMP       <from>:<to>:<time>, e.g. 50:500:5m (T-4754): the rate climbs from <from> to
+//                    <to> over <time>, then holds <to> for JC_K6_DURATION; JC_K6_RATE is unused
+//   JC_K6_P95_MS     each kind's p95 budget in ms (default 1000; T-4754 asks 500)
+// Whatever the budget, a run whose p95 passes 2 s or whose errors pass 2 % aborts once it has run
+// a minute, so a production run never keeps a slow or failing stack under load (T-4754).
 import http from 'k6/http';
 import { check } from 'k6';
 import exec from 'k6/execution';
@@ -17,9 +22,34 @@ import { WebSocket } from 'k6/websockets';
 import { setTimeout } from 'k6/timers';
 import { parseRequests } from './requests.js';
 
-const RATE = Number(__ENV.JC_K6_RATE || 100);
 const DURATION = __ENV.JC_K6_DURATION || '1m';
-const VUS = Number(__ENV.JC_K6_VUS || 60);
+const P95 = Number(__ENV.JC_K6_P95_MS || 1000);
+
+function secondsOf(text, name) {
+  const m = /^(\d+)(s|m)$/.exec(text);
+  if (!m) {
+    throw new Error(`${name} '${text}': use <n>s or <n>m`);
+  }
+  return Number(m[1]) * (m[2] === 'm' ? 60 : 1);
+}
+
+// The ramp, when one is asked for: from, to and its length in seconds.
+export function rampOf(text) {
+  if (!text) {
+    return null;
+  }
+  const parts = text.split(':');
+  const [from, to] = parts.slice(0, 2).map(Number);
+  if (parts.length !== 3 || !(from > 0) || !(to >= from)) {
+    throw new Error(`JC_K6_RAMP '${text}': use <from>:<to>:<time> with 0 < from <= to, e.g. 50:500:5m`);
+  }
+  return { from, to, time: parts[2], seconds: secondsOf(parts[2], 'JC_K6_RAMP') };
+}
+
+const RAMP = rampOf(__ENV.JC_K6_RAMP);
+const RATE = RAMP ? RAMP.to : Number(__ENV.JC_K6_RATE || 100);
+// A request takes about 0.3 s, so the peak rate needs 0.3 VUs per request a second; twice that.
+const VUS = Number(__ENV.JC_K6_VUS || Math.max(60, Math.ceil(RATE * 0.6)));
 const WS_SUBS = Number(__ENV.JC_K6_WS_SUBS || 10);
 const LIST = __ENV.JC_K6_REQUESTS;
 if (!LIST) {
@@ -42,21 +72,19 @@ const wsOpened = new Rate('ws_opened');
 const wsSubscribed = new Rate('ws_subscribed');
 const wsMessages = new Counter('ws_messages');
 
-const seconds = (() => {
-  const m = /^(\d+)(s|m)$/.exec(DURATION);
-  if (!m) {
-    throw new Error(`JC_K6_DURATION '${DURATION}': use <n>s or <n>m`);
-  }
-  return Number(m[1]) * (m[2] === 'm' ? 60 : 1);
-})();
+const hold = secondsOf(DURATION, 'JC_K6_DURATION');
+// The whole run, ramp included, which the per-kind table divides its counts by.
+const seconds = hold + (RAMP ? RAMP.seconds : 0);
+const abort = (threshold) => ({ threshold, abortOnFail: true, delayAbortEval: '1m' });
 
 const thresholds = {
-  http_req_failed: ['rate<0.01'],
+  http_req_failed: ['rate<0.01', abort('rate<0.02')],
+  http_req_duration: [abort('p(95)<2000')],
   dropped_iterations: ['count<1'],
   checks: ['rate>0.99'],
 };
 for (const kind of KINDS) {
-  thresholds[`http_req_duration{kind:${kind}}`] = ['p(95)<1000'];
+  thresholds[`http_req_duration{kind:${kind}}`] = [`p(95)<${P95}`];
   // listed so the summary carries each kind's count and errors, never a gate
   thresholds[`http_reqs{kind:${kind}}`] = ['count>=0'];
   thresholds[`http_req_failed{kind:${kind}}`] = ['rate>=0'];
@@ -65,15 +93,25 @@ for (const kind of KINDS) {
   }
 }
 const scenarios = {
-  mix: {
-    executor: 'constant-arrival-rate',
-    rate: RATE,
-    timeUnit: '1s',
-    duration: DURATION,
-    preAllocatedVUs: VUS,
-    maxVUs: VUS * 4,
-    exec: 'mix',
-  },
+  mix: RAMP
+    ? {
+      executor: 'ramping-arrival-rate',
+      startRate: RAMP.from,
+      timeUnit: '1s',
+      stages: [{ target: RAMP.to, duration: RAMP.time }, { target: RAMP.to, duration: DURATION }],
+      preAllocatedVUs: VUS,
+      maxVUs: VUS * 4,
+      exec: 'mix',
+    }
+    : {
+      executor: 'constant-arrival-rate',
+      rate: RATE,
+      timeUnit: '1s',
+      duration: DURATION,
+      preAllocatedVUs: VUS,
+      maxVUs: VUS * 4,
+      exec: 'mix',
+    },
 };
 if (SOCKETS.length > 0 && WS_SUBS > 0) {
   scenarios.subscribers = {
@@ -101,7 +139,7 @@ export function mix() {
   let answer;
   if (request.method === 'POST') {
     params.headers = { 'content-type': 'application/json', accept: 'application/json, text/event-stream' };
-    answer = http.post(request.url, MCP_BODY, params);
+    answer = http.post(request.url, request.body || MCP_BODY, params);
   } else {
     answer = http.get(request.url, params);
   }
@@ -189,8 +227,9 @@ export function handleSummary(data) {
   const failed = Object.entries(data.metrics)
     .filter(([, m]) => m.thresholds && Object.values(m.thresholds).some((t) => !t.ok))
     .map(([name]) => name);
-  const head = `k6 API mix (T-4714): ${HTTP.length} requests (${parsed[0].skipped.length} skipped), ` +
-    `${RATE}/s for ${DURATION}, ${SOCKETS.length ? WS_SUBS : 0} WebSocket subscribers\n` +
+  const head = `k6 API mix (T-4714, T-4754): ${HTTP.length} requests (${parsed[0].skipped.length} skipped), ` +
+    `${RAMP ? `${RAMP.from}→${RAMP.to}/s over ${RAMP.time}, then ` : ''}${RATE}/s for ${DURATION}, ` +
+    `p95 budget ${P95} ms per kind, ${SOCKETS.length ? WS_SUBS : 0} WebSocket subscribers\n` +
     `dropped iterations: ${value(data, 'dropped_iterations', 'count') || 0}; ` +
     `ws opened ${value(data, 'ws_opened', 'rate')}, subscribed ${value(data, 'ws_subscribed', 'rate')}\n` +
     `thresholds: ${failed.length ? `RED ${failed.join(', ')}` : 'all green'}\n`;

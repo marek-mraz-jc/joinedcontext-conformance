@@ -28,6 +28,15 @@ jc-conformance k6
 JC_K6_SCRIPT=api-mix-100rps.js JC_K6_REQUESTS=requests-mix-dev.tsv JC_K6_RATE=100 JC_K6_DURATION=1m \
 jc-conformance k6
 
+# T-4754: every public dataset of a catalogue asked on every surface (NGSI-LD page and count,
+# geo near its own entity, temporal last week, OData, OGC, CSV, an MCP tools/call, schema, CKAN),
+# probed once, anonymous, paced under the owner's limit (50/min, 500 per run)
+python3 make_requests.py https://opendata.smartcity.joinedcontext.com > requests-prod.tsv
+# then the ramp: 50/s rising to 500/s over 5 minutes, 500/s held 10 minutes, p95 under 500 ms per
+# kind; the run aborts by itself after a minute of p95 over 2 s or errors over 2 %
+JC_K6_SCRIPT=api-mix-100rps.js JC_K6_REQUESTS=requests-prod.tsv JC_K6_RAMP=50:500:5m \
+JC_K6_DURATION=10m JC_K6_P95_MS=500 jc-conformance k6
+
 # T-0065: Latency and throughput (default)
 GATEWAY_URL=https://host/cs/ovzdusie/ngsi-ld/v1 \
 BROKER_URL=http://broker:9090/ngsi-ld/v1 \
