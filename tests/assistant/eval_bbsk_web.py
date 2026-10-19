@@ -262,7 +262,9 @@ def run(args):
     items = [q for q in spec if args.set == "all" or q["set"] == args.set]
     if args.only:
         items = [q for q in items if q["id"] in args.only]
-    injection = json.loads((HERE / "fixtures" / "injection-bbsk.json").read_text()) if args.set in ("tune", "all") else None
+    # The widget pictures hold the questions of the set, not the injection probe, which is an API call.
+    injection = (json.loads((HERE / "fixtures" / "injection-bbsk.json").read_text())
+                 if args.set in ("tune", "all") and not args.events else None)
     asked = items + ([{"id": injection["id"], "q": injection["q"]}] if injection and not args.only else [])
     ranked = json.loads(Path(args.retrieval).read_text()) if args.retrieval else {}
     recall = retrieval(items, ranked)
@@ -273,6 +275,11 @@ def run(args):
         rows = []
         for item in asked:
             for attempt in (1, 2):
+                if args.events:
+                    # The answer screens.mjs asked through the widget page and pictured (T-4688).
+                    from eval_opendata import pictured
+                    events, ttft, total = pictured(Path(args.events), item["id"])
+                    break
                 try:
                     events, ttft, total = ask(args.base, public_id, args.origin, item["q"])
                     break
@@ -283,7 +290,8 @@ def run(args):
                     time.sleep(65)
             rows.append(record(item, events, ttft, total, model, prices))
             print(f"{model} {item['id']}: {rows[-1]['tokensIn']} tokens in, {rows[-1]['totalMs']:.0f} ms", file=sys.stderr)
-            time.sleep(args.pace)
+            if not args.events:
+                time.sleep(args.pace)
         summary, gates = judge(spec, rows, injection)
         passed &= all(gates.values())
         out["results"][model] = {"deployment": public_id, "summary": summary, "gates": gates, "rows": rows}
@@ -365,6 +373,7 @@ def main(argv):
     p.add_argument("--origin", default="https://assistant.dev.joinedcontext.com")
     p.add_argument("--pace", type=float, default=7.0)
     p.add_argument("--out", default="eval-bbsk-web")
+    p.add_argument("--events", help="grade the answers screens.mjs pictured in this folder instead of asking")
     p.add_argument("--selftest", action="store_true")
     p.add_argument("--recheck", action="store_true", help="list the HTML truths whose quote left its page")
     args = p.parse_args(argv)

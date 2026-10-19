@@ -4,7 +4,9 @@
 // at 400 px. The chat's event stream is kept beside the pictures, so `eval_opendata.py --events DIR`
 // grades the very answer that was pictured instead of asking again.
 //   node tests/assistant/screens.mjs --base https://assistant.dev.joinedcontext.com --deployment data-eval-gemini \
-//     --out tasks/evidence/T-4680/screens/<run-ts> [--only od-57 od-58]
+//     --out tasks/evidence/T-4680/screens/<run-ts> [--only od-57 od-58] [--questions bbsk_web_questions.json]
+// Beside the settle time, timings.json keeps what a person waits for (owner 2026-10-19 07:03Z): the
+// first words of the answer on the page and the first chart or map frame loaded, both from the send.
 // The page is the anonymous visitor's: no token, no cookie and no personal data reach a picture.
 import assert from "node:assert/strict";
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
@@ -84,17 +86,43 @@ async function wholeHeight(page, width) {
 // The visitor's browser speaks the question's language, as a resident's would.
 const LOCALES = { sk: "sk-SK", cs: "cs-CZ", en: "en-GB" };
 
-/** Sends one message and waits until its answer has settled; the ms it took. */
+/** Sends one message and waits until its answer has settled: the ms until then, until the answer's
+ * first words were on the page and until its first chart or map was painted (null when none). */
 async function send(page, text) {
-  const started = Date.now();
   const input = page.locator(".jc-chat textarea").last();
   await input.fill(text);
+  // The page notes the moments itself, so a screenshot or a slow poll never shifts them.
+  await page.evaluate(() => {
+    const answers = document.querySelectorAll(".jc-bot .jc-answer").length;
+    // A chart or a map is its own sandboxed frame (iframe.jc-viz): painted is when it has loaded.
+    const frames = new Set(document.querySelectorAll("iframe.jc-viz"));
+    const seen = { start: performance.now(), first: null, visual: null };
+    window.__jcSeen = seen;
+    const look = () => {
+      const all = document.querySelectorAll(".jc-bot .jc-answer");
+      if (seen.first === null && all.length > answers && all[all.length - 1].textContent.trim()) {
+        seen.first = performance.now() - seen.start;
+      }
+      for (const frame of document.querySelectorAll("iframe.jc-viz")) {
+        if (frames.has(frame)) continue;
+        frames.add(frame);
+        frame.addEventListener("load", () => {
+          if (seen.visual === null) seen.visual = performance.now() - seen.start;
+        });
+      }
+    };
+    new MutationObserver(look).observe(document.body, { childList: true, subtree: true, characterData: true });
+  });
+  const started = Date.now();
   await input.press("Enter");
   // The send button hides while an answer streams and comes back when it has settled.
   const button = page.locator('.jc-chat button[type="submit"]').last();
   await button.waitFor({ state: "hidden", timeout: 10_000 }).catch(() => {});
   await button.waitFor({ state: "visible", timeout: SETTLE_MS });
-  return Date.now() - started;
+  const settledMs = Date.now() - started;
+  const seen = await page.evaluate(() => window.__jcSeen);
+  const ms = (value) => (value === null ? null : Math.round(value));
+  return { settledMs, firstTextMs: ms(seen.first), visualMs: ms(seen.visual) };
 }
 
 async function ask(browser, base, deployment, q) {
@@ -116,15 +144,15 @@ async function ask(browser, base, deployment, q) {
   for (const turn of q.history || []) {
     if (turn.role === "user") await send(page, turn.text);
   }
-  const settledMs = await send(page, q.q);
+  const times = await send(page, q.q);
   await page.waitForLoadState("networkidle", { timeout: 15_000 }).catch(() => {});
-  return { context, page, stream: await stream, settledMs };
+  return { context, page, stream: await stream, times };
 }
 
 async function main() {
   const opts = args(process.argv);
-  const spec = JSON.parse(readFileSync(join(here, "opendata_questions.json"), "utf8"));
-  const questions = spec.questions.filter((q) => !opts.only.length || opts.only.includes(q.id));
+  const spec = JSON.parse(readFileSync(join(here, opts.questions || "opendata_questions.json"), "utf8"));
+  const questions = (Array.isArray(spec) ? spec : spec.questions).filter((q) => !opts.only.length || opts.only.includes(q.id));
   mkdirSync(opts.out, { recursive: true });
   const browser = await chromium.launch();
   const timings = {};
@@ -141,15 +169,15 @@ async function main() {
           console.error(`${name}: ${timings[name].error}`);
           continue;
         }
-        const { context, page, stream, settledMs } = asked;
+        const { context, page, stream, times } = asked;
         writeFileSync(join(opts.out, `${name}.sse`), stream);
         for (const [label, [width]] of Object.entries(WIDTHS)) {
           await page.setViewportSize({ width, height: WIDTHS[label][1] });
           await wholeHeight(page, width);
           await page.screenshot({ path: join(opts.out, `${name}-${label}.png`), fullPage: true });
         }
-        timings[name] = { settledMs };
-        console.error(`${name}: settled in ${(settledMs / 1000).toFixed(1)} s`);
+        timings[name] = times;
+        console.error(`${name}: settled in ${(times.settledMs / 1000).toFixed(1)} s, first words ${times.firstTextMs} ms, visual ${times.visualMs} ms`);
         await context.close();
         await new Promise((r) => setTimeout(r, Number(opts.pace || 7) * 1000));
       }
