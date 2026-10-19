@@ -131,6 +131,15 @@
      "observed": {"value": ["https://www.bbsk.sk/kontakty-podnety-ohlasenie-problemu-na-cyklochodniku"], "observedAt": "2026-10-18T22:34:00.123561+00:00"}},
     {"id": "od-50", "lang": "sk", "kind": "count", "persona": "cyclist", "why": "the owner asked it and was told the data holds none", "q": "Sú dostupné dáta o cyklotrasách na Slovensku?", "must": [], "source": "Cykloturistické trasy - línie (BBSK): NGSI-LD CycleRoute on bbsk-otvorene-data, count=true",
      "truth": {"count": {"slug": "6b4yqhzqieutqcoeew5rnxrx5udqeert", "type": "CycleRoute"}, "expect": "number"},
-     "observed": {"value": 1005, "observedAt": "2026-10-18T22:34:19.610212+00:00"}}
+     "observed": {"value": 1005, "observedAt": "2026-10-18T22:34:19.610212+00:00"}},
+    {"id": "od-51", "lang": "sk", "kind": "area", "persona": "resident", "why": "the owner asked for an area, not a point (T-4697)", "q": "Ukáž mi hranicu obce Badín.", "must": [["Badín"]], "source": "Hranice okresov a obcí (BBSK): NGSI-LD AdministrativeArea on bbsk-hranice, the municipality named Badín, its location Polygon and surfaceArea",
+     "truth": {"shape": {"slug": "cx5p4ldnpyf2vzn6sjt4vjiykd3734t6", "type": "AdministrativeArea", "name": "Badín"}, "expect": "shape"},
+     "observed": {"value": {"id": "urn:ngsi-ld:AdministrativeArea:bbsk.sk:bbsk-registre:SK0321508454", "bbox": [19.00742, 48.629377, 19.153752, 48.717045], "areas": [34389985, 34120075.99998655]}, "observedAt": "2026-10-19T02:52:21.780469+00:00"}},
+    {"id": "od-52", "lang": "en", "kind": "area", "persona": "visitor", "why": "a district of another city, asked in English (T-4697)", "q": "Show me the district Praha 7 on a map.", "must": [["Praha 7"]], "source": "Městské části (Praha): NGSI-LD AdministrativeArea on praha-mestske-casti, the district named Praha 7, its location Polygon",
+     "truth": {"shape": {"slug": "g3jcsy27jw4zqctgo67khc7irh2z7pgs", "type": "AdministrativeArea", "name": "Praha 7"}, "expect": "shape"},
+     "observed": {"value": {"id": "urn:ngsi-ld:AdministrativeArea:hel.fi:praha-mesto:district-500186", "bbox": [14.405345779000072, 50.09221800100005, 14.46052527300003, 50.11596808000007], "areas": [7072086.167816503]}, "observedAt": "2026-10-19T02:52:25.819133+00:00"}},
+    {"id": "od-53", "lang": "sk", "kind": "area", "persona": "resident", "why": "neighbours by shape, not by distance (T-4697)", "q": "Ktoré obce susedia s Banskou Bystricou?", "must": [], "source": "Hranice okresov a obcí (BBSK): the municipalities of bbsk-hranice whose outlines share a border with the municipality Banská Bystrica (two or more common vertices)",
+     "truth": {"touches": {"slug": "cx5p4ldnpyf2vzn6sjt4vjiykd3734t6", "type": "AdministrativeArea", "name": "Banská Bystrica"}, "expect": "all"},
+     "observed": {"value": ["Badín", "Harmanec", "Horná Mičiná", "Horné Pršany", "Kremnica", "Králiky", "Kynceľová", "Malachov", "Môlča", "Nemce", "Poniky", "Riečka", "Selce", "Slovenská Ľupča", "Staré Hory", "Tajov", "Vlkanová", "Špania Dolina"], "observedAt": "2026-10-19T02:52:29.593934+00:00"}}
   ]
 }

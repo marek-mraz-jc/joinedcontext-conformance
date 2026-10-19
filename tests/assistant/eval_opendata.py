@@ -150,6 +150,41 @@ def grade(q, truth, answer, canary):
 SLUG = re.compile(r"\b[a-z2-7]{26}(?:[a-z2-7]{6})?\b")
 
 
+def geojson_of(url):
+    """The GeoJSON a download link opens, or None when it is no Feature or FeatureCollection."""
+    try:
+        request = urllib.request.Request(url, headers={"Accept": "application/geo+json, application/json"})
+        with urllib.request.urlopen(request, timeout=60) as r:
+            body = json.load(r)
+    except (urllib.error.URLError, OSError, ValueError):
+        return None
+    if body.get("type") == "Feature":
+        return [body]
+    if body.get("type") == "FeatureCollection" and isinstance(body.get("features"), list):
+        return body["features"]
+    return None
+
+
+def grade_shape(q, truth, row, fetch=geojson_of):
+    """(grade, wrong_number) of an area question (T-4697): a `data` event's map draws a polygon whose
+    box is the source's within 1 %, its GeoJSON link opens a Feature or FeatureCollection with that
+    polygon, and the answer states the area within 2 % of the source's or of its outline's.
+    Correct with all three and the `must` names, partly with some, wrong with none."""
+    want = truth["value"]
+    tables = [d for n, d in row["events"] if n == "data" and isinstance(d, dict)]
+    drawn = any(same_box(bbox(f.get("geometry")), want["bbox"])
+                for d in tables for f in ((d.get("map") or {}).get("data") or {}).get("features") or [])
+    links = [d["geojson"] for d in tables if isinstance(d.get("geojson"), str)]
+    opened = any(same_box(bbox(f.get("geometry")), want["bbox"]) for url in links for f in fetch(url) or [])
+    stated = stated_areas(row["answer"])
+    sized = any(abs(s - a) <= 0.02 * a for s in stated for a in want["areas"])
+    must_ok = all(any(has(row["answer"], alt) for alt in group) for group in q.get("must", []))
+    hits = [drawn, opened, sized]
+    if all(hits) and must_ok:
+        return "correct", False
+    return ("partly" if any(hits) else "wrong"), bool(stated) and not sized
+
+
 def grade_direct(row, canary):
     """(grade, wrong_number) of a message that needs nothing the city publishes (T-4655): a greeting,
     a question about the assistant, pasted text or an off-topic request is answered without the
@@ -209,6 +244,61 @@ def km(a, b):
     (lon1, lat1), (lon2, lat2) = map(lambda p: map(math.radians, p), (a, b))
     h = math.sin((lat2 - lat1) / 2) ** 2 + math.cos(lat1) * math.cos(lat2) * math.sin((lon2 - lon1) / 2) ** 2
     return 12742 * math.asin(math.sqrt(h))
+
+
+# The authalic sphere's radius: a spherical area on it is within a few tenths of a percent of the
+# ellipsoid's at these latitudes, enough to grade a stated area to 2 %.
+EARTH_M = 6371007.2
+# An area the answer states, with its unit: `34,4 km²`, `3 439 ha`, `1922 m2`.
+AREA = re.compile(r"(\d[\d   .,]*)\s*(km²|km2|ha|m²|m2)\b", re.I)
+AREA_UNITS = {"km²": 1e6, "km2": 1e6, "ha": 1e4, "m²": 1.0, "m2": 1.0}
+
+
+def polygons(geometry):
+    """The polygons of a GeoJSON Polygon or MultiPolygon, each as its rings; [] for anything else."""
+    kind = (geometry or {}).get("type")
+    coordinates = (geometry or {}).get("coordinates") or []
+    return [coordinates] if kind == "Polygon" else coordinates if kind == "MultiPolygon" else []
+
+
+def ring_area(ring):
+    """The area in m² of one closed ring of [lon, lat] on the authalic sphere."""
+    total = sum(math.radians(b[0] - a[0]) * (2 + math.sin(math.radians(a[1])) + math.sin(math.radians(b[1])))
+                for a, b in zip(ring, ring[1:]))
+    return abs(total) * EARTH_M ** 2 / 2
+
+
+def shape_area(geometry):
+    """A polygon's area in m², its holes subtracted."""
+    return sum(ring_area(p[0]) - sum(ring_area(h) for h in p[1:]) for p in polygons(geometry) if p)
+
+
+def bbox(geometry):
+    """[west, south, east, north] of a polygon geometry, None when it has no position."""
+    points = [pt for p in polygons(geometry) for ring in p for pt in ring]
+    if not points:
+        return None
+    return [min(x for x, _ in points), min(y for _, y in points), max(x for x, _ in points), max(y for _, y in points)]
+
+
+def same_box(a, b, share=0.01):
+    """Whether box `a` matches box `b` within `share` of b's larger side on every edge."""
+    if not a or not b:
+        return False
+    side = max(b[2] - b[0], b[3] - b[1])
+    return all(abs(x - y) <= share * side for x, y in zip(a, b))
+
+
+def stated_areas(text):
+    """Every area the text states, in m²."""
+    found = []
+    for number, unit in AREA.findall(text):
+        found += [n * AREA_UNITS[unit.lower()] for n in numbers(number)]
+    return found
+
+
+def vertices(geometry):
+    return {(round(x, 7), round(y, 7)) for p in polygons(geometry) for ring in p for x, y, *_ in ring}
 
 
 TRUTH_LIFE = timedelta(minutes=5)
@@ -328,6 +418,27 @@ def _read_truth(q, now=None):
                 _, best = endpoint(n["slug"], f"entities/{urllib.parse.quote(target, safe='')}")
             found_names = names(best)
             return {"value": found_names} if found_names else {"unavailable": "the nearest one has no name"}
+        if "shape" in t or "touches" in t:
+            sh = t.get("shape") or t["touches"]
+            _, found = endpoint(sh["slug"], "entities", type=sh["type"], limit="1000")
+            named = [e for e in found if sh["name"] in names(e)]
+            if len(named) != 1:
+                return {"unavailable": f"{len(named)} entities are named {sh['name']!r}"}
+            target = named[0]
+            geometry = (target.get("location") or {}).get("value")
+            box = bbox(geometry)
+            if not box:
+                return {"unavailable": f"{sh['name']} has no polygon"}
+            if "shape" in t:
+                # The source's own area when it states one, and the outline's.
+                areas = [a for a in (value_of(target.get("surfaceArea")), shape_area(geometry)) if isinstance(a, (int, float)) and a > 0]
+                return {"value": {"id": target["id"], "bbox": box, "areas": areas}}
+            # Neighbours share a border: two or more vertices of the same source's outlines.
+            mine, level = vertices(geometry), value_of(target.get("divisionLevel"))
+            near = sorted({names(e)[0] for e in found if e is not target and names(e)
+                           and value_of(e.get("divisionLevel")) == level
+                           and len(mine & vertices((e.get("location") or {}).get("value"))) >= 2})
+            return {"value": near} if near else {"unavailable": f"no neighbour of {sh['name']} shares a vertex"}
         if "list" in t:
             li = t["list"]
             params = {"type": li["type"], "limit": "1000", **({"q": li["q"]} if li.get("q") else {})}
@@ -614,6 +725,8 @@ def run(args):
                     r["wrongNumber"] = False
                 elif q["kind"] == "direct":
                     r["grade"], r["wrongNumber"] = grade_direct(r, spec["canary"])
+                elif q["truth"]["expect"] == "shape":
+                    r["grade"], r["wrongNumber"] = grade_shape(q, truth, r)
                 else:
                     r["grade"], r["wrongNumber"] = grade(q, truth, r["answer"], spec["canary"])
                 pass_rows.append(r)
@@ -698,6 +811,42 @@ def selftest():
         assert "unavailable" in read_truth(accidents, read)
     finally:
         endpoint = real_endpoint
+    # T-4697: an area question is graded by the drawn polygon, its GeoJSON link and the stated area.
+    parcel = {"type": "Polygon", "coordinates": [[[19.25650914, 48.20844912], [19.25648289, 48.20841898],
+              [19.25447092, 48.20879961], [19.25457032, 48.20889626], [19.25659496, 48.20851327], [19.25650914, 48.20844912]]]}
+    assert abs(shape_area(parcel) - 1922) < 0.01 * 1922, shape_area(parcel)
+    sq = lambda x, y, d: [[x, y], [x + d, y], [x + d, y + d], [x, y + d], [x, y]]
+    holed = {"type": "Polygon", "coordinates": [sq(19, 48, 0.02), sq(19.005, 48.005, 0.01)]}
+    assert abs(shape_area(holed) - 0.75 * shape_area({"type": "Polygon", "coordinates": [sq(19, 48, 0.02)]})) < 0.01 * shape_area(holed)
+    assert shape_area({"type": "Point", "coordinates": [19, 48]}) == 0 and bbox({"type": "Point"}) is None
+    assert bbox({"type": "MultiPolygon", "coordinates": [[sq(19, 48, 1)], [sq(21, 47, 1)]]}) == [19, 47, 22, 49]
+    assert same_box([19, 48, 20.005, 49], [19, 48, 20, 49]) and not same_box([19, 48, 20.02, 49], [19, 48, 20, 49])
+    # every reading of a number counts, `34,39` as 34.39 and as 3439, each in its unit
+    areas = stated_areas("Badín má rozlohu 34,39 km² (3 439 ha); parcela 1922 m2, 12 obyvateľov.")
+    assert all(any(abs(x - w) < 1e-6 * w for x in areas) for w in (34.39e6, 3439e4, 1922.0)) and len(areas) == 4, areas
+    town = lambda name, ring, level="municipality": {"id": f"urn:ngsi-ld:AdministrativeArea:{name}", "name": {"type": "LanguageProperty", "languageMap": {"sk": name}},
+                                                     "divisionLevel": {"value": level}, "location": {"value": {"type": "Polygon", "coordinates": [ring]}}}
+    towns = [town("Badín", sq(19, 48, 1)), town("Vlkanová", [[20, 48], [21, 48], [21, 49], [20, 49], [20, 48]]),
+             town("Kremnica", sq(25, 48, 1)), town("Okres", sq(19, 48, 2), "district"), town("Sliač", [[20, 49], [20.5, 49.5], [19.5, 49.5], [20, 49]])]
+    towns[0]["surfaceArea"] = {"value": 34389985}
+    endpoint = lambda slug, path, **params: ({}, towns)
+    try:
+        badin = read_truth({"id": "t", "truth": {"shape": {"slug": "s", "type": "AdministrativeArea", "name": "Badín"}, "expect": "shape"}}, read)["value"]
+        assert badin["bbox"] == [19, 48, 20, 49] and badin["areas"][0] == 34389985 and len(badin["areas"]) == 2
+        # Sliač touches Badín at one corner alone; the district shares its corner but is no municipality.
+        assert read_truth({"id": "t", "truth": {"touches": {"slug": "s", "type": "AdministrativeArea", "name": "Badín"}}}, read)["value"] == ["Vlkanová"]
+        assert "unavailable" in read_truth({"id": "t", "truth": {"shape": {"slug": "s", "type": "AdministrativeArea", "name": "Nikde"}}}, read)
+        assert "unavailable" in read_truth({"id": "t", "truth": {"touches": {"slug": "s", "type": "AdministrativeArea", "name": "Kremnica"}}}, read)
+    finally:
+        endpoint = real_endpoint
+    q51 = {"must": [["Badín"]]}
+    drawn = ("data", {"map": {"data": {"features": [{"geometry": towns[0]["location"]["value"]}]}}, "geojson": "https://g/item"})
+    row = {"events": [drawn], "answer": "Badín má rozlohu 34,4 km²."}
+    feature = lambda url: [{"geometry": towns[0]["location"]["value"]}] if url == "https://g/item" else None
+    assert grade_shape(q51, {"value": badin}, row, feature) == ("correct", False)
+    assert grade_shape(q51, {"value": badin}, {**row, "answer": "Badín má rozlohu 50 km²."}, feature) == ("partly", True)
+    assert grade_shape(q51, {"value": badin}, row, lambda url: None) == ("partly", False)
+    assert grade_shape(q51, {"value": badin}, {"events": [], "answer": "Neviem."}, feature) == ("wrong", False)
     global page_text
     real_page, pages = page_text, {"https://www.bbsk.sk/mapovy-portal": "Mapový portál | BBSK ArcGIS"}
     page_text = lambda url: pages.get(url, "")
