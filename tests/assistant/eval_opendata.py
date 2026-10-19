@@ -407,7 +407,9 @@ def fresh_truth(q, truth, now=None):
 
 # The refusals of a spend cap (T-4671): a capped answer is void, never right or wrong.
 CAPPED = {"Daily Limit Reached", "Monthly Limit Reached", "Visitor Limit Reached", "Budget Spent",
-          "Conversation Limit Reached", "Assistant Unavailable"}
+          "Conversation Limit Reached", "Assistant Unavailable",
+          # The model provider refused the call (a spent key, an outage): nothing was answered (T-4730).
+          "Model Unavailable"}
 
 
 def void(q, truth, row):
@@ -923,6 +925,7 @@ def selftest():
     assert void(sourced, {"value": 0}, {}) == "source holds nothing" and void({"id": "t"}, {"value": 0}, {}) is None
     assert void(sourced, {"value": 3}, {"error": {"status": 429}}) == "capped: 429"
     assert void(sourced, {"value": 3}, {"error": {"title": "Budget Spent", "status": 403}}) == "capped: Budget Spent"
+    assert void({"id": "oi-12"}, {}, {"error": {"title": "Model Unavailable", "status": 503}}) == "capped: Model Unavailable"
     read = datetime(2026, 10, 18, 21, 0, tzinfo=timezone.utc)
     held = {"value": 1, "readAt": read.isoformat()}
     assert fresh_truth(sourced, held, read + TRUTH_LIFE) is held
