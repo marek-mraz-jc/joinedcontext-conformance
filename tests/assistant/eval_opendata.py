@@ -215,7 +215,17 @@ def pictured(folder, name):
     if not stream.exists() or name not in timings or "error" in timings[name]:
         why = (timings.get(name) or {}).get("error", "not pictured")
         return [("error", {"message": f"the widget page: {why}"}, 0)], None, None
-    events = parse_sse([(line, 0) for line in stream.read_text().splitlines(keepends=True)] + [("", 0)])
+    text = stream.read_text()
+    # A refused request is kept as its problem document, not a stream: a spend or visitor cap
+    # voids the row instead of grading an empty answer wrong.
+    if text.lstrip().startswith("{"):
+        try:
+            problem = json.loads(text)
+        except json.JSONDecodeError:
+            problem = None
+        if isinstance(problem, dict) and "status" in problem:
+            return [("error", problem, 0)], None, timings[name]["settledMs"]
+    events = parse_sse([(line, 0) for line in text.splitlines(keepends=True)] + [("", 0)])
     done = next((d for n, d, *_ in events if n == "done" and isinstance(d, dict)), {})
     return events, done.get("firstTokenMs"), timings[name]["settledMs"]
 
@@ -985,10 +995,16 @@ def selftest():
     with tempfile.TemporaryDirectory() as folder:
         shots = Path(folder)
         (shots / "od-58.sse").write_text('event: answer\ndata: {"text": "SK0020A"}\n\nevent: done\ndata: {"firstTokenMs": 900}\n\n')
-        (shots / "timings.json").write_text(json.dumps({"od-58": {"settledMs": 4200}, "od-57-2": {"error": "timeout"}}))
+        (shots / "od-59.sse").write_text('{"title":"Visitor Limit Reached","status":429,"detail":"Dnes ste..."}')
+        (shots / "timings.json").write_text(json.dumps({"od-58": {"settledMs": 4200}, "od-57-2": {"error": "timeout"},
+                                                         "od-59": {"settledMs": 100}}))
         events, first, total = pictured(shots, "od-58")
         assert [n for n, *_ in events] == ["answer", "done"] and (first, total) == (900, 4200)
         assert pictured(shots, "od-57-2")[0][0][0] == "error" and pictured(shots, "od-01")[2] is None
+        # A visitor cap the page met is the row's error, so the row is void, never wrong.
+        capped, _, _ = pictured(shots, "od-59")
+        assert capped == [("error", {"title": "Visitor Limit Reached", "status": 429, "detail": "Dnes ste..."}, 0)]
+        assert void({"id": "od-59"}, {}, {"error": capped[0][1]}) == "capped: Visitor Limit Reached"
 
     # Two cities in one question (od-58): each source counts once its Endpoint was read and the
     # answer names one of its stations or gives a value it measures.
