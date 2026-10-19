@@ -44,7 +44,7 @@ from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
-from eval_bb import ABSTAIN, ask, cost, eval_deployment, honest, listed_prices, norm, page_text, percentile, record, turn_corpus  # noqa: E402
+from eval_bb import ABSTAIN, ask, cost, eval_deployment, honest, listed_prices, norm, page_text, parse_sse, percentile, record, turn_corpus  # noqa: E402
 
 QUESTIONS = HERE / "opendata_questions.json"
 SCHEMA = HERE / "opendata_questions.schema.json"
@@ -197,6 +197,20 @@ def grade_each(q, truth, row):
             for src in truth["value"]]
     must_ok = all(any(has(row["answer"], alt) for alt in group) for group in q.get("must", []))
     return ("correct" if all(hits) and must_ok else "partly" if any(hits) else "wrong"), False
+
+
+def pictured(folder, name):
+    """(events, first token ms, total ms) of a question `screens.mjs` asked through the widget page:
+    its kept event stream and the time until the page settled; a question it could not ask is an
+    error row, never a pass."""
+    timings = json.loads((folder / "timings.json").read_text()) if (folder / "timings.json").exists() else {}
+    stream = folder / f"{name}.sse"
+    if not stream.exists() or name not in timings or "error" in timings[name]:
+        why = (timings.get(name) or {}).get("error", "not pictured")
+        return [("error", {"message": f"the widget page: {why}"}, 0)], None, None
+    events = parse_sse([(line, 0) for line in stream.read_text().splitlines(keepends=True)] + [("", 0)])
+    done = next((d for n, d, *_ in events if n == "done" and isinstance(d, dict)), {})
+    return events, done.get("firstTokenMs"), timings[name]["settledMs"]
 
 
 def repeated(attempts):
@@ -753,11 +767,15 @@ def run(args):
             truth = read_truth(q)
             for pass_rows in (rows, warm) if args.warm else (rows,):
                 attempts = []
-                for _ in range(q.get("repeat", 1)):
-                    try:
-                        events, ttft, total = ask(base, public_id, ORIGIN, q["q"], q.get("history", ()))
-                    except (urllib.error.URLError, OSError) as err:
-                        events, ttft, total = [("error", {"message": str(err)}, 0)], None, None
+                runs = q.get("repeat", 1)
+                for run in range(1, runs + 1):
+                    if args.events:
+                        events, ttft, total = pictured(Path(args.events), f"{q['id']}-{run}" if runs > 1 else q["id"])
+                    else:
+                        try:
+                            events, ttft, total = ask(base, public_id, ORIGIN, q["q"], q.get("history", ()))
+                        except (urllib.error.URLError, OSError) as err:
+                            events, ttft, total = [("error", {"message": str(err)}, 0)], None, None
                     r = record(q, events, ttft, total, model, prices)
                     r["conversation"] = conversation_id(events)
                     truth = fresh_truth(q, truth)
@@ -778,7 +796,8 @@ def run(args):
                         r["grade"], r["wrongNumber"] = grade(q, truth, r["answer"], spec["canary"])
                     attempts.append(r)
                     print(f"{public_id} {q['id']} {r['grade']}{' cached' if r['cached'] else ''}: {r['answer'][:120]!r} (truth {truth})", file=sys.stderr)
-                    time.sleep(args.pace)
+                    if not args.events:
+                        time.sleep(args.pace)
                 pass_rows.append(repeated(attempts) if len(attempts) > 1 else attempts[0])
         cold = [r for r in rows if not r["cached"]]
         costs = [r["costUsd"] for r in cold if r["costUsd"] is not None]
@@ -895,6 +914,16 @@ def selftest():
     assert grade_shape(q51, {"value": badin}, {**row, "answer": "Badín má rozlohu 50 km²."}, feature) == ("partly", True)
     assert grade_shape(q51, {"value": badin}, row, lambda url: None) == ("partly", False)
     assert grade_shape(q51, {"value": badin}, {"events": [], "answer": "Neviem."}, feature) == ("wrong", False)
+
+    # A pictured answer is graded from its kept stream and timed by the page (screens.mjs).
+    import tempfile
+    with tempfile.TemporaryDirectory() as folder:
+        shots = Path(folder)
+        (shots / "od-58.sse").write_text('event: answer\ndata: {"text": "SK0020A"}\n\nevent: done\ndata: {"firstTokenMs": 900}\n\n')
+        (shots / "timings.json").write_text(json.dumps({"od-58": {"settledMs": 4200}, "od-57-2": {"error": "timeout"}}))
+        events, first, total = pictured(shots, "od-58")
+        assert [n for n, *_ in events] == ["answer", "done"] and (first, total) == (900, 4200)
+        assert pictured(shots, "od-57-2")[0][0][0] == "error" and pictured(shots, "od-01")[2] is None
 
     # Two cities in one question (od-58): each source counts once its Endpoint was read and the
     # answer names one of its stations or gives a value it measures.
@@ -1056,6 +1085,7 @@ def main():
     parser.add_argument("--previous", help="the previous run's .json: link each question to it in Portal Konverzácie")
     parser.add_argument("--portal", default=os.environ.get("JC_DEV_PORTAL", "https://portal.dev.joinedcontext.com"))
     parser.add_argument("--project", default="bbsk", help="the project of the eval deployments")
+    parser.add_argument("--events", help="grade the answers screens.mjs pictured in this folder instead of asking")
     parser.add_argument("--selftest", action="store_true")
     args = parser.parse_args()
     if args.selftest:
