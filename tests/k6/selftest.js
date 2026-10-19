@@ -29,6 +29,7 @@ import {
   slopePercent,
   summarize,
 } from './budgets.js';
+import { parseRequests } from './requests.js';
 
 const CASE = __ENV.JC_K6_CASE || 'good';
 const RATE = 100;
@@ -68,6 +69,8 @@ if (CASE === 'good' || CASE === 'bad') {
     proveRateLimit: true,
   });
   delete thresholds['http_req_failed{phase:sustained}'];
+} else if (CASE === 'requests') {
+  thresholds = { checks: ['rate==1.0'] };
 }
 
 export const options = {
@@ -148,6 +151,37 @@ export function samples() {
     limitShed.add(good ? 12 : 0);
     limitHeadersMissing.add(good ? 0 : 7);
     check(null, { 'TS-05 every endpoint read answered with the entity that was asked for': () => good });
+  } else if (CASE === 'requests') {
+    // T-4714: the request list of api-mix-100rps.js
+    const list = [
+      '# comment',
+      '',
+      'ngsi\tGET\thttps://h/e/ngsi-ld/v1/entities?type=T',
+      'schema\tGET\thttps://h/e/schema/index.json\t404',
+      'mcp\tPOST\thttps://h/e/mcp\t200',
+      'ws\tGET\twss://h/e/ws\r',
+      '   ',
+    ].join('\n');
+    const { requests, skipped } = parseRequests(list);
+    check(requests, {
+      'an empty line and a comment are skipped, three rows are kept': (r) => r.length === 3,
+      'the kept rows keep their kind, method and url': (r) =>
+        r[0].kind === 'ngsi' && r[1].method === 'POST' && r[2].url === 'wss://h/e/ws',
+    });
+    check(skipped, { 'a 404 row is skipped with its status': (s) => s.length === 1 && s[0].status === '404' });
+    const refuses = (text) => {
+      try {
+        parseRequests(text);
+        return false;
+      } catch (_) {
+        return true;
+      }
+    };
+    check(null, {
+      'an unknown kind is refused': () => refuses('graphql\tGET\thttps://h/e'),
+      'an unknown method is refused': () => refuses('ngsi\tPUT\thttps://h/e'),
+      'a row without a url is refused': () => refuses('ngsi\tGET'),
+    });
   }
 }
 
