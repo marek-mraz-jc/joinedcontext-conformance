@@ -54,6 +54,7 @@ jobs:
           NGSILD_ORG_DOMAIN: banskabystrica.sk
           NGSILD_SPACE: ovzdusie
           NGSILD_EXPECTED_FAILURES: tests/etsi/expected_failures_gateway.json
+          NGSILD_REASON: etsi-gateway conformance fixture
           JC_REPORTS_DIR: ${{ github.workspace }}/reports/smoke
         run: timeout 120 tests/etsi/run.sh --include smoke
       - name: temporal and projected suites through the gateway
@@ -63,6 +64,7 @@ jobs:
           NGSILD_ORG_DOMAIN: banskabystrica.sk
           NGSILD_SPACE: ovzdusie
           NGSILD_EXPECTED_FAILURES: tests/etsi/expected_failures_gateway.json
+          NGSILD_REASON: etsi-gateway conformance fixture
           JC_REPORTS_DIR: ${{ github.workspace }}/reports/temporal
         run: timeout 120 tests/etsi/run.sh --include temporal
       - name: merge reports and check claims

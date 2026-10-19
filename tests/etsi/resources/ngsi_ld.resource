@@ -11,6 +11,9 @@ Library           DateTime
 ${NGSILD_URL}         http://localhost:8080/ngsi-ld/v1
 ${TENANT}             ${EMPTY}
 ${TOKEN}              ${EMPTY}
+# Why this run deletes and corrects (JC-Reason, API/02): a Context Gateway refuses a delete without
+# one (400 reason-required); a bare broker ignores the header, so it stays empty there.
+${REASON}             ${EMPTY}
 ${PROJECTED_URL}      ${EMPTY}
 ${FEDERATED_URL}      ${EMPTY}
 # The two middle segments of every id this suite mints. A bare broker takes any syntactically
@@ -72,6 +75,9 @@ NGSI-LD Headers
     END
     IF    '${TOKEN}' != '${EMPTY}'
         Set To Dictionary    ${headers}    Authorization=Bearer ${TOKEN}
+    END
+    IF    '${REASON}' != '${EMPTY}'
+        Set To Dictionary    ${headers}    JC-Reason=${REASON}
     END
     RETURN    ${headers}
 
