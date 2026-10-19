@@ -558,6 +558,25 @@ def table(results, pick):
     return "\n".join(lines)
 
 
+def conversation_id(events):
+    """The stored conversation's id from the answer's `conversation` event, None without one."""
+    return next((d.get("id") for n, d, *_ in events if n == "conversation" and isinstance(d, dict)), None)
+
+
+def compare_links(results, previous, portal, project):
+    """Markdown rows linking each question's conversation of this run to the previous run's, in
+    Portal Konverzácie (T-4681): one row per configuration and question both runs answered."""
+    lines = []
+    for name, r in results.items():
+        before = {row["id"]: row.get("conversation") for row in previous.get(name, {}).get("rows", [])}
+        for row in r["rows"]:
+            now, then = row.get("conversation"), before.get(row["id"])
+            if now and then:
+                query = urllib.parse.urlencode({"open": now, "compare": then})
+                lines.append(f"| {row['id']} | {name} | {portal.rstrip('/')}/projects/{project}/knowledge/conversations?{query} |")
+    return ["", "| question | configuration | this run against the previous |", "|---|---|---|", *lines] if lines else []
+
+
 def run(args):
     spec = json.loads(QUESTIONS.read_text())
     base = os.environ.get("JC_ASSISTANT_URL")
@@ -584,6 +603,7 @@ def run(args):
                 except (urllib.error.URLError, OSError) as err:
                     events, ttft, total = [("error", {"message": str(err)}, 0)], None, None
                 r = record(q, events, ttft, total, model, prices)
+                r["conversation"] = conversation_id(events)
                 truth = fresh_truth(q, truth)
                 r["truth"] = truth
                 why = void(q, truth, r)
@@ -615,6 +635,9 @@ def run(args):
         }
     pick = winner(results)
     md = table(results, pick)
+    if args.previous:
+        previous = json.loads(Path(args.previous).read_text()).get("results", {})
+        md = "\n".join([md, *compare_links(results, previous, args.portal, args.project)])
     Path(f"{args.out}.json").write_text(json.dumps({"winner": pick, "results": results}, ensure_ascii=False, indent=1, default=str))
     Path(f"{args.out}.md").write_text(md + "\n")
     print(md)
@@ -625,6 +648,12 @@ def run(args):
 
 
 def selftest():
+    # T-4681: each question links this run's stored conversation to the previous run's.
+    assert conversation_id([("conversation", {"id": "c1"}, 0), ("done", {}, 9)]) == "c1" and conversation_id([]) is None
+    now = {"x (m)": {"rows": [{"id": "od-05", "conversation": "c2"}, {"id": "od-06", "conversation": None}]}}
+    links = compare_links(now, {"x (m)": {"rows": [{"id": "od-05", "conversation": "c1"}]}}, "https://p/", "bbsk")
+    assert links[-1] == "| od-05 | x (m) | https://p/projects/bbsk/knowledge/conversations?open=c2&compare=c1 |", links
+    assert compare_links(now, {}, "https://p", "bbsk") == []
     # T-4680: an anonymous answer carries no cost; the key's delta is the measure, never $0.
     assert per_question([], 4.0, 4.45, 56) == ((4.45 - 4.0) / 56, "key delta, shared key (upper bound)")
     assert per_question([0.01, 0.03], 4.0, 9.0, 2) == (0.02, None)
@@ -807,6 +836,9 @@ def main():
     parser.add_argument("--warm", action="store_true", help="ask each question again, from the cache")
     parser.add_argument("--pace", type=float, default=8.0, help="seconds between questions")
     parser.add_argument("--out", default="eval-opendata")
+    parser.add_argument("--previous", help="the previous run's .json: link each question to it in Portal Konverzácie")
+    parser.add_argument("--portal", default=os.environ.get("JC_DEV_PORTAL", "https://portal.dev.joinedcontext.com"))
+    parser.add_argument("--project", default="bbsk", help="the project of the eval deployments")
     parser.add_argument("--selftest", action="store_true")
     args = parser.parse_args()
     if args.selftest:
