@@ -9,7 +9,35 @@ The k6 exit code is not the verdict. k6 exits 0 on a run whose every request fai
 threshold happened to be declared, so the CSV stream of requests and the log of injected faults
 are read by the checker, which is what CI and a human should look at.
 
-## Not run against `dev`
+## The owner's drills on `dev` (`dev-drills.sh`)
+
+Admitted by the owner on 2026-10-18: dev only, never prod, one drill at a time, each announced in
+`AI_shared_folder.md` (`tasks/note`) before it starts. The deployer runs it; a worker never does.
+
+| Drill | How | Ready again means |
+|---|---|---|
+| kill one pod each of the gateway, the broker, the assistant and the Portal | `kubectl delete pod` of the first pod of each selector | a pod of the selector, not being deleted, is Ready |
+| partition the broker from Postgres for 60 s | the NetworkPolicy `postgres-from-context-broker` is saved, deleted and applied again (also on exit) | the broker is Ready after the heal; the gateway's answers say whether it served |
+| lose the Postgres primary | the primary pod is deleted: CNPG promotes a replica, or with one instance (dev) recreates the pod on its volume | a pod with `cnpg.io/instanceRole=primary` is Ready |
+
+A NetworkPolicy only ever allows, so the partition takes the allow away rather than adding a deny;
+a connection already open when it goes may survive, and the visitor's errors show whether one did.
+Each drill is skipped, with the reason recorded, while a node is over 90 % memory
+(`CHAOS_MAX_MEMORY`), a Helm release is pending or a rollout is under way, and the whole run holds
+`CHAOS_LOCK` (`/workspace/.cache/dev-cluster.lock`) so two runs never overlap; `just dev-apply` takes no lock, so an apply in flight shows as a pending release or a rollout.
+
+`check_chaos_results.py --profile dev` is the verdict: every drill that ran is Ready again within
+120 s (`--max-recovery`), the gateway answers again after each fault, and the broker's `entities`
+and `attr_instances` hold at least as many rows after as before. The errors the k6 visitor (5
+requests per second) saw during each drill are reported, not budgeted: one replica cannot keep
+CC-55's 0.1 %.
+
+```bash
+CHAOS_I_MEAN_IT=yes KUBECONFIG=.secrets/kubeconfig-dev.yaml \
+  GATEWAY_URL=https://api.dev.joinedcontext.com/api/endpoint/<slug>/ngsi-ld/v1 tests/chaos/dev-drills.sh
+```
+
+## CC-55 on a multi-replica cluster (`run.sh`)
 
 This suite is **not executed** by qa. It writes to a cluster — it deletes pods and promotes a
 database replica — and the only cluster that exists is the single-node `dev` box the deploy agent
