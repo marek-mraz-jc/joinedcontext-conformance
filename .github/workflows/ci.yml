@@ -61,6 +61,8 @@ jobs:
         run: python3 tests/assistant/eval_opendata.py --selftest
       - name: the bbsk.sk website eval's question file meets its schema and its grading holds offline (T-4688)
         run: python3 tests/assistant/eval_bbsk_web.py --selftest
+      - name: the starter eval grades numbers, live values and human links offline (T-4769)
+        run: python3 tests/assistant/eval_starters.py --selftest
       - name: the open-data coverage report names a reason for every dataset without entities (T-4256)
         run: python3 tests/assistant/coverage_bb.py --selftest
       - name: the data.dev publish gate hides a dataset on every check it fails, from canned answers (T-4318)
