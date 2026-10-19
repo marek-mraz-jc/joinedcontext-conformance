@@ -131,13 +131,20 @@ async function ask(browser, base, deployment, q) {
     locale: LOCALES[q.lang] || "sk-SK",
   });
   const page = await context.newPage();
-  // The body of the last chat POST, read once the stream has ended.
-  let stream = Promise.resolve("");
-  page.on("response", (response) => {
-    if (response.request().method() === "POST" && response.url().endsWith(`/api/v1/d/${deployment}/chat`)) {
-      stream = response.body().then((bytes) => undouble(bytes.toString("utf8"))).catch(() => "");
-    }
-  });
+  // The body of the last chat POST, copied in the page as the widget reads it: Playwright's
+  // response.body() came back empty for some long streams (T-4729 baseline: od-07, od-10, od-13).
+  await page.addInitScript((path) => {
+    const fetched = window.fetch;
+    window.__jcStream = Promise.resolve("");
+    window.fetch = async (...call) => {
+      const response = await fetched(...call);
+      const url = String(call[0] instanceof Request ? call[0].url : call[0]);
+      if (!url.endsWith(path) || !response.body) return response;
+      const [mine, copy] = response.body.tee();
+      window.__jcStream = new Response(copy).text().catch(() => "");
+      return new Response(mine, { status: response.status, statusText: response.statusText, headers: response.headers });
+    };
+  }, `/api/v1/d/${deployment}/chat`);
   await page.goto(`${base.replace(/\/$/, "")}/d/${deployment}`, { waitUntil: "networkidle" });
   // A follow-up is asked after its earlier questions, in the same conversation; the stream kept is
   // the last one, the follow-up's own.
@@ -146,7 +153,8 @@ async function ask(browser, base, deployment, q) {
   }
   const times = await send(page, q.q);
   await page.waitForLoadState("networkidle", { timeout: 15_000 }).catch(() => {});
-  return { context, page, stream: await stream, times };
+  const stream = await page.evaluate(() => window.__jcStream);
+  return { context, page, stream: undouble(stream), times };
 }
 
 async function main() {
