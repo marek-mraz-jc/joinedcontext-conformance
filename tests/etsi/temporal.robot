@@ -7,6 +7,9 @@ Suite Teardown    Teardown NGSI-LD Session
 Force Tags        etsi    temporal
 
 *** Variables ***
+# A query of the temporal evolution carries a temporal query (5.7.4, REQUIRED): every instance
+# since the epoch where a case means "all of the history".
+${SINCE}    1970-01-01T00:00:00Z
 ${SETUP_ID_1}     ${EMPTY}
 ${SETUP_ID_2}     ${EMPTY}
 ${T1}             ${EMPTY}
@@ -19,7 +22,10 @@ ${T2_PLUS_1S}     ${EMPTY}
 Setup Fixture Entities
     Open NGSI-LD Session
     # An endpoint without history answers [] not 500 (assert 200 + empty list before fixture is written)
-    ${pre_check}=    Get From SUT    /temporal/entities    type=AirQualityObserved
+    ${pre_check}=    Get From SUT    /temporal/entities
+    ...    type=AirQualityObserved
+    ...    timerel=after
+    ...    timeAt=${SINCE}
     Should Be Equal As Integers    ${pre_check.status_code}    200
     ${pre_items}=    Set Variable    ${pre_check.json()}
     Should Be Empty    ${pre_items}
@@ -155,6 +161,8 @@ CIM009 6.18.3.1 Temporal Query With timeproperty lastN And attrs
     Should Be Equal As Integers    ${r_prop.status_code}    200
 
     ${r_last}=    Get From SUT    /temporal/entities
+    ...    timerel=after
+    ...    timeAt=${SINCE}
     ...    type=AirQualityObserved
     ...    lastN=1
     Should Be Equal As Integers    ${r_last.status_code}    200
@@ -168,6 +176,8 @@ CIM009 6.18.3.1 Temporal Query With timeproperty lastN And attrs
     END
 
     ${r_attrs}=    Get From SUT    /temporal/entities
+    ...    timerel=after
+    ...    timeAt=${SINCE}
     ...    type=AirQualityObserved
     ...    attrs=temperature
     Should Be Equal As Integers    ${r_attrs.status_code}    200
@@ -200,6 +210,8 @@ CIM009 6.18.3.1 Temporal Query Pagination Limit Yields Next Link Or Count
     [Documentation]    Clause 6.3.10 & 6.18.3.1: limit=1 returns 200 and either Link rel="next"
     ...                or NGSILD-Results-Count header when more results exist.
     ${response}=    Get From SUT    /temporal/entities
+    ...    timerel=after
+    ...    timeAt=${SINCE}
     ...    type=AirQualityObserved
     ...    limit=1
     Should Be Equal As Integers    ${response.status_code}    200
@@ -225,11 +237,15 @@ CIM009 6.18.3.1 Temporal Aggregation Optional Query
     ...    aggrMethods=avg
     ...    aggrPeriodDuration=PT1H
     IF    ${response.status_code} == 200
+        # The aggregated temporal representation: an Attribute is one object whose `avg` lists
+        # [value, start, end] per period
         ${entities}=    Set Variable    ${response.json()}
+        Should Not Be Empty    ${entities}
         FOR    ${entity}    IN    @{entities}
-            ${instances}=    Set Variable    ${entity}[temperature]
-            FOR    ${inst}    IN    @{instances}
-                Dictionary Should Contain Key    ${inst}    avg
+            ${aggregated}=    Set Variable    ${entity}[temperature]
+            Dictionary Should Contain Key    ${aggregated}    avg
+            FOR    ${bucket}    IN    @{aggregated}[avg]
+                Length Should Be    ${bucket}    3
             END
         END
     ELSE IF    ${response.status_code} == 501 or ${response.status_code} == 400

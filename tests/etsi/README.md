@@ -28,6 +28,7 @@ repository secret `NGSILD_CLIENT_SECRET` (T-0277), and apply the gateway quarant
 | `NGSILD_URL` | none, required | the NGSI-LD API root of the system under test |
 | `NGSILD_TENANT` | empty | the `NGSILD-Tenant` every request carries |
 | `NGSILD_TOKEN` | empty | the bearer token, for a surface that needs one |
+| `NGSILD_REASON` | empty | the `JC-Reason` every request carries: a Context Gateway refuses a delete or a correction without one (API/02) |
 | `NGSILD_ORG_DOMAIN` | `conformance` | the org-domain segment of the ids the suite mints |
 | `NGSILD_SPACE` | `smoke` | the space segment of the same ids |
 | `NGSILD_PROJECTED_URL` | empty | projected endpoint API root (skips projected suite when empty) |

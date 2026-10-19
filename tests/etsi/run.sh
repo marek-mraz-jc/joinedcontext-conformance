@@ -18,6 +18,7 @@ robot \
   --variable "NGSILD_URL:${NGSILD_URL:?set NGSILD_URL to the NGSI-LD API root of the system under test}" \
   --variable "TENANT:${NGSILD_TENANT:-}" \
   --variable "TOKEN:${NGSILD_TOKEN:-}" \
+  --variable "REASON:${NGSILD_REASON:-}" \
   --variable "ORG_DOMAIN:${NGSILD_ORG_DOMAIN:-conformance}" \
   --variable "SPACE:${NGSILD_SPACE:-smoke}" \
   --variable "PROJECTED_URL:${NGSILD_PROJECTED_URL:-}" \

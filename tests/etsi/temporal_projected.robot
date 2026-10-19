@@ -7,6 +7,9 @@ Suite Teardown    Teardown NGSI-LD Session
 Force Tags        etsi    temporal    projected
 
 *** Variables ***
+# A query of the temporal evolution carries a temporal query (5.7.4, REQUIRED): every instance
+# since the epoch where a case means "all of the history".
+${SINCE}    1970-01-01T00:00:00Z
 ${SETUP_AQ_ID}     ${EMPTY}
 ${SETUP_DEV_ID}    ${EMPTY}
 ${T1}              ${EMPTY}
@@ -65,6 +68,8 @@ MP02 Temporal Query Exposes Only Projected Attributes
     [Documentation]    MP-02 & MP-03: On projected endpoint, only projected classes and slots
     ...                (temperature) plus id/type are exposed.
     ${response}=    Get From Custom Session    projected_sut    /temporal/entities
+    ...    timerel=after
+    ...    timeAt=${SINCE}
     ...    type=AirQualityObserved
     Should Be Equal As Integers    ${response.status_code}    200
     ${entities}=    Set Variable    ${response.json()}
@@ -87,6 +92,8 @@ MP02 Temporal Query Exposes Only Projected Attributes
 MP02 Unprojected Class Device Query Returns Empty Array
     [Documentation]    MP-01 & MP-02: Device is omitted from projection classes, so query returns empty list.
     ${response}=    Get From Custom Session    projected_sut    /temporal/entities
+    ...    timerel=after
+    ...    timeAt=${SINCE}
     ...    type=Device
     Should Be Equal As Integers    ${response.status_code}    200
     ${items}=    Set Variable    ${response.json()}
@@ -101,6 +108,8 @@ MP02 Unprojected Class Device Retrieval Returns 404
 EP61 attrs Parameter For Hidden Attribute Returns No Hidden Slots
     [Documentation]    EP-61 & MP-02: Requesting unprojected slot relativeHumidity returns entities without it.
     ${response}=    Get From Custom Session    projected_sut    /temporal/entities
+    ...    timerel=after
+    ...    timeAt=${SINCE}
     ...    type=AirQualityObserved
     ...    attrs=relativeHumidity
     Should Be Equal As Integers    ${response.status_code}    200
@@ -112,6 +121,8 @@ EP61 attrs Parameter For Hidden Attribute Returns No Hidden Slots
 GW10 Caller Filter q Narrows Projected Entities
     [Documentation]    GW10 & MP-02: Caller q=temperature>0 still narrows, returning a valid subset.
     ${response}=    Get From Custom Session    projected_sut    /temporal/entities
+    ...    timerel=after
+    ...    timeAt=${SINCE}
     ...    type=AirQualityObserved
     ...    q=temperature>0
     Should Be Equal As Integers    ${response.status_code}    200
@@ -119,6 +130,8 @@ GW10 Caller Filter q Narrows Projected Entities
     Should Not Be Empty    ${entities}
 
     ${r_empty}=    Get From Custom Session    projected_sut    /temporal/entities
+    ...    timerel=after
+    ...    timeAt=${SINCE}
     ...    type=AirQualityObserved
     ...    q=temperature>999
     Should Be Equal As Integers    ${r_empty.status_code}    200
@@ -129,15 +142,21 @@ GW10 Caller Filter q Narrows Projected Entities
 EP30 Current Value And Temporal Representation Parity
     [Documentation]    EP-07 & EP-30: Narrowing holds in history exactly as in current values.
     ...                Current value GET /entities exposes the exact same projected attribute set.
+    # The suite's own Entity on both sides: another suite's Entities of the type may carry other
+    # Attributes, and the two lists need not share an order.
     ${r_curr}=    Get From Custom Session    projected_sut    /entities
     ...    type=AirQualityObserved
+    ...    id=${SETUP_AQ_ID}
     Should Be Equal As Integers    ${r_curr.status_code}    200
     ${curr_entities}=    Set Variable    ${r_curr.json()}
     Should Not Be Empty    ${curr_entities}
     ${curr_keys}=    Evaluate    sorted([k for k in $curr_entities[0].keys() if not k.startswith('@')])
 
     ${r_temp}=    Get From Custom Session    projected_sut    /temporal/entities
+    ...    timerel=after
+    ...    timeAt=${SINCE}
     ...    type=AirQualityObserved
+    ...    id=${SETUP_AQ_ID}
     Should Be Equal As Integers    ${r_temp.status_code}    200
     ${temp_entities}=    Set Variable    ${r_temp.json()}
     Should Not Be Empty    ${temp_entities}
