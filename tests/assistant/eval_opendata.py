@@ -460,7 +460,8 @@ def _read_truth(q, now=None):
             return {"value": found_names} if found_names else {"unavailable": "the nearest one has no name"}
         if "shape" in t or "touches" in t:
             sh = t.get("shape") or t["touches"]
-            _, found = endpoint(sh["slug"], "entities", type=sh["type"], limit="1000")
+            # A q narrows a type with more entities than one page holds (14,000 parcels, od-54).
+            _, found = endpoint(sh["slug"], "entities", type=sh["type"], limit="1000", **({"q": sh["q"]} if sh.get("q") else {}))
             named = [e for e in found if sh["name"] in names(e)]
             if len(named) != 1:
                 return {"unavailable": f"{len(named)} entities are named {sh['name']!r}"}
@@ -471,7 +472,8 @@ def _read_truth(q, now=None):
                 return {"unavailable": f"{sh['name']} has no polygon"}
             if "shape" in t:
                 # The source's own area when it states one, and the outline's.
-                areas = [a for a in (value_of(target.get("surfaceArea")), shape_area(geometry)) if isinstance(a, (int, float)) and a > 0]
+                stated = [value_of(target.get(k)) for k in ("surfaceArea", "areaValue")]
+                areas = [a for a in (*stated, shape_area(geometry)) if isinstance(a, (int, float)) and a > 0]
                 return {"value": {"id": target["id"], "bbox": box, "areas": areas}}
             # Neighbours share a border: two or more vertices of the same source's outlines.
             mine, level = vertices(geometry), value_of(target.get("divisionLevel"))
