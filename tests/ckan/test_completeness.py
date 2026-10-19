@@ -83,11 +83,11 @@ class _Upgrading:
         return _Answer(self.status, {"Sec-WebSocket-Accept": accept} if self.status == 101 else {})
 
 
-def _link(session) -> tuple[bool, str]:
+def _link(session, url="https://api.example/api/endpoint/x/ws") -> tuple[bool, str]:
     reader = Reader("https://ckan.example")
     reader.http = session
     report = Report("d")
-    check_link(reader, report, {"name": "Live updates over WebSocket", "format": "WebSocket", "url": "https://api.example/api/endpoint/x/ws"})
+    check_link(reader, report, {"name": "Live updates over WebSocket", "format": "WebSocket", "url": url})
     return report.checks[0].ok, report.checks[0].detail
 
 
@@ -101,6 +101,16 @@ def test_a_websocket_link_is_held_to_its_handshake_not_to_a_plain_get():
     assert _link(_Upgrading(426))[0] is False
     assert _link(_Upgrading(404))[0] is False
     assert _link(_Upgrading(401)) == (True, "401: a restricted endpoint, as EP-64 allows")
+
+
+def test_a_wss_link_handshakes_over_https():
+    # A harvested dataset lists wss:// (od-standards.py); requests speaks only http(s).
+    session = _Upgrading(101)
+    session.urls = []
+    get = session.get
+    session.get = lambda url, **kw: (session.urls.append(url), get(url, **kw))[1]
+    assert _link(session, "wss://api.example/api/endpoint/x/ws") == (True, "101, handshake accepted")
+    assert session.urls == ["https://api.example/api/endpoint/x/ws"]
 
 DATASETS = [name for name in os.environ.get("CKAN_DATASETS", "").split(",") if name]
 

@@ -358,6 +358,8 @@ def check_websocket(reader: Reader, report: Report, name: str, url: str) -> None
     headers = {"Connection": "Upgrade", "Upgrade": "websocket", "Sec-WebSocket-Version": "13", "Sec-WebSocket-Key": key}
     if reader.bearer:
         headers["Authorization"] = f"Bearer {reader.bearer}"
+    # A harvested dataset lists the link as wss:// (od-standards.py); the handshake is an HTTP GET.
+    url = re.sub(r"^ws(s?)://", r"http\1://", url)
     answer = reader.http.get(url, headers=headers, timeout=TIMEOUT, stream=True)
     answer.close()
     if answer.status_code == 401:
