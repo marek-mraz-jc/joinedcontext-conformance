@@ -9,7 +9,8 @@ are prefiled should be 100 percent correct"). The starters file lives beside the
 the cards (joinedcontext-deployment tests/assistant_starters.json, held to them by
 tests/test_assistant_starters.py there); one row per card and language:
 
-- `must`: groups of alternatives, every group in the answer (eval_bb's `norm`, so 7.30 is 7:30);
+- `must`: groups of alternatives, every group in the answer (eval_bb's `norm`, so 7.30 is 7:30); a
+  number is a whole number of the answer, so 20 is not found in 2026 and 1 037 is 1037;
 - `links`: human pages (a CKAN dataset page or a page of the body's site), at least one of them
   cited or written in the answer; `{domain}` is the environment's domain;
 - `live` (optional): `{url, attr}`, an NGSI-LD entity read at ask time whose attribute value, to
@@ -17,9 +18,12 @@ tests/test_assistant_starters.py there); one row per card and language:
 - `reference` and `source`: the answer written from the data and where it was read.
 
 The questions go to the visitors' own deployments, anonymous, under their spend cap: one visitor
-address may spend a tenth of a deployment's day (chat/mod.rs VISITOR_COST_SHARE), so a 429 stops
-the run and names the starters left, and nothing works around the cap. A cached answer is what
-every visitor gets for the same card, so it counts as a run.
+address may spend a tenth of a deployment's day (chat/mod.rs VISITOR_COST_SHARE), so a 429 titled
+"Visitor Limit Reached" stops the run and names the starters left, and nothing works around the cap.
+Any other 429 is the per-minute limit: the run waits its Retry-After and asks again. A cached answer
+is what every visitor gets for the same card for an hour (routed.rs CACHE_LIFE), so it counts as a
+run; `--between 3900` puts the runs past the cache, each a fresh answer. The results file is written
+after every answer, so a stopped run keeps what it got.
 
 Exit 0 when every starter is right in every run; 1 otherwise; 2 on a usage error or a 429.
 `--selftest` checks the grading with no network.
@@ -44,6 +48,9 @@ ORIGINS = {
     ("bbsk-demo", "dev"): "https://bbsk-demo.apps.dev.joinedcontext.com",
 }
 LINKS = re.compile(r"https?://[^\s)\]>\"'`]+")
+NUMBER = re.compile(r"^\d+(?:[\s.,]\d{3})*$")
+NUMBERS = re.compile(r"(?<![\d.,])\d+(?:[ \u00a0\u202f.,]\d{3})*(?![\d])")
+SHARE_SPENT = "Visitor Limit Reached"
 
 
 def live_value(url, attr):
@@ -62,6 +69,14 @@ def has_value(answer, value):
     return any(re.search(rf"(?<![\d.,]){p}(?!\d)", text) for p in patterns)
 
 
+def holds(answer, alt):
+    """Whether `alt` is in the answer: a whole number of it when `alt` is a number."""
+    if NUMBER.match(alt):
+        want = re.sub(r"\D", "", alt)
+        return any(re.sub(r"\D", "", n) == want for n in NUMBERS.findall(answer))
+    return norm(alt) in norm(answer)
+
+
 def linked(answer, citations, links):
     """Whether one of the expected human pages is cited or written in the answer."""
     seen = [u.split("#")[0].rstrip("/") for u in citations] + [u.rstrip("/.,") for u in LINKS.findall(answer)]
@@ -70,7 +85,7 @@ def linked(answer, citations, links):
 
 def judge(row, answer, citations, live=None):
     """(right, what is missing) for one answer to one starter."""
-    missing = [group for group in row["must"] if not any(norm(alt) in norm(answer) for alt in group)]
+    missing = [group for group in row["must"] if not any(holds(answer, alt) for alt in group)]
     if live is not None and not has_value(answer, live):
         missing.append([f"live {row['live']['attr']}={live}"])
     if not linked(answer, citations, row["links"]):
@@ -83,32 +98,50 @@ def expand(row, domain):
     return json.loads(text)
 
 
-def run(rows, env, runs, out):
+def asked(base, row, origin, tries=5):
+    """The answer's events, waiting out the per-minute limit; None when the day's share is spent."""
+    for _ in range(tries):
+        try:
+            return ask(base, row["assistant"], origin, row["q"])
+        except urllib.error.HTTPError as err:
+            if err.code != 429:
+                raise
+            retry = err.headers.get("Retry-After") or "60"
+            if SHARE_SPENT in err.read().decode(errors="replace"):
+                print(f"429 {SHARE_SPENT} from {row['assistant']}: retry after {retry} s", file=sys.stderr)
+                return None
+            time.sleep(min(int(retry) if retry.isdigit() else 60, 120) + 1)
+    raise RuntimeError(f"{row['id']}: still limited after {tries} tries")
+
+
+def save(out, results):
+    if out:
+        Path(out).mkdir(parents=True, exist_ok=True)
+        (Path(out) / "results.json").write_text(json.dumps(results, ensure_ascii=False, indent=1))
+
+
+def run(rows, env, runs, out, between=0):
     base = f"https://assistant.{DOMAINS[env]}"
     results = []
     for n in range(1, runs + 1):
+        if n > 1:
+            time.sleep(between)
         for i, row in enumerate(rows):
             origin = ORIGINS[(row["assistant"], env)]
-            try:
-                events, ttft, total = ask(base, row["assistant"], origin, row["q"])
-            except urllib.error.HTTPError as err:
-                if err.code == 429:
-                    left = [r["q"] for r in rows[i:]]
-                    print(f"429 from {row['assistant']}: the visitor's share of the day is spent; retry after "
-                          f"{err.headers.get('Retry-After')} s. Not asked in run {n}: {left}", file=sys.stderr)
-                    return results, 2
-                raise
+            answered = asked(base, row, origin)
+            if answered is None:
+                print(f"Not asked in run {n}: {[r['q'] for r in rows[i:]]}", file=sys.stderr)
+                return results, 2
+            events, ttft, total = answered
             r = record({"id": row["id"]}, events, ttft, total, None, {})
             live = live_value(row["live"]["url"], row["live"]["attr"]) if row.get("live") else None
             r["right"], r["missing"] = judge(row, r["answer"], r["citations"], live)
             r.update(run=n, q=row["q"], assistant=row["assistant"], live=live)
             r.pop("events", None)
             results.append(r)
+            save(out, results)
             print(f"{row['id']} run {n}: {'ok' if r['right'] else 'ko ' + json.dumps(r['missing'], ensure_ascii=False)}")
-            time.sleep(2)
-    if out:
-        Path(out).mkdir(parents=True, exist_ok=True)
-        (Path(out) / "results.json").write_text(json.dumps(results, ensure_ascii=False, indent=1))
+            time.sleep(7)
     return results, 0 if all(r["right"] for r in results) else 1
 
 
@@ -134,6 +167,12 @@ def selftest():
     live_row = dict(row, must=[["PM10"]], live={"url": "-", "attr": "pm10"})
     assert judge(live_row, "PM10 14,6 µg/m³", page, live=14.637)[0]
     assert not judge(live_row, "PM10 27,6 µg/m³", page, live=14.637)[0]
+    # A number is a whole number of the answer, its thousands grouped any way.
+    count = dict(row, must=[["1037", "1 037"], ["20"]])
+    assert judge(count, "Kraj spravuje 1 037 mostov, 20 z nich pred rokom 1900.", page)[0]
+    assert judge(count, "1,037 bridges; 20 built before 1900.", page)[0]
+    assert not judge(count, "1 037 mostov v roku 2026.", page)[0]
+    assert not judge(count, "10 370 mostov, 20.", page)[0]
     assert expand({"links": ["https://opendata.{domain}/dataset/x"]}, "dev.joinedcontext.com") == {
         "links": ["https://opendata.dev.joinedcontext.com/dataset/x"]
     }
@@ -146,6 +185,7 @@ def main():
     parser.add_argument("--env", choices=sorted(DOMAINS), default="smartcity")
     parser.add_argument("--runs", type=int, default=3)
     parser.add_argument("--assistant", help="only this publicId")
+    parser.add_argument("--between", type=int, default=0, help="seconds between runs; 3900 passes the answer cache")
     parser.add_argument("--out")
     parser.add_argument("--selftest", action="store_true")
     args = parser.parse_args()
@@ -157,7 +197,7 @@ def main():
         return 2
     spec = json.loads(Path(args.starters).read_text())
     rows = [expand(r, DOMAINS[args.env]) for r in spec["starters"] if not args.assistant or r["assistant"] == args.assistant]
-    _, code = run(rows, args.env, args.runs, args.out)
+    _, code = run(rows, args.env, args.runs, args.out, args.between)
     return code
 
 
