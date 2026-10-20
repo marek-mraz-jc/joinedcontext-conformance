@@ -1,0 +1,23 @@
+{
+  "kind": "scopedefinition",
+  "family": "access",
+  "uischema": "scopedefinition",
+  "open": {
+    "path": "/projects/{project}/scopedefinitions/new"
+  },
+  "plural": "scopedefinitions",
+  "fill": [
+    {
+      "label": "Name",
+      "value": "t4824-demo-scope"
+    },
+    {
+      "label": "Scope path",
+      "value": "/t4824/demo"
+    }
+  ],
+  "invalid": {
+    "label": "Scope path",
+    "value": "no leading slash"
+  }
+}

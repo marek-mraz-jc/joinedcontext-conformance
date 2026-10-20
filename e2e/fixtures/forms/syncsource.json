@@ -1,0 +1,19 @@
+{
+  "kind": "syncsource",
+  "family": "sources",
+  "uischema": "syncsource",
+  "open": {
+    "path": "/projects/{project}/syncsources/new"
+  },
+  "plural": "syncsources",
+  "fill": [
+    {
+      "label": "Name",
+      "value": "t4824-demo-syncsource"
+    }
+  ],
+  "invalid": {
+    "label": "Name",
+    "value": "Not A Name!"
+  }
+}

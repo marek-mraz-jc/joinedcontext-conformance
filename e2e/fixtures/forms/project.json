@@ -1,0 +1,19 @@
+{
+  "kind": "project",
+  "family": "organization",
+  "uischema": "project",
+  "open": {
+    "path": "/organization/projects",
+    "button": "New project"
+  },
+  "fill": [
+    {
+      "label": "Name",
+      "value": "t4824-demo-project"
+    }
+  ],
+  "invalid": {
+    "label": "Name",
+    "value": "Not A Name!"
+  }
+}

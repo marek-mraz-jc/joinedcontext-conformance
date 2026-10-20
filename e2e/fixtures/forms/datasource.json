@@ -1,0 +1,65 @@
+{
+  "kind": "datasource",
+  "family": "sources",
+  "uischema": "datasource",
+  "open": {
+    "path": "/projects/{project}/datasources/new"
+  },
+  "plural": "datasources",
+  "fill": [
+    {
+      "label": "Name",
+      "value": "t4824-demo-datasource"
+    },
+    {
+      "label": "Title",
+      "value": "Demo feed"
+    },
+    {
+      "label": "URL",
+      "value": "https://data.example.org/feed.json"
+    }
+  ],
+  "invalid": {
+    "label": "URL",
+    "value": "ftp//broken"
+  },
+  "variations": [
+    {
+      "name": "type-mqtt",
+      "steps": [
+        {
+          "label": "Type",
+          "option": "MQTT"
+        }
+      ]
+    },
+    {
+      "name": "type-http",
+      "steps": [
+        {
+          "label": "Type",
+          "option": "HTTP"
+        }
+      ]
+    },
+    {
+      "name": "type-websocket",
+      "steps": [
+        {
+          "label": "Type",
+          "option": "WebSocket"
+        }
+      ]
+    },
+    {
+      "name": "type-gtfs",
+      "steps": [
+        {
+          "label": "Type",
+          "option": "GTFS"
+        }
+      ]
+    }
+  ]
+}

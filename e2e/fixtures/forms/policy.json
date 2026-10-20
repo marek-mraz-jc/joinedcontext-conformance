@@ -1,0 +1,20 @@
+{
+  "kind": "policy",
+  "family": "access",
+  "uischema": "policy",
+  "open": {
+    "path": "/projects/{project}/policies/new"
+  },
+  "plural": "policies",
+  "fill": [
+    {
+      "label": "Name",
+      "value": "t4824-demo-policy"
+    }
+  ],
+  "invalid": {
+    "label": "Name",
+    "value": "Not A Name!"
+  },
+  "variations": []
+}

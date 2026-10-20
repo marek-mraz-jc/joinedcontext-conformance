@@ -1,0 +1,19 @@
+{
+  "kind": "mqttbroker",
+  "family": "sources",
+  "uischema": "mqttbroker",
+  "open": {
+    "path": "/projects/{project}/mqttbrokers/new"
+  },
+  "plural": "mqttbrokers",
+  "fill": [
+    {
+      "label": "Name",
+      "value": "t4824-demo-mqttbroker"
+    }
+  ],
+  "invalid": {
+    "label": "Name",
+    "value": "Not A Name!"
+  }
+}

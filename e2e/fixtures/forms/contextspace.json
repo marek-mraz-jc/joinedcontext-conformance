@@ -1,0 +1,52 @@
+{
+  "kind": "contextspace",
+  "family": "spaces",
+  "uischema": "contextspace",
+  "open": {
+    "path": "/projects/{project}/spaces/new"
+  },
+  "plural": "spaces",
+  "fill": [
+    {
+      "label": "Name",
+      "value": "t4824-demo-space"
+    },
+    {
+      "label": "Title",
+      "value": "Demo space"
+    }
+  ],
+  "invalid": {
+    "label": "Name",
+    "value": "Not A Name!"
+  },
+  "variations": [
+    {
+      "name": "retention",
+      "steps": [
+        {
+          "label": "Lifetime in days",
+          "value": "30"
+        }
+      ]
+    },
+    {
+      "name": "no-retention",
+      "steps": [
+        {
+          "label": "Lifetime in days",
+          "value": ""
+        }
+      ]
+    },
+    {
+      "name": "sandbox",
+      "steps": [
+        {
+          "label": "Ephemeral sandbox",
+          "checked": true
+        }
+      ]
+    }
+  ]
+}

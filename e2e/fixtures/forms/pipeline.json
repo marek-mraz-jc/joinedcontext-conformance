@@ -1,0 +1,61 @@
+{
+  "kind": "pipeline",
+  "family": "pipelines",
+  "uischema": "pipeline",
+  "open": {
+    "path": "/projects/{project}/pipelines/new"
+  },
+  "plural": "pipelines",
+  "fill": [
+    {
+      "label": "Name",
+      "value": "t4824-demo-pipeline"
+    },
+    {
+      "label": "Title",
+      "value": "Demo pipeline"
+    }
+  ],
+  "invalid": {
+    "label": "Name",
+    "value": "Not A Name!"
+  },
+  "variations": [
+    {
+      "name": "execution-auto",
+      "steps": [
+        {
+          "label": "Execution",
+          "option": "Automatic"
+        }
+      ]
+    },
+    {
+      "name": "execution-scheduled",
+      "steps": [
+        {
+          "label": "Execution",
+          "option": "schedule"
+        }
+      ]
+    },
+    {
+      "name": "execution-resident",
+      "steps": [
+        {
+          "label": "Execution",
+          "option": "Always running"
+        }
+      ]
+    },
+    {
+      "name": "expiry",
+      "steps": [
+        {
+          "label": "Remove after",
+          "value": "P30D"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,24 @@
+{
+  "kind": "blueprint",
+  "family": "organization",
+  "uischema": "blueprint",
+  "open": {
+    "path": "/organization/blueprints",
+    "button": "New blueprint"
+  },
+  "plural": "org:blueprints",
+  "fill": [
+    {
+      "label": "Name",
+      "value": "t4824-demo-blueprint"
+    },
+    {
+      "label": "Version",
+      "value": "1.0.0"
+    }
+  ],
+  "invalid": {
+    "label": "Version",
+    "value": "one"
+  }
+}

@@ -1,0 +1,10 @@
+{
+  "kind": "datamodel-sdm",
+  "family": "models",
+  "uischema": "datamodel",
+  "open": {
+    "path": "/projects/{project}/models",
+    "button": "New model from Smart Data Models"
+  },
+  "fill": []
+}

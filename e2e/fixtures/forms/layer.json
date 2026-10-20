@@ -1,0 +1,19 @@
+{
+  "kind": "layer",
+  "family": "dashboards",
+  "uischema": "layer",
+  "open": {
+    "path": "/projects/{project}/dashboards",
+    "button": "New layer|New map layer"
+  },
+  "fill": [
+    {
+      "label": "Name",
+      "value": "t4824-demo-layer"
+    }
+  ],
+  "invalid": {
+    "label": "Name",
+    "value": "Not A Name!"
+  }
+}

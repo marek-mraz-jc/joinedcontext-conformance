@@ -1,0 +1,20 @@
+{
+  "kind": "agentprofile",
+  "family": "organization",
+  "uischema": "agentprofile",
+  "open": {
+    "path": "/organization/agentprofiles",
+    "button": "New agent profile"
+  },
+  "plural": "org:agentprofiles",
+  "fill": [
+    {
+      "label": "Name",
+      "value": "t4824-demo-agent"
+    }
+  ],
+  "invalid": {
+    "label": "Name",
+    "value": "Not A Name!"
+  }
+}

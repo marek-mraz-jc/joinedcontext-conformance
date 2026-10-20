@@ -1,0 +1,19 @@
+{
+  "kind": "app",
+  "family": "apps",
+  "uischema": "app",
+  "open": {
+    "path": "/projects/{project}/apps",
+    "button": "Generate your own app"
+  },
+  "fill": [
+    {
+      "label": "What should the app do?",
+      "value": "Show the air quality of Helsinki on a map."
+    },
+    {
+      "label": "App name",
+      "value": "t4824-demo-app"
+    }
+  ]
+}

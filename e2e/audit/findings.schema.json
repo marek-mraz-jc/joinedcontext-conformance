@@ -1,22 +1,102 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "title": "UX photo audit finding (T-4156)",
+  "title": "UX photo audit finding (T-4156, form rules T-4824)",
   "type": "array",
   "items": {
     "type": "object",
     "additionalProperties": false,
-    "required": ["file", "route", "width", "lang", "who", "rule", "severity", "description", "fix"],
+    "required": [
+      "file",
+      "route",
+      "width",
+      "lang",
+      "who",
+      "rule",
+      "severity",
+      "description",
+      "fix"
+    ],
     "properties": {
-      "file": { "type": "string", "minLength": 1 },
-      "route": { "type": "string", "minLength": 1 },
-      "width": { "type": "integer", "enum": [375, 768, 1440] },
-      "lang": { "type": "string", "enum": ["sk", "en"] },
-      "who": { "type": "string", "enum": ["steward", "viewer", "anonymous"] },
-      "rule": { "type": "string", "enum": ["1", "2", "3", "4", "5", "6", "7", "8", "visual"] },
-      "severity": { "type": "string", "enum": ["blocker", "major", "minor"] },
-      "description": { "type": "string", "minLength": 1 },
-      "fix": { "type": "string", "minLength": 1 },
-      "allowed": { "type": "string", "minLength": 1 }
+      "file": {
+        "type": "string",
+        "minLength": 1
+      },
+      "route": {
+        "type": "string",
+        "minLength": 1
+      },
+      "width": {
+        "type": "integer",
+        "enum": [
+          375,
+          400,
+          768,
+          1440
+        ]
+      },
+      "lang": {
+        "type": "string",
+        "enum": [
+          "sk",
+          "en"
+        ]
+      },
+      "who": {
+        "type": "string",
+        "enum": [
+          "steward",
+          "viewer",
+          "anonymous"
+        ]
+      },
+      "rule": {
+        "type": "string",
+        "enum": [
+          "1",
+          "2",
+          "3",
+          "4",
+          "5",
+          "6",
+          "7",
+          "8",
+          "visual",
+          "label",
+          "raw-name",
+          "help",
+          "help-cut",
+          "required",
+          "advanced",
+          "crowded",
+          "overflow",
+          "check",
+          "invalid",
+          "open",
+          "permission",
+          "fixture",
+          "error"
+        ]
+      },
+      "severity": {
+        "type": "string",
+        "enum": [
+          "blocker",
+          "major",
+          "minor"
+        ]
+      },
+      "description": {
+        "type": "string",
+        "minLength": 1
+      },
+      "fix": {
+        "type": "string",
+        "minLength": 1
+      },
+      "allowed": {
+        "type": "string",
+        "minLength": 1
+      }
     }
   }
 }

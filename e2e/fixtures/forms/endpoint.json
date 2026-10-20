@@ -1,0 +1,60 @@
+{
+  "kind": "endpoint",
+  "family": "endpoints",
+  "uischema": "endpoint",
+  "open": {
+    "path": "/projects/{project}/endpoints/new"
+  },
+  "plural": "endpoints",
+  "fill": [
+    {
+      "label": "Context Space",
+      "option": "helsinki"
+    },
+    {
+      "label": "Name",
+      "value": "t4824-demo-endpoint"
+    },
+    {
+      "label": "Title",
+      "value": "Demo endpoint"
+    },
+    {
+      "label": "BikeHireDockingStation",
+      "checked": true
+    }
+  ],
+  "invalid": {
+    "label": "Name",
+    "value": "Not A Name!"
+  },
+  "variations": [
+    {
+      "name": "audience-public",
+      "steps": [
+        {
+          "label": "Audience",
+          "option": "public"
+        }
+      ]
+    },
+    {
+      "name": "audience-organization",
+      "steps": [
+        {
+          "label": "Audience",
+          "option": "organi[sz]ation|internal"
+        }
+      ]
+    },
+    {
+      "name": "audience-project",
+      "steps": [
+        {
+          "label": "Audience",
+          "option": "project"
+        }
+      ]
+    }
+  ]
+}

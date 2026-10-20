@@ -1,0 +1,19 @@
+{
+  "kind": "role",
+  "family": "access",
+  "uischema": "role",
+  "open": {
+    "path": "/organization/roles",
+    "button": "New role"
+  },
+  "fill": [
+    {
+      "label": "Role name",
+      "value": "t4824-demo-role"
+    }
+  ],
+  "invalid": {
+    "label": "Role name",
+    "value": "Not A Name!"
+  }
+}

@@ -1,0 +1,61 @@
+{
+  "kind": "assistantdeployment",
+  "family": "assistant",
+  "uischema": "assistantdeployment",
+  "open": {
+    "path": "/projects/{project}/assistantdeployments/new"
+  },
+  "plural": "assistantdeployments",
+  "fill": [
+    {
+      "label": "Name",
+      "value": "t4824-demo-assistant"
+    },
+    {
+      "label": "Public id",
+      "value": "t4824-demo"
+    }
+  ],
+  "invalid": {
+    "label": "Name",
+    "value": "Not A Name!"
+  },
+  "variations": [
+    {
+      "name": "channel-public",
+      "steps": [
+        {
+          "label": "Channel",
+          "option": "^Public"
+        }
+      ]
+    },
+    {
+      "name": "channel-internal",
+      "steps": [
+        {
+          "label": "Channel",
+          "option": "Internal"
+        }
+      ]
+    },
+    {
+      "name": "channel-ckan",
+      "steps": [
+        {
+          "label": "Channel",
+          "option": "Data catalogue"
+        }
+      ]
+    },
+    {
+      "name": "channel-iframe",
+      "steps": [
+        {
+          "label": "Channel",
+          "option": "Embedded"
+        }
+      ]
+    }
+  ]
+}

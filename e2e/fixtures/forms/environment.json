@@ -1,0 +1,20 @@
+{
+  "kind": "environment",
+  "family": "organization",
+  "uischema": "environment",
+  "open": {
+    "path": "/organization/environments",
+    "button": "New environment"
+  },
+  "plural": "org:environments",
+  "fill": [
+    {
+      "label": "Name",
+      "value": "t4824-demo-environment"
+    }
+  ],
+  "invalid": {
+    "label": "Name",
+    "value": "Not A Name!"
+  }
+}

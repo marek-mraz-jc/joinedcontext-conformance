@@ -1,0 +1,24 @@
+{
+  "kind": "dataspaceparticipant",
+  "family": "dataspace",
+  "uischema": "dataspaceparticipant",
+  "open": {
+    "path": "/organization/dataspaceparticipants",
+    "button": "New data space membership"
+  },
+  "plural": "org:dataspaceparticipants",
+  "fill": [
+    {
+      "label": "Name",
+      "value": "t4824-demo-participant"
+    },
+    {
+      "label": "Participant identifier (did:web)",
+      "value": "did:web:example.org"
+    }
+  ],
+  "invalid": {
+    "label": "Participant identifier (did:web)",
+    "value": "not-a-did"
+  }
+}

@@ -1,0 +1,56 @@
+{
+  "kind": "subscription",
+  "family": "subscriptions",
+  "uischema": "subscription",
+  "open": {
+    "path": "/projects/{project}/subscriptions/new"
+  },
+  "plural": "subscriptions",
+  "fill": [
+    {
+      "label": "Name",
+      "value": "t4824-demo-subscription"
+    },
+    {
+      "label": "Context Space",
+      "option": "helsinki"
+    },
+    {
+      "label": "Address",
+      "value": "https://hooks.example.org/t4824"
+    }
+  ],
+  "invalid": {
+    "label": "Address",
+    "value": "not a url"
+  },
+  "variations": [
+    {
+      "name": "format-normalized",
+      "steps": [
+        {
+          "label": "Format",
+          "option": "Full"
+        }
+      ]
+    },
+    {
+      "name": "format-concise",
+      "steps": [
+        {
+          "label": "Format",
+          "option": "Concise"
+        }
+      ]
+    },
+    {
+      "name": "format-keyvalues",
+      "steps": [
+        {
+          "label": "Format",
+          "option": "Values only"
+        }
+      ]
+    }
+  ]
+}
