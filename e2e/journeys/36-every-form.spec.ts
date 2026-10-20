@@ -144,7 +144,7 @@ async function apply(page: Page, step: Step): Promise<true | string> {
   const label = new RegExp(`^\\s*${step.label.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\s*\\*?\\s*$`, 'i');
   let control = page.getByLabel(label).locator('visible=true').first();
   if (!(await control.count())) {
-    for (const summary of await page.locator('main details:not([open]) > summary, [role=dialog] details:not([open]) > summary').all()) {
+    for (const summary of await page.locator('details:not([open]) > summary').locator('visible=true').all()) {
       await summary.click().catch(() => undefined);
     }
     control = page.getByLabel(label).locator('visible=true').first();
@@ -229,12 +229,18 @@ async function fields(page: Page): Promise<{ fields: Field[] }> {
     const out: Field[] = [];
     for (const e of Array.from(form.querySelectorAll('input,select,textarea,[role=combobox]'))) {
       const el = e as HTMLInputElement;
+      // A table of controls (a mapping's slot derivations) is one field, its rows named by their row.
+      const table = el.closest('table');
+      if (table) {
+        if (!table.id) table.id = `audit-table-${seen.size}`;
+        if (seen.has(table.id)) continue;
+      }
       if (!visible(el) || el.type === 'hidden' || el.type === 'search' || el.closest('[role=search],nav,[data-form-audit=skip]')) continue;
       // A set of checkboxes or radios under one legend is one field, with the legend's help.
       const fieldset = (el.type === 'radio' || el.type === 'checkbox') ? el.closest('fieldset') : null;
       const set = fieldset?.querySelector('legend') ? fieldset : null;
       if (set && !set.id) set.id = `audit-set-${seen.size}`;
-      const group = set ? set.id : (el.type === 'radio' || el.type === 'checkbox') && el.name ? el.name : el.id;
+      const group = table ? table.id : set ? set.id : (el.type === 'radio' || el.type === 'checkbox') && el.name ? el.name : el.id;
       if (group && seen.has(group)) continue;
       if (group) seen.add(group);
       const byId = (ids: string | null) =>
@@ -242,7 +248,7 @@ async function fields(page: Page): Promise<{ fields: Field[] }> {
       const legend = el.closest('fieldset')?.querySelector('legend')?.textContent?.trim() ?? '';
       const own = Array.from(el.labels ?? []).map((l) => l.textContent?.trim() ?? '').join(' ') || el.getAttribute('aria-label') || byId(el.getAttribute('aria-labelledby'));
       const label = ((set && legend) || own || legend).replace(/\s+/g, ' ').trim();
-      const help = byId((set ?? el).getAttribute('aria-describedby') ?? el.getAttribute('aria-describedby')).replace(/\s+/g, ' ').trim();
+      const help = table ? '' : byId((set ?? el).getAttribute('aria-describedby') ?? el.getAttribute('aria-describedby')).replace(/\s+/g, ' ').trim();
       const required = el.required || el.getAttribute('aria-required') === 'true';
       out.push({
         label,
@@ -251,7 +257,7 @@ async function fields(page: Page): Promise<{ fields: Field[] }> {
         required,
         marked: /\*|required|povinn/i.test(label),
         experimental: /experimental|experiment[aá]ln/i.test(`${label} ${help}`),
-        choice: !set && (el.type === 'checkbox' || el.type === 'radio'),
+        choice: Boolean(table) || (!set && (el.type === 'checkbox' || el.type === 'radio')),
       });
     }
     return { fields: out };
