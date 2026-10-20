@@ -1,0 +1,3 @@
+# Public prod Endpoints the nightly run tests (T-4877); both serve OGC, OData and STA.
+4ysiqy53qik5qyvawwaj7wgylpt4uoxa
+6b4yqhzqieutqcoeew5rnxrx5udqeert
