@@ -10,6 +10,9 @@
 #                      (default 127.0.0.1; set it to the runner's routable address whenever the
 #                      system under test is not in the same network namespace)
 # Extra arguments are passed to robot.
+# The temporal 206 cases (020_14 and the other Content-Range checks) create 20 instances and expect the
+# broker to cut them: an Antares under test runs with ANTARES_TEMPORAL_INSTANCE_LIMIT=9 (its default,
+# 1,000, serves them whole; T-4800). Antares' own TTF and smoke stacks set it.
 set -euo pipefail
 
 TTF_REPO=${TTF_REPO:-https://github.com/marek-mraz/ngsi-ld-test-suite.git}
