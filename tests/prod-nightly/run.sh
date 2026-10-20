@@ -11,6 +11,7 @@
 #   OUT           report folder (default ./prod-nightly-<date>)
 #   API           https://api.smartcity.joinedcontext.com    CATALOGUE  https://opendata.smartcity.joinedcontext.com
 #   ENDPOINTS     public Endpoint ids to test, space separated (default: endpoints.txt)
+#   TE_USER, TE_PASSWORD   the TEAM Engine image's own public test account (ogctest), as tests/ogc/run.sh
 set -uo pipefail
 here=$(cd -- "$(dirname -- "$0")" && pwd)
 : "${ANTARES_DIR:?set ANTARES_DIR to an Antares checkout at the broker commit prod runs}"
@@ -35,14 +36,14 @@ te_image=$(sed -n 's/^ *TE_IMAGE: *//p' "$ANTARES_DIR/.github/workflows/surfaces
 te=$(docker run -d --rm -p "127.0.0.1:${TE_PORT:-8089}:8080" "$te_image")
 trap 'docker stop "$te" >/dev/null 2>&1 || true' EXIT
 for _ in $(seq 1 60); do
-  curl -fsS -m 5 -u ogctest:ogctest -o /dev/null "localhost:${TE_PORT:-8089}/teamengine/rest/suites" && break
+  curl -fsS -m 5 -u "${TE_USER:-ogctest}:${TE_PASSWORD:-ogctest}" -o /dev/null "localhost:${TE_PORT:-8089}/teamengine/rest/suites" && break
   sleep 5
 done
 note "## OGC API Features ETS ($te_image)"
 for e in $endpoints; do
   landing="$api/api/endpoint/$e/ogc/features"
   iut=$(python3 -c 'import sys,urllib.parse; print(urllib.parse.quote(sys.argv[1], safe=""))' "$landing")
-  curl -sS -m 3000 -u ogctest:ogctest -H 'Accept: application/xml' -o "$out/ogc-$e.xml" \
+  curl -sS -m 3000 -u "${TE_USER:-ogctest}:${TE_PASSWORD:-ogctest}" -H 'Accept: application/xml' -o "$out/ogc-$e.xml" \
     "localhost:${TE_PORT:-8089}/teamengine/rest/suites/ogcapi-features-1.0/run?iut=$iut&noofcollections=-1"
   "${compare[@]}" ogc "$out/ogc-$e.xml" "$ANTARES_DIR/ci/ogc-compliance/ogc-public.json" "endpoint $e" >> "$report" || rc=1
   items=$(curl -fsS -m 30 -H 'Accept: application/json' "$landing/collections" | python3 -c 'import json,sys
