@@ -1,0 +1,43 @@
+{
+ "3.1.1": {
+  "testBasic": "PASS",
+  "test_dollar_topics": "PASS",
+  "test_keepalive": "PASS",
+  "test_offline_message_queueing": "FAIL",
+  "test_overlapping_subscriptions": "FAIL",
+  "test_redelivery_on_reconnect": "FAIL",
+  "test_retained_messages": "FAIL",
+  "test_subscribe_failure": "FAIL",
+  "test_unsubscribe": "PASS",
+  "test_zero_length_clientid": "PASS"
+ },
+ "5": {
+  "test_assigned_clientid": "PASS",
+  "test_basic": "PASS",
+  "test_client_topic_alias": "FAIL",
+  "test_dollar_topics": "PASS",
+  "test_flow_control1": "PASS",
+  "test_flow_control2": "TIMEOUT",
+  "test_keepalive": "PASS",
+  "test_maximum_packet_size": "PASS",
+  "test_offline_message_queueing": "PASS",
+  "test_overlapping_subscriptions": "FAIL",
+  "test_payload_format": "FAIL",
+  "test_publication_expiry": "PASS",
+  "test_redelivery_on_reconnect": "PASS",
+  "test_request_response": "PASS",
+  "test_retained_message": "FAIL",
+  "test_server_keep_alive": "FAIL",
+  "test_server_topic_alias": "FAIL",
+  "test_session_expiry": "PASS",
+  "test_shared_subscriptions": "FAIL",
+  "test_subscribe_failure": "FAIL",
+  "test_subscribe_identifiers": "PASS",
+  "test_subscribe_options": "FAIL",
+  "test_unsubscribe": "PASS",
+  "test_user_properties": "FAIL",
+  "test_will_delay": "PASS",
+  "test_will_message": "PASS",
+  "test_zero_length_clientid": "PASS"
+ }
+}

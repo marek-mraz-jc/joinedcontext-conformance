@@ -19,6 +19,12 @@ message the broker sends in these sessions is validated against its message sche
 | `test_a_removed_view_closes_its_connections` (`view-removed`, 1008) | views |
 | `test_a_connection_ends_at_its_max_lifetime` (`lifetime`, 1000) | 8 |
 
+`test_rfc6455.py` runs `rfc6455_probe.py`: the Autobahn sections that need no echo server (ping and
+pong, reserved bits and opcodes, fragmented control frames, the close handshake, close codes,
+unmasked frames), judged on control frames only, because the channel sends its own `welcome` and
+the Autobahn fuzzingclient marks every case FAILED against it (T-4879). It also runs alone against a
+deployed Endpoint: `WS_PROTOCOL=ngsi-ld-ws python3 tests/ws/rfc6455_probe.py wss://api.{domain}/api/endpoint/{slug}/ws`.
+
 The closing reasons `overflow` and `idle` need a slow socket or a minute of silence; the crate's
 own tests cover them (`ws_a_slow_consumer_is_disconnected_not_buffered`, the idle bound).
 
