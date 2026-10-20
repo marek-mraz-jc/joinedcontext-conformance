@@ -1,0 +1,22 @@
+name: mqtt
+# Eclipse Paho MQTT 3.1.1 and 5 interop tests against RMQTT as the platform ships it (T-4879,
+# ADR-N-048), gated by tests/mqtt/baseline.json. Dispatch-only while the private repositories'
+# Actions minutes are metered (CLAUDE.md); put back: schedule: [{cron: "40 3 * * 1"}]
+on:
+  workflow_dispatch:
+permissions: { contents: read }
+jobs:
+  paho:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - name: Paho interop against the edge broker
+        env:
+          JC_REPORTS_DIR: ${{ github.workspace }}/reports/mqtt
+        run: tests/mqtt/run.sh
+      - if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: mqtt-paho-report
+          path: reports/mqtt

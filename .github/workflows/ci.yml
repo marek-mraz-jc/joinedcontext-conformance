@@ -71,6 +71,12 @@ jobs:
         run: python3 tests/datasets/selftest.py
       - name: the WebSocket fan-out smoke goes red on a notification outside its filter (T-4133)
         run: python3 tests/ws/fanout_smoke.py --selftest
+      - name: the RFC 6455 probe passes a conforming server and fails each case on a lax one (T-4879)
+        run: python3 tests/ws/rfc6455_probe.py --selftest
+      - name: the Paho MQTT interop gate goes red on a case its baseline passes (T-4879)
+        run: python3 tests/mqtt/paho_interop.py --selftest
+      - name: the nightly RFC 7946 and RFC 5545 checks go red on a planted break (T-4877, T-4879)
+        run: python3 tests/prod-nightly/compare.py --self-test
       - name: the committed record conforms to the DCAT-AP core shapes with nothing configured
         run: python3 -m pytest tests/ckan -q
       - name: the load mix asks every type on every surface and its probe stays paced (T-4754)

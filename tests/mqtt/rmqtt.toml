@@ -1,0 +1,27 @@
+# The listener of joinedcontext-deployment components/mqtt-brokers/charts/brokers/templates/_helpers.tpl
+# (`brokers.objects`, rmqtt.toml) with two changes for a broker alone in CI: anonymous clients, and
+# no rmqtt-auth-http or rmqtt-acl plugin (the gateway's CONNECT answer is the ACL on a cluster; here
+# every topic is open). Keep the listener lines in step with the chart.
+node.id = 1
+log.to = "console"
+log.level = "warn"
+plugins.dir = "/etc/rmqtt/plugins/"
+plugins.default_startups = []
+plugins.disabled_default_startups = ["rmqtt-http-api"]
+rpc.server_addr = "127.0.0.1:5363"
+listener.tls.external.enable = false
+listener.ws.external.enable = false
+listener.wss.external.enable = false
+listener.quic.external.enable = false
+listener.tcp.external.enable = false
+listener.tcp.internal.enable = true
+listener.tcp.internal.addr = "0.0.0.0:1883"
+listener.tcp.internal.max_connections = 1000
+listener.tcp.internal.max_packet_size = "1048576B"
+listener.tcp.internal.allow_anonymous = true
+listener.tcp.internal.max_qos_allowed = 1
+listener.tcp.internal.session_expiry_interval = "0s"
+listener.tcp.internal.max_session_expiry_interval = "0s"
+listener.tcp.internal.max_mqueue_len = 1000
+listener.tcp.internal.mqueue_rate_limit = "1000,1s"
+listener.tcp.internal.proxy_protocol = false
