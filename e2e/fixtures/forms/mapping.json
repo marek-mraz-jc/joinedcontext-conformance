@@ -1,0 +1,10 @@
+{
+  "kind": "mapping",
+  "family": "models",
+  "uischema": "mapping",
+  "open": {
+    "path": "/projects/{project}/models/helsinki",
+    "button": "^Mappings$"
+  },
+  "fill": []
+}

@@ -1,0 +1,19 @@
+{
+  "kind": "group",
+  "family": "access",
+  "uischema": "group",
+  "open": {
+    "path": "/organization/groups",
+    "button": "New group"
+  },
+  "fill": [
+    {
+      "label": "Group name",
+      "value": "t4824-demo-group"
+    }
+  ],
+  "invalid": {
+    "label": "Group name",
+    "value": "Not A Name!"
+  }
+}

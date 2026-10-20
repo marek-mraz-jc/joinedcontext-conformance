@@ -1,0 +1,19 @@
+{
+  "kind": "dataoffer",
+  "family": "dataspace",
+  "uischema": "dataoffer",
+  "open": {
+    "path": "/projects/{project}/dataoffers/new"
+  },
+  "plural": "dataoffers",
+  "fill": [
+    {
+      "label": "Name",
+      "value": "t4824-demo-offer"
+    }
+  ],
+  "invalid": {
+    "label": "Offer (ODRL, JSON)",
+    "value": "{not json"
+  }
+}

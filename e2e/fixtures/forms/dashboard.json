@@ -1,0 +1,19 @@
+{
+  "kind": "dashboard",
+  "family": "dashboards",
+  "uischema": "dashboard",
+  "open": {
+    "path": "/projects/{project}/dashboards",
+    "button": "New dashboard"
+  },
+  "fill": [
+    {
+      "label": "Name",
+      "value": "t4824-demo-dashboard"
+    }
+  ],
+  "invalid": {
+    "label": "Name",
+    "value": "Not A Name!"
+  }
+}

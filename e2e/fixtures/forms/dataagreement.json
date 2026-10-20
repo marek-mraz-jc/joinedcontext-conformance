@@ -1,0 +1,23 @@
+{
+  "kind": "dataagreement",
+  "family": "dataspace",
+  "uischema": "dataagreement",
+  "open": {
+    "path": "/projects/{project}/dataagreements/new"
+  },
+  "plural": "dataagreements",
+  "fill": [
+    {
+      "label": "Name",
+      "value": "t4824-demo-agreement"
+    },
+    {
+      "label": "Agreement identifier",
+      "value": "urn:uuid:4824"
+    }
+  ],
+  "invalid": {
+    "label": "Name",
+    "value": "Not A Name!"
+  }
+}

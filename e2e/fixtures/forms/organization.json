@@ -1,0 +1,10 @@
+{
+  "kind": "organization",
+  "family": "organization",
+  "uischema": "organization",
+  "open": {
+    "path": "/organization/settings",
+    "button": "^Edit"
+  },
+  "fill": []
+}

@@ -1,0 +1,23 @@
+{
+  "kind": "modelprojection",
+  "family": "models",
+  "uischema": "modelprojection",
+  "open": {
+    "path": "/projects/{project}/projections/new"
+  },
+  "plural": "projections",
+  "fill": [
+    {
+      "label": "Name",
+      "value": "t4824-demo-projection"
+    },
+    {
+      "label": "Major version",
+      "value": "1"
+    }
+  ],
+  "invalid": {
+    "label": "Name",
+    "value": "Not A Name!"
+  }
+}

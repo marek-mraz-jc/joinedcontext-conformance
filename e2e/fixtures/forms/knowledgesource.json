@@ -1,0 +1,48 @@
+{
+  "kind": "knowledgesource",
+  "family": "assistant",
+  "uischema": "knowledgesource",
+  "open": {
+    "path": "/projects/{project}/knowledgesources/new"
+  },
+  "plural": "knowledgesources",
+  "fill": [
+    {
+      "label": "Name",
+      "value": "t4824-demo-knowledge"
+    }
+  ],
+  "invalid": {
+    "label": "Name",
+    "value": "Not A Name!"
+  },
+  "variations": [
+    {
+      "name": "type-web|site",
+      "steps": [
+        {
+          "label": "Type",
+          "option": "web|site"
+        }
+      ]
+    },
+    {
+      "name": "type-ckan|catalog",
+      "steps": [
+        {
+          "label": "Type",
+          "option": "ckan|catalog"
+        }
+      ]
+    },
+    {
+      "name": "type-file|upload",
+      "steps": [
+        {
+          "label": "Type",
+          "option": "file|upload"
+        }
+      ]
+    }
+  ]
+}

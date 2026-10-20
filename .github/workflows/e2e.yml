@@ -71,7 +71,8 @@ jobs:
   journeys:
     needs: preflight
     runs-on: ubuntu-latest
-    timeout-minutes: 40
+    # The forms shard walks 30 forms at the edge's request rate; the others stay at 40.
+    timeout-minutes: ${{ matrix.shard == 'forms' && 75 || 40 }}
     strategy:
       fail-fast: false
       # Sharded by chain, not by count: journeys 2→3 and 7→8→10→11 read what the previous spec
@@ -110,6 +111,12 @@ jobs:
               smoke.spec.ts
               accessibility/wcag.spec.ts
               journeys/19-login-theme.spec.ts
+          # Every form opened, filled, checked and broken, desktop and phone (T-4824): about 40
+          # minutes at the edge's request rate, so a shard of its own; the gallery is
+          # reports/e2e/every-form/index.html in the artifact.
+          - shard: forms
+            specs: >-
+              journeys/36-every-form.spec.ts
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0

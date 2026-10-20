@@ -1,0 +1,19 @@
+{
+  "kind": "datamodel",
+  "family": "models",
+  "uischema": "datamodel",
+  "open": {
+    "path": "/projects/{project}/models",
+    "button": "New blank model"
+  },
+  "fill": [
+    {
+      "label": "Name",
+      "value": "t4824-demo-model"
+    }
+  ],
+  "invalid": {
+    "label": "Name",
+    "value": "Not A Name!"
+  }
+}

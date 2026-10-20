@@ -1,0 +1,19 @@
+{
+  "kind": "contextsourceregistration",
+  "family": "spaces",
+  "uischema": "contextsourceregistration",
+  "open": {
+    "path": "/projects/{project}/csrs/new"
+  },
+  "plural": "csrs",
+  "fill": [
+    {
+      "label": "Name",
+      "value": "t4824-demo-csr"
+    }
+  ],
+  "invalid": {
+    "label": "Name",
+    "value": "Not A Name!"
+  }
+}
