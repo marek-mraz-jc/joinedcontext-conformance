@@ -1,0 +1,14 @@
+k6 API mix (T-4714, T-4754): 400 requests (44 skipped), 100/s for 3m, p95 budget 500 ms per kind, 10 WebSocket subscribers
+dropped iterations: 0; ws opened 0, subscribed 1
+thresholds: RED http_req_duration{kind:geo}, checks, http_req_duration{kind:csv}, http_req_duration{kind:odata}, http_req_duration{kind:ogc}, http_req_duration{kind:temporal}, http_req_duration{kind:mcp}, http_req_duration{kind:ngsi}, http_req_failed
+
+kind	requests	req/s	p50 ms	p95 ms	p99 ms	errors %	statuses
+csv	784	4.4	27	1213	2280	71.94	200:220 503:564
+geo	459	2.5	125	2526	2925	42.70	200:263 503:196
+mcp	833	4.6	27	738	1137	81.87	200:151 429:433 503:249
+ngsi	1566	8.7	139	977	1196	31.61	200:1071 503:495
+odata	781	4.3	113	986	1183	33.80	200:517 503:264
+ogc	780	4.3	113	980	1197	33.97	200:515 503:265
+schema	549	3.0	37	232	450	25.87	200:407 503:142
+temporal	392	2.2	152	1132	10000	34.95	0:6 200:255 503:131
+all	6144	34.1	66	1063	2266	44.68	
