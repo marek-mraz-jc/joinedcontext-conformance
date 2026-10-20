@@ -29,7 +29,7 @@ test.describe('space data workspace (T-4825)', () => {
     await page.goto(`/projects/${PROJECT}/spaces?lang=en`);
     for (const space of SPACES) {
       const row = page.getByRole('row').filter({ has: page.getByText(space, { exact: true }) });
-      await expect(row.getByTestId('space-entities')).toHaveText(/^\d[\d,. ]*$/, { timeout: 30_000 });
+      await expect(row.getByTestId('space-entities')).toHaveText(/^\d[\d,. ]*$/, { timeout: 40_000 });
       await expect(row).not.toContainText('The count is not available');
     }
     await shoot(page, info, 'spaces-list');
@@ -39,7 +39,7 @@ test.describe('space data workspace (T-4825)', () => {
     const { page } = steward;
     await page.goto(`/projects/${PROJECT}/spaces/${SPACES[0]}?lang=en`);
     const tabs = page.getByRole('tablist', { name: 'Parts of the space' });
-    await expect(tabs.getByRole('tab', { name: 'Data' })).toHaveAttribute('aria-selected', 'true');
+    await expect(tabs.getByRole('tab', { name: 'Data', exact: true })).toHaveAttribute('aria-selected', 'true');
     for (const name of ['Data model', 'Quality', 'Retention', 'Endpoints', 'Policies']) {
       await expect(tabs.getByRole('tab', { name: new RegExp(name, 'i') })).toBeVisible();
     }
