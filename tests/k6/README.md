@@ -10,6 +10,7 @@ Tasks:
 - **T-0067**: Bulk export streaming benchmark (`bulk-export.js`)
 - **T-0332**: Sustained load on one endpoint's representations (`transport_endpoint_load.js`)
 - **T-2800**: The nightly dev budget, 100 entities at 20 requests a second, p95 under 300 ms, on an endpoint and its space's canonical surface (`dev-budgets.js`, run and judged by `scripts/budgets-dev.py`)
+- **T-4889**: The platform's read surfaces at night on dev: the Portal grid's page, count and filter and an MCP tools/call through one Endpoint (`platform-surfaces.js`), 200 readers of the Portal's live view and 500 MQTT devices at 1 msg/s (`streams.py`, k6 holds neither stream), with `kubectl top` beside it (`night.sh`). The broker's own surfaces (NGSI-LD, OData, OGC, STA, iCal, MCP, WebSocket fan-out) are Antares `dev/perf/surfaces.sh` and its weekly `load-surfaces` lane
 - **T-3059**: The knowledge assistant under 20 concurrent public chats, every chat answered, p95 of a full answer recorded, RSS read with `kubectl top pod` against the 1 GB budget; bounded to `JC_K6_CHATS` chats (default 40, at most 200) because every chat spends the deployment's model budget (`assistant-chats.js`)
 
 ## Execution
@@ -225,6 +226,25 @@ asserted on the sustained phase only: the burst's 429s are the point rather than
 | `JC_K6_WARMUP_READS` | warm-up reads to populate the policy cache, default 20 |
 
 ---
+
+## 5. Platform surfaces at night (`night.sh`, `platform-surfaces.js`, `streams.py`, T-4889)
+
+The deployer's batch runs `night.sh` against dev between 01:00 and 04:00Z (the script refuses other
+hours). It never runs the ETSI TTF suite, keeps the edge's bot limits on and reads with a viewer token;
+MQTT publishes with a device identity of a scratch space. Prod gets read-only shapes only, through
+T-4877, and only after a green dev night.
+
+| Shape | Load | Budget | Why this budget |
+|---|---|---|---|
+| `grid-page`, `grid-count`, `grid-filter` | 5 req/s each, 5 min | p95 < 800 ms, p99 < 2 s, errors < 1 % | the grid redraws on each page; above ~1 s a person sees it stall |
+| `mcp` (tools/call query_entities) | 5 req/s, 5 min | the same | an agent's tool call sits inside a model turn the person waits on, so it gets the grid's budget |
+| `sse` (Portal live view) | 200 readers held 5 min | every reader answered 200, none dropped, p95 to headers < 2 s | a dropped stream freezes a dashboard without telling anyone |
+| `mqtt` (edge broker into a pipeline) | 500 devices x 1 msg/s, QoS 1 | 99.9 % acked, p95 PUBACK < 500 ms, 99 % of devices landed in the space | a device that loses acks retries and doubles the load; landed proves the pipeline, not only the broker |
+
+`night.sh` writes `result.txt` (one PASS/FAIL/NOT RUN line per check), the k6 summaries and `top.txt`
+(`kubectl top pod` every 30 s for the broker, gateway, Portal and PostgreSQL pods) under
+`reports/night-<stamp>/`. `test_streams.py` proves `streams.py` fails a dropped stream, a refused
+reader and a planted slow PUBACK.
 
 ## Self-test
 
