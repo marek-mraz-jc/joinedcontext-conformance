@@ -6,6 +6,7 @@
 #   bulk-export.js                    - high-volume streaming export benchmark (T-0067)
 #   transport_endpoint_load.js        - sustained load on one endpoint's representations (T-0332)
 #   api-mix-100rps.js                 - a list of distinct requests over every interface at 100/s (T-4714)
+#   platform-surfaces.js              - the Portal grid and MCP reads through one Endpoint (T-4889; night.sh)
 # Extra arguments go to `k6 run`, e.g.  jc-conformance k6 -- --vus 10
 set -euo pipefail
 here=$(cd -- "$(dirname -- "$0")" && pwd)
@@ -16,6 +17,9 @@ if [ "${JC_K6_SCRIPT:-}" = "bulk-export.js" ]; then
   : "${EXPORT_URL:?set EXPORT_URL to the root of an endpoint, e.g. https://host/api/endpoint/<slug>}"
 elif [ "${JC_K6_SCRIPT:-}" = "api-mix-100rps.js" ]; then
   : "${JC_K6_REQUESTS:?set JC_K6_REQUESTS to the request list, e.g. tasks/evidence/T-4714/requests-mix-dev.tsv}"
+elif [ "${JC_K6_SCRIPT:-}" = "platform-surfaces.js" ]; then
+  : "${ENDPOINT_URL:?set ENDPOINT_URL to the root of an endpoint, e.g. https://host/api/endpoint/<slug>}"
+  : "${ENTITY_TYPE:?set ENTITY_TYPE to the type the grid shows}"
 elif [ "${JC_K6_SCRIPT:-}" = "transport_endpoint_load.js" ]; then
   : "${ENDPOINT_URL:?set ENDPOINT_URL to the root of an endpoint, e.g. https://host/api/endpoint/<slug>}"
   [ -n "${BROKER_URL:-}" ] || echo "BROKER_URL unset: the EP-28 overhead budget will not be measured" >&2
