@@ -11,3 +11,4 @@ __pycache__/
 # compliance/baseline.json here and Requirements/compliance-matrix.md in the docs repository.
 compliance/index.json
 compliance/compliance-report.*
+tests/k6/summary.*
