@@ -1,4 +1,5 @@
 {
+  "agentprofile:crowded:form": "Limits, workspace and reach now fold (their required fields have defaults); joinedcontext-portal agent/worker-t4824/T-4824 fixes it; the finding clears once that build is on dev.",
   "agentprofile:permission:New": "Agent profiles are organization manifests: demo.steward holds no propose right on the organization, and the disabled New says so in its title.",
   "dashboard:open:form": "dev's branding hides the dashboards section (isHiddenSection, T-2874): /dashboards goes to the spaces, so the form is reachable only where the section is on.",
   "layer:open:form": "Map layers live on the dashboards page, which dev's branding hides (T-2874).",
@@ -14,13 +15,13 @@
   "project:help:Description": "the New project dialog had help on Name alone; joinedcontext-portal agent/worker-t4824/T-4824 fixes it; the finding clears once that build is on dev.",
   "datamodel:help:Name": "The LinkML model editor is a workbench, not a manifest form: its steps box above the fields says what to type where (Name the first class, Import a Smart Data Model).",
   "datamodel:help:Space": "The LinkML model editor is a workbench, not a manifest form: its steps box above the fields says what to type where (Name the first class, Import a Smart Data Model).",
-  "datamodel:help:New class": "The LinkML model editor is a workbench, not a manifest form: its steps box above the fields says what to type where (Name the first class, Import a Smart Data Model).",
+  "datamodel:help:New type": "The LinkML model editor is a workbench, not a manifest form: its steps box above the fields says what to type where (Name the first class, Import a Smart Data Model).",
   "datamodel:help:New enum": "The LinkML model editor is a workbench, not a manifest form: its steps box above the fields says what to type where (Name the first class, Import a Smart Data Model).",
-  "datamodel:help:New slot": "The LinkML model editor is a workbench, not a manifest form: its steps box above the fields says what to type where (Name the first class, Import a Smart Data Model).",
+  "datamodel:help:New field": "The LinkML model editor is a workbench, not a manifest form: its steps box above the fields says what to type where (Name the first class, Import a Smart Data Model).",
   "datamodel-sdm:help:Name": "The LinkML model editor is a workbench, not a manifest form: its steps box above the fields says what to type where (Name the first class, Import a Smart Data Model).",
   "datamodel-sdm:help:Space": "The LinkML model editor is a workbench, not a manifest form: its steps box above the fields says what to type where (Name the first class, Import a Smart Data Model).",
-  "datamodel-sdm:help:New class": "The LinkML model editor is a workbench, not a manifest form: its steps box above the fields says what to type where (Name the first class, Import a Smart Data Model).",
+  "datamodel-sdm:help:New type": "The LinkML model editor is a workbench, not a manifest form: its steps box above the fields says what to type where (Name the first class, Import a Smart Data Model).",
   "datamodel-sdm:help:New enum": "The LinkML model editor is a workbench, not a manifest form: its steps box above the fields says what to type where (Name the first class, Import a Smart Data Model).",
-  "datamodel-sdm:help:New slot": "The LinkML model editor is a workbench, not a manifest form: its steps box above the fields says what to type where (Name the first class, Import a Smart Data Model).",
+  "datamodel-sdm:help:New field": "The LinkML model editor is a workbench, not a manifest form: its steps box above the fields says what to type where (Name the first class, Import a Smart Data Model).",
   "organization:crowded:form": "Policies and limits now fold; joinedcontext-portal agent/worker-t4824/T-4824 fixes it; the finding clears once that build is on dev."
 }
