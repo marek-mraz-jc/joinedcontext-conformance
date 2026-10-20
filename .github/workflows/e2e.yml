@@ -103,6 +103,7 @@ jobs:
               journeys/13-dashboard-live.spec.ts
               journeys/15-session.spec.ts
               journeys/16-role-permissions.spec.ts
+              journeys/37-four-eyes-access.spec.ts
               journeys/20-app-isolation.spec.ts
               journeys/33-usability-five-tasks.spec.ts
           - shard: accessibility
@@ -134,6 +135,8 @@ jobs:
           PORTAL_TEMP_PASSWORD: ${{ secrets.PORTAL_TEMP_PASSWORD }}
           PORTAL_APPROVER_USER: ${{ secrets.PORTAL_APPROVER_USER }}
           PORTAL_APPROVER_PASSWORD: ${{ secrets.PORTAL_APPROVER_PASSWORD }}
+          PORTAL_ADMIN_USER: ${{ secrets.PORTAL_ADMIN_USER }}
+          PORTAL_ADMIN_PASSWORD: ${{ secrets.PORTAL_ADMIN_PASSWORD }}
           PORTAL_BLUEPRINT: ${{ vars.PORTAL_BLUEPRINT }}
           PORTAL_SENSOR_LABEL: ${{ vars.PORTAL_SENSOR_LABEL }}
           PORTAL_FORBIDDEN_ENTITY_LABEL: ${{ vars.PORTAL_FORBIDDEN_ENTITY_LABEL }}
