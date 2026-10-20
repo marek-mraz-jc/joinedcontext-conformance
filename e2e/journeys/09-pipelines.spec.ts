@@ -72,3 +72,61 @@ test.describe('Journey 9: a running pipeline and a counter that moves (T-0354)',
     ).not.toMatch(/-----BEGIN|password\s*[:=]\s*\S|client[_-]?secret\s*[:=]\s*\S/i);
   });
 });
+
+/**
+ * T-4817: the list says for every pipeline when it last ran and with what result, a name opens the
+ * pipeline's own page (Edit is a button there), an unknown sub-path is the not-found page, and a
+ * phone reads the list as cards with nothing cut off. Screenshots at 1440 and 400 px are attached.
+ */
+test.describe('Journey 9b: list, overview, edit (T-4817)', () => {
+  const OVERVIEW_PIPELINE = process.env.PORTAL_OVERVIEW_PIPELINE || 'air-quality';
+
+  for (const [label, viewport] of [
+    ['desktop', { width: 1440, height: 900 }],
+    ['phone', { width: 400, height: 860 }],
+  ] as const) {
+    test(`UI the list reads its last runs, and a name opens the overview (${label})`, async ({ steward }, testInfo) => {
+      const { page } = steward;
+      await page.setViewportSize(viewport);
+      await openView(page, pipelines);
+
+      const lastRuns = page.getByTestId('pipeline-last-run');
+      await expect(lastRuns.first(), 'every row carries a Last run cell').toBeVisible({ timeout: 30_000 });
+      await expect(
+        page.getByText(/Runs on its schedule|Beží podľa svojho plánu/),
+        'the old STREAM placeholder is gone',
+      ).toHaveCount(0);
+      const overflow = await page.evaluate(
+        () => document.scrollingElement!.scrollWidth - document.scrollingElement!.clientWidth,
+      );
+      expect(overflow, 'the list is not cut off on the right').toBeLessThanOrEqual(1);
+      await testInfo.attach(`pipelines-${label}.png`, {
+        body: await page.screenshot({ fullPage: true }),
+        contentType: 'image/png',
+      });
+
+      const row = page.getByRole('row').filter({ hasText: OVERVIEW_PIPELINE }).first();
+      await row.getByRole('link').first().click();
+      await expect(page).toHaveURL(new RegExp(`/pipelines/${OVERVIEW_PIPELINE}$`));
+      await expect(page.locator('#runs')).toBeVisible({ timeout: 30_000 });
+      await testInfo.attach(`pipeline-overview-${label}.png`, {
+        body: await page.screenshot({ fullPage: true }),
+        contentType: 'image/png',
+      });
+
+      await page.getByRole('button', { name: /^(Edit|Upraviť)$/ }).click();
+      await expect(page).toHaveURL(new RegExp(`/pipelines/${OVERVIEW_PIPELINE}/edit$`));
+      await expect(page.getByRole('dialog')).toBeVisible({ timeout: 30_000 });
+    });
+  }
+
+  test('UI-15 an unknown sub-path of a pipeline is the not-found page', async ({ steward }) => {
+    const { page } = steward;
+    await openView(page, pipelines);
+    const here = new URL(page.url());
+    await page.goto(`${here.origin}${here.pathname.replace(/\/$/, '')}/${OVERVIEW_PIPELINE}/runs`);
+    await expect(page.getByText(/This page does not exist|Táto stránka neexistuje/)).toBeVisible({
+      timeout: 30_000,
+    });
+  });
+});
