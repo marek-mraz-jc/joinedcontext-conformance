@@ -17,7 +17,7 @@ export function requireEnv(name: string): string {
 export interface PortalFixtures {
   steward: { context: BrowserContext; page: Page };
   approver: { context: BrowserContext; page: Page };
-  signIn: (page: Page, user: string, pass: string) => Promise<void>;
+  signIn: (page: Page, user: string, pass: string, portal?: string) => Promise<void>;
   expectNoSeriousA11yViolations: (page: Page, view?: string) => Promise<void>;
   expectSessionCookie: (context: BrowserContext, page?: Page) => Promise<void>;
 }
@@ -55,7 +55,11 @@ export async function openProject(page: Page, project: string): Promise<void> {
   const menu = page.getByRole('button', { name: /^projects$|^projekty$|^projekte$/i }).first();
   await expect(menu, 'the sidebar must offer the project menu').toBeVisible({ timeout: 20_000 });
   await menu.click();
-  const entry = page.getByRole('menuitem', { name: new RegExp(`^${project}$`, 'i') }).first();
+  // An entry reads "<title> <slug>" (plus a Sample badge), the slug in its own line, or the slug
+  // alone when it is the title: match that line exactly, so `helsinki` takes neither the title
+  // "Helsinki" of another project nor "helsinki-mobility".
+  const entry = page.getByRole('menuitem')
+    .filter({ has: page.getByText(project, { exact: true }) }).first();
   await expect(
     entry,
     `the project menu must offer ${project}; this run signs in as a user who is not a member of it, ` +

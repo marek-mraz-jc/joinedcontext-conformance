@@ -86,13 +86,14 @@ test.describe('Journey 36: one plain model editor (T-4829)', () => {
     await shot(page, 'model-overview-steward-400');
   });
 
-  test('the viewer reads the model with no Add field and nothing disabled to guess at', async ({ browser, signIn }) => {
+  test('the viewer reads the model with no Add field and nothing disabled to guess at', async ({ browser, baseURL, signIn }) => {
     const user = process.env.PORTAL_VIEWER_USER;
     const pass = process.env.PORTAL_VIEWER_PASSWORD;
     test.skip(!user || !pass, 'PORTAL_VIEWER_USER and PORTAL_VIEWER_PASSWORD name the read-only demo user');
-    const context = await browser.newContext();
+    const context = await browser.newContext({ baseURL, ignoreHTTPSErrors: true, locale: 'en-GB' });
     const page = await context.newPage();
-    await signIn(page, user as string, pass as string);
+    await page.goto('/');
+    await signIn(page, user as string, pass as string, baseURL);
     for (const [width, height] of [[1440, 900], [400, 860]]) {
       await page.setViewportSize({ width, height });
       await openModel(page);
