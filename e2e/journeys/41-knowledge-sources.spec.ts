@@ -153,21 +153,26 @@ async function proposeAssistant(page: Page): Promise<void> {
  * when the model answered, or the error sentence when it did not.
  */
 async function ask(page: Page, question: string, step: string): Promise<{ answered: boolean; sources: string; error: string }> {
-  await openKnowledge(page);
-  await page.getByRole('button', { name: `Ask ${ASSISTANT}`, exact: true }).click();
   const dialog = page.getByRole('dialog', { name: `Ask ${ASSISTANT}` });
-  await dialog.getByRole('textbox', { name: 'Your question' }).fill(question);
-  await dialog.getByRole('button', { name: 'Send' }).click();
-  const conversation = dialog.getByRole('list', { name: 'Conversation' });
-  const answer = conversation.getByRole('list', { name: 'Sources' });
-  const failure = conversation.getByRole('alert');
-  await expect(answer.or(failure).first(), 'the assistant answers with its sources or says why not').toBeVisible({ timeout: 120_000 });
+  const answer = dialog.getByRole('list', { name: 'Conversation' }).getByRole('list', { name: 'Sources' });
+  const failure = dialog.getByRole('alert');
+  // The assistant takes an approved deployment up about a minute after the Portal lists it; until
+  // then it answers "no such assistant", and the person asks again.
+  await expect(async () => {
+    if (await dialog.isVisible()) await dialog.getByRole('button', { name: 'Close' }).click();
+    await openKnowledge(page);
+    await page.getByRole('button', { name: `Ask ${ASSISTANT}`, exact: true }).click();
+    await dialog.getByRole('textbox', { name: 'Your question' }).fill(question);
+    await dialog.getByRole('button', { name: 'Send' }).click();
+    await expect(answer.or(failure).first(), 'the assistant answers with its sources or says why not').toBeVisible({ timeout: 120_000 });
+    expect(await failure.isVisible() ? await failure.innerText() : '').not.toMatch(/no such assistant/i);
+  }).toPass({ timeout: 420_000, intervals: [30_000] });
   await shot(page, step);
   const answered = await answer.isVisible();
   const result = {
     answered,
     sources: answered ? await answer.innerText() : '',
-    error: answered ? '' : await failure.innerText(),
+    error: answered ? '' : await failure.first().innerText(),
   };
   await dialog.getByRole('button', { name: 'Close' }).click();
   return result;
