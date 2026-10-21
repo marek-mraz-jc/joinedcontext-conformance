@@ -4,7 +4,7 @@ import type { Page } from '@playwright/test';
 import { test, expect, signIn } from '../fixtures/portal.js';
 
 /**
- * Journey 41 (T-4869, AG-30, AG-31): a steward adds an uploaded-files source and a website source
+ * Journey 44 (T-4869, AG-30, AG-31): a steward adds an uploaded-files source and a website source
  * on the Knowledge sources page, uploads a PDF, watches both get read, finds a sentence of the PDF
  * with "Try the search", asks the project's internal assistant a question only the PDF answers,
  * and removes both sources; a viewer is refused every write in words.
@@ -220,7 +220,7 @@ async function viewerIsRefused(browser: import('@playwright/test').Browser, base
   }
 }
 
-test.describe('Journey 41: knowledge sources answer the assistant (T-4869)', () => {
+test.describe('Journey 44: knowledge sources answer the assistant (T-4869)', () => {
   test.describe.configure({ mode: 'serial' });
   test.setTimeout(1_800_000);
 
