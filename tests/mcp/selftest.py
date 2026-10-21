@@ -42,6 +42,8 @@ REQUIRED_FAILURES = [
     "test_an_anonymous_write_is_refused_before_it_reaches_the_broker[MCP_URL-create_subscription]",
     # T-5045: the broken Endpoint serves /ws but its describe_access names no liveUpdates.
     "test_describe_access_names_the_websocket_an_agent_can_open",
+    # T-5044: the broken stub's describe_access grants an anonymous caller a write.
+    "test_an_anonymous_caller_reads_the_access_it_has[ENDPOINT_MCP_URL]",
 ]
 
 

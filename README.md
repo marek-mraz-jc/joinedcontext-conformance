@@ -16,6 +16,8 @@ The suites:
 - schemathesis against the Portal API OpenAPI document
 - k6 load profiles (thousands rps on endpoints, EP performance budgets)
 - pySHACL validation of served examples against served SHACL (DM-46)
+- iCalendar RFC 5545 validator and the Event mapping of a view's `.ics` feed (`tests/ical`)
+- the standards suite on demand: every standard surface of chosen Endpoints of dev or prod (`tests/standards`)
 
 And the repository around them:
 
@@ -135,6 +137,39 @@ in a row file a task, and `reports/budgets-history.json` keeps the trend.
 
 A failure that survives the profile is a platform finding, and becomes a task
 (T-0780…T-0783 are the ones found this way).
+
+### Run the standards suite
+
+The `standards` workflow runs the standard surfaces of deployed Endpoints and puts one row per
+Endpoint and suite on the run page (T-5044). Start it from the Actions tab: **standards**, **Run
+workflow**, then choose:
+
+| Input | Meaning |
+|---|---|
+| `target` | `dev` or `prod`. A prod run is anonymous, read-only and paced (30 s between suites). |
+| `endpoints` | Endpoint ids, space separated. Empty takes `tests/standards/endpoints-dev.txt` or `tests/prod-nightly/endpoints.txt`. |
+| `suites` | `all`, or any of `ogc sta odata ngsi-ld ical ws mcp` |
+| `antares_ref` | the Antares commit whose OGC baseline and TEAM Engine image the run compares with |
+| `write_endpoint`, `org_domain`, `space` | dev only: the write Endpoint for `tests/etsi/smoke.robot` and the WebSocket write case |
+
+| Suite | What runs |
+|---|---|
+| `ogc` | OGC API Features ETS 1.8 in TEAM Engine, every collection, compared with Antares's CI baseline; RFC 7946 of five items pages (`tests/prod-nightly/run.sh`) |
+| `odata` | the read cases of `tests/odata` (ABNF URL forms, `$metadata`) |
+| `sta` | the SensorThings 1.1 read path (`tests/sta`) |
+| `ngsi-ld` | the anonymous read smoke `tests/ngsild-read`; on the dev write Endpoint with the CI service account also `tests/etsi/smoke.robot`. The ETSI TTF suite never runs here. |
+| `ical` | `tests/ical` live: RFC 5545 of `/ical/v1/events.ics`, and every Event of the view with a name and a start is one VEVENT |
+| `ws` | `tests/ws/test_gateway_ws.py` through the gateway: 426 without an upgrade, 101 and `x-welcome`, subscribe/update/unsubscribe, resume, the caps of 10 connections and 64 subscriptions; on the dev write Endpoint a write arrives as a notification |
+| `mcp` | `tests/mcp/test_mcp_anonymous_read_only.py`: `tools/list` holds reads only, writes are refused, `describe_access` grants no write |
+
+A suite an Endpoint does not serve is reported as not served. The artifact `standards-<target>` holds
+`results.tsv`, `summary.md` and each suite's log and JUnit file. The dev write cases need the
+repository secret `NGSILD_CLIENT_SECRET` (the `banskabystrica-conformance` client); without it they
+are skipped and the rest runs anonymously. The same run from a shell:
+
+```sh
+TARGET=prod SUITES="ical ws mcp" ANTARES_DIR=../Antares-NGSI-LD-Context-Broker tests/standards/run.sh
+```
 
 ## 6. Security
 

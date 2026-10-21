@@ -83,14 +83,23 @@ ENTITIES_BY_SPACE = {
 ANONYMOUS_TOOLS = frozenset(
     {
         "list_endpoints",
+        "get_endpoint",
+        "search",
+        "search_documents",
         "list_types",
+        "get_type",
+        "list_type_details",
+        "list_attributes",
+        "list_attribute_details",
+        "get_attribute",
         "query_entities",
+        "summarize",
         "get_entity",
         "get_attribute_value",
+        "query_temporal",
         "retrieve_temporal",
         "describe_schema",
         "describe_access",
-        "search_documents",
     }
 )
 
@@ -382,7 +391,7 @@ class StubMcpHandler(BaseHTTPRequestHandler):
             if anonymous and tool_name not in ANONYMOUS_TOOLS:
                 self._send_json_rpc(
                     req_id,
-                    error={"code": -32602, "message": f"{tool_name} cannot be called without a token"},
+                    error={"code": -32602, "message": f"`{tool_name}` is not offered here: this surface reads only"},
                 )
                 return
             if tool_name == "search_documents" and self._is_hub(path) and self.server.mode != "broken":
@@ -518,11 +527,8 @@ class StubMcpHandler(BaseHTTPRequestHandler):
                 },
                 {
                     "name": "describe_access",
-                    "description": "What this caller may read and write here, and how to reach it",
-                    "inputSchema": {
-                        "type": "object",
-                        "properties": {"format": {"type": "string", "enum": ["permissions", "odrl"]}},
-                    },
+                    "description": "What the caller's grant allows on this Endpoint",
+                    "inputSchema": {"type": "object", "properties": {"format": {"type": "string"}}},
                     "annotations": {"readOnlyHint": True, "destructiveHint": False},
                 },
                 {
@@ -591,12 +597,6 @@ class StubMcpHandler(BaseHTTPRequestHandler):
                 space = tool_args["space"]
             elif "tenant" in tool_args:
                 space = tool_args["tenant"]
-
-        if tool_name == "describe_access":
-            # The stub serves no WebSocket, so the access document names no liveUpdates (T-5045).
-            access = {"space": space, "read": ["*"], "write": []}
-            self._send_json_rpc(req_id, result={"structuredContent": {"access": access}})
-            return
 
         if tool_name == "query_entities":
             entities = ENTITIES_BY_SPACE.get(space, [])
@@ -683,6 +683,17 @@ class StubMcpHandler(BaseHTTPRequestHandler):
                     "properties": {"temperature": {"type": "number"}},
                 }
             }
+            self._send_json_rpc(req_id, result=result)
+            return
+
+        if tool_name == "describe_access":
+            # Defect (broken mode): the anonymous grant holds a write.
+            actions = ["queryEntity", "retrieveEntity"] + (["createEntity"] if self.server.mode == "broken" else [])
+            permissions = [{"resource": {"type": "AirQualityObserved"}, "actions": actions, "attributes": "*"}]
+            # Shaped as the gateway's jsonrpc::answered: the text and structuredContent.access hold
+            # one document. The stub serves no WebSocket, so it names no liveUpdates (T-5045).
+            access = {"permissions": permissions}
+            result = {"content": [{"type": "text", "text": json.dumps(access)}], "structuredContent": {"access": access}}
             self._send_json_rpc(req_id, result=result)
             return
 

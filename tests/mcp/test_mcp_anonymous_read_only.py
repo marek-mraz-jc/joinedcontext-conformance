@@ -12,23 +12,34 @@ validation instead of creating anything, so the suite never writes to the system
 
 from __future__ import annotations
 
+import json
 import os
 from urllib.parse import urlsplit, urlunsplit
 
 import pytest
 
-#: What a caller without a token may list and call (platform `mcp/tools.rs` ANONYMOUS_TOOLS).
+#: What a caller without a token may list and call (platform `mcp/tools.rs` ANONYMOUS_TOOLS, main
+#: db4d8cb; T-5044 brought the list up to date).
 ANONYMOUS_TOOLS = {
     "list_endpoints",
+    "get_endpoint",
+    "search",
+    # The public pages and documents of the attached knowledge sources (EP-133, T-4659).
+    "search_documents",
     "list_types",
+    "get_type",
+    "list_type_details",
+    "list_attributes",
+    "list_attribute_details",
+    "get_attribute",
     "query_entities",
+    "summarize",
     "get_entity",
     "get_attribute_value",
+    "query_temporal",
     "retrieve_temporal",
     "describe_schema",
     "describe_access",
-    # The public pages and documents of the attached knowledge sources (EP-133, T-4659).
-    "search_documents",
 }
 
 #: The surfaces a caller without a token may reach: the hub, an Endpoint's MCP, a space's MCP.
@@ -45,7 +56,9 @@ def anonymous(request, make_mcp_client):
     client = make_mcp_client(url, None)
     probe = client.post({"jsonrpc": "2.0", "id": 0, "method": "ping"}, raw=True)
     if probe.status_code in (401, 403, 404):
-        pytest.skip(f"{request.param} is not open to a caller without a token ({probe.status_code})")
+        pytest.skip(
+            f"{request.param} is not open to a caller without a token ({probe.status_code})"
+        )
     client.initialize()
     return request.param, client
 
@@ -54,17 +67,58 @@ def test_an_anonymous_tool_list_holds_reads_only(anonymous):
     surface, client = anonymous
     names = set(client.tool_names())
     assert names, f"{surface}: an anonymous caller lists no tool at all"
-    assert names <= ANONYMOUS_TOOLS, f"{surface} lists {sorted(names - ANONYMOUS_TOOLS)} without a token"
+    assert names <= ANONYMOUS_TOOLS, (
+        f"{surface} lists {sorted(names - ANONYMOUS_TOOLS)} without a token"
+    )
 
 
-@pytest.mark.parametrize("tool", ["create_subscription", "delete_subscription", "batch_upsert"])
+@pytest.mark.parametrize(
+    "tool", ["create_subscription", "delete_subscription", "batch_upsert"]
+)
 def test_an_anonymous_write_is_refused_before_it_reaches_the_broker(anonymous, tool):
     surface, client = anonymous
     arguments = {"endpoint": "any"} if surface == "HUB_MCP_URL" else {}
     frame = client.tool_call(tool, arguments)
     assert "error" in frame, f"{surface}: {tool} without a token answered {frame}"
     assert frame["error"]["code"] == -32602, f"{surface}: {frame}"
-    assert "without a token" in frame["error"]["message"], f"{surface}: {frame}"
+    assert (
+        "is not offered here: this surface reads only" in frame["error"]["message"]
+    ), f"{surface}: {frame}"
+
+
+def test_an_anonymous_caller_reads_the_access_it_has(anonymous):
+    """describe_access answers an anonymous caller its grant: permissions, each naming a resource
+    and actions, and no write among them beyond what a subscription needs (T-5044)."""
+    surface, client = anonymous
+    if "describe_access" not in client.tool_names():
+        pytest.skip(f"{surface} lists no describe_access")
+    arguments = {"endpoint": "any"} if surface == "HUB_MCP_URL" else {}
+    frame = client.tool_call("describe_access", arguments)
+    if surface == "HUB_MCP_URL" and "error" in frame:
+        pytest.skip(
+            "the hub names no Endpoint for describe_access without one it lists"
+        )
+    assert "result" in frame and not frame["result"].get("isError"), (
+        f"{surface}: {frame}"
+    )
+    text = frame["result"]["content"][0]["text"]
+    permissions = json.loads(text)["permissions"]
+    assert permissions, (
+        f"{surface}: an anonymous caller is granted nothing: {text[:300]}"
+    )
+    writes = {
+        "createEntity",
+        "updateEntity",
+        "deleteEntity",
+        "upsertBatch",
+        "createBatch",
+        "deleteBatch",
+    }
+    for p in permissions:
+        assert p.get("resource") and p.get("actions"), p
+        assert not writes & set(p["actions"]), (
+            f"{surface}: anonymous may {sorted(writes & set(p['actions']))}"
+        )
 
 
 def test_the_hub_searches_its_public_documents_with_their_metadata(make_mcp_client):
@@ -77,7 +131,9 @@ def test_the_hub_searches_its_public_documents_with_their_metadata(make_mcp_clie
     client = make_mcp_client(url, None)
     client.initialize()
     if "search_documents" not in client.tool_names():
-        pytest.skip("the hub lists no search_documents: no knowledge source is attached")
+        pytest.skip(
+            "the hub lists no search_documents: no knowledge source is attached"
+        )
     frame = client.tool_call("search_documents", {"query": "úradné hodiny", "limit": 3})
     assert "result" in frame, frame
     hits = frame["result"]["structuredContent"]["hits"]
@@ -86,13 +142,17 @@ def test_the_hub_searches_its_public_documents_with_their_metadata(make_mcp_clie
         assert hit["url"].startswith("https://"), hit
         assert hit["publisher"], hit
         assert len(hit["text"]) <= 1200, hit
-        assert {"title", "description", "published", "modified", "language"} <= set(hit), hit
+        assert {"title", "description", "published", "modified", "language"} <= set(
+            hit
+        ), hit
     refused = client.tool_call("search_documents", {"query": "x", "limit": 11})
     assert refused.get("error", {}).get("code") == -32602, refused
 
 
 @pytest.mark.parametrize("surface", SURFACES)
-def test_an_anonymous_call_on_the_old_host_moves_to_the_data_host(surface, http_session):
+def test_an_anonymous_call_on_the_old_host_moves_to_the_data_host(
+    surface, http_session
+):
     """T-4632, ADR-N-052 §2.1: a surface handed out on `api.{domain}` answers an anonymous POST
     on the apex with a 308 to the same path there, so a client configured before the move keeps
     its body and its method."""
@@ -101,8 +161,14 @@ def test_an_anonymous_call_on_the_old_host_moves_to_the_data_host(surface, http_
     if not (parts.hostname or "").startswith("api."):
         pytest.skip(f"{surface} is not on a data host ({url or 'not set'})")
     old = urlunsplit(parts._replace(netloc=parts.netloc.removeprefix("api.")))
-    response = http_session.post(old + "?probe=1", json={"jsonrpc": "2.0", "id": 0, "method": "ping"},
-                                 headers={"Accept": "application/json, text/event-stream"},
-                                 allow_redirects=False, timeout=30)
+    response = http_session.post(
+        old + "?probe=1",
+        json={"jsonrpc": "2.0", "id": 0, "method": "ping"},
+        headers={"Accept": "application/json, text/event-stream"},
+        allow_redirects=False,
+        timeout=30,
+    )
     assert response.status_code == 308, f"{old}: {response.status_code}"
-    assert response.headers.get("Location") == url + "?probe=1", f"{old}: {response.headers.get('Location')}"
+    assert response.headers.get("Location") == url + "?probe=1", (
+        f"{old}: {response.headers.get('Location')}"
+    )
