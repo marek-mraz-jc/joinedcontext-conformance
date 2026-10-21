@@ -4,7 +4,7 @@ import type { Browser, Page } from '@playwright/test';
 import { test, expect } from '../fixtures/portal.js';
 
 /**
- * Journey 41 (T-4868, UI-61, CC-76..CC-80, PF-83): a steward works on a copy of the helsinki
+ * Journey 42 (T-4868, UI-61, CC-76..CC-80, PF-83): a steward works on a copy of the helsinki
  * project through the menus: changes the air-quality pipeline and its data source in the copy,
  * starts the copy's preview, reads Compare, brings the copy back as one proposal, and the
  * project changes only once an approver approves it. A second copy is discarded and leaves
@@ -123,7 +123,7 @@ async function restore(steward: Page, approver: Page, plural: string, doc: Manif
   }).toPass({ timeout: 90_000, intervals: [5_000] });
 }
 
-test.describe('Journey 41: work on a copy, try it, bring it back (T-4868)', () => {
+test.describe('Journey 42: work on a copy, try it, bring it back (T-4868)', () => {
   test.describe.configure({ mode: 'serial' });
   test.setTimeout(1_200_000);
 
