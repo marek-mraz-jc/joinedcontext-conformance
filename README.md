@@ -159,7 +159,7 @@ workflow**, then choose:
 | `sta` | the SensorThings 1.1 read path (`tests/sta`) |
 | `ngsi-ld` | the anonymous read smoke `tests/ngsild-read`; on the dev write Endpoint with the CI service account also `tests/etsi/smoke.robot`. The ETSI TTF suite never runs here. |
 | `ical` | `tests/ical` live: RFC 5545 of `/ical/v1/events.ics`, and every Event of the view with a name and a start is one VEVENT |
-| `ws` | `tests/ws/test_gateway_ws.py` through the gateway: 426 without an upgrade, 101 and `x-welcome`, subscribe/update/unsubscribe, resume, the caps of 10 connections and 64 subscriptions; on the dev write Endpoint a write arrives as a notification |
+| `ws` | `tests/ws/test_gateway_ws.py` through the gateway: 426 without an upgrade, 101 and `x-welcome`, subscribe/update/unsubscribe, resume, the caps of 10 connections and 64 subscriptions; under abuse a 1 MiB message closes 1009, a compressed frame 1002 (no permessage-deflate), a subscribe flood 1008 while another socket stays (T-4902); on the dev write Endpoint a write arrives as a notification |
 | `mcp` | `tests/mcp/test_mcp_anonymous_read_only.py`: `tools/list` holds reads only, writes are refused, `describe_access` grants no write |
 
 A suite an Endpoint does not serve is reported as not served. The artifact `standards-<target>` holds
