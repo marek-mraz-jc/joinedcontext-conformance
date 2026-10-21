@@ -17,7 +17,7 @@ export function requireEnv(name: string): string {
 export interface PortalFixtures {
   steward: { context: BrowserContext; page: Page };
   approver: { context: BrowserContext; page: Page };
-  signIn: (page: Page, user: string, pass: string) => Promise<void>;
+  signIn: (page: Page, user: string, pass: string, portal?: string) => Promise<void>;
   expectNoSeriousA11yViolations: (page: Page, view?: string) => Promise<void>;
   expectSessionCookie: (context: BrowserContext, page?: Page) => Promise<void>;
 }
