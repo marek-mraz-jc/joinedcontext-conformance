@@ -18,6 +18,7 @@ from __future__ import annotations
 import importlib.util
 import json
 import os
+import re
 import sys
 import urllib.request
 
@@ -37,10 +38,22 @@ def broker_parser(kind: str):
     return module.parse
 
 
+def collapsed(results: dict[str, str]) -> dict[str, str]:
+    """One status per test method: TEAM Engine numbers a method's runs `#2`, `#3`.. once per
+    collection, and prod serves other collections than the CI fixtures. FAIL if any run fails."""
+    by: dict[str, set[str]] = {}
+    for test, status in results.items():
+        by.setdefault(re.sub(r" #\d+$", "", test), set()).add(status)
+    return {
+        t: next(s for s in ("FAIL", "PASS", "SKIP") if s in v) for t, v in by.items()
+    }
+
+
 def diff(
     prod: dict[str, str], baseline: dict[str, str]
 ) -> tuple[list[str], list[str], list[str]]:
     """(regressions, baseline passes prod did not run, prod passes the baseline lacks)."""
+    prod, baseline = collapsed(prod), collapsed(baseline)
     lost = [t for t, s in baseline.items() if s == "PASS" and prod.get(t) == "FAIL"]
     unrun = [
         t
@@ -190,6 +203,10 @@ def self_test() -> None:
         {"a": "FAIL", "b": "SKIP", "c": "PASS"}, {"a": "PASS", "b": "PASS", "c": "FAIL"}
     ) == (["a"], ["b"], ["c"])
     assert diff({}, {"a": "PASS"}) == ([], ["a"], [])
+    # a run numbered past the baseline's still counts against its method
+    assert diff({"m": "PASS", "m #7": "FAIL"}, {"m": "PASS", "m #2": "PASS"})[0] == [
+        "m"
+    ]
     good = {
         "type": "FeatureCollection",
         "features": [

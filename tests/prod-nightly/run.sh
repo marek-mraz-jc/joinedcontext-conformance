@@ -93,7 +93,8 @@ import collections, sys
 from pyshacl import validate
 from rdflib import Graph, Namespace
 SH = Namespace("http://www.w3.org/ns/shacl#")
-conforms, results, _ = validate(Graph().parse(sys.argv[1]), shacl_graph=Graph().parse(sys.argv[2]), inference="none")
+# RDFS inference as the DCAT-AP validator: its shapes ask sh:class rdfs:Resource of every IRI
+conforms, results, _ = validate(Graph().parse(sys.argv[1]), shacl_graph=Graph().parse(sys.argv[2]), inference="rdfs")
 by = collections.Counter((str(results.value(r, SH.resultSeverity)).rsplit("#", 1)[-1],
                           str(results.value(r, SH.resultPath) or results.value(r, SH.sourceShape)).rsplit("/", 1)[-1])
                          for r in results.subjects(SH.resultSeverity, None))
