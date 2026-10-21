@@ -39,6 +39,8 @@ jobs:
           set -eu
           python3 -m pytest security/test_routes.py -q
           python3 security/routes.py --check
+      - name: the ZAP baseline's rules, sign-in helper and dev-only guard (T-5107)
+        run: python3 -m pytest security/zap/test_zap.py -q
       - name: expected-failure checker logic (T-0054)
         run: python3 tests/etsi-ttf/check_expected_failures.py --selftest
       - name: every owed view refusal names its ground (T-3928)
