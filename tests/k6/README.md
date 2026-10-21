@@ -11,6 +11,7 @@ Tasks:
 - **T-0332**: Sustained load on one endpoint's representations (`transport_endpoint_load.js`)
 - **T-2800**: The nightly dev budget, 100 entities at 20 requests a second, p95 under 300 ms, on an endpoint and its space's canonical surface (`dev-budgets.js`, run and judged by `scripts/budgets-dev.py`)
 - **T-4889**: The platform's read surfaces at night on dev: the Portal grid's page, count and filter and an MCP tools/call through one Endpoint (`platform-surfaces.js`), 200 readers of the Portal's live view and 500 MQTT devices at 1 msg/s (`streams.py`, k6 holds neither stream), with `kubectl top` beside it (`night.sh`). The broker's own surfaces (NGSI-LD, OData, OGC, STA, iCal, MCP, WebSocket fan-out) are Antares `dev/perf/surfaces.sh` and its weekly `load-surfaces` lane
+- **T-4903**: Slow neighbours: 5 loops of a slow read (default `/attributes`) beside a quick probe (`entities?limit=1`, 2/s); the probe's p95 stays under 300 ms and no slow read outlives the gateway's 10 s deadline plus margin (`slow-neighbours.js`; `JC_K6_SLOW_PATH`, `JC_K6_PROBE_PATH`, `JC_K6_DURATION`)
 - **T-3059**: The knowledge assistant under 20 concurrent public chats, every chat answered, p95 of a full answer recorded, RSS read with `kubectl top pod` against the 1 GB budget; bounded to `JC_K6_CHATS` chats (default 40, at most 200) because every chat spends the deployment's model budget (`assistant-chats.js`)
 
 ## Execution
@@ -37,6 +38,10 @@ python3 make_requests.py https://opendata.smartcity.joinedcontext.com > requests
 # kind; the run aborts by itself after a minute of p95 over 2 s or errors over 2 %
 JC_K6_SCRIPT=api-mix-100rps.js JC_K6_REQUESTS=requests-prod.tsv JC_K6_RAMP=50:500:5m \
 JC_K6_DURATION=10m JC_K6_P95_MS=500 jc-conformance k6
+
+# T-4903: five slow read loops beside a quick probe on one Endpoint, two minutes
+JC_K6_SCRIPT=slow-neighbours.js ENDPOINT_URL=https://api.host/api/endpoint/{slug} \
+JC_K6_PROBE_PATH='/ngsi-ld/v1/entities?type=KeyPerformanceIndicator&limit=1' jc-conformance k6
 
 # T-0065: Latency and throughput (default)
 GATEWAY_URL=https://host/cs/ovzdusie/ngsi-ld/v1 \
