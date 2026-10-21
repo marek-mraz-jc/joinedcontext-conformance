@@ -1,0 +1,27 @@
+name: zap-baseline
+# OWASP ZAP baseline of the public dev hosts (T-5107): spider and passive rules only, no attack,
+# dev only (security/zap/run.sh refuses any other domain). Weekly and on demand; an alert that
+# security/zap/rules.tsv does not accept turns the run red. The authenticated pass signs in as
+# the demo viewer from the repository secrets the e2e journeys use.
+on:
+  workflow_dispatch:
+  schedule: [{ cron: "40 4 * * 1" }]
+permissions: { contents: read }
+concurrency: { group: zap-baseline, cancel-in-progress: false }
+jobs:
+  baseline:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - name: baseline of every dev host
+        env:
+          PORTAL_VIEWER_USER: ${{ secrets.PORTAL_VIEWER_USER }}
+          PORTAL_VIEWER_PASSWORD: ${{ secrets.PORTAL_VIEWER_PASSWORD }}
+        run: security/zap/run.sh reports/zap
+      - if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: zap-baseline
+          path: reports/zap
+          retention-days: 30
