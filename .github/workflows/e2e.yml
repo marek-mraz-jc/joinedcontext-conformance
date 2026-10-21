@@ -72,7 +72,7 @@ jobs:
     needs: preflight
     runs-on: ubuntu-latest
     # The forms shard walks 30 forms at the edge's request rate; the others stay at 40.
-    timeout-minutes: ${{ matrix.shard == 'forms' && 75 || 40 }}
+    timeout-minutes: ${{ (matrix.shard == 'forms' || matrix.shard == 'routes') && 75 || 40 }}
     strategy:
       fail-fast: false
       # Sharded by chain, not by count: journeys 2→3 and 7→8→10→11 read what the previous spec
@@ -117,6 +117,11 @@ jobs:
           - shard: forms
             specs: >-
               journeys/36-every-form.spec.ts
+          # Every route as each role and the public pages, screenshots at 1440 and 400 px with a
+          # grade per route (T-4887): reports/e2e/every-route/ in the artifact.
+          - shard: routes
+            specs: >-
+              journeys/31-every-route-every-role.spec.ts
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
@@ -135,6 +140,8 @@ jobs:
           PORTAL_TEMP_PASSWORD: ${{ secrets.PORTAL_TEMP_PASSWORD }}
           PORTAL_APPROVER_USER: ${{ secrets.PORTAL_APPROVER_USER }}
           PORTAL_APPROVER_PASSWORD: ${{ secrets.PORTAL_APPROVER_PASSWORD }}
+          PORTAL_EDITOR_USER: ${{ secrets.PORTAL_EDITOR_USER }}
+          PORTAL_EDITOR_PASSWORD: ${{ secrets.PORTAL_EDITOR_PASSWORD }}
           PORTAL_ADMIN_USER: ${{ secrets.PORTAL_ADMIN_USER }}
           PORTAL_ADMIN_PASSWORD: ${{ secrets.PORTAL_ADMIN_PASSWORD }}
           PORTAL_BLUEPRINT: ${{ vars.PORTAL_BLUEPRINT }}

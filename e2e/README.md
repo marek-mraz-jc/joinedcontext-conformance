@@ -8,9 +8,10 @@ Browser end-to-end user journeys for the JoinedContext Portal UI (React 19 / axu
 - `PORTAL_USER` / `PORTAL_PASSWORD`: steward credentials. No default — an unset variable fails the run with the variable name rather than pretending the portal is broken.
 - `PORTAL_VIEWER_USER` / `PORTAL_VIEWER_PASSWORD`: the read-only account (`demo.viewer`).
 - `PORTAL_INVITE_URL` / `PORTAL_INVITE_PASSWORD`: Single-use invitation link and initial password for Journey 1 onboarding. When unset, the invite onboarding test is skipped cleanly.
-- `PORTAL_EDITOR_USER` / `PORTAL_EDITOR_PASSWORD`: the editor (`demo.editor`) of Journey 31, which walks every route as each of the four roles. Unset skips that role.
+- `PORTAL_EDITOR_USER` / `PORTAL_EDITOR_PASSWORD`: the editor (`demo.editor`) of Journey 31, which walks every route as each role (admin, steward, editor, approver, viewer) and the public pages anonymously. Unset skips that role.
 - `PORTAL_APPROVER_USER` / `PORTAL_APPROVER_PASSWORD`: the domain approver of Journey 3. Separation of duties (CC-34) means this is a different person than `PORTAL_USER`.
-- `PORTAL_ADMIN_USER` / `PORTAL_ADMIN_PASSWORD`: an organization administrator (`org-admin`) for Journey 37, which reads that the access forms promise a second approver. Unset skips it.
+- `PORTAL_ADMIN_USER` / `PORTAL_ADMIN_PASSWORD`: an organization administrator (`org-admin`) for Journey 37, which reads that the access forms promise a second approver, and the admin role of Journey 31. Unset skips it.
+- `JC_EVIDENCE_DIR`: where Journey 31 keeps its screenshots (`<role>/<route>-1440.jpg`, `-400.jpg`) and `grades-<role>.csv` (route, role, width, grade, findings); default `$JC_REPORTS_DIR/every-route`.
 - `PORTAL_BLUEPRINT`: blueprint the flow journey instantiates (default `Threshold Alert`).
 - `PORTAL_SENSOR_LABEL`: label of an entity the steward may read, picked in the generated form.
 - `PORTAL_FORBIDDEN_ENTITY_LABEL`: label of an entity outside the steward's grant; the entity picker must never offer it. Unset skips that check.
