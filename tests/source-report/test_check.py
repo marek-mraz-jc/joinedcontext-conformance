@@ -16,7 +16,7 @@ from pathlib import Path
 import pytest
 
 spec = importlib.util.spec_from_file_location(
-    "source_report", Path(__file__).parent / "source-report/check.py"
+    "source_report", Path(__file__).parent / "check.py"
 )
 check = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(check)
