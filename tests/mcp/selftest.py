@@ -40,6 +40,8 @@ REQUIRED_FAILURES = [
     # T-4168: the broken stub lists and runs its write tools for a caller without a token.
     "test_an_anonymous_tool_list_holds_reads_only[MCP_URL]",
     "test_an_anonymous_write_is_refused_before_it_reaches_the_broker[MCP_URL-create_subscription]",
+    # T-5044: the broken stub's describe_access grants an anonymous caller a write.
+    "test_an_anonymous_caller_reads_the_access_it_has[ENDPOINT_MCP_URL]",
 ]
 
 

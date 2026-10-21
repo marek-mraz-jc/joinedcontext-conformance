@@ -1,0 +1,5 @@
+# Dev Endpoints the standards suite tests by default (T-5044).
+# bbsk events: NGSI-LD, OGC Features, OData, iCalendar, WebSocket, MCP (T-4895, T-5033)
+hqgmj6ieuq57y37g5g4ckz5eyhebklox
+# the dev write Endpoint of the ETSI smoke (etsi-smoke.yml)
+mluyob4nz52lok3ssk7pgn5vwt

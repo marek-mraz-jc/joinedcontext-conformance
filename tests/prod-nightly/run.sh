@@ -12,6 +12,7 @@
 #   API           https://api.smartcity.joinedcontext.com    CATALOGUE  https://opendata.smartcity.joinedcontext.com
 #   ENDPOINTS     public Endpoint ids to test, space separated (default: endpoints.txt)
 #   TE_USER, TE_PASSWORD   the TEAM Engine image's own public test account (ogctest), as tests/ogc/run.sh
+#   SUITES        which of ogc odata sta ical dcat to run (default all; tests/standards/run.sh runs one at a time)
 set -uo pipefail
 here=$(cd -- "$(dirname -- "$0")" && pwd)
 : "${ANTARES_DIR:?set ANTARES_DIR to an Antares checkout at the broker commit prod runs}"
@@ -25,12 +26,15 @@ compare=("python3" "$here/compare.py")
 report=$out/report.md
 rc=0
 note() { echo "$*" | tee -a "$report"; }
-pause() { sleep "${PAUSE:-30}"; }   # the edge sees one address: a gap between suites keeps it under the per-IP budget
+pause() { sleep "${PAUSE:-30}"; }
+suites=" ${SUITES:-ogc odata sta ical dcat} "
+want() { [[ $suites == *" $1 "* ]]; }   # the edge sees one address: a gap between suites keeps it under the per-IP budget
 
 note "# Prod standards run $(date -u +%FT%TZ)"
 note "Antares $(git -C "$ANTARES_DIR" rev-parse --short HEAD), endpoints: $endpoints"
 "${compare[@]}" --self-test >/dev/null || { note "compare.py self-test failed"; exit 2; }
 
+if want ogc; then
 # OGC API Features: TEAM Engine on the host network, one run per Endpoint, every collection.
 te_image=$(sed -n 's/^ *TE_IMAGE: *//p' "$ANTARES_DIR/.github/workflows/surfaces-conformance.yml" | head -1)
 te=$(docker run -d --rm -p "127.0.0.1:${TE_PORT:-8089}:8080" "$te_image")
@@ -53,7 +57,9 @@ for c in json.load(sys.stdin).get("collections", [])[:5]: print(c["id"])' 2>/dev
   pause
 done
 docker stop "$te" >/dev/null 2>&1
+fi
 
+if want odata; then
 # OData: the read-only cases of tests/odata; its write cases stay off a public view.
 note "## OData read cases (tests/odata -k 'abnf or metadata')"
 for e in $endpoints; do
@@ -63,7 +69,9 @@ for e in $endpoints; do
   else note "- endpoint $e: FAILED $(grep -E '^FAILED' "$out/odata-$e.txt" | cut -c1-160 | tr '\n' ' ') $(tail -1 "$out/odata-$e.txt")"; rc=1; fi
   pause
 done
+fi
 
+if want sta; then
 # SensorThings read path (write methods are asserted rejected), where the Endpoint serves STA.
 note "## SensorThings API 1.1 read path (tests/sta)"
 for e in $endpoints; do
@@ -74,17 +82,22 @@ for e in $endpoints; do
   else note "- endpoint $e: FAILED $(tail -1 "$out/sta-$e.txt")"; rc=1; fi
   pause
 done
+fi
 
+if want ical; then
 # iCal, where a view serves Events.
-note "## iCalendar (RFC 5545)"
+note "## iCalendar (RFC 5545, tests/ical)"
 served=0
 for e in $endpoints; do
   ics="$api/api/endpoint/$e/ical/v1/events.ics"
   [ "$(curl -s -m 20 -o /dev/null -w '%{http_code}' "$ics")" = 200 ] || continue
-  served=1; "${compare[@]}" ical "$ics" >> "$report" || rc=1
+  # RFC 5545 and the Event mapping: every Event of the view with a name and a startDate is one VEVENT
+  served=1; python3 "$here/../ical/ical_check.py" --events "$api/api/endpoint/$e/ngsi-ld/v1" "$ics" >> "$report" || rc=1
 done
 [ $served = 1 ] || note "- no tested Endpoint serves an iCal feed"
+fi
 
+if want dcat; then
 # DCAT-AP 3.0.0 SHACL over the catalogue's DCAT feed (first page).
 note "## DCAT-AP 3.0.0 SHACL ($catalogue/catalog.ttl)"
 curl -fsS -m 120 -o "$out/catalog.ttl" "$catalogue/catalog.ttl"
@@ -103,6 +116,7 @@ for (severity, path), n in by.most_common(15):
     print(f"  - {severity} {path}: {n}")
 sys.exit(0 if conforms else 1)
 PY
+fi
 
 note "## Verdict: $([ $rc = 0 ] && echo GREEN || echo RED)"
 exit $rc
