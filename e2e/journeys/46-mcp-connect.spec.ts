@@ -154,8 +154,12 @@ test('a viewer reads the MCP servers and is refused a new one in words', async (
     }
     await shot(page, '03-viewer-mcp-servers');
 
-    // The same write past the disabled button: the server refuses it and says why.
+    // The same write past the disabled button, with the session's CSRF pair so the refusal
+    // comes from the viewer's rights (PF-50) and not from the CSRF guard.
+    const csrf = (await context.cookies()).find((cookie) => cookie.name === '__Host-jc_csrf');
+    expect(csrf, 'the session carries a CSRF cookie').toBeTruthy();
     const proposed = await page.request.post(`/api/v1/projects/${PROJECT}/mcpservers`, {
+      headers: { 'x-csrf-token': csrf?.value ?? '', 'content-type': 'application/json' },
       data: {
         apiVersion: 'joinedcontext.com/v1alpha1',
         kind: 'McpServer',
@@ -165,7 +169,9 @@ test('a viewer reads the MCP servers and is refused a new one in words', async (
     });
     expect(proposed.status(), await proposed.text()).toBe(403);
     const problem = await proposed.json();
-    expect(String(problem.hint ?? problem.detail ?? ''), 'the 403 must say why in words').toMatch(/[a-z]{3,} [a-z]{3,}/i);
+    // The CSRF guard answers a bare Forbidden without detail; the rights check names the verb.
+    expect(String(problem.detail ?? ''), 'the 403 names the missing right').toMatch(/no role grants propose on \S*mcp\S*server/i);
+    expect(String(problem.hint ?? ''), 'the 403 says what to do in words').toMatch(/[a-z]{3,} [a-z]{3,}/i);
     const after = await page.request.get(`/api/v1/projects/${PROJECT}/mcpservers`);
     expect(JSON.stringify(await after.json())).not.toContain('t4871-viewer');
   } finally {
