@@ -194,7 +194,7 @@ const at = (iso: string | undefined) => (iso ? Date.parse(iso) : NaN);
 
 /** A fresh session of the person PORTAL_<who>_USER names, for the cleanup after the tests' own closed. */
 async function session(browser: Browser, baseURL: string | undefined, who: string): Promise<BrowserContext> {
-  const context = await browser.newContext({ baseURL, ignoreHTTPSErrors: true, locale: 'en-GB' });
+  const context = await browser.newContext({ baseURL, locale: 'en-GB' });
   const page = await context.newPage();
   await page.goto('/');
   await signIn(page, requireEnv(`PORTAL${who}_USER`), requireEnv(`PORTAL${who}_PASSWORD`), baseURL);
@@ -228,28 +228,44 @@ test.describe('Journey 45: a pipeline lifetime ends entities and attributes on t
     if (!proposed) return;
     const stewardContext = await session(browser, baseURL, '');
     const approverContext = await session(browser, baseURL, '_APPROVER');
+    // Every step is tried; whatever did not clean up fails the run after the last one.
+    const failures: string[] = [];
+    const reason = (error: unknown) => (error instanceof Error ? error.message.split('\n')[0] : String(error));
     for (const id of pending) {
-      await approverContext.request.post(`/api/v1/projects/${PROJECT}/changes/${id}/reject`, {
-        headers: await csrfHeaders(approverContext),
-        data: { reason: 'Journey 45 ended before this change was approved; its scratch resources are removed.' },
-      }).catch(() => undefined);
+      try {
+        const rejected = await approverContext.request.post(`/api/v1/projects/${PROJECT}/changes/${id}/reject`, {
+          headers: await csrfHeaders(approverContext),
+          data: { reason: 'Journey 45 ended before this change was approved; its scratch resources are removed.' },
+        });
+        if (!rejected.ok()) failures.push(`reject ${id}: ${rejected.status()} ${await rejected.text()}`);
+      } catch (error) {
+        failures.push(`reject ${id}: ${reason(error)}`);
+      }
     }
     for (const { plural, doc } of [...MANIFESTS].reverse()) {
       const name = (doc.metadata as { name: string }).name;
-      const response = await stewardContext.request.delete(
-        `/api/v1/projects/${PROJECT}/${plural}/${name}?confirm=${name}`,
-        { headers: await csrfHeaders(stewardContext) },
-      ).catch(() => undefined);
-      if (response?.status() !== 202) continue;
-      const change = (await response.json().catch(() => undefined)) as Change | undefined;
-      if (change) await approve(approverContext, change, name).catch(() => undefined);
-      await expect(async () => {
-        const gone = await stewardContext!.request.get(`/api/v1/projects/${PROJECT}/${plural}/${name}`);
-        expect(gone.status(), `${plural}/${name} is removed`).toBe(404);
-      }).toPass({ timeout: 600_000, intervals: [10_000] }).catch(() => undefined);
+      try {
+        const response = await stewardContext.request.delete(
+          `/api/v1/projects/${PROJECT}/${plural}/${name}?confirm=${name}`,
+          { headers: await csrfHeaders(stewardContext) },
+        );
+        if (response.status() === 404) continue;
+        if (response.status() !== 202) {
+          failures.push(`delete ${plural}/${name}: ${response.status()} ${await response.text()}`);
+          continue;
+        }
+        await approve(approverContext, (await response.json()) as Change, name);
+        await expect(async () => {
+          const gone = await stewardContext.request.get(`/api/v1/projects/${PROJECT}/${plural}/${name}`);
+          expect(gone.status(), `${plural}/${name} is removed`).toBe(404);
+        }).toPass({ timeout: 600_000, intervals: [10_000] });
+      } catch (error) {
+        failures.push(`delete ${plural}/${name}: ${reason(error)}`);
+      }
     }
     await stewardContext.close();
     await approverContext.close();
+    expect(failures, 'the scratch resources are all removed').toEqual([]);
   });
 
   test('the steward proposes the scratch space and its lifetime pipeline, the approver approves', async ({ steward, approver }) => {
