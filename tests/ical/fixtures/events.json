@@ -1,0 +1,47 @@
+[
+ {
+  "id": "urn:ngsi-ld:Event:bbsk:koncert-1",
+  "type": "Event",
+  "name": "Jesenný koncert, Banská Bystrica",
+  "startDate": "2026-10-24T19:00:00+02:00",
+  "endDate": "2026-10-24T21:00:00+02:00",
+  "address": {
+   "streetAddress": "Námestie SNP 1",
+   "postalCode": "974 01",
+   "addressLocality": "Banská Bystrica",
+   "addressCountry": "SK"
+  },
+  "location": {
+   "type": "Point",
+   "coordinates": [
+    19.1462,
+    48.7363
+   ]
+  },
+  "url": "https://www.banskabystrica.sk/podujatia/koncert-1"
+ },
+ {
+  "id": "urn:ngsi-ld:Event:bbsk:jarmok",
+  "type": "Event",
+  "name": {
+   "sk": "Radvanský jarmok"
+  },
+  "startDate": {
+   "@type": "Date",
+   "@value": "2026-11-01"
+  },
+  "endDate": "2026-11-03"
+ },
+ {
+  "id": "urn:ngsi-ld:Event:bbsk:divadlo",
+  "type": "Event",
+  "name": "Divadlo",
+  "startDate": "2026-11-05T19:00:00",
+  "address": "Zvolen"
+ },
+ {
+  "id": "urn:ngsi-ld:Event:bbsk:bez-datumu",
+  "type": "Event",
+  "name": "Bez dátumu"
+ }
+]

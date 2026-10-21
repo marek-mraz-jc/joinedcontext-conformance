@@ -3,7 +3,7 @@
 
     compare.py ogc RESULTS.xml BASELINE.json     OGC API Features ETS run against Antares's CI baseline
     compare.py geojson URL [URL ...]             RFC 7946 checks of OGC items pages
-    compare.py ical URL [URL ...]                RFC 5545 checks of iCalendar feeds
+    compare.py ical URL [URL ...]                RFC 5545 checks of iCalendar feeds (tests/ical/ical_check.py)
     compare.py --self-test
 
 The ogc mode reads a run with the broker's own parser (dev/ogc-compliance/baseline.py of the
@@ -23,6 +23,11 @@ import re
 import sys
 import urllib.request
 import xml.etree.ElementTree as ET
+
+sys.path.insert(
+    0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "ical")
+)
+import ical_check  # the iCalendar validator of tests/ical
 
 UA = {
     "User-Agent": "joinedcontext-prod-nightly (T-4877)",
@@ -203,32 +208,9 @@ def geojson_errors(doc: dict) -> list[str]:
     return errors
 
 
-def ical_errors(text: str) -> list[str]:
-    errors = []
-    if "\r\n" not in text or text.replace("\r\n", "").count("\n"):
-        errors.append("lines not delimited by CRLF (RFC 5545 3.1)")
-    lines = text.replace("\r\n ", "").replace("\r\n\t", "").split("\r\n")
-    if any(len(line.encode()) > 75 for line in text.split("\r\n")):
-        errors.append("a line longer than 75 octets, not folded (RFC 5545 3.1)")
-    if not lines or lines[0] != "BEGIN:VCALENDAR" or "END:VCALENDAR" not in lines:
-        return errors + ["not one VCALENDAR (RFC 5545 3.4)"]
-    names = [line.split(":", 1)[0].split(";", 1)[0] for line in lines if line]
-    for prop in ("VERSION", "PRODID"):
-        if prop not in names:
-            errors.append(f"VCALENDAR without {prop} (RFC 5545 3.6)")
-    event, n = None, 0
-    for name in names:
-        if name == "BEGIN" and event is None:
-            event = set()
-        elif name == "END" and event is not None:
-            n += 1
-            for prop in ("UID", "DTSTAMP", "DTSTART"):
-                if prop not in event:
-                    errors.append(f"VEVENT {n} without {prop} (RFC 5545 3.6.1)")
-            event = None
-        elif event is not None:
-            event.add(name)
-    return errors[:10]
+def ical_errors(data: bytes) -> list[str]:
+    """RFC 5545 findings of one feed, by tests/ical/ical_check.py (T-5044), the one validator."""
+    return [str(f) for f in ical_check.validate(data)][:10]
 
 
 def check_urls(kind: str, urls: list[str]) -> int:
@@ -239,7 +221,7 @@ def check_urls(kind: str, urls: list[str]) -> int:
             errors = (
                 geojson_errors(json.loads(body))
                 if kind == "geojson"
-                else ical_errors(body.decode())
+                else ical_errors(body)
             )
         except (
             OSError,
@@ -309,12 +291,12 @@ def self_test() -> None:
     assert geojson_errors({"type": "Feature"}), (
         "a bare Feature is not a FeatureCollection"
     )
-    cal = "BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//x//y//EN\r\nBEGIN:VEVENT\r\nUID:1\r\nDTSTAMP:20261020T000000Z\r\nDTSTART:20261021\r\nEND:VEVENT\r\nEND:VCALENDAR\r\n"
+    cal = b"BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//x//y//EN\r\nBEGIN:VEVENT\r\nUID:1\r\nDTSTAMP:20261020T000000Z\r\nDTSTART:20261021\r\nEND:VEVENT\r\nEND:VCALENDAR\r\n"
     assert ical_errors(cal) == []
-    assert ical_errors(cal.replace("UID:1\r\n", "")) == [
-        "VEVENT 1 without UID (RFC 5545 3.6.1)"
+    assert ical_errors(cal.replace(b"UID:1\r\n", b"")) == [
+        "uid: VEVENT 1 without UID (RFC 5545 3.6.1)"
     ]
-    assert ical_errors(cal.replace("\r\n", "\n")), "LF line ends must be reported"
+    assert ical_errors(cal.replace(b"\r\n", b"\n")), "LF line ends must be reported"
     print("compare.py self-test ok")
 
 

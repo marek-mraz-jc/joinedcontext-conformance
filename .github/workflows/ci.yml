@@ -33,7 +33,7 @@ jobs:
         # one invocation per suite: each folder has its own conftest, and the suites import from it
         run: |
           set -eu
-          for suite in security ogc sta mcp odata ws linkml schemathesis models ckan e2e authz assistant; do python3 -m pytest "tests/$suite" --collect-only -q; done
+          for suite in security ogc sta mcp odata ws linkml schemathesis models ckan e2e authz assistant ical ngsild-read; do python3 -m pytest "tests/$suite" --collect-only -q; done
       - name: every route and MCP tool names its authorization test or the task that adds it (T-3832)
         run: |
           set -eu
@@ -77,6 +77,10 @@ jobs:
         run: python3 tests/mqtt/paho_interop.py --selftest
       - name: the nightly RFC 7946 and RFC 5545 checks go red on a planted break (T-4877, T-4879)
         run: python3 tests/prod-nightly/compare.py --self-test
+      - name: the iCalendar validator fails each broken feed with its named rule, and the Event mapping bites (T-5044)
+        run: python3 -m pytest tests/ical -q
+      - name: the standards run page table renders and goes red on a failed suite (T-5044)
+        run: python3 tests/standards/summary.py --self-test
       - name: the committed record conforms to the DCAT-AP core shapes with nothing configured
         run: python3 -m pytest tests/ckan -q
       - name: the load mix asks every type on every surface and its probe stays paced (T-4754)

@@ -82,14 +82,23 @@ ENTITIES_BY_SPACE = {
 ANONYMOUS_TOOLS = frozenset(
     {
         "list_endpoints",
+        "get_endpoint",
+        "search",
+        "search_documents",
         "list_types",
+        "get_type",
+        "list_type_details",
+        "list_attributes",
+        "list_attribute_details",
+        "get_attribute",
         "query_entities",
+        "summarize",
         "get_entity",
         "get_attribute_value",
+        "query_temporal",
         "retrieve_temporal",
         "describe_schema",
         "describe_access",
-        "search_documents",
     }
 )
 
@@ -377,7 +386,7 @@ class StubMcpHandler(BaseHTTPRequestHandler):
             if anonymous and tool_name not in ANONYMOUS_TOOLS:
                 self._send_json_rpc(
                     req_id,
-                    error={"code": -32602, "message": f"{tool_name} cannot be called without a token"},
+                    error={"code": -32602, "message": f"`{tool_name}` is not offered here: this surface reads only"},
                 )
                 return
             if tool_name == "search_documents" and self._is_hub(path) and self.server.mode != "broken":
@@ -509,6 +518,12 @@ class StubMcpHandler(BaseHTTPRequestHandler):
                             "format": {"type": "string"},
                         },
                     },
+                    "annotations": {"readOnlyHint": True, "destructiveHint": False},
+                },
+                {
+                    "name": "describe_access",
+                    "description": "What the caller's grant allows on this Endpoint",
+                    "inputSchema": {"type": "object", "properties": {"format": {"type": "string"}}},
                     "annotations": {"readOnlyHint": True, "destructiveHint": False},
                 },
                 {
@@ -664,6 +679,14 @@ class StubMcpHandler(BaseHTTPRequestHandler):
                 }
             }
             self._send_json_rpc(req_id, result=result)
+            return
+
+        if tool_name == "describe_access":
+            # Defect (broken mode): the anonymous grant holds a write.
+            actions = ["queryEntity", "retrieveEntity"] + (["createEntity"] if self.server.mode == "broken" else [])
+            permissions = [{"resource": {"type": "AirQualityObserved"}, "actions": actions, "attributes": "*"}]
+            text = json.dumps({"permissions": permissions})
+            self._send_json_rpc(req_id, result={"content": [{"type": "text", "text": text}]})
             return
 
         if tool_name == "delete_entity":
