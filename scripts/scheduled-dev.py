@@ -4,7 +4,7 @@
     scripts/scheduled-dev.py hourly|6h|nightly --out <summary.json> [--suites etsi,mcp]
 
 The sandbox's batch runs it (hourly: ETSI smoke, the Helsinki live feed, the catalogue sweep; every 6 hours: OGC, STA,
-MCP, CKAN; nightly: schemathesis, DSP, the authorization matrix) and hands the summary to `tasks/file-failures`, which
+MCP, CKAN; nightly: schemathesis, DSP, the authorization matrix, the snapshot pipelines' source vs space) and hands the summary to `tasks/file-failures`, which
 files one task per new failure. Each suite runs with its `tests/dev.env.sh` profile, which mints the suite's own
 least-role token from the cluster at run time, and writes JUnit XML into `reports/scheduled/<suite>/`; every test case
 becomes one result keyed `<suite>/<case>`.
@@ -35,7 +35,7 @@ ROOT = Path(__file__).resolve().parent.parent
 SCHEDULES = {
     "hourly": ("etsi", "helsinki-live", "catalogue-sweep"),
     "6h": ("ogc", "sta", "mcp", "ckan"),
-    "nightly": ("schemathesis", "dsp", "authz"),
+    "nightly": ("schemathesis", "dsp", "authz", "source-report"),
 }
 # What runs for a suite: its runner, the arguments it gets, and how long it may take. Every
 # runner but ETSI's gets its `tests/dev.env.sh` profile; etsi-smoke-dev.sh sources its own.
@@ -51,6 +51,8 @@ RUNNERS = {
     "schemathesis": ("tests/schemathesis/run.sh", ("--include-method", "GET", "--include-method", "HEAD"), 5400),
     "dsp": ("tests/dsp/run.sh", (), 3600),
     "authz": ("tests/authz/run.sh", (), 1800),
+    # Every snapshot pipeline's source vs space (T-4892): a few reads per pipeline.
+    "source-report": ("tests/source-report/run.sh", (), 300),
 }
 REQUIREMENTS = ["EP-01", "OPS-35"]
 TAIL = 400
