@@ -12,6 +12,7 @@ Tasks:
 - **T-2800**: The nightly dev budget, 100 entities at 20 requests a second, p95 under 300 ms, on an endpoint and its space's canonical surface (`dev-budgets.js`, run and judged by `scripts/budgets-dev.py`)
 - **T-4889**: The platform's read surfaces at night on dev: the Portal grid's page, count and filter and an MCP tools/call through one Endpoint (`platform-surfaces.js`), 200 readers of the Portal's live view and 500 MQTT devices at 1 msg/s (`streams.py`, k6 holds neither stream), with `kubectl top` beside it (`night.sh`). The broker's own surfaces (NGSI-LD, OData, OGC, STA, iCal, MCP, WebSocket fan-out) are Antares `dev/perf/surfaces.sh` and its weekly `load-surfaces` lane
 - **T-4903**: Slow neighbours: 5 loops of a slow read (default `/attributes`) beside a quick probe (`entities?limit=1`, 2/s); the probe's p95 stays under 300 ms and no slow read outlives the gateway's 10 s deadline plus margin (`slow-neighbours.js`; `JC_K6_SLOW_PATH`, `JC_K6_PROBE_PATH`, `JC_K6_DURATION`)
+- **T-5124**: Fair share: a pipeline's batch writes (`WRITE_TOKEN`) and a signed-in steward's reads (`STEWARD_TOKEN`) run for a baseline minute, then beside two minutes of anonymous reads at 5x the normal rate; each class's p95 under the flood stays within 20 % of its baseline and every anonymous answer is a 200 or a 429 with `Retry-After` (`fair-share.js`; `JC_K6_WRITE_TYPE`, `JC_K6_NORMAL_RATE`, `JC_K6_FLOOD_RATE`, `JC_K6_TOLERANCE`; run.sh exits 1 on a FAIL)
 - **T-3059**: The knowledge assistant under 20 concurrent public chats, every chat answered, p95 of a full answer recorded, RSS read with `kubectl top pod` against the 1 GB budget; bounded to `JC_K6_CHATS` chats (default 40, at most 200) because every chat spends the deployment's model budget (`assistant-chats.js`)
 
 ## Execution
@@ -42,6 +43,12 @@ JC_K6_DURATION=10m JC_K6_P95_MS=500 jc-conformance k6
 # T-4903: five slow read loops beside a quick probe on one Endpoint, two minutes
 JC_K6_SCRIPT=slow-neighbours.js ENDPOINT_URL=https://api.host/api/endpoint/{slug} \
 JC_K6_PROBE_PATH='/ngsi-ld/v1/entities?type=KeyPerformanceIndicator&limit=1' jc-conformance k6
+
+# T-5124: an anonymous flood (100/s from 64 source addresses) beside a pipeline and a steward;
+# the tokens come from the environment, never from a file in the repository
+JC_K6_SCRIPT=fair-share.js ENDPOINT_URL=https://api.host/api/endpoint/{slug} \
+WRITE_URL=https://host/cs/{space}/ngsi-ld/v1 JC_K6_WRITE_TYPE=FairShareProbe \
+WRITE_TOKEN=... STEWARD_TOKEN=... jc-conformance k6 -- --local-ips=127.0.0.10-127.0.0.73
 
 # T-0065: Latency and throughput (default)
 GATEWAY_URL=https://host/cs/ovzdusie/ngsi-ld/v1 \
