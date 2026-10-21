@@ -13,6 +13,15 @@ Endpoint's `wss://api.{domain}/api/endpoint/{slug}/ws`, as a visitor's client do
 | `test_an_anonymous_caller_holds_at_most_ten_connections` | §3 (429) |
 | `test_a_connection_holds_at_most_64_subscriptions` | §3 (x-status 400) |
 | `test_a_write_arrives_as_a_notification` (dev write Endpoint only) | §2 |
+| `test_a_1_mib_message_closes_with_1009` (T-4902) | §3 (64 KiB message, 16 KiB frame) |
+| `test_deflate_is_not_negotiated_and_a_compressed_frame_closes_with_1002` (T-4902) | §3 |
+| `test_a_subscribe_flood_closes_with_1008_and_another_socket_stays` (T-4902) | §3 (100 frames, then 20/s) |
+
+The T-4902 cases are the night run of the gateway's `ws-abuse` rig (platform
+`crates/context-gateway/tests/ws_abuse_rig.rs`, every scenario with latency and memory thresholds
+in CI), paced under the edge limits: at most two sockets at a time, no reconnect storm (the swarm
+shares one egress address and the edge allows 600 upgrades a minute) and no slow consumer (it needs
+1 000 writes a second).
 
 A Subscription made over the socket lives on that connection: API/07 §2 says the REST
 `/subscriptions` does not list it, so the suite does not look for it there.
@@ -30,13 +39,20 @@ import asyncio
 import contextlib
 import json
 import os
+import socket
+import sys
 import uuid
+import zlib
+from pathlib import Path
 from urllib.parse import urlsplit, urlunsplit
 
 import pytest
 import requests
 from websockets.asyncio.client import connect
-from websockets.exceptions import InvalidStatus
+from websockets.exceptions import ConnectionClosed, InvalidStatus
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "datasets"))
+import ws as raw
 
 WAIT = float(os.getenv("WS_WAIT_SECS", "15"))
 PROTOCOL = "ngsi-ld-ws"
@@ -282,3 +298,95 @@ def test_a_write_arrives_as_a_notification(ws_url, ngsild):
         requests.delete(f"{ngsild}/entities/{eid}", headers=auth, timeout=30)
     assert note["metadata"]["x-seq"] >= 1, note
     assert [e["id"] for e in note["body"]["data"]] == [eid], note
+
+
+async def closed_with(ws) -> tuple[int | None, list[str]]:
+    """Reads to the close: its code and every x-closing reason before it."""
+    reasons = []
+    try:
+        while True:
+            message = json.loads(await asyncio.wait_for(ws.recv(), WAIT))
+            if message["metadata"]["x-op"] == "x-closing":
+                reasons.append(message["metadata"].get("x-reason"))
+    except ConnectionClosed as closed:
+        return (closed.rcvd.code if closed.rcvd else None), reasons
+
+
+def test_a_1_mib_message_closes_with_1009(ws_url):
+    async def go():
+        ws, _ = await opened(ws_url)
+        async with ws:
+            await ws.send("x" * (1 << 20))
+            return await closed_with(ws)
+
+    code, _ = run(go())
+    assert code == 1009, f"a 1 MiB message closed with {code}, API/07 §3 says 1009"
+
+
+def deflate_bomb(size: int) -> bytes:
+    """Raw DEFLATE (RFC 7692 drops the zlib header) of `size` zero bytes: 16 MiB is about 16 KiB."""
+    packer = zlib.compressobj(9, zlib.DEFLATED, -15)
+    return packer.compress(bytes(size)) + packer.flush()
+
+
+def test_deflate_is_not_negotiated_and_a_compressed_frame_closes_with_1002(ws_url):
+    async def offered():
+        # websockets offers permessage-deflate unless told not to.
+        async with connect(ws_url, subprotocols=[PROTOCOL], open_timeout=WAIT) as ws:
+            return ws.response.headers.get("Sec-WebSocket-Extensions")
+
+    assert run(offered()) is None, "the gateway negotiated a WebSocket extension"
+    sock, status = raw.connect(ws_url, WAIT)
+    with sock:
+        assert status == 101, f"the upgrade answered {status}"
+        bomb = bytearray(raw.frame(deflate_bomb(16 << 20)))
+        bomb[0] |= 0x40  # RSV1: the message is compressed
+        sock.sendall(bytes(bomb))
+        while True:
+            try:
+                opcode, payload = raw.read_message(sock)
+            except (ConnectionError, TimeoutError, socket.timeout) as error:  # noqa: UP041
+                pytest.fail(f"no close frame after a compressed frame: {error}")
+            if opcode == 0x8:
+                break
+    code = int.from_bytes(payload[:2], "big") if len(payload) >= 2 else None
+    assert code == 1002, f"a compressed frame closed with {code}, expected 1002"
+
+
+def test_a_subscribe_flood_closes_with_1008_and_another_socket_stays(ws_url, a_type):
+    async def go():
+        bystander, _ = await opened(ws_url)
+        async with bystander:
+            answer = await send(
+                bystander, {"x-op": "x-subscribe", "x-id": "b"}, subscription(a_type)
+            )
+            assert answer["metadata"]["x-status"] == 201, answer
+            flood, _ = await opened(ws_url)
+            async with flood:
+                sent = 0
+                with contextlib.suppress(ConnectionClosed):
+                    for n in range(300):
+                        await flood.send(
+                            json.dumps(
+                                {
+                                    "metadata": {
+                                        "x-op": "x-subscribe",
+                                        "x-id": f"f{n}",
+                                    },
+                                    "body": subscription(a_type),
+                                }
+                            )
+                        )
+                        sent += 1
+                code, reasons = await closed_with(flood)
+            # the bystander still answers after the abuser is gone
+            after = await send(
+                bystander, {"x-op": "x-subscribe", "x-id": "b2"}, subscription(a_type)
+            )
+            return sent, code, reasons, after["metadata"]["x-status"]
+
+    sent, code, reasons, bystander = run(go())
+    assert code == 1008 and "rate" in reasons, (
+        f"after {sent} subscribes: close {code}, x-closing {reasons}"
+    )
+    assert bystander == 201, f"the other socket answered {bystander} after the flood"
