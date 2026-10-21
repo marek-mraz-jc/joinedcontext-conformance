@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Settings for a conformance run against the `dev` cluster (T-0784, TS-05, TS-09, TS-19).
 #
-#   . tests/dev.env.sh [security|mcp|e2e|etsi|ogc|sta|ckan|assistant|dsp|budgets|authz|schemathesis|portal|helsinki-live]
+#   . tests/dev.env.sh [security|mcp|e2e|etsi|ogc|sta|ckan|assistant|dsp|budgets|authz|schemathesis|portal|helsinki-live|app-sharing]
 #
 # Source it, never run it: it exports the variables the suites read and it takes a suite name
 # because two suites read the same name for different subjects (`SPACE_URL` is the narrowed
@@ -351,8 +351,25 @@ portal)
 	export PORTAL_PIPELINE="hel-news"
 	_jc_note "PORTAL_INVITE_URL, PORTAL_DRIFTED_FLOW, PORTAL_PUBLIC_DASHBOARD_URL: each names something produced out of band (those cases skip)"
 	;;
+app-sharing)
+	# Journey 39, the App sharing matrix (T-4911): the five people of the deployment's
+	# seed/sharing, each password read from its keycloak-user-<name> Secret into this process only.
+	export BASE_URL="$JC_DEV_PORTAL"
+	export IDM_URL="$JC_DEV_IDM"
+	export APP_SHARING_PROJECT="sharing"
+	for _jc_person in outsider neighbour member author bearer; do
+		_jc_password=$(_jc_user_password "demo.$_jc_person")
+		if [ -n "$_jc_password" ]; then
+			_jc_key=$(printf 'APP_SHARING_%s' "$_jc_person" | tr '[:lower:]' '[:upper:]')
+			export "${_jc_key}_USER=demo.$_jc_person@$JC_DEV_ORG" "${_jc_key}_PASSWORD=$_jc_password"
+		else
+			_jc_note "APP_SHARING_${_jc_person}: no seeded password for demo.$_jc_person (that column is reported as not measured)"
+		fi
+	done
+	unset _jc_person _jc_password _jc_key
+	;;
 *)
-	echo "tests/dev.env.sh: unknown suite '$_jc_suite' (security|mcp|e2e|etsi|ogc|sta|ckan|assistant|dsp|budgets|authz|schemathesis|portal|helsinki-live)" >&2
+	echo "tests/dev.env.sh: unknown suite '$_jc_suite' (security|mcp|e2e|etsi|ogc|sta|ckan|assistant|dsp|budgets|authz|schemathesis|portal|helsinki-live|app-sharing)" >&2
 	;;
 esac
 

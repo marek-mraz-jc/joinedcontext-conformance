@@ -112,9 +112,12 @@ jobs:
           for spec in journeys/01-onboarding-login journeys/02-blueprint-flow journeys/03-approval-review \
                       journeys/04-map-dashboard journeys/05-deckgl-visualization journeys/06-drift-management \
                       journeys/08-no-api-key journeys/11-access-matrix journeys/20-app-isolation \
+                      journeys/39-app-sharing-matrix app-sharing/matrix \
                       accessibility/wcag; do
             grep -q "$spec.spec.ts" "${RUNNER_TEMP}/specs" || { echo "$spec.spec.ts is not discoverable"; exit 1; }
           done
+      - name: the App sharing matrix's rules hold and a wrong expectation goes red (T-4911)
+        run: ./node_modules/.bin/playwright test --config e2e/playwright.config.ts e2e/app-sharing/matrix.spec.ts
       - name: the widget pictures keep the answer's own words, not a Windows-1252 double decoding (T-4680)
         run: node tests/assistant/screens.mjs --selftest
       - name: the chaos verdict rejects an outage, a slow recovery and a run with no fault (T-0088)
