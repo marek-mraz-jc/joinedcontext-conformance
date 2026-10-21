@@ -112,7 +112,7 @@ jobs:
           for spec in journeys/01-onboarding-login journeys/02-blueprint-flow journeys/03-approval-review \
                       journeys/04-map-dashboard journeys/05-deckgl-visualization journeys/06-drift-management \
                       journeys/08-no-api-key journeys/11-access-matrix journeys/20-app-isolation \
-                      journeys/39-app-sharing-matrix app-sharing/matrix \
+                      journeys/43-app-sharing-matrix app-sharing/matrix \
                       accessibility/wcag; do
             grep -q "$spec.spec.ts" "${RUNNER_TEMP}/specs" || { echo "$spec.spec.ts is not discoverable"; exit 1; }
           done

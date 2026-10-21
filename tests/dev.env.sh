@@ -352,7 +352,7 @@ portal)
 	_jc_note "PORTAL_INVITE_URL, PORTAL_DRIFTED_FLOW, PORTAL_PUBLIC_DASHBOARD_URL: each names something produced out of band (those cases skip)"
 	;;
 app-sharing)
-	# Journey 39, the App sharing matrix (T-4911): the five people of the deployment's
+	# Journey 43, the App sharing matrix (T-4911): the five people of the deployment's
 	# seed/sharing, each password read from its keycloak-user-<name> Secret into this process only.
 	export BASE_URL="$JC_DEV_PORTAL"
 	export IDM_URL="$JC_DEV_IDM"

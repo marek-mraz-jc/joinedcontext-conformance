@@ -3,7 +3,7 @@
  * of people at every door, against what Architecture/16 §1 and T-4910 say each may reach.
  *
  * Pure: the expectation table, the classification of what a door answered, the comparison and the
- * HTML report. The live journey (journeys/39-app-sharing-matrix.spec.ts) observes; this decides.
+ * HTML report. The live journey (journeys/43-app-sharing-matrix.spec.ts) observes; this decides.
  */
 
 export const VISIBILITIES = ['private', 'project', 'organization', 'roles', 'public'] as const;

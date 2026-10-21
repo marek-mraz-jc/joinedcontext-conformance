@@ -11,6 +11,7 @@ Antares checkout in $ANTARES_DIR, at the version prod runs).
 A regression is a test that PASSes in the CI baseline and FAILs on prod. A baseline pass that prod
 SKIPs or never runs is listed, not counted: prod's public views hold other data than the CI fixtures. Prints Markdown, exits 1 on a
 regression or an invalid document.
+A failed run that matches a known ETS defect (`ets_defects`) is listed with its reason, not counted.
 """
 
 from __future__ import annotations
@@ -21,6 +22,7 @@ import os
 import re
 import sys
 import urllib.request
+import xml.etree.ElementTree as ET
 
 UA = {
     "User-Agent": "joinedcontext-prod-nightly (T-4877)",
@@ -36,6 +38,50 @@ def broker_parser(kind: str):
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
     return module.parse
+
+
+def ets_defects(xml: str) -> dict[str, str]:
+    """Failed runs that are defects of ets-ogcapi-features10 (1.8 up to master, 2026-10-21), keyed
+    as the broker parser keys them: the server answered as the standard asks.
+    - FeatureCrsParameter* run with feature id null: the collection holds no feature, so the ETS
+      asks for /items/null and gets the 404 Core requires.
+    - FeatureCrsParameterTransform NullPointerException on a feature whose geometry is null
+      (RFC 7946 3.2, Features Core /req/geojson/content): the ETS transforms the null geometry."""
+    found, seen = {}, set()
+    for test in ET.fromstring(xml).iter("test"):
+        group = test.get("name", "")
+        for cls in test.iter("class"):
+            short = cls.get("name", "").rsplit(".", 1)[-1]
+            for m in cls.iter("test-method"):
+                if m.get("is-config") == "true":
+                    continue
+                base = key = f"{group} :: {short}.{m.get('name', '')}"
+                n = 2
+                while key in seen:
+                    key, n = f"{base} #{n}", n + 1
+                seen.add(key)
+                if m.get("status") != "FAIL" or not short.startswith(
+                    "FeatureCrsParameter"
+                ):
+                    continue
+                value = m.find("params/param[@index='2']/value")
+                exc = m.find("exception")
+                response = m.find("attributes/attribute[@name='response']")
+                if value is not None and value.get("is-null") == "true":
+                    found[key] = (
+                        "ETS asked for feature null: the collection holds no feature"
+                    )
+                elif (
+                    short == "FeatureCrsParameterTransform"
+                    and exc is not None
+                    and exc.get("class") == "java.lang.NullPointerException"
+                    and response is not None
+                    and re.search(r'"geometry"\s*:\s*null', response.text or "")
+                ):
+                    found[key] = (
+                        "ETS NullPointerException on a feature without geometry"
+                    )
+    return found
 
 
 def collapsed(results: dict[str, str]) -> dict[str, str]:
@@ -64,8 +110,12 @@ def diff(
     return sorted(lost), sorted(unrun), sorted(gained)
 
 
-def report(name: str, prod: dict[str, str], baseline: dict[str, str]) -> int:
-    lost, unrun, gained = diff(prod, baseline)
+def report(
+    name: str, prod: dict[str, str], baseline: dict[str, str], defects: dict[str, str]
+) -> int:
+    lost, unrun, gained = diff(
+        {t: "SKIP" if t in defects else s for t, s in prod.items()}, baseline
+    )
     counts = {
         s: sum(1 for v in prod.values() if v == s) for s in ("PASS", "FAIL", "SKIP")
     }
@@ -75,6 +125,11 @@ def report(name: str, prod: dict[str, str], baseline: dict[str, str]) -> int:
     )
     for t in lost:
         print(f"  - REGRESSION {t}")
+    reasons: dict[str, int] = {}
+    for reason in defects.values():
+        reasons[reason] = reasons.get(reason, 0) + 1
+    for reason, n in sorted(reasons.items()):
+        print(f"  - not counted, {n} runs: {reason}")
     return 1 if lost else 0
 
 
@@ -207,6 +262,24 @@ def self_test() -> None:
     assert diff({"m": "PASS", "m #7": "FAIL"}, {"m": "PASS", "m #2": "PASS"})[0] == [
         "m"
     ]
+    ets = """<testng-results><suite><test name="CRS">
+      <class name="x.FeatureCrsParameter">
+        <test-method status="FAIL" name="verifyFeatureCrsParameter"><params>
+          <param index="2"><value>urn:ngsi-ld:Garden:a:b</value></param></params></test-method>
+        <test-method status="FAIL" name="verifyFeatureCrsParameter"><params>
+          <param index="2"><value is-null="true"/></param></params></test-method>
+      </class>
+      <class name="x.FeatureCrsParameterTransform">
+        <test-method status="FAIL" name="m"><exception class="java.lang.NullPointerException"/>
+          <attributes><attribute name="response">{"geometry": null}</attribute></attributes></test-method>
+        <test-method status="FAIL" name="m"><exception class="java.lang.NullPointerException"/>
+          <attributes><attribute name="response">{"geometry": {"type": "Point"}}</attribute></attributes></test-method>
+      </class></test></suite></testng-results>"""
+    # a real 404 of a feature id and an NPE on a feature with geometry stay failures
+    assert sorted(ets_defects(ets)) == [
+        "CRS :: FeatureCrsParameter.verifyFeatureCrsParameter #2",
+        "CRS :: FeatureCrsParameterTransform.m",
+    ], ets_defects(ets)
     good = {
         "type": "FeatureCollection",
         "features": [
@@ -254,9 +327,10 @@ def main(argv: list[str]) -> int:
     if len(argv) == 4 and argv[0] == "ogc":
         kind, run, baseline, name = argv
         with open(run, encoding="utf-8") as f:
-            prod = broker_parser(kind)(f.read())[0]
+            xml = f.read()
+        prod = broker_parser(kind)(xml)[0]
         with open(baseline, encoding="utf-8") as f:
-            return report(name, prod, json.load(f)["results"])
+            return report(name, prod, json.load(f)["results"], ets_defects(xml))
     print(__doc__, file=sys.stderr)
     return 2
 

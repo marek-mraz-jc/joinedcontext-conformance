@@ -17,7 +17,7 @@ import {
 } from '../app-sharing/matrix.js';
 
 /**
- * Journey 39 (T-4911): the App sharing matrix, live. Five copies of one App, one per visibility
+ * Journey 43 (T-4911): the App sharing matrix, live. Five copies of one App, one per visibility
  * (project `sharing`, deployment seed/sharing), opened by six kinds of people at every door the
  * Portal answers for an App; each answer is checked against the rule of Architecture/16 §1 and the
  * whole goes into one HTML report with a 1440 and a 400 px screenshot of every page.
@@ -150,7 +150,7 @@ async function measure(context: BrowserContext, caller: Caller, baseURL: string,
   return cells;
 }
 
-test.describe('Journey 39: the App sharing matrix (T-4911, AP-92, T-4910)', () => {
+test.describe('Journey 43: the App sharing matrix (T-4911, AP-92, T-4910)', () => {
   for (const caller of CALLERS) {
     test(`${caller} at every door of the five Apps`, async ({ browser, baseURL }) => {
       test.setTimeout(240_000);
