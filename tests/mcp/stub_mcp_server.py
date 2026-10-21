@@ -26,6 +26,7 @@ Operates in two modes:
 | 9 | Unknown `Mcp-Session-Id` accepted without HTTP 404 | SP-20 session lifecycle (`test_sp20_session_lifecycle_and_protocol_version_header`) |
 | 10 | Tool arguments are passed on without validating them against the published schema | AG-21 parameter validation (`test_ag21_live_mcp_rejects_hostile_tool_parameters`, security suite) |
 | 11 | The hub surface announces nothing, answers without `jc:source` and offers its write tools | EP-71/PF-48 federation grounding (`test_ep71_*`, `test_pf48_*`) |
+| 12 | The Endpoint serves `/ws` (426) while `describe_access` names no `liveUpdates` | T-5045 live updates (`test_describe_access_names_the_websocket_an_agent_can_open`) |
 """
 
 from __future__ import annotations
@@ -207,6 +208,10 @@ class StubMcpHandler(BaseHTTPRequestHandler):
             self._send_bytes(200, "application/json", body)
             return
 
+        if path.endswith("/api/endpoint/aq-public/ws") and self.server.mode == "broken":
+            # Defect 12 (T-5045): a socket the access document never names.
+            self._send_bytes(426, "text/plain", b"upgrade to a WebSocket")
+            return
         self._send_bytes(404, "application/json", b'{"error":"not found"}')
 
     # The hub surface (T-1209): a space that holds only registrations, over two others. What a
@@ -685,8 +690,11 @@ class StubMcpHandler(BaseHTTPRequestHandler):
             # Defect (broken mode): the anonymous grant holds a write.
             actions = ["queryEntity", "retrieveEntity"] + (["createEntity"] if self.server.mode == "broken" else [])
             permissions = [{"resource": {"type": "AirQualityObserved"}, "actions": actions, "attributes": "*"}]
-            text = json.dumps({"permissions": permissions})
-            self._send_json_rpc(req_id, result={"content": [{"type": "text", "text": text}]})
+            # Shaped as the gateway's jsonrpc::answered: the text and structuredContent.access hold
+            # one document. The stub serves no WebSocket, so it names no liveUpdates (T-5045).
+            access = {"permissions": permissions}
+            result = {"content": [{"type": "text", "text": json.dumps(access)}], "structuredContent": {"access": access}}
+            self._send_json_rpc(req_id, result=result)
             return
 
         if tool_name == "delete_entity":
