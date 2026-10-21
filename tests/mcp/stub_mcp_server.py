@@ -26,6 +26,7 @@ Operates in two modes:
 | 9 | Unknown `Mcp-Session-Id` accepted without HTTP 404 | SP-20 session lifecycle (`test_sp20_session_lifecycle_and_protocol_version_header`) |
 | 10 | Tool arguments are passed on without validating them against the published schema | AG-21 parameter validation (`test_ag21_live_mcp_rejects_hostile_tool_parameters`, security suite) |
 | 11 | The hub surface announces nothing, answers without `jc:source` and offers its write tools | EP-71/PF-48 federation grounding (`test_ep71_*`, `test_pf48_*`) |
+| 12 | The Endpoint serves `/ws` (426) while `describe_access` names no `liveUpdates` | T-5045 live updates (`test_describe_access_names_the_websocket_an_agent_can_open`) |
 """
 
 from __future__ import annotations
@@ -198,6 +199,10 @@ class StubMcpHandler(BaseHTTPRequestHandler):
             self._send_bytes(200, "application/json", body)
             return
 
+        if path.endswith("/api/endpoint/aq-public/ws") and self.server.mode == "broken":
+            # Defect 12 (T-5045): a socket the access document never names.
+            self._send_bytes(426, "text/plain", b"upgrade to a WebSocket")
+            return
         self._send_bytes(404, "application/json", b'{"error":"not found"}')
 
     # The hub surface (T-1209): a space that holds only registrations, over two others. What a
@@ -512,6 +517,15 @@ class StubMcpHandler(BaseHTTPRequestHandler):
                     "annotations": {"readOnlyHint": True, "destructiveHint": False},
                 },
                 {
+                    "name": "describe_access",
+                    "description": "What this caller may read and write here, and how to reach it",
+                    "inputSchema": {
+                        "type": "object",
+                        "properties": {"format": {"type": "string", "enum": ["permissions", "odrl"]}},
+                    },
+                    "annotations": {"readOnlyHint": True, "destructiveHint": False},
+                },
+                {
                     "name": "delete_entity",
                     "description": "Delete an entity instance",
                     "inputSchema": {
@@ -577,6 +591,12 @@ class StubMcpHandler(BaseHTTPRequestHandler):
                 space = tool_args["space"]
             elif "tenant" in tool_args:
                 space = tool_args["tenant"]
+
+        if tool_name == "describe_access":
+            # The stub serves no WebSocket, so the access document names no liveUpdates (T-5045).
+            access = {"space": space, "read": ["*"], "write": []}
+            self._send_json_rpc(req_id, result={"structuredContent": {"access": access}})
+            return
 
         if tool_name == "query_entities":
             entities = ENTITIES_BY_SPACE.get(space, [])

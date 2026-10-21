@@ -40,6 +40,8 @@ REQUIRED_FAILURES = [
     # T-4168: the broken stub lists and runs its write tools for a caller without a token.
     "test_an_anonymous_tool_list_holds_reads_only[MCP_URL]",
     "test_an_anonymous_write_is_refused_before_it_reaches_the_broker[MCP_URL-create_subscription]",
+    # T-5045: the broken Endpoint serves /ws but its describe_access names no liveUpdates.
+    "test_describe_access_names_the_websocket_an_agent_can_open",
 ]
 
 
