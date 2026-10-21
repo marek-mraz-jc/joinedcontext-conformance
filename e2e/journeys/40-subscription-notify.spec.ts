@@ -81,8 +81,12 @@ async function propose(page: Page, name: string, address: string): Promise<void>
   await page.getByRole('button', { name: 'Check', exact: true }).click();
   const proposeButton = page.getByRole('button', { name: 'Propose change' });
   await expect(proposeButton).not.toHaveAttribute('aria-disabled', 'true', { timeout: 60_000 });
+  const proposed = page.waitForResponse(
+    (answer) => answer.request().method() === 'POST' && /\/subscriptions(\?|$)/.test(answer.url()) && !answer.url().includes('dryRun'),
+    { timeout: 60_000 },
+  );
   await proposeButton.click();
-  await expect(page.getByText(/chg-\d+|change/i).first()).toBeVisible({ timeout: 30_000 });
+  expect((await proposed).status(), 'the proposal is accepted as a Change').toBe(202);
 }
 
 function row(page: Page, name: string) {
@@ -112,6 +116,9 @@ async function remove(page: Page, name: string): Promise<void> {
   expect(change, 'a removal is proposed as a Change').toMatch(/^chg-/);
   // A removal is a red-lane change: the steward administers Subscription and confirms it by name
   // (PF-58), as the Approvals page does, so the journey leaves dev as it found it.
+  // A second approval while the first merges into the same repository is refused for a moment
+  // (seen on dev 2026-10-21: 403, then 202 seconds later), so it is retried.
+  await expect(async () => {
   const approved = await page.evaluate(async ([project, id, confirm]) => {
     const csrf = (document.cookie.match(/__Host-jc_csrf=([^;]+)/) ?? [])[1] ?? '';
     const answer = await fetch(`/api/v1/projects/${project}/changes/${id}/approve`, {
@@ -122,6 +129,7 @@ async function remove(page: Page, name: string): Promise<void> {
     return answer.status;
   }, [PROJECT, change as string, name]);
   expect(approved).toBe(202);
+  }).toPass({ timeout: 90_000, intervals: [5_000] });
 }
 
 test.describe('Journey 40: a subscription notifies a receiver (T-4866)', () => {
