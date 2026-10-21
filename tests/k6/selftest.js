@@ -26,6 +26,7 @@ import {
   budgets,
   enduranceBudgets,
   exportBudgets,
+  fairShare,
   slopePercent,
   summarize,
 } from './budgets.js';
@@ -192,6 +193,17 @@ export function samples() {
     check(typed, {
       'geo and temporal rows are kept': (r) => r[0].kind === 'geo' && r[1].kind === 'temporal',
       'an MCP row keeps its body': (r) => r[2].body === call && r[0].body === undefined,
+    });
+    // T-5124: the fair-share verdict, on synthetic p95s.
+    const trend = (p95) => ({ values: { 'p(95)': p95 } });
+    const classes = { write: ['w_base', 'w_flood'] };
+    const verdict = (flood) => fairShare({ w_base: trend(100), ...flood }, classes, 0.2);
+    check(null, {
+      'a class 20 % slower under the flood passes': () => verdict({ w_flood: trend(120) }).ok,
+      'a class 21 % slower under the flood fails': () => !verdict({ w_flood: trend(121) }).ok,
+      'a class without flood samples fails': () => !verdict({}).ok,
+      'a class without baseline samples fails': () =>
+        !fairShare({ w_flood: trend(10) }, classes, 0.2).ok,
     });
   }
 }

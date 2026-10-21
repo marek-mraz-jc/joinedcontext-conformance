@@ -8,6 +8,7 @@
 #   api-mix-100rps.js                 - a list of distinct requests over every interface at 100/s (T-4714)
 #   platform-surfaces.js              - the Portal grid and MCP reads through one Endpoint (T-4889; night.sh)
 #   slow-neighbours.js                - 5 slow read loops beside a quick probe on one endpoint (T-4903)
+#   fair-share.js                     - pipeline writes and a steward beside an anonymous flood (T-5124)
 # Extra arguments go to `k6 run`, e.g.  jc-conformance k6 -- --vus 10
 set -euo pipefail
 here=$(cd -- "$(dirname -- "$0")" && pwd)
@@ -23,6 +24,9 @@ elif [ "${JC_K6_SCRIPT:-}" = "platform-surfaces.js" ]; then
   : "${ENTITY_TYPE:?set ENTITY_TYPE to the type the grid shows}"
 elif [ "${JC_K6_SCRIPT:-}" = "slow-neighbours.js" ]; then
   : "${ENDPOINT_URL:?set ENDPOINT_URL to the root of an endpoint, e.g. https://host/api/endpoint/<slug>}"
+elif [ "${JC_K6_SCRIPT:-}" = "fair-share.js" ]; then
+  : "${ENDPOINT_URL:?set ENDPOINT_URL to the root of an endpoint, e.g. https://host/api/endpoint/<slug>}"
+  : "${WRITE_URL:?set WRITE_URL to the NGSI-LD root a pipeline writes to, e.g. https://host/cs/<space>/ngsi-ld/v1}"
 elif [ "${JC_K6_SCRIPT:-}" = "transport_endpoint_load.js" ]; then
   : "${ENDPOINT_URL:?set ENDPOINT_URL to the root of an endpoint, e.g. https://host/api/endpoint/<slug>}"
   [ -n "${BROKER_URL:-}" ] || echo "BROKER_URL unset: the EP-28 overhead budget will not be measured" >&2
@@ -38,4 +42,11 @@ else
 fi
 
 export JC_REPORTS_DIR="$out"
+if [ "${JC_K6_SCRIPT:-}" = "fair-share.js" ]; then
+  # The verdict compares two phases, which no k6 threshold can: handleSummary writes it.
+  status=0
+  k6 run "$@" "$here/fair-share.js" || status=$?
+  jq -e '.fairShare.ok' "$out/summary.json" >/dev/null || status=1
+  exit "$status"
+fi
 exec k6 run "$@" "$here/${JC_K6_SCRIPT:-gateway-latency-load.js}"

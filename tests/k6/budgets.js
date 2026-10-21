@@ -142,3 +142,22 @@ export function exportBudgets({ rows, streams }) {
     checks: ['rate==1.0'],
   };
 }
+
+// T-5124: the fair-share verdict of fair-share.js. Each class's p95 under the anonymous flood
+// against its own p95 before it: within `tolerance` (0.2 is 20 %) or the run fails. `classes`
+// names the Trend pairs, e.g. { write: ['t5124_write_ms_base', 't5124_write_ms_flood'] }. A class
+// without samples in either phase fails too: a verdict on nothing measured proves nothing.
+export function fairShare(metrics, classes, tolerance) {
+  const p95 = (name) => metrics[name] && metrics[name].values && metrics[name].values['p(95)'];
+  const lines = [];
+  let ok = true;
+  for (const [label, [base, flood]] of Object.entries(classes)) {
+    const before = p95(base);
+    const during = p95(flood);
+    const pass = before > 0 && during >= 0 && during <= before * (1 + tolerance);
+    ok = ok && pass;
+    const shown = (ms) => (typeof ms === 'number' ? `${ms.toFixed(1)} ms` : 'no samples');
+    lines.push(`${pass ? 'PASS' : 'FAIL'} ${label} p95 ${shown(before)} before, ${shown(during)} under the flood (at most +${Math.round(tolerance * 100)} %)`);
+  }
+  return { ok, lines };
+}
