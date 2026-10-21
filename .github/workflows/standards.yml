@@ -24,7 +24,7 @@ on:
       antares_ref:
         description: Antares commit or branch whose OGC baseline and ETS image the run uses (the one the target runs)
         required: false
-        default: main
+        default: dev
       write_endpoint:
         description: dev only, the write Endpoint for ETSI smoke.robot and the WebSocket write case (needs NGSILD_CLIENT_SECRET)
         required: false
