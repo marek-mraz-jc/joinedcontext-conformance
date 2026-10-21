@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Settings for a conformance run against the `dev` cluster (T-0784, TS-05, TS-09, TS-19).
 #
-#   . tests/dev.env.sh [security|mcp|e2e|etsi|ogc|sta|ckan|assistant|dsp|budgets|authz|schemathesis|portal|helsinki-live|app-sharing]
+#   . tests/dev.env.sh [security|mcp|e2e|etsi|ogc|sta|ckan|assistant|dsp|budgets|authz|schemathesis|portal|helsinki-live|app-sharing|source-report]
 #
 # Source it, never run it: it exports the variables the suites read and it takes a suite name
 # because two suites read the same name for different subjects (`SPACE_URL` is the narrowed
@@ -325,6 +325,11 @@ schemathesis)
 	export GATEWAY_TOKEN="$JC_DEV_TOKEN_GATEWAY"
 	[ -n "$JC_DEV_SLUG_AIR" ] && export ENDPOINT_SLUG="$JC_DEV_SLUG_AIR"
 	;;
+source-report)
+	# T-4892: every snapshot pipeline's source vs space, read as the demo steward.
+	export PORTAL_URL="$JC_DEV_PORTAL" PORTAL_TOKEN="$JC_DEV_TOKEN_PERSON"
+	export SOURCE_REPORT_PROJECTS="helsinki bbsk banskabystrica"
+	;;
 helsinki-live)
 	# T-3907: the buses on the transport endpoint against HSL's feed. The agent proxy's client is
 	# a ServiceAccount whose audience names every seeded endpoint; it only reads.
@@ -369,7 +374,7 @@ app-sharing)
 	unset _jc_person _jc_password _jc_key
 	;;
 *)
-	echo "tests/dev.env.sh: unknown suite '$_jc_suite' (security|mcp|e2e|etsi|ogc|sta|ckan|assistant|dsp|budgets|authz|schemathesis|portal|helsinki-live|app-sharing)" >&2
+	echo "tests/dev.env.sh: unknown suite '$_jc_suite' (security|mcp|e2e|etsi|ogc|sta|ckan|assistant|dsp|budgets|authz|schemathesis|portal|helsinki-live|app-sharing|source-report)" >&2
 	;;
 esac
 
