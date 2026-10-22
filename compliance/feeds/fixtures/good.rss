@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Podujatia v Banskobystrickom kraji</title>
+    <link>https://feeds.example.org/dataset/podujatia</link>
+    <description>Podujatia, najnovšie prvé.</description>
+    <language>sk</language>
+    <lastBuildDate>Thu, 22 Oct 2026 08:00:00 GMT</lastBuildDate>
+    <atom:link rel="self" type="application/rss+xml" href="https://feeds.example.org/x/views/podujatia/feed/v1/rss.xml"/>
+    <atom:link rel="next" href="https://feeds.example.org/x/views/podujatia/feed/v1/rss.xml?page=2"/>
+    <item>
+      <title>Koncert Hronu &amp; hostia</title>
+      <description>&lt;p&gt;Koncert na námestí.&lt;/p&gt;</description>
+      <guid isPermaLink="false">tag:feeds.example.org,2026:podujatia/urn:ngsi-ld:Event:3</guid>
+      <pubDate>Thu, 22 Oct 2026 08:00:00 +0000</pubDate>
+      <enclosure url="https://feeds.example.org/e/3.jpg" length="1024" type="image/jpeg"/>
+    </item>
+    <item>
+      <title>Trh</title>
+      <guid isPermaLink="false">tag:feeds.example.org,2026:podujatia/urn:ngsi-ld:Event:2</guid>
+      <pubDate>21 Oct 2026 06:00 GMT</pubDate>
+    </item>
+    <item>
+      <description>Výstava obrazov.</description>
+      <guid isPermaLink="false">tag:feeds.example.org,2026:podujatia/urn:ngsi-ld:Event:1</guid>
+    </item>
+  </channel>
+</rss>

@@ -1,0 +1,78 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://joinedcontext.com/conformance/feeds/jsonfeed-1.1.schema.json",
+  "$comment": "Written from the JSON Feed Version 1.1 specification, https://www.jsonfeed.org/version/1.1/ (T-5201). The spec publishes no schema. Members whose name starts with _ are extensions and readers ignore unknown members, so no object closes its properties. validate_feed.py checks what a schema cannot: unique item ids, RFC 3339 dates, feed_url against the fetched URL.",
+  "title": "JSON Feed 1.1",
+  "type": "object",
+  "required": ["version", "title", "items"],
+  "properties": {
+    "version": { "const": "https://jsonfeed.org/version/1.1" },
+    "title": { "type": "string", "minLength": 1 },
+    "home_page_url": { "type": "string" },
+    "feed_url": { "type": "string" },
+    "description": { "type": "string" },
+    "user_comment": { "type": "string" },
+    "next_url": { "type": "string" },
+    "icon": { "type": "string" },
+    "favicon": { "type": "string" },
+    "author": { "$ref": "#/$defs/author" },
+    "authors": { "type": "array", "items": { "$ref": "#/$defs/author" } },
+    "language": { "type": "string" },
+    "expired": { "type": "boolean" },
+    "hubs": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["type", "url"],
+        "properties": { "type": { "type": "string" }, "url": { "type": "string" } }
+      }
+    },
+    "items": { "type": "array", "items": { "$ref": "#/$defs/item" } }
+  },
+  "$defs": {
+    "author": {
+      "type": "object",
+      "minProperties": 1,
+      "properties": {
+        "name": { "type": "string" },
+        "url": { "type": "string" },
+        "avatar": { "type": "string" }
+      }
+    },
+    "item": {
+      "type": "object",
+      "required": ["id"],
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "url": { "type": "string" },
+        "external_url": { "type": "string" },
+        "title": { "type": "string" },
+        "content_html": { "type": "string" },
+        "content_text": { "type": "string" },
+        "summary": { "type": "string" },
+        "image": { "type": "string" },
+        "banner_image": { "type": "string" },
+        "date_published": { "type": "string" },
+        "date_modified": { "type": "string" },
+        "author": { "$ref": "#/$defs/author" },
+        "authors": { "type": "array", "items": { "$ref": "#/$defs/author" } },
+        "tags": { "type": "array", "items": { "type": "string" } },
+        "language": { "type": "string" },
+        "attachments": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["url", "mime_type"],
+            "properties": {
+              "url": { "type": "string" },
+              "mime_type": { "type": "string" },
+              "title": { "type": "string" },
+              "size_in_bytes": { "type": "number" },
+              "duration_in_seconds": { "type": "number" }
+            }
+          }
+        }
+      }
+    }
+  }
+}

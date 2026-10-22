@@ -1,0 +1,28 @@
+{
+  "version": "https://jsonfeed.org/version/1.1",
+  "title": "Podujatia v Banskobystrickom kraji",
+  "home_page_url": "https://feeds.example.org/dataset/podujatia",
+  "feed_url": "https://feeds.example.org/x/views/podujatia/feed/v1/feed.json",
+  "next_url": "https://feeds.example.org/x/views/podujatia/feed/v1/feed.json?page=2",
+  "language": "sk-SK",
+  "authors": [{ "name": "Banskobystrický samosprávny kraj", "url": "https://www.bbsk.sk/" }],
+  "items": [
+    {
+      "id": "tag:feeds.example.org,2026:podujatia/urn:ngsi-ld:Event:3",
+      "title": "Koncert Hronu & hostia",
+      "content_html": "<p>Koncert na námestí.</p>",
+      "date_published": "2026-10-20T10:00:00+02:00",
+      "date_modified": "2026-10-22T08:00:00Z",
+      "attachments": [{ "url": "https://feeds.example.org/e/3.jpg", "mime_type": "image/jpeg" }]
+    },
+    {
+      "id": "tag:feeds.example.org,2026:podujatia/urn:ngsi-ld:Event:2",
+      "content_text": "Trh",
+      "date_modified": "2026-10-21T08:00:00.5+02:00"
+    },
+    {
+      "id": "tag:feeds.example.org,2026:podujatia/urn:ngsi-ld:Event:1",
+      "content_text": "Výstava"
+    }
+  ]
+}
