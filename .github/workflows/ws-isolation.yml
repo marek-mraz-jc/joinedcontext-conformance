@@ -1,0 +1,67 @@
+name: ws-isolation
+# WebSocket isolation through the real edge on dev (T-4909, T-4872 step 3, T-4874, docs API/07):
+# e2e journey 48 provisions two sandbox spaces with a public and an authenticated Endpoint, holds
+# sockets on both through APISIX, the context gateway and the broker while it writes canaries for
+# 30 minutes, then narrows the public Endpoint and checks its socket closes. The verdict rules are
+# tested offline in ci.yml (e2e/ws-isolation/verdict.spec.ts).
+# On demand only while Actions minutes are metered: it writes into dev, which is the deployer's.
+on:
+  workflow_dispatch:
+    inputs:
+      base_url:
+        description: portal root
+        required: false
+        default: ""
+      minutes:
+        description: how long the canary writes run
+        required: false
+        default: "30"
+permissions: { contents: read }
+# The e2e journeys' group: one run writing into dev at a time, and the two fixed slugs of the
+# authenticated Endpoints are held by one run only.
+concurrency: { group: e2e-dev, cancel-in-progress: false }
+env:
+  BASE_URL: ${{ inputs.base_url || vars.PORTAL_BASE_URL || 'https://dev.joinedcontext.com' }}
+jobs:
+  isolation:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - name: the credentials exist as repository secrets
+        env:
+          PORTAL_USER: ${{ secrets.PORTAL_USER }}
+          PORTAL_PASSWORD: ${{ secrets.PORTAL_PASSWORD }}
+          PORTAL_APPROVER_USER: ${{ secrets.PORTAL_APPROVER_USER }}
+          PORTAL_APPROVER_PASSWORD: ${{ secrets.PORTAL_APPROVER_PASSWORD }}
+          NGSILD_CLIENT_SECRET: ${{ secrets.NGSILD_CLIENT_SECRET }}
+        run: |
+          set -eu
+          missing=""
+          for name in PORTAL_USER PORTAL_PASSWORD PORTAL_APPROVER_USER PORTAL_APPROVER_PASSWORD NGSILD_CLIENT_SECRET; do
+            [ -n "$(printenv "$name")" ] || missing="$missing $name"
+          done
+          if [ -n "$missing" ]; then
+            echo "::error::repository secrets missing:$missing (the steward proposes, the approver approves, the conformance account writes)"
+            exit 1
+          fi
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with: { node-version: "22", cache: npm }
+      - run: npm ci --no-audit --no-fund
+      - run: ./node_modules/.bin/playwright install --with-deps chromium
+      - name: run journey 48
+        env:
+          PORTAL_USER: ${{ secrets.PORTAL_USER }}
+          PORTAL_PASSWORD: ${{ secrets.PORTAL_PASSWORD }}
+          PORTAL_APPROVER_USER: ${{ secrets.PORTAL_APPROVER_USER }}
+          PORTAL_APPROVER_PASSWORD: ${{ secrets.PORTAL_APPROVER_PASSWORD }}
+          NGSILD_CLIENT_SECRET: ${{ secrets.NGSILD_CLIENT_SECRET }}
+          JC_WSISO_MINUTES: ${{ inputs.minutes }}
+          JC_REPORTS_DIR: ${{ github.workspace }}/reports/ws-isolation
+        run: ./node_modules/.bin/playwright test --config e2e/playwright.config.ts journeys/48-websocket-isolation.spec.ts
+      - if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: ws-isolation-report
+          path: reports/ws-isolation
+          retention-days: 14
