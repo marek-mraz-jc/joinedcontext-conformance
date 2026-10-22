@@ -69,14 +69,29 @@ _jc_token_client() {
 
 # A person's token through the confidential client the edge uses. The realm stores the email
 # as the username, so the login is `<user>@<org>`.
+# A holder of the realm role mfa-required (T-5120: every steward and approver) needs a TOTP code
+# with the password: the deployment keeps the seed beside it, Secret keycloak-user-<name> key totp.
+_jc_user_totp() {
+	local seed
+	seed=$(kubectl get secret "keycloak-user-${1//./-}" -n "$JC_DEV_NS" \
+		-o jsonpath='{.data.totp}' 2>/dev/null | base64 -d 2>/dev/null) || return 0
+	[ -n "$seed" ] || return 0
+	# RFC 6238 over the seed's UTF-8 bytes, HmacSHA256, 30 s, 6 digits: the realm's OTP policy.
+	printf '%s' "$seed" | python3 -c 'import hashlib,hmac,struct,sys,time
+m=hmac.new(sys.stdin.read().encode(),struct.pack(">Q",int(time.time())//30),hashlib.sha256).digest()
+o=m[-1]&15
+print(str((struct.unpack(">I",m[o:o+4])[0]&0x7FFFFFFF)%10**6).zfill(6),end="")'
+}
+
 _jc_token_person() {
-	local user="$1" client="apisix-gateway" secret password
+	local user="$1" client="apisix-gateway" secret password totp
 	secret=$(_jc_client_secret "$client") || return 0
 	password=$(_jc_user_password "$user") || return 0
 	[ -n "$secret" ] && [ -n "$password" ] || return 0
+	totp=$(_jc_user_totp "$user")
 	curl -sS --max-time 20 -d grant_type=password -d "client_id=$client" \
 		--data-urlencode "client_secret=$secret" -d "username=${user}@${JC_DEV_ORG}" \
-		--data-urlencode "password=$password" \
+		--data-urlencode "password=$password" ${totp:+-d "totp=$totp"} \
 		"$JC_DEV_IDM/realms/$JC_DEV_REALM/protocol/openid-connect/token" 2>/dev/null |
 		sed -n 's/.*"access_token":"\([^"]*\)".*/\1/p'
 }
