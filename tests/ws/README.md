@@ -54,3 +54,27 @@ may arrive; a gap, a close or a refused subscription fails it. Stdlib only.
 ```sh
 python3 tests/ws/fanout_smoke.py wss://api.dev.joinedcontext.com/api/endpoint/ajaezssvx3bwqgejgepmq4ig3frgan4e/ws
 ```
+
+## Isolation through the edge on dev (T-4909, T-4872 step 3, T-4874)
+
+e2e journey 48 (`e2e/journeys/48-websocket-isolation.spec.ts`, workflow `ws-isolation.yml`, on
+demand) proposes two sandbox spaces in `helsinki`: the first with a public Endpoint hiding `cause`
+and `alertSource` and an organization Endpoint hiding `cause`, the second with the same entity ids.
+Read Policies name only `Alert`, so `GtfsStop` is the type no Endpoint shows. The conformance
+account (`banskabystrica-conformance`, whose token names the two fixed slugs in deployment
+`components/context-gateway/keycloak-clients.yaml`) writes for 30 minutes: Alert creates, shown
+updates, hidden-only updates, Alerts whose `refStop` names a canary GtfsStop, GtfsStop writes and
+the second space's copies. Sockets stay open on both Endpoints (a token socket is reopened at its
+`exp`), each with a plain, a `join=inline` and a canary-type subscription, and a REST read with
+`join=inline` runs each round. `e2e/ws-isolation/verdict.ts` fails the run on any canary marker,
+canary entity, hidden attribute, authenticated-only attribute on the anonymous side, notification
+after a hidden-only update, or frame after `x-closing`; `verdict.spec.ts` proves each goes red,
+offline, in `ci.yml`. At the end the public Endpoint is narrowed to `organization`: its socket gets
+`x-closing` `endpoint-changed` and closes 1000, and a new anonymous upgrade answers 401. The
+journey then deletes everything it proposed.
+
+```sh
+PORTAL_USER=… PORTAL_PASSWORD=… PORTAL_APPROVER_USER=… PORTAL_APPROVER_PASSWORD=… \
+NGSILD_CLIENT_SECRET=… JC_WSISO_MINUTES=30 \
+  ./node_modules/.bin/playwright test --config e2e/playwright.config.ts journeys/48-websocket-isolation.spec.ts
+```

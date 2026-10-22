@@ -122,12 +122,15 @@ jobs:
           for spec in journeys/01-onboarding-login journeys/02-blueprint-flow journeys/03-approval-review \
                       journeys/04-map-dashboard journeys/05-deckgl-visualization journeys/06-drift-management \
                       journeys/08-no-api-key journeys/11-access-matrix journeys/20-app-isolation \
-                      journeys/43-app-sharing-matrix app-sharing/matrix \
+                      journeys/43-app-sharing-matrix journeys/48-websocket-isolation app-sharing/matrix \
+                      ws-isolation/verdict \
                       accessibility/wcag; do
             grep -q "$spec.spec.ts" "${RUNNER_TEMP}/specs" || { echo "$spec.spec.ts is not discoverable"; exit 1; }
           done
       - name: the App sharing matrix's rules hold and a wrong expectation goes red (T-4911)
         run: ./node_modules/.bin/playwright test --config e2e/playwright.config.ts e2e/app-sharing/matrix.spec.ts
+      - name: the WebSocket isolation verdict goes red on each leak kind (T-4909)
+        run: ./node_modules/.bin/playwright test --config e2e/playwright.config.ts e2e/ws-isolation/verdict.spec.ts
       - name: the widget pictures keep the answer's own words, not a Windows-1252 double decoding (T-4680)
         run: node tests/assistant/screens.mjs --selftest
       - name: the chaos verdict rejects an outage, a slow recovery and a run with no fault (T-0088)
