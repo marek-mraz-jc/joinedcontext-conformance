@@ -4,7 +4,8 @@
 #   OData cases of tests/odata (ABNF URL forms, $metadata; the NLstn suite needs its own reference
 #   model and a Reseed write, so it stays in Antares CI), the STA read path (tests/sta; the official
 #   ETS comes with T-4878), DCAT-AP 3.0.0 SHACL of the CKAN feed, RFC 7946 of OGC items, RFC 5545
-#   of the iCal feeds a view serves. No credential: every call is anonymous, as a visitor's.
+#   of the iCal feeds a view serves, and the cross-surface consistency check (consistency.py, T-5130:
+#   NGSI-LD, OData, OGC, STA and CSV give the same counts and sample rows; the catalogue agrees). No credential: every call is anonymous, as a visitor's.
 #   The ETSI NGSI-LD TTF suite never runs here (owner rule for prod and dev).
 #
 #   ANTARES_DIR   Antares checkout at the commit prod's broker runs (its baselines and parsers)
@@ -12,7 +13,7 @@
 #   API           https://api.smartcity.joinedcontext.com    CATALOGUE  https://opendata.smartcity.joinedcontext.com
 #   ENDPOINTS     public Endpoint ids to test, space separated (default: endpoints.txt)
 #   TE_USER, TE_PASSWORD   the TEAM Engine image's own public test account (ogctest), as tests/ogc/run.sh
-#   SUITES        which of ogc odata sta ical dcat to run (default all; tests/standards/run.sh runs one at a time)
+#   SUITES        which of ogc odata sta ical dcat consistency to run (default all; tests/standards/run.sh runs one at a time)
 set -uo pipefail
 here=$(cd -- "$(dirname -- "$0")" && pwd)
 : "${ANTARES_DIR:?set ANTARES_DIR to an Antares checkout at the broker commit prod runs}"
@@ -27,12 +28,13 @@ report=$out/report.md
 rc=0
 note() { echo "$*" | tee -a "$report"; }
 pause() { sleep "${PAUSE:-30}"; }
-suites=" ${SUITES:-ogc odata sta ical dcat} "
+suites=" ${SUITES:-ogc odata sta ical dcat consistency} "
 want() { [[ $suites == *" $1 "* ]]; }   # the edge sees one address: a gap between suites keeps it under the per-IP budget
 
 note "# Prod standards run $(date -u +%FT%TZ)"
 note "Antares $(git -C "$ANTARES_DIR" rev-parse --short HEAD), endpoints: $endpoints"
 "${compare[@]}" --self-test >/dev/null || { note "compare.py self-test failed"; exit 2; }
+python3 "$here/consistency.py" --self-test >/dev/null || { note "consistency.py self-test failed"; exit 2; }
 
 if want ogc; then
 # OGC API Features: TEAM Engine on the host network, one run per Endpoint, every collection.
@@ -116,6 +118,12 @@ for (severity, path), n in by.most_common(15):
     print(f"  - {severity} {path}: {n}")
 sys.exit(0 if conforms else 1)
 PY
+fi
+
+if want consistency; then
+# One filter, every surface: counts and 20 sampled rows per type and filter, and the catalogue's counts.
+# shellcheck disable=SC2086 # $endpoints is a space separated list of ids
+python3 "$here/consistency.py" --api "$api" --catalogue "$catalogue" --json "$out/consistency.json" $endpoints >> "$report" || rc=1
 fi
 
 note "## Verdict: $([ $rc = 0 ] && echo GREEN || echo RED)"

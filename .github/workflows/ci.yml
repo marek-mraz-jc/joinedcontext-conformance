@@ -79,6 +79,8 @@ jobs:
         run: python3 tests/mqtt/paho_interop.py --selftest
       - name: the nightly RFC 7946 and RFC 5545 checks go red on a planted break (T-4877, T-4879)
         run: python3 tests/prod-nightly/compare.py --self-test
+      - name: the nightly cross-surface consistency check goes red on a count, sampled id or value one surface differs in (T-5130)
+        run: python3 tests/prod-nightly/consistency.py --self-test
       - name: the iCalendar validator fails each broken feed with its named rule, and the Event mapping bites (T-5044)
         run: python3 -m pytest tests/ical -q
       - name: the standards run page table renders and goes red on a failed suite (T-5044)
