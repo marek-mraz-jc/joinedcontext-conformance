@@ -197,6 +197,30 @@ def test_a_removed_view_closes_its_connections(ws_url, base, contract):
     run(session())
 
 
+def test_a_mapping_of_another_ir_version_is_refused(base):
+    """A view whose mapping IR is a version the broker does not run is refused before it is stored
+    (DM-52, T-5219): Model Tools, gateway and broker agree on one IR version."""
+    view = f"ir-v3-{uuid.uuid4().hex[:8]}"
+    ir = {
+        "version": 3,
+        "sourceClass": "Car",
+        "targetClass": "Vehicle",
+        "slots": [{"target": "velocity", "source": "speed", "kind": "rename"}],
+    }
+    doc = {
+        "id": view,
+        "tenant": "conformance",
+        "selector": ["Car"],
+        "rules": [{"types": ["Car"], "attributes": ["speed"]}],
+        "operations": ["retrieve_entity", "query_entities"],
+        "mapping": ir,
+    }
+    r = requests.put(f"{base}/q/views/{view}", json=doc, timeout=10)
+    assert r.status_code == 400, r.text
+    assert "version 3" in r.json()["detail"], r.text
+    assert requests.get(f"{base}/q/views/{view}", timeout=10).status_code == 404
+
+
 def test_a_connection_ends_at_its_max_lifetime(ws_url, contract, entity):
     async def session():
         c = await open_client(ws_url, contract)
