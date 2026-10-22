@@ -36,7 +36,10 @@ ENV DEBIAN_FRONTEND=noninteractive \
     JC_REPORTS_DIR=/reports
 
 # `upgrade` too: the pinned base digest lags the Debian security archive (libpcre2 in 12.15),
-# and trivy fails the build on any fixed HIGH left in the layer.
+# and trivy fails the build on any fixed HIGH left in the layer. image.yml passes today's date as
+# APT_REFRESH, so the GHA build cache replays this layer for one day at most (T-5372: a CACHED
+# layer kept libexpat1 deb12u4 after deb12u5 shipped).
+ARG APT_REFRESH
 RUN apt-get update \
  && apt-get upgrade -y --no-install-recommends \
  && apt-get install -y --no-install-recommends ca-certificates curl git jq libxml2-utils \
