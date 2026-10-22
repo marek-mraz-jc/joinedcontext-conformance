@@ -17,6 +17,7 @@ message the broker sends in these sessions is validated against its message sche
 | `test_resume_past_the_ring_starts_with_a_gap` | 7 |
 | `test_resume_with_a_wrong_token_is_not_found` | 7 |
 | `test_a_removed_view_closes_its_connections` (`view-removed`, 1008) | views |
+| `test_a_mapping_of_another_ir_version_is_refused` (400, IR version, DM-52) | views |
 | `test_a_connection_ends_at_its_max_lifetime` (`lifetime`, 1000) | 8 |
 
 `test_rfc6455.py` runs `rfc6455_probe.py`: the Autobahn sections that need no echo server (ping and
