@@ -13,14 +13,18 @@ both to every job in the file, including one added later for something unrelated
 
 Line-based on purpose: the runner has no YAML library installed by default, and both rules are
 decidable from the text. A third rule, OPS-41: an image a workflow signs by digest also has a
-CycloneDX SBOM attested to that digest. Run it from anywhere: `python3 scripts/ci/check-workflow-pins.py`.
+CycloneDX SBOM attested to that digest. A fourth: a Dockerfile that runs `apt-get upgrade` takes
+an `ARG APT_REFRESH` before it and every cached build passes a fresh value, or the build cache
+replays a days-old upgrade layer and trivy fails on a fix Debian already ships (T-5372, libexpat1
+deb12u5 missing from a CACHED layer). Run it from anywhere: `python3 scripts/ci/check-workflow-pins.py`.
 """
 
 import re
 import sys
 from pathlib import Path
 
-WORKFLOWS = Path(__file__).resolve().parents[2] / ".github/workflows"
+ROOT = Path(__file__).resolve().parents[2]
+WORKFLOWS = ROOT / ".github/workflows"
 USES = re.compile(r"^\s*(?:- )?uses:\s*(\S+)")
 COMMIT = re.compile(r"@[0-9a-f]{40}$")
 PUBLISHES = ("packages: write", "id-token: write")
@@ -47,8 +51,39 @@ def unattested(lines):
     return [(number, image) for image, number in signed.items() if image not in attested]
 
 
-def problems(path: Path):
+def unrefreshed_upgrade(dockerfile):
+    """True when the Dockerfile runs `apt-get upgrade` with no `ARG APT_REFRESH` declared before it."""
+    upgrade = next((n for n, line in enumerate(dockerfile) if "apt-get upgrade" in line), None)
+    return upgrade is not None and not any(
+        line.split("#", 1)[0].strip() == "ARG APT_REFRESH" for line in dockerfile[:upgrade]
+    )
+
+
+def stale_builds(lines):
+    """Line numbers of build-push-action steps that read the build cache (`cache-from`) and pass
+    no `APT_REFRESH=` build argument, so they replay whatever upgrade layer the cache holds."""
+    stale = []
+    for number, line in enumerate(lines, 1):
+        if not (used := USES.match(line)) or not used.group(1).startswith("docker/build-push-action@"):
+            continue
+        indent = len(line) - len(line.lstrip(" -"))
+        step = []
+        for follow in lines[number:]:
+            if follow.strip() and (len(follow) - len(follow.lstrip(" -")) < indent or follow.lstrip().startswith("- ")):
+                break
+            step.append(follow.split("#", 1)[0])
+        if any("cache-from:" in s for s in step) and not any("APT_REFRESH=" in s for s in step):
+            stale.append(number)
+    return stale
+
+
+def problems(path: Path, upgrades: bool):
     lines = path.read_text().splitlines()
+    for number in stale_builds(lines) if upgrades else []:
+        yield (
+            f"{path.name}:{number}: this cached build replays an old `apt-get upgrade` layer; pass "
+            "`build-args: APT_REFRESH=<today>` (T-5372)"
+        )
     for number, image in unattested(lines):
         yield (
             f"{path.name}:{number}: {image} is signed and no CycloneDX SBOM is attested to it "
@@ -81,7 +116,12 @@ def problems(path: Path):
 
 
 def main() -> int:
-    found = [problem for path in sorted(WORKFLOWS.glob("*.yml")) for problem in problems(path)]
+    dockerfile = ROOT / "Dockerfile"
+    lines = dockerfile.read_text().splitlines() if dockerfile.exists() else []
+    upgrades = any("apt-get upgrade" in line for line in lines)
+    found = [problem for path in sorted(WORKFLOWS.glob("*.yml")) for problem in problems(path, upgrades)]
+    if unrefreshed_upgrade(lines):
+        found.append("Dockerfile: `apt-get upgrade` with no `ARG APT_REFRESH` before it; the build cache keeps an old upgrade (T-5372)")
     for problem in found:
         print(problem, file=sys.stderr)
     return 1 if found else 0
