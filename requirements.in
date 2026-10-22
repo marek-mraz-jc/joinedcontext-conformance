@@ -16,3 +16,5 @@ linkml==1.12.0
 # transitive (requests, pyshex), held at the fix: CVE-2026-97687 and CVE-2026-97689 (HIGH) are
 # fixed in 2.8.0 (T-4614)
 urllib3>=2.8.0
+# compliance/feeds: RELAX NG validation of Atom feeds, parsing without DTDs or entities (T-5201)
+lxml==5.4.0
