@@ -14,6 +14,7 @@ import functools
 import os
 import re
 from pathlib import Path
+from urllib.parse import unquote, urlsplit
 
 import schemathesis
 import yaml
@@ -84,6 +85,12 @@ def _route_key(method: str, path: str) -> str:
     return f"{method} {re.sub(r'{[^}]*}', '{}', path)}"
 
 
+def _project_of(url: str) -> str | None:
+    """The project an API URL names: `/api/v1/projects/<project>/...`."""
+    match = re.match(r"/api/v1/projects/([^/]+)", urlsplit(url).path)
+    return unquote(match.group(1)) if match else None
+
+
 @functools.cache
 def _allowed(role: str) -> frozenset[str]:
     """The routes the matrix lets `role` pass; a missing table fails the run, never passes it."""
@@ -108,7 +115,9 @@ def ac01_no_access_beyond_the_matrix(ctx, response: schemathesis.Response, case)
     if role not in MATRIX_ROLES or not 200 <= response.status_code < 300:
         return
     own = os.environ.get("JC_SCHEMATHESIS_OWN_PROJECT")
-    if own and (case.path_parameters or {}).get("project") == own:
+    # The URL sent, not the case's parameters: an operation with a literal project in its path
+    # has no `project` parameter, and the coverage phase sends other methods to it.
+    if own and _project_of(response.request.url) == own:
         return
     # The method sent, not the operation's: the coverage phase also sends unlisted ones (TRACE).
     method = response.request.method or case.method

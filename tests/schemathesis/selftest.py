@@ -51,6 +51,11 @@ SPEC = {
         # One write with nothing to generate, so every case reaches the handler: the PF-50 leg
         # needs a write the stub accepts.
         "/api/v1/projects/demo/notes": {
+            # a read with the project in its literal path: no `project` parameter names it (T-5347)
+            "get": {
+                "operationId": "listNotes",
+                "responses": {"200": {"description": "notes", "content": {"application/json": {"schema": {"type": "object"}}}}},
+            },
             "post": {
                 "operationId": "createNote",
                 "responses": {"201": {"description": "created"}},
