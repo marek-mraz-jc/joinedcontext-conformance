@@ -315,8 +315,8 @@ def main() -> int:
             json.dump({
                 "roles": ["anonymous", "other-member"],
                 "routes": [
-                    {"route": "GET /api/v1/projects/{project}/{plural}", "expect": [401, 403]},
-                    {"route": "POST /api/v1/projects/demo/notes", "expect": [403, "allow"]},
+                    {"route": "GET /projects/{project}/{plural}", "expect": [401, 403]},
+                    {"route": "POST /projects/demo/notes", "expect": [403, "allow"]},
                 ],
             }, f)
         ac01 = CHECKS + ",ac01_no_access_beyond_the_matrix"

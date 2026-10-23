@@ -75,8 +75,13 @@ DEFAULT_MATRIX = Path(__file__).resolve().parents[3] / "joinedcontext-portal" / 
 
 
 def _route_key(method: str, path: str) -> str:
-    """`GET /api/v1/projects/{project}/x` and `GET /api/v1/projects/{name}/x` are one route."""
-    return f"{method.upper()} {re.sub(r'{[^}]*}', '{}', path)}"
+    """`GET /api/v1/projects/{project}/x` and the matrix's `GET /projects/{name}/x` are one route.
+
+    The matrix names API routes without the `/api/v1` they are served under (the Portal's
+    authz_matrix_tests.rs url()); a HEAD is the GET it answers for."""
+    method = "GET" if method.upper() == "HEAD" else method.upper()
+    path = path.removeprefix("/api/v1") if path.startswith("/api/v1/") else path
+    return f"{method} {re.sub(r'{[^}]*}', '{}', path)}"
 
 
 @functools.cache
@@ -107,6 +112,8 @@ def ac01_no_access_beyond_the_matrix(ctx, response: schemathesis.Response, case)
         return
     # The method sent, not the operation's: the coverage phase also sends unlisted ones (TRACE).
     method = response.request.method or case.method
+    if method.upper() == "OPTIONS":
+        return  # a CORS preflight: it answers which methods exist, never a resource
     if _route_key(method, case.operation.path) not in _allowed(role):
         raise AssertionError(
             f"{method} {case.operation.path} -> {response.status_code}: the authorization matrix refuses {role} here (AC-01)"
