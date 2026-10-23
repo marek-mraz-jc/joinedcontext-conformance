@@ -11,10 +11,10 @@ import { test, expect, requireEnv, signIn } from '../fixtures/portal.js';
  * and queries a space through the server, and every answer passes the outputSchema the server
  * published, as strict clients (the MCP inspector, the TypeScript SDK) check it. A viewer meets
  * "New MCP server" disabled with its reason, no edit or remove, and a 403 in words when proposing
- * one anyway; the stranger's write tool call is refused. Nothing is written, so nothing is cleaned up.
- *
- * Not checked here: the call in the project's Activity. The gateway emits no activity record yet
- * (docs Architecture/09-portal.md section on activity kinds); tasks/later/T-later-gateway-mcp-activity.md.
+ * one anyway; the stranger's write tool call is refused. The steward then finds the stranger's
+ * calls in the project's Activity, filtered to kind mcp.tool: "anonymous called query_entities on
+ * <endpoint>", written by the gateway with no argument in it (T-5322). The gateway posts anonymous
+ * calls once a minute, so that step waits up to two. Nothing is written, so nothing is cleaned up.
  *
  * JC_MCP_PROJECT (default helsinki) and JC_MCP_SERVER (default: the project's first public server)
  * choose the server. With JC_EVIDENCE_DIR set it keeps 1440 px and 400 px screenshots of each step.
@@ -70,7 +70,7 @@ function satisfies(schema: Tool['outputSchema'], content: Record<string, unknown
 }
 
 test('a public MCP server: from the menu to its connect page, and a stranger\'s client queries a space through it', async ({ steward }) => {
-  test.setTimeout(180_000);
+  test.setTimeout(360_000);
   const { page } = steward;
   await openMcpServers(page);
   await shot(page, '01-mcp-servers');
@@ -135,6 +135,22 @@ test('a public MCP server: from the menu to its connect page, and a stranger\'s 
   } finally {
     await stranger.dispose();
   }
+
+  // The stranger's calls on the project's Activity (T-5322): one row per tool and Endpoint per
+  // minute, naming the caller, the tool and the Endpoint, never the arguments.
+  interface Event { kind: string; source: string; summary: string; details?: { tool?: string; endpoint?: string } }
+  let calls: Event[] = [];
+  await expect.poll(async () => {
+    const answer = await page.request.get(`/api/v1/projects/${PROJECT}/activity?kind=mcp.tool&source=gateway&limit=200`);
+    expect(answer.status(), await answer.text()).toBe(200);
+    calls = ((await answer.json()).items as Event[]).filter((event) => event.summary.startsWith('anonymous called query_entities'));
+    return calls.length;
+  }, { message: 'the stranger\'s query_entities never reached the Activity', timeout: 150_000, intervals: [10_000] }).toBeGreaterThan(0);
+  expect(calls[0].details?.tool).toBe('query_entities');
+  expect(JSON.stringify(calls), 'an argument reached the Activity').not.toContain('"limit"');
+  await page.goto(`/projects/${PROJECT}/activity?lang=en`);
+  await expect(page.getByText(/anonymous called query_entities/).first()).toBeVisible({ timeout: 30_000 });
+  await shot(page, '02b-activity-mcp-tool');
 });
 
 test('a viewer reads the MCP servers and is refused a new one in words', async ({ browser, baseURL }) => {
