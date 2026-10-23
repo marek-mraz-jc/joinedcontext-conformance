@@ -161,3 +161,48 @@ export function fairShare(metrics, classes, tolerance) {
   }
   return { ok, lines };
 }
+
+// T-5042: the milliseconds a `Server-Timing` header names for `metric` (`total;dur=12.5`), or
+// undefined when the header or the metric is absent, so an answer from an older gateway is
+// counted as unmeasured rather than as zero.
+export function serverTiming(header, metric) {
+  for (const entry of String(header || '').split(',')) {
+    const [name, ...params] = entry.trim().split(';');
+    if (name !== metric) continue;
+    for (const param of params) {
+      const [key, value] = param.trim().split('=');
+      if (key === 'dur' && value !== undefined && value !== '' && Number.isFinite(Number(value))) {
+        return Number(value);
+      }
+    }
+  }
+  return undefined;
+}
+
+// T-5042: the report's table of policy-budgets.js, one row per kind and level: p50/p95/p99 of the
+// server time, its broker share and the round trip, from the t5042_* Trends' sub-metrics.
+export function timingTable(metrics, kinds, levels) {
+  const value = (name, stat) => {
+    const values = (metrics[name] && metrics[name].values) || {};
+    // k6 keeps an empty sub-metric as zeros: no samples is shown as unmeasured.
+    if (!values.count) return '-';
+    return stat === 'count' ? String(values.count) : values[stat].toFixed(1);
+  };
+  const rows = [
+    '| kind | clients | n | server p50 | p95 | p99 | broker p50 | p95 | round trip p50 | p95 |',
+    '|---|---|---|---|---|---|---|---|---|---|',
+  ];
+  for (const kind of kinds) {
+    for (const level of levels) {
+      const server = `t5042_server_ms{kind:${kind},level:${level}}`;
+      const broker = `t5042_broker_ms{kind:${kind},level:${level}}`;
+      const trip = `t5042_round_trip_ms{kind:${kind},level:${level}}`;
+      // A kind the Endpoint does not serve was left out by setup.
+      if (value(trip, 'count') === '-') continue;
+      const cells = [value(trip, 'count'), value(server, 'p(50)'), value(server, 'p(95)'), value(server, 'p(99)'),
+        value(broker, 'p(50)'), value(broker, 'p(95)'), value(trip, 'p(50)'), value(trip, 'p(95)')];
+      rows.push(`| ${kind} | ${level} | ${cells.join(' | ')} |`);
+    }
+  }
+  return rows.join('\n');
+}

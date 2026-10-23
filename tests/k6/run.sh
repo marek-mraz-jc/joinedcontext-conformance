@@ -9,6 +9,7 @@
 #   platform-surfaces.js              - the Portal grid and MCP reads through one Endpoint (T-4889; night.sh)
 #   slow-neighbours.js                - 5 slow read loops beside a quick probe on one endpoint (T-4903)
 #   fair-share.js                     - pipeline writes and a steward beside an anonymous flood (T-5124)
+#   policy-budgets.js                 - every representation at 1/10/50 clients, Server-Timing split (T-5042)
 # Extra arguments go to `k6 run`, e.g.  jc-conformance k6 -- --vus 10
 set -euo pipefail
 here=$(cd -- "$(dirname -- "$0")" && pwd)
@@ -27,6 +28,9 @@ elif [ "${JC_K6_SCRIPT:-}" = "slow-neighbours.js" ]; then
 elif [ "${JC_K6_SCRIPT:-}" = "fair-share.js" ]; then
   : "${ENDPOINT_URL:?set ENDPOINT_URL to the root of an endpoint, e.g. https://host/api/endpoint/<slug>}"
   : "${WRITE_URL:?set WRITE_URL to the NGSI-LD root a pipeline writes to, e.g. https://host/cs/<space>/ngsi-ld/v1}"
+elif [ "${JC_K6_SCRIPT:-}" = "policy-budgets.js" ]; then
+  : "${ENDPOINT_URL:?set ENDPOINT_URL to the root of an endpoint, e.g. https://host/api/endpoint/<slug>}"
+  [ -n "${RESIDUAL_URL:-}" ] || echo "RESIDUAL_URL unset: reads with idPattern, q and geoQ will not be compared" >&2
 elif [ "${JC_K6_SCRIPT:-}" = "transport_endpoint_load.js" ]; then
   : "${ENDPOINT_URL:?set ENDPOINT_URL to the root of an endpoint, e.g. https://host/api/endpoint/<slug>}"
   [ -n "${BROKER_URL:-}" ] || echo "BROKER_URL unset: the EP-28 overhead budget will not be measured" >&2
@@ -47,6 +51,13 @@ if [ "${JC_K6_SCRIPT:-}" = "fair-share.js" ]; then
   status=0
   k6 run "$@" "$here/fair-share.js" || status=$?
   jq -e '.fairShare.ok' "$out/summary.json" >/dev/null || status=1
+  exit "$status"
+fi
+if [ "${JC_K6_SCRIPT:-}" = "policy-budgets.js" ]; then
+  # The residual verdict compares two Endpoints, which no k6 threshold can: handleSummary writes it.
+  status=0
+  k6 run "$@" "$here/policy-budgets.js" || status=$?
+  jq -e '.residual.ok' "$out/summary.json" >/dev/null || status=1
   exit "$status"
 fi
 exec k6 run "$@" "$here/${JC_K6_SCRIPT:-gateway-latency-load.js}"

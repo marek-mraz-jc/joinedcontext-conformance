@@ -27,7 +27,9 @@ import {
   enduranceBudgets,
   exportBudgets,
   fairShare,
+  serverTiming,
   slopePercent,
+  timingTable,
   summarize,
 } from './budgets.js';
 import { parseRequests } from './requests.js';
@@ -204,6 +206,25 @@ export function samples() {
       'a class without flood samples fails': () => !verdict({}).ok,
       'a class without baseline samples fails': () =>
         !fairShare({ w_flood: trend(10) }, classes, 0.2).ok,
+    });
+    // T-5042: the gateway's Server-Timing, read per metric.
+    const timing = 'pdp;dur=0.042, broker;dur=11.500, total;dur=12.250';
+    check(null, {
+      'each metric of Server-Timing is read': () => serverTiming(timing, 'pdp') === 0.042
+        && serverTiming(timing, 'broker') === 11.5 && serverTiming(timing, 'total') === 12.25,
+      'a metric the header lacks is unmeasured, not zero': () => serverTiming(timing, 'db') === undefined,
+      'no header is unmeasured': () => serverTiming(undefined, 'total') === undefined,
+      'a metric without a duration is unmeasured': () => serverTiming('total;desc="x"', 'total') === undefined,
+      'a name that only starts like the metric is not it': () => serverTiming('totals;dur=1', 'total') === undefined,
+    });
+    const cell = (count, p50) => ({ values: { count, 'p(50)': p50, 'p(95)': p50 * 2, 'p(99)': p50 * 3 } });
+    const rows = timingTable({
+      't5042_round_trip_ms{kind:access,level:1}': cell(15, 30),
+      't5042_server_ms{kind:access,level:1}': cell(15, 4),
+      't5042_round_trip_ms{kind:odata,level:1}': cell(0, 0),
+    }, ['access', 'odata'], [1]).split('\n');
+    check(rows, {
+      'a measured kind is one row': (r) => r.length === 3 && r[2] === '| access | 1 | 15 | 4.0 | 8.0 | 12.0 | - | - | 30.0 | 60.0 |',
     });
   }
 }
