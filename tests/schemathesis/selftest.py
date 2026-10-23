@@ -33,7 +33,7 @@ SPEC = {
             "get": {
                 "operationId": "listResources",
                 "parameters": [
-                    {"name": "project", "in": "path", "required": True, "schema": {"type": "string", "minLength": 1}},
+                    {"name": "project", "in": "path", "required": True, "schema": {"type": "string", "minLength": 1}, "example": "demo"},
                     {"name": "plural", "in": "path", "required": True, "schema": {"type": "string", "minLength": 1}},
                 ],
                 "responses": {
@@ -77,12 +77,12 @@ class Stub(BaseHTTPRequestHandler):
             # what a panicking axum handler behind a bare error layer would answer
             body = b"thread 'main' panicked at src/api/resources.rs:42:\nindex out of bounds"
             return self._send(404, "text/plain; charset=utf-8", body)
-        if path == "/api/v1/projects/demo/notes":
+        if path == "/api/v1/projects/demo/notes" and self.command == "POST":
             # a Portal that accepts this write from whoever sends it
             STATE["errors"] -= 1
             return self._send(201, "application/json", b"{}")
         segments = path.strip("/").split("/")
-        if len(segments) == 5 and segments[3] == "demo":
+        if len(segments) == 5 and segments[3] == "demo" and self.command in ("GET", "HEAD"):
             STATE["errors"] -= 1
             return self._send(200, "application/json", json.dumps({"items": []}).encode())
         problem = {
@@ -107,11 +107,15 @@ class Stub(BaseHTTPRequestHandler):
             self.wfile.write(body)
 
 
-def schemathesis(port: int, workdir: str, checks: str = CHECKS, role: str | None = None) -> subprocess.CompletedProcess:
+def schemathesis(
+    port: int, workdir: str, checks: str = CHECKS, role: str | None = None, extra: dict | None = None
+) -> subprocess.CompletedProcess:
     env = dict(os.environ)
-    env.pop("JC_SCHEMATHESIS_ROLE", None)
+    for key in ("JC_SCHEMATHESIS_ROLE", "JC_SCHEMATHESIS_OWN_PROJECT", "JC_AUTHZ_MATRIX"):
+        env.pop(key, None)
     if role:
         env["JC_SCHEMATHESIS_ROLE"] = role
+    env.update(extra or {})
     env["PYTHONPATH"] = HERE + (os.pathsep + env["PYTHONPATH"] if env.get("PYTHONPATH") else "")
     env["SCHEMATHESIS_HOOKS"] = "jc_checks"
     return subprocess.run(
@@ -302,6 +306,33 @@ def main() -> int:
         steward = schemathesis(port, workdir, role_checks, role="steward")
         if steward.returncode != 0:
             failures.append(f"a steward's accepted write failed the steward run:\n{steward.stdout}")
+
+        # AC-01 (T-5347): the stub's 2xx fail an anonymous run the matrix refuses everything, pass
+        # an other-member run whose matrix allows the write and whose own project is the read's,
+        # and fail an other-member run on a project that is not theirs or without a matrix.
+        matrix = os.path.join(workdir, "authz_matrix.yaml")
+        with open(matrix, "w") as f:
+            json.dump({
+                "roles": ["anonymous", "other-member"],
+                "routes": [
+                    {"route": "GET /projects/{project}/{plural}", "expect": [401, 403]},
+                    {"route": "POST /projects/demo/notes", "expect": [403, "allow"]},
+                ],
+            }, f)
+        ac01 = CHECKS + ",ac01_no_access_beyond_the_matrix"
+        runs = [
+            ("anonymous", {"JC_AUTHZ_MATRIX": matrix}, False),
+            ("other-member", {"JC_AUTHZ_MATRIX": matrix, "JC_SCHEMATHESIS_OWN_PROJECT": "demo"}, True),
+            ("other-member", {"JC_AUTHZ_MATRIX": matrix, "JC_SCHEMATHESIS_OWN_PROJECT": "praha"}, False),
+            ("other-member", {"JC_AUTHZ_MATRIX": os.path.join(workdir, "missing.yaml")}, False),
+        ]
+        for role, extra, passes in runs:
+            STATE.update(mode="good", errors=0)
+            run = schemathesis(port, workdir, ac01, role=role, extra=extra)
+            if passes and run.returncode != 0:
+                failures.append(f"an allowed 2xx failed the {role} run {extra}:\n{run.stdout}")
+            if not passes and (run.returncode == 0 or "ac01_no_access_beyond_the_matrix" not in run.stdout):
+                failures.append(f"a 2xx the matrix refuses passed the {role} run {extra}:\n{run.stdout}")
 
         # 2. Gateway stub selftest (T-0064)
         GW_STATE.update(mode="good")
