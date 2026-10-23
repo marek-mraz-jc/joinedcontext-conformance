@@ -223,12 +223,39 @@ def inherit(local: list[str], file_ids: list[str]) -> list[str]:
     return sorted(set(local)) if local else sorted(set(file_ids))
 
 
-def scan_rust(text: str, repo: str, path: str, pattern, canonical) -> list[TestCase]:
+def rust_header_ids(text: str, pattern, canonical) -> list[str]:
+    """Ids the `//!` header of a Rust file names."""
+    header = "\n".join(line for line in text.splitlines() if line.lstrip().startswith("//!"))
+    return cited_ids(header, pattern, canonical)
+
+
+def rust_parent_ids(file: Path, root: Path, pattern, canonical) -> list[str]:
+    """Header ids of the module that declares `file` with `mod <name>;`, up the module tree.
+
+    A split that moves `tools.rs`'s tests into `tools/tests.rs` leaves the header behind; without
+    this the moved cases lose the requirements they proved (T-5331: AG-31 fell from 13 to 1).
+    """
+    name = file.parent.name if file.stem == "mod" else file.stem
+    directory = file.parent.parent if file.stem == "mod" else file.parent
+    if directory == root or root not in directory.parents:
+        return []
+    declares = re.compile(rf"^\s*(?:pub(?:\([^)]*\))?\s+)?mod\s+{re.escape(name)}\s*;", re.MULTILINE)
+    for parent in (directory.with_suffix(".rs"), directory / "mod.rs", directory / "lib.rs", directory / "main.rs"):
+        try:
+            text = parent.read_text(encoding="utf-8")
+        except (OSError, UnicodeDecodeError):
+            continue
+        if declares.search(text):
+            return rust_header_ids(text, pattern, canonical) or rust_parent_ids(parent, root, pattern, canonical)
+    return []
+
+
+def scan_rust(text: str, repo: str, path: str, pattern, canonical, parent_ids: list[str] = ()) -> list[TestCase]:
     """`#[test]`/`#[tokio::test]` functions; ids come from the `///` block, or from the `//!` file
-    header when the case names none itself."""
+    header when the case names none itself, or from the declaring module's header when the file
+    has none (`parent_ids`)."""
     lines = text.splitlines()
-    header = "\n".join(line for line in lines if line.lstrip().startswith("//!"))
-    file_ids = cited_ids(header, pattern, canonical)
+    file_ids = rust_header_ids(text, pattern, canonical) or list(parent_ids)
     cases: list[TestCase] = []
     comments: list[str] = []
     attributes: list[str] = []
@@ -493,7 +520,11 @@ def scan_repo(repo: str, root: Path, pattern, canonical) -> list[TestCase]:
         except (OSError, UnicodeDecodeError) as exc:
             print(f"{repo}/{relative}: unreadable, skipped ({exc})", file=sys.stderr)
             continue
-        cases.extend(scanner(text, repo, relative, pattern, canonical))
+        if scanner is scan_rust and not rust_header_ids(text, pattern, canonical):
+            parent_ids = rust_parent_ids(path, root, pattern, canonical)
+            cases.extend(scan_rust(text, repo, relative, pattern, canonical, parent_ids))
+        else:
+            cases.extend(scanner(text, repo, relative, pattern, canonical))
     return cases
 
 
