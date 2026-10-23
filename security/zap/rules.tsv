@@ -30,15 +30,13 @@
 10010	OUTOFSCOPE	https://(portal|idm)\.dev\.joinedcontext\.com/.*
 10054	OUTOFSCOPE	https://(portal|idm)\.dev\.joinedcontext\.com/.*
 
-# Content Security Policy where a strict one cannot be written today:
-# - the catalogue: CKAN 2.11's templates carry inline scripts and styles; the edge sends
-#   frame-ancestors/object-src/base-uri only (parked as T-5147 in tasks/later: a nonce CSP for CKAN);
+# Content Security Policy where a strict one cannot be written today (the catalogue sends its own
+# nonce policy since deployment T-5147, so it is no longer listed):
 # - the Portal: default-src 'self' with style-src 'unsafe-inline' for React's style attributes;
 #   anonymous, every Portal address is the edge's redirect to Keycloak's page;
 # - the assistant page /{publicId}: frameable by design (embed.js on a city's site), so it
 #   names no frame-ancestors and sends no X-Frame-Options; app.js shows itself only inside the
 #   deployment's own origins.
-10055	OUTOFSCOPE	https://opendata\.dev\.joinedcontext\.com/.*
 10055	OUTOFSCOPE	https://portal\.dev\.joinedcontext\.com/(robots\.txt|sitemap\.xml)?$
 10055	OUTOFSCOPE	https://ai\.dev\.joinedcontext\.com/[a-z0-9][a-z0-9-]{0,62}/?$
 10020	OUTOFSCOPE	https://ai\.dev\.joinedcontext\.com/[a-z0-9][a-z0-9-]{0,62}/?$
