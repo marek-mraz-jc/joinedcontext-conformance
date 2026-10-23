@@ -54,6 +54,25 @@ else
     "$@" "$schema" || status=$?
 fi
 
+# The two authorization runs (T-5347, AC-01): no token at all, and a member of another project.
+# Each gets a 2xx only where the Portal's tests/authz_matrix.yaml says `allow` for that role
+# (ac01_no_access_beyond_the_matrix; JC_AUTHZ_MATRIX names the table when the Portal's clone is
+# not beside this one). PORTAL_OTHER_PROJECT is the other member's own project, theirs to use.
+if [ "${JC_SCHEMATHESIS_ANONYMOUS:-}" = 1 ]; then
+  echo "Running Portal API schemathesis fuzzing with no token..."
+  JC_SCHEMATHESIS_ROLE=anonymous schemathesis run "${portal_args[@]}" \
+    --checks "${checks},ac01_no_access_beyond_the_matrix" \
+    --report-junit-path "$out/junit-portal-anonymous.xml" "$@" "$schema" || status=$?
+fi
+if [ -n "${PORTAL_TOKEN_OTHER_MEMBER:-}" ]; then
+  echo "Running Portal API schemathesis fuzzing as a member of another project..."
+  JC_SCHEMATHESIS_ROLE=other-member JC_SCHEMATHESIS_OWN_PROJECT="${PORTAL_OTHER_PROJECT:-}" \
+    schemathesis run "${portal_args[@]}" \
+    --checks "${checks},ac01_no_access_beyond_the_matrix" \
+    --report-junit-path "$out/junit-portal-other-member.xml" \
+    --header "Authorization: Bearer $PORTAL_TOKEN_OTHER_MEMBER" "$@" "$schema" || status=$?
+fi
+
 if [ -n "${GATEWAY_OPENAPI_URL:-}" ]; then
   echo "Running Context Gateway management schemathesis fuzzing against $GATEWAY_OPENAPI_URL..."
   gw_schema="$GATEWAY_OPENAPI_URL"
