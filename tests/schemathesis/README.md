@@ -19,6 +19,7 @@ PORTAL_URL=https://portal.throwaway.example jc-conformance schemathesis   # neve
 | `PORTAL_TOKEN_VIEWER`, `PORTAL_TOKEN_STEWARD`, `PORTAL_TOKEN_APPROVER` | one run per role whose token is set, each with its own `junit-portal-<role>.xml` (the operations that role reached); a viewer run fails on any accepted write (T-1658). Set, they replace the single `PORTAL_TOKEN` run |
 | `JC_SCHEMATHESIS_ANONYMOUS` | `1` adds a run with no token, `junit-portal-anonymous.xml`; it fails on any 2xx the authorization matrix refuses `anonymous` (T-5347) |
 | `PORTAL_TOKEN_OTHER_MEMBER`, `PORTAL_OTHER_PROJECT` | a run as a member of another project, `junit-portal-other-member.xml`; it fails on any 2xx the matrix refuses `other-member` outside `PORTAL_OTHER_PROJECT` (T-5347) |
+| `PORTAL_FOREIGN_PROJECT` | a project the other member is not in; every `{project}` of the two runs above is it (required for the other-member run) |
 | `JC_AUTHZ_MATRIX` | the Portal's `tests/authz_matrix.yaml`, default the Portal clone beside this one; the two runs above fail without it |
 | `GATEWAY_URL` | Context Gateway root for `/api/endpoint/{slug}/...` endpoint tests |
 | `GATEWAY_OPENAPI_URL` | Context Gateway management OpenAPI document URL (if published) |
