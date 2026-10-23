@@ -148,6 +148,8 @@ CASES: list[Case] = [
     Case("type guide", "describe_type", {"type": "AirQualityObserved"}, None, {}),
     # summarize answers a profile of the type, which no REST read returns (T-4680)
     Case("type profile", "summarize", {"type": ["AirQualityObserved"]}, None, {}),
+    # area_overview answers per-type counts and the nearest few of one area, no REST read does (T-5279)
+    Case("area overview", "area_overview", {"geometry": "Point", "coordinates": [19.15, 48.73], "maxDistance": 2000, "limit": 3}, None, {}),
     Case("one attribute", "get_attribute", {"attrId": "temperature"}, "attributes/temperature", {}),
     Case(
         "one entity",
@@ -271,6 +273,7 @@ BROKER_CASES: list[Case] = [
     Case("one type", "get_type", {"type": AQ[0]}, f"types/{AQ[0]}", {}),
     Case("type guide", "describe_type", {"type": AQ[0]}, None, {}),
     Case("type profile", "summarize", {"type": AQ}, None, {}),
+    Case("area overview", "area_overview", {"geometry": "Point", "coordinates": [19.15, 48.73], "maxDistance": 2000, "limit": 3, "type": AQ, "lang": "en"}, None, {}),
     Case("one attribute", "get_attribute", {"attrId": "temperature"}, "attributes/temperature", {}),
     Case("one entity", "get_entity", {"id": "{id}", "attrs": ["temperature"]}, "entities/{id}", {"attrs": "temperature"}),
     Case("one entity's attribute", "get_attribute_value", {"id": "{id}", "attrId": "temperature"}, "entities/{id}/attrs/temperature", {}),
