@@ -34,6 +34,8 @@ ANONYMOUS_TOOLS = {
     "get_attribute",
     "query_entities",
     "summarize",
+    # One area across every type of the view (T-5279).
+    "area_overview",
     "get_entity",
     "get_attribute_value",
     "query_temporal",
