@@ -114,6 +114,32 @@ def test_a_function_that_is_not_a_test_is_not_indexed(workspace: Path):
     assert all(test["name"] != "not_a_test" for test in index["tests"])
 
 
+def test_a_rust_module_file_inherits_its_parent_module_header(tmp_path: Path):
+    """TS-19 - tests moved out of `tools.rs` into `tools/tests.rs` keep `tools.rs`'s ids (T-5331)."""
+    place("requirements.md", tmp_path / "docs" / "Requirements" / "platform.md")
+    src = tmp_path / "joinedcontext-platform" / "crates" / "gw" / "src"
+    (src / "tools").mkdir(parents=True)
+    (src / "tools.rs").write_text(
+        "//! The catalogue (ZZ-02).\n\n#[cfg(test)]\nmod tests;\nmod nested;\n", encoding="utf-8")
+    (src / "tools" / "tests.rs").write_text(
+        "use super::*;\n\n#[test]\nfn a_moved_case() {}\n\n"
+        "/// ZZ-01\n#[test]\nfn a_moved_case_naming_its_own() {}\n", encoding="utf-8")
+    (src / "tools" / "nested").mkdir()
+    (src / "tools" / "nested" / "mod.rs").write_text("mod deeper;\n", encoding="utf-8")
+    (src / "tools" / "nested" / "deeper.rs").write_text("#[test]\nfn a_grandchild_case() {}\n", encoding="utf-8")
+    # a file beside the parent that it never declares as a module inherits nothing
+    (src / "tools" / "stray.rs").write_text("#[test]\nfn a_stray_case() {}\n", encoding="utf-8")
+    # a child with ids of its own keeps them
+    (src / "tools.rs").write_text((src / "tools.rs").read_text() + "mod owned;\n", encoding="utf-8")
+    (src / "tools" / "owned.rs").write_text("//! ZZ-05\n#[test]\nfn an_owned_case() {}\n", encoding="utf-8")
+    index = compliance.build_index(tmp_path / "docs", {"joinedcontext-platform": tmp_path / "joinedcontext-platform"})
+    assert case(index, "a_moved_case")["requirements"] == ["ZZ-02"]
+    assert case(index, "a_moved_case_naming_its_own")["requirements"] == ["ZZ-01"]
+    assert case(index, "a_grandchild_case")["requirements"] == ["ZZ-02"]
+    assert case(index, "a_stray_case")["requirements"] == []
+    assert case(index, "an_owned_case")["requirements"] == ["ZZ-05"]
+
+
 def test_each_test_carries_the_lane_that_runs_it(workspace: Path):
     index = index_of(workspace)
     assert case(index, "a_write_without_a_verdict_is_refused")["lane"] == "ci-full"
