@@ -57,6 +57,17 @@ MCP_URL=https://host/cs/ovzdusie/mcp jc-conformance mcp
 | `MCP_NARROWED_URL` | A second MCP door that sees less, for the narrowed parity case (the broker narrows by view, not by token); defaults to `ENDPOINT_MCP_URL` |
 | `CONNECTOR_MCP_URL` | The portal's one connector, `https://host/api/mcp` (T-4115, EP-112): `test_mcp_catalogue.py` diffs its `tools/list` against `ENDPOINT_MCP_URL`'s; it may add only `list_endpoints` and `endpoint` |
 | `NAMED_MCP_URL` | A named server, `https://host/api/mcp/{project}/{name}`, diffed the same way |
+| `WALK_PROJECT` | Project of the person's-connector walk (`test_walk_employee_connector.py`, T-5538) |
+| `WALK_EDITOR_TOKEN` | A person's connector token (client `mcp-mobile`, scope `mcp:portal`) who may propose in `WALK_PROJECT` |
+| `WALK_VIEWER_TOKEN` | The same for a person who may only read `WALK_PROJECT`; its rate-limit test spends this token's minute |
+
+## A person's connector
+
+`test_walk_employee_connector.py` runs with the tokens an AI client (claude.ai, ChatGPT) holds for a
+person, never a ServiceAccount's. Obtain each by the client's own sign-in: authorization code + PKCE
+S256 on client `mcp-mobile` with `scope=openid mcp:portal`. Keep the tokens in the shell's environment
+only and revoke each at the end (`POST {realm}/protocol/openid-connect/revoke` with `client_id=mcp-mobile`
+and the refresh token). Nothing in the file writes; the rate-limit test waits about a minute.
 
 ## Against the broker
 
