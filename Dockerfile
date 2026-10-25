@@ -8,7 +8,7 @@ FROM node:22-bookworm-slim@sha256:83f487e0a63425e5b4d146fb5e5be574bcbe1b7b843d3e
 # linked against an older Go, so trivy reports every Go stdlib advisory fixed since. `go install`
 # verifies each module against the Go checksum database.
 # Go 1.27.2 (CVE-2026-78667, CVE-2026-78669, CVE-2026-97031 in the stdlib; T-4614).
-FROM golang:1-bookworm@sha256:5cf287a799e6b94384bad13d16b14904c531f51ba65792237e122ce42b392f61 AS k6
+FROM golang:1-bookworm@sha256:972b4110ba0f47539a975c31e52c64765e1ff19f2d74469ae4a595c6676e80a5 AS k6
 ARG K6_VERSION=2.2.0
 # k6 2.2.0 pins google.golang.org/grpc 1.83.0 (CVE-2026-84445, fixed in 1.83.2) and
 # golang.org/x/net 0.58.0 (CVE-2026-78669, fixed in 0.60.0). A throwaway module requiring them
