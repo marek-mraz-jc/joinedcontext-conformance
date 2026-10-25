@@ -14,6 +14,9 @@ against each mode and asserts which case catches which defect.
 6. `mcp_follows_argument` fails
    `test_an_mcp_tool_call_naming_the_other_project_reads_nothing_of_it`.
 
+The same holds for `test_tenant_matrix.py` (T-5557): `isolating` passes every row, and each of
+`leaky_temporal`, `leaky_ws` and `leaky_hub_mcp` turns its own row red.
+
 Run it as `python3 tests/security/selftest_tenancy.py`; it needs no deployed system.
 """
 
@@ -26,13 +29,18 @@ from pathlib import Path
 
 from stub_tenancy_server import (
     ARTIFACT_B,
+    DATAMODEL_B,
+    ENTITY_B,
     PROJECT_A,
     PROJECT_B,
     REPO_B,
     RUN_B,
+    SERVER_B,
     SLUG_B,
+    SPACE_B,
     TOKEN_A,
     TOKEN_B,
+    TYPE_B,
     serve,
 )
 
@@ -56,14 +64,25 @@ def environment(url: str) -> dict[str, str]:
         # The broker's own address is not part of this proof: it is a network control, and a
         # stub answering on loopback would say nothing about a NetworkPolicy.
         "BROKER_URL": "",
+        # test_tenant_matrix.py: the gateway and the Portal are the one stub.
+        "GATEWAY_URL": url,
+        "OTHER_SLUG": SLUG_B,
+        "OTHER_SPACE": SPACE_B,
+        "OTHER_TYPE": TYPE_B,
+        "OTHER_ENTITY": ENTITY_B,
+        "OTHER_MCP_SERVER": SERVER_B,
+        "OTHER_DATAMODEL": DATAMODEL_B,
     }
 
+ISOLATION = "test_tenant_isolation.py"
+MATRIX = "test_tenant_matrix.py"
 
-def run(url: str) -> tuple[int, str]:
+
+def run(url: str, suite: str) -> tuple[int, str]:
     env = os.environ.copy()
     env.update(environment(url))
     proc = subprocess.run(
-        [sys.executable, "-m", "pytest", str(HERE / "test_tenant_isolation.py"), "-q", "-p", "no:cacheprovider"],
+        [sys.executable, "-m", "pytest", str(HERE / suite), "-q", "-p", "no:cacheprovider"],
         capture_output=True,
         text=True,
         env=env,
@@ -72,10 +91,10 @@ def run(url: str) -> tuple[int, str]:
     return proc.returncode, proc.stdout + "\n" + proc.stderr
 
 
-def case(mode: str, must_fail: str | None) -> bool:
+def case(mode: str, must_fail: str | None, suite: str = ISOLATION) -> bool:
     stub = serve(mode=mode)
     try:
-        code, out = run(stub.url)
+        code, out = run(stub.url, suite)
     finally:
         stub.close()
 
@@ -103,14 +122,23 @@ def main() -> int:
         ("artifact_served", "test_an_artifact_of_the_other_project_is_not_fetched_with_this_projects_token"),
         ("mcp_follows_argument", "test_an_mcp_tool_call_naming_the_other_project_reads_nothing_of_it"),
     ]
+    row = "test_surface_verb_of_the_other_project_answers_like_a_missing_one"
+    matrix = [
+        ("isolating", None),
+        ("leaky_temporal", f"{MATRIX}::{row}[temporal-history]"),
+        ("leaky_ws", f"{MATRIX}::{row}[websocket-stream]"),
+        ("leaky_hub_mcp", f"{MATRIX}::{row}[mcp-hub-read]"),
+    ]
+    runs = [(mode, expected, ISOLATION) for mode, expected in cases]
+    runs += [(mode, expected, MATRIX) for mode, expected in matrix]
     ok = True
-    for mode, expected in cases:
-        if case(mode, expected):
-            print(f"ok   {mode}")
+    for mode, expected, suite in runs:
+        if case(mode, expected, suite):
+            print(f"ok   {mode} ({suite})")
         else:
             ok = False
     if ok:
-        print(f"{len(cases)} cases: the suite is green on isolation and red on every planted defect")
+        print(f"{len(runs)} cases: both suites are green on isolation and red on every planted defect")
     return 0 if ok else 1
 
 
