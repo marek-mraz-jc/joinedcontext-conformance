@@ -59,6 +59,18 @@ MCP_URL=https://host/cs/ovzdusie/mcp jc-conformance mcp
 | `CONNECTOR_MCP_URL` | The portal's one connector, `https://host/api/mcp` (T-4115, EP-112): `test_mcp_catalogue.py` diffs its `tools/list` against `ENDPOINT_MCP_URL`'s; it may add only `list_endpoints` and `endpoint` |
 | `NAMED_MCP_URL` | A named server, `https://host/api/mcp/{project}/{name}`, diffed the same way |
 
+## City events read-back
+
+`events_readback.py` (T-5666) is a script, not a suite: after the hourly apply it reads each city's
+events Endpoint through the public connector (`MCP_HUB_URL`, default the dev `/api/mcp`), counts the
+upcoming events per source and compares one event of each of the five largest sources with its
+source: Helsinki's with the Linked Events record of the same id, Bratislava's and Prague's with the
+event's own page. It exits 1 when a city has no Endpoint, no upcoming event or a sample differs.
+
+```bash
+python3 tests/mcp/events_readback.py helsinki bratislava praha --sources 5
+```
+
 ## Against the broker
 
 Antares runs these suites against its own `mcp` build (`.github/workflows/surfaces-conformance.yml`,
