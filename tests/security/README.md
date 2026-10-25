@@ -145,6 +145,7 @@ and is what makes a green live run mean something:
 ```bash
 python3 tests/security/selftest_forge.py
 ```
+
 ## Proving a suite before it is run
 
 `selftest_tenancy.py` runs `test_tenant_isolation.py` against `stub_tenancy_server.py`, a
@@ -164,3 +165,18 @@ It runs `test_tenancy_injection.py` (T-5566) against the stub too: the space, En
 OGC and MCP read doors of the matrix, called with forged `x-jc-*`, `jc-provenance-*` and
 `l5d-client-id` headers, must answer as they do without them; `trusts_identity_headers` turns
 `test_platform_identity_headers_from_outside_change_nothing` red.
+
+## A municipality employee's MCP client
+
+`test_mcp_employee_workflow.py` (T-5559) runs live against a throwaway stack with an editor and a
+viewer token: each role's `tools/list` on the hub and on one Endpoint's MCP equals the tools its
+Policy grants (`EDITOR_HUB_TOOLS`, `EDITOR_ENDPOINT_TOOLS`, `VIEWER_HUB_TOOLS`,
+`VIEWER_ENDPOINT_TOOLS`), the viewer is offered no write tool, and an `attribute-value` vector
+the editor plants at `PLANT_URL` comes back from `get_entity` with `_meta["jc/untrusted"]` and only
+inside a fenced text block. `selftest_mcp_employee.py` runs it against
+`stub_mcp_employee_server.py` in the fast CI lane: green when conforming, red in `unmarked` and
+`unfiltered` mode.
+
+```bash
+python3 tests/security/selftest_mcp_employee.py
+```
