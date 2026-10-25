@@ -6,6 +6,8 @@ the MCP route refuses too: a proposal without a fresh Verdict answers `verdict_r
 """
 from __future__ import annotations
 
+import base64
+import json
 import os
 
 import pytest
@@ -120,6 +122,8 @@ def test_pf57_a_proposal_without_a_verdict_is_refused_on_every_door(portal_mcp: 
 # two decisions AG-82 reserves for a person, which the MCP door does not even offer.
 
 COPY = "conf-mcp-copy"
+# The Keycloak clients an MCP connector holds a person's token through (Portal CONNECTOR_CLIENTS).
+CONNECTOR_CLIENTS = ("mcp-mobile", "mcp-hub")
 
 
 def _copy_names(portal_mcp: McpClient, project: str) -> list[str]:
@@ -148,7 +152,9 @@ def a_copy(portal_mcp: McpClient, project: str, portal_rest: str, http_session: 
     """One copy of the project, opened over MCP and taken away over REST whatever the test does.
 
     The cleanup is the REST route on purpose: AG-82 refuses the discard to an MCP caller, so the
-    fixture that opens a copy through the model's door cannot close it through the same one.
+    fixture that opens a copy through the model's door cannot close it through the same one, and
+    REST refuses the connector's token (T-5610), so it takes `PORTAL_REST_TOKEN`; without it the
+    copy expires after its one day.
     """
     opened = portal_mcp.tool_call("jc_workspace_open", {"project": project, "name": COPY, "ttlDays": 1})
     if refused(opened):
@@ -158,11 +164,12 @@ def a_copy(portal_mcp: McpClient, project: str, portal_rest: str, http_session: 
     try:
         yield COPY
     finally:
-        http_session.delete(
-            f"{portal_rest}/projects/{project}/workspaces/{COPY}",
-            headers={"Authorization": f"Bearer {os.getenv('CONFIG_MCP_TOKEN', '')}"},
-            timeout=30,
-        )
+        if os.getenv("PORTAL_REST_TOKEN"):
+            http_session.delete(
+                f"{portal_rest}/projects/{project}/workspaces/{COPY}",
+                headers={"Authorization": f"Bearer {os.environ['PORTAL_REST_TOKEN']}"},
+                timeout=30,
+            )
 
 
 def test_cc76_a_copy_opens_over_mcp_and_lists_itself(portal_mcp: McpClient, project: str, a_copy: str):
@@ -206,10 +213,45 @@ def test_ag82_a_person_takes_the_copy_away_over_rest(
     portal_mcp: McpClient, project: str, portal_rest: str, http_session: requests.Session, a_copy: str
 ):
     """AG-82 — the rule is about who, not about whether: the same copy the model may not discard
-    is discarded by the person whose token this is, over the REST route."""
-    headers = {"Authorization": f"Bearer {os.getenv('CONFIG_MCP_TOKEN', '')}"}
+    is discarded by the same person over the REST route, with a token of a client that is not a
+    connector (`PORTAL_REST_TOKEN`)."""
+    rest_token = os.getenv("PORTAL_REST_TOKEN")
+    if not rest_token:
+        pytest.skip("PORTAL_REST_TOKEN is not set — see tests/mcp/README.md")
+    headers = {"Authorization": f"Bearer {rest_token}"}
     gone = http_session.delete(
         f"{portal_rest}/projects/{project}/workspaces/{a_copy}", headers=headers, timeout=30
     )
     assert gone.status_code in (200, 204), f"a person cannot discard the copy: {gone.status_code} {gone.text}"
     assert a_copy not in _copy_names(portal_mcp, project), "the copy is still listed after the discard"
+
+
+def _token_client(token: str) -> str | None:
+    """The `azp` of a JWT, read without verifying it: only to tell whose client the bearer is."""
+    try:
+        payload = token.split(".")[1]
+        claims = json.loads(base64.urlsafe_b64decode(payload + "=" * (-len(payload) % 4)))
+    except (IndexError, ValueError):
+        return None
+    return claims.get("azp") if isinstance(claims, dict) else None
+
+
+def test_the_connector_token_is_refused_on_rest_writes(
+    project: str, portal_rest: str, http_session: requests.Session, a_copy: str
+):
+    """AG-63, AG-82 (T-5610) — the token an MCP connector holds for a person changes the
+    platform only through the MCP route, which asks the person first: REST answers its writes,
+    bringing a copy back and throwing one away included, with 403 naming that route."""
+    token = os.getenv("CONFIG_MCP_TOKEN") or os.getenv("MCP_TOKEN") or ""
+    if _token_client(token) not in CONNECTOR_CLIENTS:
+        pytest.skip(f"the MCP bearer is not a connector's token (azp in {CONNECTOR_CLIENTS})")
+    headers = {"Authorization": f"Bearer {token}"}
+    writes = [
+        ("POST", f"{portal_rest}/projects/{project}/workspaces/{a_copy}/propose"),
+        ("DELETE", f"{portal_rest}/projects/{project}/workspaces/{a_copy}"),
+        ("POST", f"{portal_rest}/projects/{project}/workspaces"),
+    ]
+    for method, url in writes:
+        answer = http_session.request(method, url, headers=headers, json={}, timeout=30)
+        assert answer.status_code == 403, f"{method} {url} with the connector token: {answer.status_code} {answer.text}"
+        assert "/api/v1/mcp" in answer.text, f"the refusal does not name the MCP route: {answer.text}"

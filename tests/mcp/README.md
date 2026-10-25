@@ -45,6 +45,7 @@ MCP_URL=https://host/cs/ovzdusie/mcp jc-conformance mcp
 | `MCP_TOKEN` | Bearer token for the authenticated caller (anonymous when unset, SP-17) |
 | `MCP_AGENT_TOKEN` | Bearer token for an autonomous agent identity (AG-11 verification) |
 | `PORTAL_MCP_URL` | The Portal MCP server over the operation registry, `https://portal.<domain>/api/v1/mcp` (T-0637; `test_portal_mcp.py` skips without it) |
+| `PORTAL_REST_TOKEN` | The `PORTAL_MCP_URL` person's bearer from a client that is not an MCP connector (the Portal refuses a connector's token on REST writes, T-5610): the AG-82 REST discard uses it; unset skips that case |
 | `PORTAL_MCP_PROJECT` | Project the bearer may draft in; the verdict-gate probe writes and drops one draft there |
 | `CONFIG_MCP_SCRATCH` | Scratch resource identifier to exercise configuration proposal |
 | `MCP_HIDDEN_ATTR` | An attribute the caller's policy masks, so AG-13 narrowing is observable |
