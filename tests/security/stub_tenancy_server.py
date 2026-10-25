@@ -63,7 +63,12 @@ MODES = (
     "leaky_ws",
     # The MCP hub resolves B's slug for A and answers B's record.
     "leaky_hub_mcp",
+    # Nothing strips `x-jc-*`, `jc-provenance-*` or `l5d-*`, and B's doors believe them (T-5566).
+    "trusts_identity_headers",
 )
+
+#: The header families only the platform's own services write (T-5566).
+IDENTITY_PREFIXES = ("x-jc-", "jc-provenance-", "l5d-")
 
 
 @dataclass
@@ -118,17 +123,24 @@ class Handler(BaseHTTPRequestHandler):
         self.wfile.flush()
         self.close_connection = True
 
+    def _believes_forged_identity(self, path: str) -> bool:
+        """B's doors, in `trusts_identity_headers` mode, when the request carries a forged identity."""
+        forged = any(name.lower().startswith(IDENTITY_PREFIXES) for name in self.headers)
+        names_b = SLUG_B in path or SPACE_B in path or SERVER_B in path
+        return self.state.mode == "trusts_identity_headers" and forged and names_b
+
     def _caller(self) -> str | None:
         return _project_of(self.headers.get("Authorization"))
 
     def _body(self) -> dict[str, Any]:
-        length = int(self.headers.get("Content-Length") or 0)
-        if not length:
-            return {}
-        try:
-            return json.loads(self.rfile.read(length))
-        except json.JSONDecodeError:
-            return {}
+        """The request's JSON body, read once and kept, so two doors may look at it."""
+        if not hasattr(self, "_read"):
+            length = int(self.headers.get("Content-Length") or 0)
+            try:
+                self._read = json.loads(self.rfile.read(length)) if length else {}
+            except json.JSONDecodeError:
+                self._read = {}
+        return self._read
 
     # -- the doors --------------------------------------------------------------------------
     def do_GET(self) -> None:  # noqa: N802 - BaseHTTPRequestHandler's spelling
@@ -189,6 +201,11 @@ class Handler(BaseHTTPRequestHandler):
         if path == "/catalog.jsonld":
             return self._send(200, {"@graph": [{"@id": f"/api/endpoint/{SLUG_A}"}]})
 
+        if self._believes_forged_identity(path):
+            if self.headers.get("Upgrade", "").lower() == "websocket":
+                return self._websocket(json.dumps(LEAKED))
+            return self._send(200, [LEAKED])
+
         if self.state.mode == "leaky_temporal" and path.startswith(f"/api/endpoint/{SLUG_B}/ngsi-ld/v1/temporal/"):
             return self._send(200, [LEAKED])
 
@@ -214,9 +231,15 @@ class Handler(BaseHTTPRequestHandler):
         return self._not_found()
 
     def do_POST(self) -> None:  # noqa: N802
+        self.__dict__.pop("_read", None)  # a kept-alive connection carries the next request
         path = urlparse(self.path).path
         caller = self._caller()
         parts = [part for part in path.split("/") if part]
+
+        if self._believes_forged_identity(path) or (
+            path == "/api/mcp" and self._believes_forged_identity(json.dumps(self._body()))
+        ):
+            return self._send(200, {"jsonrpc": "2.0", "id": 1, "result": {"content": [{"type": "text", "text": json.dumps(LEAKED)}]}})
 
         if path == "/api/mcp":
             # The hub answers a slug the caller does not reach as it answers one nobody created.
@@ -250,6 +273,7 @@ class Handler(BaseHTTPRequestHandler):
         return self._not_found()
 
     def do_PATCH(self) -> None:  # noqa: N802
+        self.__dict__.pop("_read", None)  # a kept-alive connection carries the next request
         self._body()
         return self._not_found()
 

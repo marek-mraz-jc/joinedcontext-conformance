@@ -15,7 +15,10 @@ against each mode and asserts which case catches which defect.
    `test_an_mcp_tool_call_naming_the_other_project_reads_nothing_of_it`.
 
 The same holds for `test_tenant_matrix.py` (T-5557): `isolating` passes every row, and each of
-`leaky_temporal`, `leaky_ws` and `leaky_hub_mcp` turns its own row red.
+`leaky_temporal`, `leaky_ws` and `leaky_hub_mcp` turns its own row red; and for
+`test_tenancy_injection.py` (T-5566): `trusts_identity_headers`, a platform that lets `x-jc-*`,
+`jc-provenance-*` and `l5d-*` through to B's doors, turns
+`test_platform_identity_headers_from_outside_change_nothing` red.
 
 Run it as `python3 tests/security/selftest_tenancy.py`; it needs no deployed system.
 """
@@ -76,6 +79,7 @@ def environment(url: str) -> dict[str, str]:
 
 ISOLATION = "test_tenant_isolation.py"
 MATRIX = "test_tenant_matrix.py"
+INJECTION = "test_tenancy_injection.py"
 
 
 def run(url: str, suite: str) -> tuple[int, str]:
@@ -129,8 +133,14 @@ def main() -> int:
         ("leaky_ws", f"{MATRIX}::{row}[websocket-stream]"),
         ("leaky_hub_mcp", f"{MATRIX}::{row}[mcp-hub-read]"),
     ]
+    spoof = "test_platform_identity_headers_from_outside_change_nothing"
+    injection = [
+        ("isolating", None),
+        ("trusts_identity_headers", f"{INJECTION}::{spoof}[ngsi-ld-read]"),
+    ]
     runs = [(mode, expected, ISOLATION) for mode, expected in cases]
     runs += [(mode, expected, MATRIX) for mode, expected in matrix]
+    runs += [(mode, expected, INJECTION) for mode, expected in injection]
     ok = True
     for mode, expected, suite in runs:
         if case(mode, expected, suite):

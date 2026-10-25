@@ -158,3 +158,8 @@ It runs `test_tenant_matrix.py` (T-5557) against the same stub: one row per data
 the Context Space surface, the Endpoint, space, hub, named and Portal MCP servers, live SSE, CKAN),
 each comparing a project-A token's call on project B's name with the same call on a name nobody
 created. `leaky_temporal`, `leaky_ws` and `leaky_hub_mcp` each turn their own row red.
+
+It runs `test_tenancy_injection.py` (T-5566) against the stub too: the space, Endpoint, WebSocket,
+OGC and MCP read doors of the matrix, called with forged `x-jc-*`, `jc-provenance-*` and
+`l5d-client-id` headers, must answer as they do without them; `trusts_identity_headers` turns
+`test_platform_identity_headers_from_outside_change_nothing` red.

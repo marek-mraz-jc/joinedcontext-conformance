@@ -1,6 +1,11 @@
+import os
 import typing
+
+import pytest
 import requests
+
 from conftest import entity_ids
+from test_tenant_matrix import INPUTS, ROWS, TIMEOUT, Row, _fill, _masked, _names, _url
 
 
 def test_gw20_forged_tenant_header_ignored(
@@ -92,3 +97,78 @@ def test_sp05_response_never_echoes_tenant_header(
     assert res.status_code == 200
     for header in res.headers:
         assert header.lower() != "ngsild-tenant"
+
+
+# -- T-5566 (GW12, AG-38, GW25): the headers the platform's own services write ---------------
+#
+# The gateway tells the broker who the caller is in `x-jc-*` headers, stamps provenance in
+# `jc-provenance-*`, and decides an MQTT CONNECT on Linkerd's `l5d-client-id`. The edge clears
+# all three families by prefix and the gateway strips the first two again (`tenancy.rs`
+# `strip_client_headers`), so a caller who writes them from outside changes nothing: each door
+# answers project A's token on project B's names exactly as it does without them. The doors and
+# the inputs are `test_tenant_matrix.py`'s, so this runs wherever the matrix runs.
+
+#: Each value claims the most a header could: the platform's admins, the gateway's own client
+#: (whose hops the broker trusts), project B's groups, and a broker's mesh identity.
+FORGED_IDENTITY = {
+    "x-jc-subject": "service-account-context-gateway",
+    "x-jc-groups": "/platform-admins,/{project}/stewards",
+    "x-jc-roles": "admin,steward",
+    "x-jc-client": "context-gateway",
+    "x-jc-restricted": "false",
+    "jc-provenance-actor": "user:admin",
+    "l5d-client-id": "context-gateway.jc-context-gateway.serviceaccount.identity.linkerd.cluster.local",
+}
+
+#: The space, Endpoint, WebSocket, OGC and MCP doors; reads only, so nothing is written to B.
+DOORS = ("ngsi-ld", "space", "websocket", "ogc", "mcp-endpoint", "mcp-space", "mcp-hub", "mcp-named")
+SPOOF_ROWS = tuple(
+    row for row in ROWS if row.surface in DOORS and row.method in ("GET", "POST") and row.verb != "write"
+    and row.kind != "absent" and row.host == "gateway"
+)
+
+
+@pytest.fixture(scope="session")
+def doors() -> dict[str, str]:
+    """`test_tenant_matrix.py`'s inputs; skips without them, as the matrix does."""
+    missing = [name for name in INPUTS if not os.getenv(name)]
+    if missing:
+        pytest.skip(f"environment variables not set: {', '.join(missing)}")
+    return {name: os.environ[name] for name in INPUTS}
+
+
+def _door(row: Row, inputs: dict[str, str], names: dict[str, str], extra: dict[str, str]) -> tuple[int, str]:
+    headers = {"Authorization": f"Bearer {inputs['TOKEN_PROJECT_A']}", **_fill(extra, names)}
+    if row.kind == "stream":
+        from websockets.exceptions import InvalidStatus
+        from websockets.sync.client import connect
+
+        ws_url = "ws" + _url(row, inputs, names).removeprefix("http")
+        try:
+            with connect(ws_url, additional_headers=headers, open_timeout=TIMEOUT) as ws:
+                try:
+                    frame = ws.recv(timeout=2)
+                except Exception:  # noqa: BLE001 - a quiet or closed stream carries nothing
+                    frame = ""
+                return 101, _masked(frame if isinstance(frame, str) else frame.decode(errors="replace"), names)
+        except InvalidStatus as refused:
+            return refused.response.status_code, _masked(refused.response.body.decode(errors="replace"), names)
+    response = requests.request(
+        row.method,
+        _url(row, inputs, names),
+        headers={**headers, "Accept": "application/json"},
+        json=_fill(row.body, names),
+        timeout=TIMEOUT,
+        allow_redirects=False,
+    )
+    return response.status_code, _masked(response.text, names)
+
+
+@pytest.mark.parametrize("row", SPOOF_ROWS, ids=lambda row: row.id)
+def test_platform_identity_headers_from_outside_change_nothing(row: Row, doors: dict[str, str]):
+    """GW12, AG-38, GW25 — no identity, provenance or mesh-identity header a service trusts can be
+    set from outside the cluster: B's door answers A the same with and without them."""
+    names = _names(doors, other=True)
+    plain = _door(row, doors, names, {})
+    forged = _door(row, doors, names, FORGED_IDENTITY)
+    assert forged == plain, f"{row.id}: forged identity headers changed the answer from {plain} to {forged}"
