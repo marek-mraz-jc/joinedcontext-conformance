@@ -12,6 +12,8 @@ project, MCP, an artifact, the forge and an agent run.
 
 from __future__ import annotations
 
+import base64
+import hashlib
 import json
 import threading
 from dataclasses import dataclass, field
@@ -27,6 +29,14 @@ SLUG_B = "zt4qm7ge2xdv6ksb3ncf5arw2y"
 RUN_B = "run-7a1c"
 ARTIFACT_B = "sha256-9f1c2b"
 REPO_B = "zvolen/zvolen-config"
+SLUG_A = "bb4qm7ge2xdv6ksb3ncf5arw2y"
+SPACE_B = "voda"
+TYPE_B = "WaterQualityObserved"
+ENTITY_B = f"urn:ngsi-ld:{TYPE_B}:zvolen.sk:voda:w-9"
+SERVER_B = "voda-mcp"
+DATAMODEL_B = "voda"
+#: What a leaky surface hands A: B's own entity.
+LEAKED = {"id": ENTITY_B, "type": TYPE_B}
 
 #: What each project holds, by collection.
 HELD: dict[str, dict[str, list[str]]] = {
@@ -47,6 +57,12 @@ MODES = (
     "artifact_served",
     # MCP honours a `project` argument and answers the other organisation's entities.
     "mcp_follows_argument",
+    # The temporal surface of B's Endpoint answers A with B's history.
+    "leaky_temporal",
+    # B's Endpoint WebSocket opens for A and pushes B's entity.
+    "leaky_ws",
+    # The MCP hub resolves B's slug for A and answers B's record.
+    "leaky_hub_mcp",
 )
 
 
@@ -88,6 +104,20 @@ class Handler(BaseHTTPRequestHandler):
         # One body for every refusal, so a caller learns nothing from the difference (R20).
         self._send(404, {"type": "urn:joinedcontext:problem:not-found", "title": "Not Found", "status": 404})
 
+    def _websocket(self, text: str) -> None:
+        """Accepts the upgrade (RFC 6455 4.2.2) and sends one unmasked text frame."""
+        key = self.headers.get("Sec-WebSocket-Key", "")
+        accept = base64.b64encode(hashlib.sha1((key + "258EAFA5-E914-47DA-95CA-C5AB0DC85B11").encode()).digest())
+        self.send_response(101)
+        self.send_header("Upgrade", "websocket")
+        self.send_header("Connection", "Upgrade")
+        self.send_header("Sec-WebSocket-Accept", accept.decode())
+        self.end_headers()
+        payload = text.encode()
+        self.wfile.write(bytes([0x81, len(payload)]) + payload)
+        self.wfile.flush()
+        self.close_connection = True
+
     def _caller(self) -> str | None:
         return _project_of(self.headers.get("Authorization"))
 
@@ -102,6 +132,16 @@ class Handler(BaseHTTPRequestHandler):
 
     # -- the doors --------------------------------------------------------------------------
     def do_GET(self) -> None:  # noqa: N802 - BaseHTTPRequestHandler's spelling
+        if self.headers.get("Upgrade", "").lower() == "websocket":
+            # A WebSocket client takes only an HTTP/1.1 answer to its handshake, a refusal too
+            # (RFC 6455 4.1); one answer per connection, as on every other door here.
+            self.protocol_version = "HTTP/1.1"
+            self.close_connection = True
+        self._get()
+        if self.protocol_version == "HTTP/1.1":
+            self.close_connection = True
+
+    def _get(self) -> None:
         path = urlparse(self.path).path
         caller = self._caller()
         parts = [part for part in path.split("/") if part]
@@ -142,6 +182,19 @@ class Handler(BaseHTTPRequestHandler):
                 return self._send(403, {"title": "Forbidden", "status": 403})
             return self._not_found()
 
+        if path == "/api/endpoints":
+            # The hub's listing holds what the caller reaches: A's Endpoint only.
+            return self._send(200, {"items": [{"slug": SLUG_A}]} if caller else {"items": []})
+
+        if path == "/catalog.jsonld":
+            return self._send(200, {"@graph": [{"@id": f"/api/endpoint/{SLUG_A}"}]})
+
+        if self.state.mode == "leaky_temporal" and path.startswith(f"/api/endpoint/{SLUG_B}/ngsi-ld/v1/temporal/"):
+            return self._send(200, [LEAKED])
+
+        if self.state.mode == "leaky_ws" and path == f"/api/endpoint/{SLUG_B}/ws":
+            return self._websocket(json.dumps(LEAKED))
+
         if "/api/endpoint/" in path:
             # A slug of the other project and a slug that is nothing at all answer the same: the
             # gateway does not say which of the two a caller has found (EP-02, R20).
@@ -165,6 +218,17 @@ class Handler(BaseHTTPRequestHandler):
         caller = self._caller()
         parts = [part for part in path.split("/") if part]
 
+        if path == "/api/mcp":
+            # The hub answers a slug the caller does not reach as it answers one nobody created.
+            asked = ((self._body().get("params") or {}).get("arguments") or {}).get("endpoint")
+            if self.state.mode == "leaky_hub_mcp" and asked == SLUG_B:
+                text = json.dumps(LEAKED)
+            else:
+                text = f"no endpoint {asked} you can read"
+            return self._send(
+                200, {"jsonrpc": "2.0", "id": 1, "result": {"isError": True, "content": [{"type": "text", "text": text}]}}
+            )
+
         if path.rstrip("/").endswith("/mcp"):
             asked = (self._body().get("params") or {}).get("arguments") or {}
             entity = f"urn:ngsi-ld:AirQualityObserved:banskabystrica.sk:{PROJECT_A}:s-1"
@@ -183,6 +247,13 @@ class Handler(BaseHTTPRequestHandler):
                 self.state.written.setdefault(f"{project}/{plural}", []).append(name)
             return self._not_found()
 
+        return self._not_found()
+
+    def do_PATCH(self) -> None:  # noqa: N802
+        self._body()
+        return self._not_found()
+
+    def do_DELETE(self) -> None:  # noqa: N802
         return self._not_found()
 
 

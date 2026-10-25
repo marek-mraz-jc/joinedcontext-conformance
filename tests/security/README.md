@@ -151,3 +151,9 @@ each of the others (`leaky_list`, `existence_disclosure`, `write_lands`, `artifa
 `mcp_follows_argument`). It needs no deployed system, runs in the fast CI lane beside
 `selftest_access.py`, `selftest_representations.py` and `selftest_forge.py`, and fails if the
 suite passes against a platform that does not isolate.
+
+It runs `test_tenant_matrix.py` (T-5557) against the same stub: one row per data surface and verb
+(NGSI-LD, temporal, subscriptions, WebSocket, OGC, STA, OData, iCal, feed, CSV, the catalogue,
+the Context Space surface, the Endpoint, space, hub, named and Portal MCP servers, live SSE, CKAN),
+each comparing a project-A token's call on project B's name with the same call on a name nobody
+created. `leaky_temporal`, `leaky_ws` and `leaky_hub_mcp` each turn their own row red.
