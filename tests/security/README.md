@@ -28,6 +28,7 @@ The suites talk to a deployed gateway; every variable they need names itself whe
 | `ASSISTANT_URL`, `ASSISTANT_PUBLIC_ID`, `ASSISTANT_ORIGIN`, `ASSISTANT_PER_CLIENT` | the assistant's public origin, one anonymous deployment, an origin it allows and its per-client limit, for `test_public_assistant_surfaces.py` (T-4147); defaults `helsinki-public`, `https://dev.joinedcontext.com`, `6` |
 | `MCP_HUB_URL`, `CKAN_URL` | the anonymous MCP hub (`https://portal.{domain}/api/mcp`) and the data portal, same suite |
 | `MCP_URL` | live MCP streamable HTTP surface for parameter sanitization checks (AG-21) |
+| `OFFBOARD_PORTAL_URL`, `OFFBOARD_GATEWAY_URL`, `OFFBOARD_ADMIN_TOKEN`, `OFFBOARD_PERSON_ID`, `OFFBOARD_PERSON_TOKEN`, `OFFBOARD_ENDPOINT` | the offboarding walk of `test_offboarding.py` (T-5568): throwaway stack only, it disables a person and enables them again; the variables are described in the file |
 | `MCP_TOOL` | MCP tool tested with hostile parameters (default: `query_entities`) |
 | `AGENT_RUNNER_URL` | deployed Agent Runner API endpoint for TS-25 autonomous containment |
 | `AGENT_RUNNER_TOKEN` | Bearer token for Agent Runner API session access |
