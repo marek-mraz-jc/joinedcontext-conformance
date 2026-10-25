@@ -21,6 +21,10 @@ them, asserting at every hand-off that it is still the same set.
 - **PF-43** — every id in the space is an NGSI-LD URN of its entity's type, checked on every
   entity rather than on a sample. The prefix is optional since ADR-N-041; that the same URN in
   two spaces is two entities is `test_urn_scope.py`'s claim.
+- **EP-55** — an analyst's script (`test_walk_analyst.py`, T-5537) is refused every
+  representation before the grant and after the revoke, reads in `file.csv` exactly the rows
+  NGSI-LD pages out, never sees an attribute `/access` does not grant, and meets a 429 that
+  names Retry-After. `walk_analyst_selftest.py` proves each case can fail.
 - **EP-01** — the Endpoint's two representations describe the same entities, and the Endpoint
   narrows its space rather than widening it. A GeoJSON carrying an entity the NGSI-LD
   representation does not is a second answer to the same question.
