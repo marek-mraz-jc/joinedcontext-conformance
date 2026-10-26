@@ -126,6 +126,9 @@ _jc_note() { _jc_missing="${_jc_missing}  - $1
 # --- the surfaces ----------------------------------------------------------------------
 
 JC_DEV_SLUG_AIR=$(_jc_slug projects__banskabystrica__spaces__ovzdusie__endpoints__public-air)
+# The conformance suite's own space and Endpoint (deployment F-BNT1-002): where the ETSI
+# fixtures are written, never among ovzdusie's published readings.
+JC_DEV_SLUG_CONFORMANCE=$(_jc_slug projects__banskabystrica__spaces__conformance__endpoints__conformance)
 JC_DEV_SLUG_TRANSPORT=$(_jc_slug projects__helsinki__spaces__helsinki__endpoints__helsinki-transport)
 JC_DEV_SLUG_HUB=$(_jc_slug projects__helsinki__spaces__helsinki-hub__endpoints__helsinki-hub)
 [ -n "$JC_DEV_SLUG_AIR" ] || _jc_note "the endpoint slugs (no kubeconfig for namespace $JC_DEV_NS): every endpoint URL is unset"
@@ -240,15 +243,20 @@ e2e)
 	;;
 etsi)
 	# The smoke suite writes its own fixtures, so it runs through the one endpoint bound to a
-	# service account that may write: `public-air` of the banskabystrica project, with the
-	# conformance account's client_credentials token (GW22, PF-45).
-	[ -n "$JC_DEV_SLUG_AIR" ] && export NGSILD_URL="$JC_DEV_BASE/api/endpoint/$JC_DEV_SLUG_AIR/ngsi-ld/v1"
+	# service account that may write: `conformance` of the banskabystrica project, in a space of
+	# its own that nothing publishes, with the conformance account's client_credentials token
+	# (GW22, PF-45, deployment F-BNT1-002).
+	if [ -n "$JC_DEV_SLUG_CONFORMANCE" ]; then
+		export NGSILD_URL="$JC_DEV_BASE/api/endpoint/$JC_DEV_SLUG_CONFORMANCE/ngsi-ld/v1"
+	else
+		_jc_note "NGSILD_URL: no conformance Endpoint in the banskabystrica seed (deployment F-BNT1-002 not applied), so the ETSI smoke has no target"
+	fi
 	export NGSILD_TOKEN="$JC_DEV_TOKEN_WRITER"
 	export NGSILD_TENANT=""
 	# The org-domain segment of the ids the suite mints is the instance's, not the project's:
 	# the gateway is deployed with one `orgDomain` and refuses `banskabystrica.sk` here with 400.
 	export NGSILD_ORG_DOMAIN="$JC_DEV_ORG"
-	export NGSILD_SPACE="ovzdusie"
+	export NGSILD_SPACE="conformance"
 	export NGSILD_EXPECTED_FAILURES="tests/etsi/expected_failures_gateway.json"
 	# The hub (T-1209): a space that holds only registrations, over the transport space and
 	# the indicator space. The federated cases read it and skip when it is not there.
