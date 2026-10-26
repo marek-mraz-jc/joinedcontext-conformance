@@ -67,7 +67,7 @@ PAGE, PART_ROWS = 1000, 4000  # the generator's rows per Esri page and per esri-
 CKAN = "https://data.dev.joinedcontext.com"
 HUB = "https://api.dev.joinedcontext.com/api/mcp"
 GATEWAY = "https://api.dev.joinedcontext.com"
-EVAL_ID = "bb-eval-gemini"
+EVAL_ID = "data-eval-gemini"  # the open-data eval copy; bb-eval-* went with F-BNT1-009
 SAMPLE = 100
 # Publisher -> (west, south, east, north), a little wider than the body's territory.
 BOXES = {
