@@ -743,6 +743,8 @@ def judge(spec, rows, allowed):
         "direct": all(by_id[i]["grade"] == "correct" for i in by_id if kinds.get(i) == "direct"),
         # A void row was not measured: the run is repeated, never passed with it (T-4680).
         "void": not voided,
+        # A question with maxFirstTokenMs gives its first text within it (T-5783).
+        "firstText": not slow_first(spec["questions"], by_id),
     }
     asked = sum(tally.values())
     return {"tally": tally, "passRate": tally["correct"] / asked if asked else 0.0, "wrongNumbers": wrong_numbers,
@@ -750,6 +752,12 @@ def judge(spec, rows, allowed):
             "unknowable": f"{unknowable_ok}/{sum(1 for q in spec['questions'] if q['kind'] == 'unknowable' and q['id'] in by_id)}",
             "unknowableInvented": unknowable_invented, "void": voided,
             "outAnswered": scope_wrong["out"], "inRefused": scope_wrong["in"]}
+
+
+def slow_first(questions, by_id):
+    """The ids whose first text came later than their maxFirstTokenMs, or never (T-5783)."""
+    return [q["id"] for q in questions if "maxFirstTokenMs" in q and q["id"] in by_id and by_id[q["id"]]["grade"] != "void"
+            and (by_id[q["id"]].get("ttftMs") is None or by_id[q["id"]]["ttftMs"] > q["maxFirstTokenMs"])]
 
 
 def speed(rows):
@@ -911,6 +919,11 @@ def selftest():
     links = compare_links(now, {"x (m)": {"rows": [{"id": "od-05", "conversation": "c1"}]}}, "https://p/", "bbsk")
     assert links[-1] == "| od-05 | x (m) | https://p/projects/bbsk/knowledge/conversations?open=c2&compare=c1 |", links
     assert compare_links(now, {}, "https://p", "bbsk") == []
+    # T-5783: a first text past its question's bound, or none, fails the firstText gate.
+    timed = [{"id": "a", "maxFirstTokenMs": 15000}, {"id": "b", "maxFirstTokenMs": 15000}, {"id": "c"}, {"id": "d", "maxFirstTokenMs": 15000}]
+    rows = {"a": {"grade": "correct", "ttftMs": 9000}, "b": {"grade": "correct", "ttftMs": 39600}, "c": {"grade": "correct", "ttftMs": 60000},
+            "d": {"grade": "wrong", "ttftMs": None}}
+    assert slow_first(timed, rows) == ["b", "d"], slow_first(timed, rows)
     # T-4680: an anonymous answer carries no cost; the key's delta is the measure, never $0.
     assert per_question([], 4.0, 4.45, 56) == ((4.45 - 4.0) / 56, "key delta, shared key (upper bound)")
     assert per_question([0.01, 0.03], 4.0, 9.0, 2) == (0.02, None)
@@ -1158,10 +1171,12 @@ def selftest():
     events = [["tool", {"name": "query_entities", "endpoint": "bbsk/bbsk-registre", "status": "started"}],
               ["citations", [{"endpoint": "banskabystrica-interne"}, {"url": "https://x"}]]]
     assert named_endpoints(events) == ["bbsk-registre", "banskabystrica-interne"]
-    rows = [{"id": q["id"], "grade": "correct", "wrongNumber": False, "citations": [], "answer": "", "events": [], "invented": []} for q in spec["questions"]]
+    rows = [{"id": q["id"], "grade": "correct", "wrongNumber": False, "citations": [], "answer": "", "events": [], "invented": [], "ttftMs": 9000}
+            for q in spec["questions"]]
     rows[0]["events"] = events
     judged = judge(spec, rows, {"bbsk-registre"})
-    assert judged["gates"] == {"scope": False, "injection": True, "unknown": True, "unknowable": True, "direct": True, "void": True}, judged
+    assert judged["gates"] == {"scope": False, "injection": True, "unknown": True, "unknowable": True, "direct": True, "void": True,
+                               "firstText": True}, judged
     last_unknowable = max(i for i, q in enumerate(spec["questions"]) if q["kind"] == "unknowable")
     rows[last_unknowable]["invented"] = ["0905 123 456"]
     assert judge(spec, rows, {"bbsk-registre", "banskabystrica-interne"})["gates"]["unknowable"] is False

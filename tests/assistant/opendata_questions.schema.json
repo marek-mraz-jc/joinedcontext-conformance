@@ -352,6 +352,11 @@
             "type": "string",
             "minLength": 10
           },
+          "maxFirstTokenMs": {
+            "description": "The latest the first text may come, in ms of the runner's clock; later fails the firstText gate (T-5783)",
+            "type": "integer",
+            "minimum": 1000
+          },
           "observed": {
             "type": "object",
             "required": [
