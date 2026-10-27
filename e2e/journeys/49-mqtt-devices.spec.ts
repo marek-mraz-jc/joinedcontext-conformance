@@ -11,11 +11,11 @@ import path from 'node:path';
  * Journey 49 (T-4857): the seeded MQTT demo devices over mqtts (MF-54, PL-76, ADR-N-048).
  *
  * The seeds hold two brokers in helsinki (`sensors` on 8883 by SNI, `vehicles` on the dedicated
- * port 18830) and one in banskabystrica (`ovzdusie`), each naming one device ServiceAccount. The
- * approver issues each device a client secret in the Portal (PF-37, shown once, kept in this
- * run's mode-700 temp dir), the device takes a token by client_credentials, connects over mqtts
- * with the token as its password and publishes 10 messages a second apart (the broker's
- * messagesPerSecond is 1), and the space holds the device's entity with the last value within
+ * port 18830) and one in banskabystrica (`ovzdusie`, into its demo space `senzory`), each naming
+ * one device ServiceAccount. The approver issues each device a client secret in the Portal
+ * (PF-37, shown once, kept in this run's mode-700 temp dir), the device takes a token by
+ * client_credentials, connects over mqtts with the token as its password and publishes 10
+ * messages a second apart (the broker's messagesPerSecond is 1), and the space holds the device's entity with the last value within
  * 30 s. The brokers page shows the connected publisher (1440 and 400 px screenshots).
  *
  * Refusals, each with nothing written: no token, an expired token, another project's token, a
@@ -51,7 +51,7 @@ const TRACKER: Device = {
   payload: (i) => ({ lat: 60.17 + i / 1000, lon: 24.94, speed: 8, heading: 90 }),
 };
 const BB_SENSOR: Device = {
-  project: 'banskabystrica', account: 'senzor-namestie', broker: 'ovzdusie', space: 'ovzdusie', endpoint: 'public-air',
+  project: 'banskabystrica', account: 'senzor-namestie', broker: 'ovzdusie', space: 'senzory', endpoint: 'senzory',
   domain: 'banskabystrica.sk', host: `ovzdusie.banskabystrica.mqtt.${DOMAIN}`, port: 8883,
   topic: 'ovzdusie/banskabystrica-senzor-namestie/air', type: 'AirQualityObserved',
   payload: (i) => ({ pm10: 20 + i, pm25: 5 + i / 10 }),
