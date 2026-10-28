@@ -32,7 +32,7 @@ import {
   timingTable,
   summarize,
 } from './budgets.js';
-import { parseRequests } from './requests.js';
+import { parseRequests, standardOf } from './requests.js';
 
 const CASE = __ENV.JC_K6_CASE || 'good';
 const RATE = 100;
@@ -186,6 +186,16 @@ export function samples() {
       'a row without a url is refused': () => refuses('ngsi\tGET'),
       'a body on a GET is refused': () => refuses('ngsi\tGET\thttps://h/e\t200\t{}'),
       'a body that is not JSON is refused': () => refuses('mcp\tPOST\thttps://h/e/mcp\t200\t{call'),
+    });
+    // T-5901: a kind may name its query after its standard.
+    check(parseRequests('ogc.cql2\tGET\thttps://h/e/ogc\nodata.batch\tPOST\thttps://h/e/odata/v4/$batch\t200\t{"requests":[]}').requests, {
+      'a query kind is kept with its standard': (r) => r[0].kind === 'ogc.cql2' && standardOf(r[0].kind) === 'ogc' && r[1].body === '{"requests":[]}',
+    });
+    check(null, {
+      'a query kind of an unknown standard is refused': () => refuses('graphql.q\tGET\thttps://h/e'),
+      'a query kind with two dots is refused': () => refuses('ogc.a.b\tGET\thttps://h/e'),
+      'an empty query kind is refused': () => refuses('ogc.\tGET\thttps://h/e'),
+      'a query kind with a space or capitals is refused': () => refuses('ogc.Cql 2\tGET\thttps://h/e'),
     });
     // T-4754: geo and temporal are kinds of their own, and an MCP row may carry its tools/call.
     const call = '{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"query_entities"}}';
