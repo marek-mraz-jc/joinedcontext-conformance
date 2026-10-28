@@ -89,9 +89,18 @@ REJECTED = [
     ("F17", "length(id) gt 1"),
     # a lambda over `scope` (a base member, no ListProperty): F23 serves ListProperties only
     ("F23", "scope/all(s: s eq '/SK/BB')"),
-    ("F27", "NO2 eq duration'P1D'"),
+    # geometry literals have no NGSI-LD value type; duration and binary literals parse (T-5905), see MISMATCHED
+    ("F27", "NO2 eq geometry'SRID=0;Point(1 1)'"),
     ("F30", "geo.distance(location, geography'SRID=4326;POINT(19 48)') lt 1"),
     ("F33", "createdAt gt 2026-01-01T00:00:00Z"),
+]
+
+
+# F27 literals that parse but cannot meet a number member: a typed literal of another type is 400
+# (OData URL 5.1.1.1.1), never widened to compare as text (Antares T-5905)
+MISMATCHED = [
+    ("F27", "NO2 eq duration'P1D'"),
+    ("F27", "NO2 eq binary'AQID'"),
 ]
 
 
@@ -153,4 +162,11 @@ def test_parity_rows_select_something(http, odata_url):
 def test_unmapped_filter_rows_are_501(http, odata_url, row, expression):
     resp = filtered(http, odata_url, expression)
     assert resp.status_code == 501, f"{row}: {resp.status_code} {resp.text}"
+    assert is_odata_error(resp), resp.text
+
+
+@pytest.mark.parametrize(("row", "expression"), MISMATCHED, ids=[f"{r[0]} {r[1]}" for r in MISMATCHED])
+def test_mismatched_literals_are_400(http, odata_url, row, expression):
+    resp = filtered(http, odata_url, expression)
+    assert resp.status_code == 400, f"{row}: {resp.status_code} {resp.text}"
     assert is_odata_error(resp), resp.text
