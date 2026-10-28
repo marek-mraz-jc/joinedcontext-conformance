@@ -1,0 +1,17 @@
+{
+  "source": "UC1-UC10: the BBSK use cases (claude.ai artifact a72437e3, 2026-10-28); tiles: proposal v28 page 2 (supervisor/bbsk-proposal/renders/bbsk-navrh-a-pilot-v28.pdf). The tiles 'Aká je kvalita ovzdušia v Banskej Bystrici?' and 'Aké sú úradné hodiny a kde je úrad kraja?' are UC5 and UC4 word for word, so they are asked once.",
+  "questions": [
+    { "id": "uc1", "from": "UC1", "q": "Kde je najbližšia lekáreň v Brezne a dokedy má dnes otvorené?" },
+    { "id": "uc2", "from": "UC2", "q": "Ktoré stredné školy v okrese Lučenec ponúkajú informatiku a koľko majú žiakov?" },
+    { "id": "uc3", "from": "UC3", "q": "Čo sa deje cez víkend v okolí Zvolena?" },
+    { "id": "uc4", "from": "UC4 + tile", "q": "Aké sú úradné hodiny a kde je úrad kraja?" },
+    { "id": "uc5", "from": "UC5 + tile", "q": "Aká je kvalita ovzdušia v Banskej Bystrici?" },
+    { "id": "uc6", "from": "UC6", "q": "Koľko kraj zaplatil dodávateľovi X za posledný rok a ako hlasovali poslanci o zmluve?" },
+    { "id": "uc7", "from": "UC7", "q": "Ktoré mosty na cestách II. a III. triedy sú v zlom stave a koľko nehôd bolo v ich okolí?" },
+    { "id": "uc8", "from": "UC8", "q": "Ako sa za posledné 3 roky vyvíjala nezamestnanosť a počet obyvateľov v okresoch kraja?" },
+    { "id": "uc9", "from": "UC9", "q": "Kde jazdí najviac cyklistov a kde sa im stáva najviac nehôd?" },
+    { "id": "uc10", "from": "UC10", "q": "Potrebujem zoznam organizácií kraja ako API pre našu aplikáciu." },
+    { "id": "tile-brezno", "from": "tile", "q": "Čo sa deje cez víkend v Brezne?" },
+    { "id": "tile-ev", "from": "tile", "q": "Kde nabijem auto v Banskej Bystrici?" }
+  ]
+}
