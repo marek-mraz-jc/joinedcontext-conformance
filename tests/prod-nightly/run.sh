@@ -13,7 +13,9 @@
 #   API           https://api.smartcity.joinedcontext.com    CATALOGUE  https://opendata.smartcity.joinedcontext.com
 #   ENDPOINTS     public Endpoint ids to test, space separated (default: endpoints.txt)
 #   TE_USER, TE_PASSWORD   the TEAM Engine image's own public test account (ogctest), as tests/ogc/run.sh
-#   SUITES        which of ogc odata sta ical dcat consistency to run (default all; tests/standards/run.sh runs one at a time)
+#   SUITES        which of ogc odata sta ical dcat consistency roundtrip to run (default all; tests/standards/run.sh runs one at a time)
+#   ROUNDTRIP_ENDPOINT, ROUNDTRIP_ENTITY   the read half of tests/roundtrip (T-5914): the Endpoint id and the seeded test
+#                 Entity every served surface is compared with; unset = the case is listed as not configured
 set -uo pipefail
 here=$(cd -- "$(dirname -- "$0")" && pwd)
 : "${ANTARES_DIR:?set ANTARES_DIR to an Antares checkout at the broker commit prod runs}"
@@ -28,13 +30,14 @@ report=$out/report.md
 rc=0
 note() { echo "$*" | tee -a "$report"; }
 pause() { sleep "${PAUSE:-30}"; }
-suites=" ${SUITES:-ogc odata sta ical dcat consistency} "
+suites=" ${SUITES:-ogc odata sta ical dcat consistency roundtrip} "
 want() { [[ $suites == *" $1 "* ]]; }   # the edge sees one address: a gap between suites keeps it under the per-IP budget
 
 note "# Prod standards run $(date -u +%FT%TZ)"
 note "Antares $(git -C "$ANTARES_DIR" rev-parse --short HEAD), endpoints: $endpoints"
 "${compare[@]}" --self-test >/dev/null || { note "compare.py self-test failed"; exit 2; }
 python3 "$here/consistency.py" --self-test >/dev/null || { note "consistency.py self-test failed"; exit 2; }
+python3 "$here/../roundtrip/roundtrip.py" --self-test >/dev/null || { note "roundtrip.py self-test failed"; exit 2; }
 
 if want ogc; then
 # OGC API Features: TEAM Engine on the host network, one run per Endpoint, every collection.
@@ -124,6 +127,20 @@ if want consistency; then
 # One filter, every surface: counts and 20 sampled rows per type and filter, and the catalogue's counts.
 # shellcheck disable=SC2086 # $endpoints is a space separated list of ids
 python3 "$here/consistency.py" --api "$api" --catalogue "$catalogue" --json "$out/consistency.json" $endpoints >> "$report" || rc=1
+fi
+
+if want roundtrip; then
+# Write here, read everywhere, read half: no write on prod; NGSI-LD's answer for the seeded test Entity is the
+# reference and every other served surface (OData, OGC, CSV, STA, MCP, temporal) must agree with it.
+note "## Roundtrip read (tests/roundtrip --read)"
+if [ -z "${ROUNDTRIP_ENDPOINT:-}" ] || [ -z "${ROUNDTRIP_ENTITY:-}" ]; then
+  note "- not configured: set ROUNDTRIP_ENDPOINT and ROUNDTRIP_ENTITY to a seeded test Entity (T-5914)"
+elif [[ ! $ROUNDTRIP_ENDPOINT =~ ^[a-z0-9-]{1,64}$ ]]; then
+  note "- ROUNDTRIP_ENDPOINT is not an Endpoint id"; rc=1
+elif python3 "$here/../roundtrip/roundtrip.py" --endpoint "$api/api/endpoint/$ROUNDTRIP_ENDPOINT" \
+  --read "$ROUNDTRIP_ENTITY" --out "$out/roundtrip" > "$out/roundtrip.txt" 2>&1
+then note "- endpoint $ROUNDTRIP_ENDPOINT: $(tail -1 "$out/roundtrip.txt")"
+else note "- endpoint $ROUNDTRIP_ENDPOINT: $(grep -E '^  FAIL' "$out/roundtrip.txt" | cut -c1-200 | tr '\n' ' ') $(tail -1 "$out/roundtrip.txt")"; rc=1; fi
 fi
 
 note "## Verdict: $([ $rc = 0 ] && echo GREEN || echo RED)"

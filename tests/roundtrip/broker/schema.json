@@ -1,0 +1,13 @@
+{
+  "id": "https://example.org/roundtrip", "name": "roundtrip",
+  "prefixes": {"d": {"prefix_prefix": "d", "prefix_reference": "https://uri.etsi.org/ngsi-ld/default-context/"}},
+  "default_prefix": "d",
+  "classes": {"AirQualityObserved": {"slots": ["name", "dateObserved", "pm10", "location"]}},
+  "slots": {
+    "name": {"range": "string"},
+    "dateObserved": {"range": "datetime"},
+    "pm10": {"range": "float", "unit": {"ucum_code": "ug/m3"}},
+    "location": {"slot_uri": "https://uri.etsi.org/ngsi-ld/location",
+                 "annotations": {"ngsi_ld_kind": {"tag": "ngsi_ld_kind", "value": "GeoProperty"}}}
+  }
+}
