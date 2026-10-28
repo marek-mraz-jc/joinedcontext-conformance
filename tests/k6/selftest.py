@@ -80,6 +80,7 @@ LIMIT_BURST = 120
 class Stub(BaseHTTPRequestHandler):
     protocol_version = "HTTP/1.1"
     scrape_count = 0
+    authorizations: list[str] = []
     tokens = float(LIMIT_BURST)
     refilled_at = 0.0
     lock = threading.Lock()
@@ -132,7 +133,14 @@ class Stub(BaseHTTPRequestHandler):
         # read must never be shed, or their budgets would measure this stub instead.
         if "/api/endpoint/" in path and self.rate_limited():
             return
-        if path.endswith("/types"):
+        if "/authed/" in path:
+            with Stub.lock:
+                Stub.authorizations.append(self.headers.get("authorization") or "")
+        if "/broken/" in path:
+            self.send_response(503)
+            self.send_header("Content-Length", "0")
+            self.end_headers()
+        elif path.endswith("/types"):
             body = json.dumps(
                 {
                     "id": "urn:ngsi-ld:EntityTypeList:selftest",
@@ -484,7 +492,45 @@ def main() -> int:
     if bad_ramp.returncode == 0 or "JC_K6_RAMP" not in bad_ramp.stdout + bad_ramp.stderr:
         failures.append("a ramp that falls was not refused")
 
-    # 10. T-5900: the capacity steps, one standard alone, the ceiling, and a floor that goes red.
+    # 10. T-5901: query kinds per standard, the named profiles, the bearer token, the abort.
+    shapes = os.path.join(mix_dir, "shapes.tsv")
+    with open(shapes, "w", encoding="utf-8") as out:
+        out.write(f"ngsi.q-nested\tGET\t{stub}/authed/ngsi-ld/v1/entities?type=Item&q=%28a%3E1%7Ca%3C0%29\t200\n")
+        out.write(f"ogc.cql2\tGET\t{stub}/authed/ogc/features/collections/Item/items?filter=a%3E1\t200\n")
+        out.write(f"sta.expand\tGET\t{stub}/authed/sta/v1.1/Things?%24expand=Datastreams\t200\n")
+    shaped_env = {"JC_K6_REQUESTS": shapes, "JC_REPORTS_DIR": mix_dir, "JC_K6_TOKEN": "selftest-token"}
+    closed = k6(ramp_args, {**shaped_env, "JC_K6_PROFILE": "closed", "JC_K6_VUS": "3", "JC_K6_DURATION": "2s"}, workdir)
+    if closed.returncode != 0:
+        failures.append(f"the closed profile did not run against the stub:\n{closed.stdout}\n{closed.stderr}")
+    else:
+        closed_metrics = json.load(open(os.path.join(mix_dir, "summary.json")))["metrics"]
+        for standard in ("ngsi", "ogc", "sta"):
+            if closed_metrics.get(f"http_reqs{{standard:{standard}}}", {}).get("values", {}).get("count", 0) < 1:
+                failures.append(f"the closed profile reported nothing for the standard {standard}")
+        if "http_reqs{kind:ogc.cql2}" not in closed_metrics:
+            failures.append("a query kind is not reported apart from its standard")
+        if "profile closed, 3 VUs closed for 2s" not in closed.stdout:
+            failures.append(f"the closed profile's summary does not name it:\n{closed.stdout}")
+        if "selftest-token" in open(os.path.join(mix_dir, "summary.json")).read() + closed.stdout:
+            failures.append("the bearer token reached the summary")
+    if not Stub.authorizations or set(Stub.authorizations) != {"Bearer selftest-token"}:
+        failures.append(f"the requests did not carry the bearer token: {sorted(set(Stub.authorizations))}")
+    knee = k6(ramp_args, {**shaped_env, "JC_K6_PROFILE": "knee", "JC_K6_RAMP": "2:6:2s", "JC_K6_DURATION": "1s", "JC_K6_VUS": "3"}, workdir)
+    if knee.returncode != 0 or "rate reached: 6/s" not in knee.stdout:
+        failures.append(f"the knee profile does not name the rate it reached:\n{knee.stdout}\n{knee.stderr}")
+    unknown = k6(ramp_args, {**shaped_env, "JC_K6_PROFILE": "fast"}, workdir)
+    if unknown.returncode == 0 or "JC_K6_PROFILE" not in unknown.stdout + unknown.stderr:
+        failures.append("an unknown profile was not refused")
+    broken = os.path.join(mix_dir, "broken.tsv")
+    with open(broken, "w", encoding="utf-8") as out:
+        out.write(f"ngsi\tGET\t{stub}/broken/ngsi-ld/v1/entities?type=Item\n")
+    started = time.monotonic()
+    aborted = k6(ramp_args, {"JC_K6_REQUESTS": broken, "JC_REPORTS_DIR": mix_dir, "JC_K6_RATE": "10",
+                             "JC_K6_DURATION": "30s", "JC_K6_VUS": "3", "JC_K6_ABORT_AFTER": "2s"}, workdir)
+    if aborted.returncode == 0 or time.monotonic() - started > 20:
+        failures.append(f"a stack failing every request was not aborted early:\n{aborted.stdout}\n{aborted.stderr}")
+
+    # 11. T-5900: the capacity steps, one standard alone, the ceiling, and a floor that goes red.
     cap_list = os.path.join(mix_dir, "capacity.tsv")
     with open(cap_list, "w", encoding="utf-8") as out:
         out.write(f"ngsi\tGET\t{stub}/ngsi-ld/v1/entities?type=Item\n")

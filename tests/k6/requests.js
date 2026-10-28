@@ -4,8 +4,16 @@
 // Empty lines and lines starting with `#` are skipped, so is a row whose probed status is not 2xx
 // (a 404 schema the list kept as evidence). An unknown kind or method is an error, never a
 // silent drop: a typo would otherwise shrink the mix without anyone noticing.
+// A kind is a standard, optionally with the query it asks after a dot (T-5901), e.g. `ogc.cql2`:
+// the run reports per kind and per standard, so a slow query shape shows apart from its surface.
 
-export const KINDS = ['ngsi', 'geo', 'temporal', 'odata', 'ogc', 'sta', 'geojson', 'ical', 'mcp', 'schema', 'csv', 'ckan', 'ws'];
+export const KINDS = ['ngsi', 'geo', 'temporal', 'odata', 'ogc', 'sta', 'geojson', 'mcp', 'schema', 'csv', 'ical', 'ckan', 'ws'];
+const QUERY = /^[a-z0-9-]{1,32}$/;
+
+// The standard a kind belongs to: `ogc.cql2` -> `ogc`.
+export function standardOf(kind) {
+  return kind.split('.', 1)[0];
+}
 const METHODS = ['GET', 'POST'];
 
 export function parseRequests(text) {
@@ -18,8 +26,9 @@ export function parseRequests(text) {
     }
     const [kind, method, url, status, body] = line.split('\t');
     const at = `line ${index + 1}`;
-    if (!KINDS.includes(kind)) {
-      throw new Error(`${at}: unknown kind '${kind}' (one of ${KINDS.join(', ')})`);
+    const [standard, query, extra] = (kind || '').split('.');
+    if (!KINDS.includes(standard) || extra !== undefined || (query !== undefined && !QUERY.test(query))) {
+      throw new Error(`${at}: unknown kind '${kind}' (one of ${KINDS.join(', ')}, optionally .<query>)`);
     }
     if (!METHODS.includes(method)) {
       throw new Error(`${at}: unknown method '${method}'`);
