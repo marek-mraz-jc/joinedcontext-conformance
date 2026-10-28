@@ -5,9 +5,14 @@
 # after, remote-writes k6 metrics through a port-forward to the cluster Prometheus, and stops k6
 # when the cluster's Postgres stays above JC_LOAD_PG_CORES (default 5) for a minute. k6 stops
 # itself on p95 > 2 s or errors > 2 % (api-mix-100rps.js).
+# Prometheus accepts a remote write only during the run: the script switches the receiver on in
+# the Prometheus resource and off again on exit (the deployment keeps it off, so no in-cluster
+# caller such as Grafana's data proxy can write series between runs). Each switch restarts
+# Prometheus once (about a minute; its WAL is on the volume).
 #
 #   KUBECONFIG          the target cluster (read-only use: top, port-forward)
 #   JC_PROM_NAMESPACE   the Prometheus namespace, e.g. smartcity-prometheus
+#   JC_PROM_NAME        the Prometheus resource (default prometheus-prometheus)
 #   JC_LOAD_PROFILES    profiles in order (default steady)
 #   and load.sh's JC_K6_REQUESTS, JC_LOAD_TARGET, JC_DEPLOYMENT_SHA, JC_K6_TOKEN_FILE
 set -euo pipefail
@@ -23,10 +28,18 @@ if [ "$hour" -ge 1 ] && [ "$hour" -lt 4 ]; then
   exit 2
 fi
 
+name=${JC_PROM_NAME:-prometheus-prometheus}
+receiver() {
+  kubectl -n "$JC_PROM_NAMESPACE" patch prometheus "$name" --type merge -p "{\"spec\":{\"enableRemoteWriteReceiver\":$1}}" >/dev/null
+  sleep 5
+  kubectl -n "$JC_PROM_NAMESPACE" rollout status "statefulset/prometheus-$name" --timeout=300s >/dev/null
+}
+forward=""
+watch=""
+trap 'kill "$forward" 2>/dev/null || true; [ -z "$watch" ] || kill "$watch" 2>/dev/null || true; receiver false || echo "the remote-write receiver is still ON: kubectl -n $JC_PROM_NAMESPACE patch prometheus $name --type merge -p {\"spec\":{\"enableRemoteWriteReceiver\":false}}" >&2' EXIT
+receiver true
 kubectl -n "$JC_PROM_NAMESPACE" port-forward svc/prometheus-prometheus "$port:9090" >/dev/null 2>&1 &
 forward=$!
-watch=""
-trap 'kill "$forward" 2>/dev/null || true; [ -z "$watch" ] || kill "$watch" 2>/dev/null || true' EXIT
 prom="http://127.0.0.1:$port"
 for _ in $(seq 20); do curl -fsS "$prom/-/ready" >/dev/null 2>&1 && break; sleep 1; done
 curl -fsS "$prom/-/ready" >/dev/null || { echo "Prometheus not reachable through the port-forward" >&2; exit 1; }
