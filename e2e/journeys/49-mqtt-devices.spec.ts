@@ -20,7 +20,8 @@ import path from 'node:path';
  *
  * Refusals, each with nothing written: no token, an expired token, another project's token, a
  * device's token on another broker of its project, a topic outside the device's own prefix, an
- * oversized message, plain 1883 from outside, and a third broker beyond the allowance (brokers 2).
+ * oversized message, plain 1883 from outside, and a fourth broker beyond the allowance (brokers 3:
+ * sensors, vehicles and the HSL bridge's hsl-bridge, journey 50).
  *
  * A token never reaches argv: mosquitto_pub reads `-P` from its options file under
  * XDG_CONFIG_HOME in the temp dir. Needs mosquitto_pub on PATH (the sandbox image has it).
@@ -172,7 +173,7 @@ test.describe('Journey 49: MQTT demo devices over mqtts (T-4857)', () => {
         `/api/v1/projects/helsinki/mqttbrokers/${extraBroker}?confirm=${extraBroker}`,
         { headers: await csrfHeaders(stewardContext) },
       ).catch(() => undefined);
-      // A third broker the allowance let through would be a Change: its id is in the answer.
+      // A fourth broker the allowance let through would be a Change: its id is in the answer.
       if (response?.status() === 202) console.warn(`journey 49: remove the proposed broker ${extraBroker}`);
     }
     fs.rmSync(root, { recursive: true, force: true });
@@ -252,7 +253,7 @@ test.describe('Journey 49: MQTT demo devices over mqtts (T-4857)', () => {
     expect(after.body?.pm10).not.toBe(999);
   });
 
-  test('a third helsinki broker is refused by the allowance (brokers: 2)', async () => {
+  test('a fourth helsinki broker is refused by the allowance (brokers: 3)', async () => {
     test.skip(!stewardContext, 'the steward session did not start');
     const response = await stewardContext!.request.post('/api/v1/projects/helsinki/mqttbrokers', {
       headers: await csrfHeaders(stewardContext!),
@@ -263,8 +264,8 @@ test.describe('Journey 49: MQTT demo devices over mqtts (T-4857)', () => {
         spec: { roles: [{ name: 'devices', serviceAccounts: ['sensor-kallio'], publish: [`${extraBroker}/\${clientid}/x`] }] },
       },
     });
-    expect(response.status(), 'PF-118: the third broker is refused').toBe(403);
-    expect(JSON.stringify(await response.json())).toMatch(/may run 2 MQTT brokers/);
+    expect(response.status(), 'PF-118: the fourth broker is refused').toBe(403);
+    expect(JSON.stringify(await response.json())).toMatch(/may run 3 MQTT brokers/);
   });
 
   test('an expired token is refused', async () => {
