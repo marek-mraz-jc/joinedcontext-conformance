@@ -50,6 +50,12 @@ JC_K6_TOKEN_FILE=/path/to/token K6_PROMETHEUS_RW_SERVER_URL=http://127.0.0.1:190
 # the weekly prod run (cron `0 5 * * 0` on the prod deployer's host, announced first)
 KUBECONFIG=... JC_PROM_NAMESPACE=<instance>-prometheus JC_K6_REQUESTS=lists/prod.tsv JC_LOAD_TARGET=prod \
 JC_DEPLOYMENT_SHA=<sha> JC_K6_TOKEN_FILE=... ./weekly.sh
+# T-5921: the same with the load generator's client, which the realm keeps disabled: weekly.sh
+# enables it for the run, takes its token and disables it on exit; the gateway holds its reads to
+# 512 in flight instead of 32 and refuses its writes
+KUBECONFIG=... JC_PROM_NAMESPACE=<instance>-prometheus JC_K6_REQUESTS=lists/prod.tsv JC_LOAD_TARGET=prod \
+JC_DEPLOYMENT_SHA=<sha> JC_LOADTEST_CLIENT=banskabystrica-loadtest JC_KEYCLOAK_NAMESPACE=<instance>-keycloak \
+JC_KEYCLOAK_REALM=<instance> JC_TOKEN_URL=https://idm.<domain>/realms/<instance>/protocol/openid-connect/token ./weekly.sh
 # T-5900: the capacity steps of one standard, then of the mix; the gate floor 1,000 req/s
 JC_K6_SCRIPT=capacity.js JC_K6_REQUESTS=requests-prod.tsv JC_K6_KINDS=odata JC_K6_STEPS=250,500,1000,2000 \
 JC_K6_STEP=1m jc-conformance k6 -- --local-ips=127.0.0.10-127.0.0.73
