@@ -14,6 +14,7 @@ Tasks:
 - **T-4903**: Slow neighbours: 5 loops of a slow read (default `/attributes`) beside a quick probe (`entities?limit=1`, 2/s); the probe's p95 stays under 300 ms and no slow read outlives the gateway's 10 s deadline plus margin (`slow-neighbours.js`; `JC_K6_SLOW_PATH`, `JC_K6_PROBE_PATH`, `JC_K6_DURATION`)
 - **T-5124**: Fair share: a pipeline's batch writes (`WRITE_TOKEN`) and a signed-in steward's reads (`STEWARD_TOKEN`) run for a baseline minute, then beside two minutes of anonymous reads at 5x the normal rate; each class's p95 under the flood stays within 20 % of its baseline and every anonymous answer is a 200 or a 429 with `Retry-After` (`fair-share.js`; `JC_K6_WRITE_TYPE`, `JC_K6_NORMAL_RATE`, `JC_K6_FLOOD_RATE`, `JC_K6_TOLERANCE`; run.sh exits 1 on a FAIL)
 - **T-5042**: Policy and Endpoint budgets (ADR-N-057 section 4): every representation of one Endpoint (`/access`, NGSI-LD, OGC Features, OData, CSV, MCP; AuthZEN `/access/v1/evaluations` of 100 items with `JC_K6_EVALUATIONS=1`) at 1, 10 and 50 clients, server time and broker share from the gateway's `Server-Timing`; `/access` p95 server time under 20 ms, evaluations under 30 ms, and with `RESIDUAL_URL` (an Endpoint whose Policy adds `idPattern`, `q` and `geoQ` over the same data) its NGSI-LD and OGC reads within 10 % of the open Endpoint's; a gateway without `Server-Timing` fails as unmeasured (`policy-budgets.js`; `JC_K6_TYPE`, `JC_K6_LEVELS`, `JC_K6_STAGE`, `JC_K6_THINK_MS`; run.sh exits 1 on a FAIL). From outside the cluster the dev edge allows 300 requests a minute: `JC_K6_LEVELS=1 JC_K6_THINK_MS=450`
+- **T-5900**: Capacity, per standard and mixed: an open model climbs in steps (`JC_K6_STEPS`, default 250 to 10,000 req/s, `JC_K6_STEP` each); each step is judged alone (p95 under `JC_K6_P95_MS` 500, errors under `JC_K6_ERRORS` 0.1 %, dropped arrivals under 0.1 %) and the ceiling is the highest step that held, overall and per kind, in `capacity.json`. `JC_K6_KINDS` sends one standard alone (`ngsi`, `geo`, `temporal`, `odata`, `ogc`, `sta`, `geojson`, `ical`, `csv`, `mcp`); `JC_K6_FLOOR` is the release gate's rate (T-5899): a ceiling under it exits 99, steps above it are measured and never red. Request `i` of the run is row `i` of the list, so a list longer than the run repeats nothing (distinct load) and a catalogue list repeats like public traffic (`capacity.js`)
 - **T-3059**: The knowledge assistant under 20 concurrent public chats, every chat answered, p95 of a full answer recorded, RSS read with `kubectl top pod` against the 1 GB budget; bounded to `JC_K6_CHATS` chats (default 40, at most 200) because every chat spends the deployment's model budget (`assistant-chats.js`)
 
 ## Execution
@@ -40,6 +41,11 @@ python3 make_requests.py https://opendata.smartcity.joinedcontext.com > requests
 # kind; the run aborts by itself after a minute of p95 over 2 s or errors over 2 %
 JC_K6_SCRIPT=api-mix-100rps.js JC_K6_REQUESTS=requests-prod.tsv JC_K6_RAMP=50:500:5m \
 JC_K6_DURATION=10m JC_K6_P95_MS=500 jc-conformance k6
+
+# T-5900: the capacity steps of one standard, then of the mix; the gate floor 1,000 req/s
+JC_K6_SCRIPT=capacity.js JC_K6_REQUESTS=requests-prod.tsv JC_K6_KINDS=odata JC_K6_STEPS=250,500,1000,2000 \
+JC_K6_STEP=1m jc-conformance k6 -- --local-ips=127.0.0.10-127.0.0.73
+JC_K6_SCRIPT=capacity.js JC_K6_REQUESTS=requests-prod.tsv JC_K6_FLOOR=1000 jc-conformance k6
 
 # T-4903: five slow read loops beside a quick probe on one Endpoint, two minutes
 JC_K6_SCRIPT=slow-neighbours.js ENDPOINT_URL=https://api.host/api/endpoint/{slug} \

@@ -5,7 +5,7 @@
 // (a 404 schema the list kept as evidence). An unknown kind or method is an error, never a
 // silent drop: a typo would otherwise shrink the mix without anyone noticing.
 
-export const KINDS = ['ngsi', 'geo', 'temporal', 'odata', 'ogc', 'mcp', 'schema', 'csv', 'ckan', 'ws'];
+export const KINDS = ['ngsi', 'geo', 'temporal', 'odata', 'ogc', 'sta', 'geojson', 'ical', 'mcp', 'schema', 'csv', 'ckan', 'ws'];
 const METHODS = ['GET', 'POST'];
 
 export function parseRequests(text) {
