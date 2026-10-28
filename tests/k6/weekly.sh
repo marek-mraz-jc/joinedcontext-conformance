@@ -15,6 +15,17 @@
 #   JC_PROM_NAME        the Prometheus resource (default prometheus-prometheus)
 #   JC_LOAD_PROFILES    profiles in order (default steady)
 #   and load.sh's JC_K6_REQUESTS, JC_LOAD_TARGET, JC_DEPLOYMENT_SHA, JC_K6_TOKEN_FILE
+# The load generator's token (T-5921), when JC_LOADTEST_CLIENT is set: the realm keeps that client
+# disabled, so the script enables it with kcadm inside the Keycloak pod (the admin password stays
+# in the pod's environment), takes one client_credentials token with the client's secret from its
+# Secret (sent on stdin, never on a command line), and disables the client again on exit. The
+# token goes to a 0600 file as JC_K6_TOKEN_FILE and is deleted on exit.
+#   JC_LOADTEST_CLIENT     the client, e.g. banskabystrica-loadtest (unset: anonymous run)
+#   JC_KEYCLOAK_NAMESPACE  Keycloak's namespace, e.g. smartcity-keycloak
+#   JC_KEYCLOAK_REALM      the realm, e.g. smartcity
+#   JC_TOKEN_URL           the realm's token endpoint, https://idm.<domain>/realms/<realm>/protocol/openid-connect/token
+#   JC_KEYCLOAK_POD        the pod kcadm runs in (default keycloak-app-keycloakx-0)
+#   JC_KEYCLOAK_LOCAL_URL  Keycloak inside its pod (default http://localhost:8080)
 set -euo pipefail
 here=$(cd -- "$(dirname -- "$0")" && pwd)
 : "${KUBECONFIG:?set KUBECONFIG to the target cluster}"
@@ -29,6 +40,28 @@ if [ "$hour" -ge 1 ] && [ "$hour" -lt 4 ]; then
 fi
 
 name=${JC_PROM_NAME:-prometheus-prometheus}
+client=${JC_LOADTEST_CLIENT:-}
+token_file=""
+# Switches the load generator's client on (true) or off (false) inside the Keycloak pod.
+loadtest_client() {
+  # shellcheck disable=SC2016 # the script runs in the pod and expands the pod's own variables
+  kubectl -n "$JC_KEYCLOAK_NAMESPACE" exec "${JC_KEYCLOAK_POD:-keycloak-app-keycloakx-0}" -- bash -c '
+    set -euo pipefail
+    kc() { /opt/keycloak/bin/kcadm.sh "$@" --config /tmp/kcadm-loadtest.config; }
+    kc config credentials --server "$0" --realm master \
+      --user "$KC_BOOTSTRAP_ADMIN_USERNAME" --password "$KC_BOOTSTRAP_ADMIN_PASSWORD" >/dev/null
+    id=$(kc get clients -r "$1" -q "clientId=$2" --fields id --format csv --noquotes)
+    [ -n "$id" ] || { echo "no client $2 in realm $1" >&2; exit 1; }
+    kc update "clients/$id" -r "$1" -s "enabled=$3"
+    rm -f /tmp/kcadm-loadtest.config
+  ' "${JC_KEYCLOAK_LOCAL_URL:-http://localhost:8080}" "$JC_KEYCLOAK_REALM" "$client" "$1"
+}
+# shellcheck disable=SC2317 # called from the EXIT trap
+loadtest_off() {
+  [ -z "$token_file" ] || rm -f "$token_file"
+  [ -z "$client" ] && return 0
+  loadtest_client false || echo "the client $client is still ENABLED: disable it in realm $JC_KEYCLOAK_REALM" >&2
+}
 receiver() {
   kubectl -n "$JC_PROM_NAMESPACE" patch prometheus "$name" --type merge -p "{\"spec\":{\"enableRemoteWriteReceiver\":$1}}" >/dev/null
   sleep 5
@@ -36,7 +69,20 @@ receiver() {
 }
 forward=""
 watch=""
-trap 'kill "$forward" 2>/dev/null || true; [ -z "$watch" ] || kill "$watch" 2>/dev/null || true; receiver false || echo "the remote-write receiver is still ON: kubectl -n $JC_PROM_NAMESPACE patch prometheus $name --type merge -p {\"spec\":{\"enableRemoteWriteReceiver\":false}}" >&2' EXIT
+trap 'kill "$forward" 2>/dev/null || true; [ -z "$watch" ] || kill "$watch" 2>/dev/null || true; loadtest_off; receiver false || echo "the remote-write receiver is still ON: kubectl -n $JC_PROM_NAMESPACE patch prometheus $name --type merge -p {\"spec\":{\"enableRemoteWriteReceiver\":false}}" >&2' EXIT
+if [ -n "$client" ]; then
+  : "${JC_KEYCLOAK_NAMESPACE:?set JC_KEYCLOAK_NAMESPACE for JC_LOADTEST_CLIENT}"
+  : "${JC_KEYCLOAK_REALM:?set JC_KEYCLOAK_REALM for JC_LOADTEST_CLIENT}"
+  : "${JC_TOKEN_URL:?set JC_TOKEN_URL for JC_LOADTEST_CLIENT}"
+  loadtest_client true
+  token_file=$(mktemp)
+  chmod 600 "$token_file"
+  secret=$(kubectl -n "$JC_KEYCLOAK_NAMESPACE" get secret "keycloak-client-$client" -o jsonpath='{.data.client-secret}' | base64 -d)
+  printf 'grant_type=client_credentials&client_id=%s&client_secret=%s' "$client" "$secret" |
+    curl -fsS --data @- "$JC_TOKEN_URL" | jq -er .access_token > "$token_file"
+  unset secret
+  export JC_K6_TOKEN_FILE="$token_file"
+fi
 receiver true
 kubectl -n "$JC_PROM_NAMESPACE" port-forward svc/prometheus-prometheus "$port:9090" >/dev/null 2>&1 &
 forward=$!
