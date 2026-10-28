@@ -123,7 +123,7 @@ def test_pf57_a_proposal_without_a_verdict_is_refused_on_every_door(portal_mcp: 
 
 COPY = "conf-mcp-copy"
 # The Keycloak clients an MCP connector holds a person's token through (Portal CONNECTOR_CLIENTS).
-CONNECTOR_CLIENTS = ("mcp-mobile", "mcp-hub")
+CONNECTOR_CLIENTS = ("mcp-mobile", "mcp-hub", "mcp-local")
 
 
 def _copy_names(portal_mcp: McpClient, project: str) -> list[str]:
