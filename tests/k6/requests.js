@@ -7,7 +7,7 @@
 // A kind is a standard, optionally with the query it asks after a dot (T-5901), e.g. `ogc.cql2`:
 // the run reports per kind and per standard, so a slow query shape shows apart from its surface.
 
-export const KINDS = ['ngsi', 'geo', 'temporal', 'odata', 'ogc', 'sta', 'mcp', 'schema', 'csv', 'ical', 'ckan', 'ws'];
+export const KINDS = ['ngsi', 'geo', 'temporal', 'odata', 'ogc', 'sta', 'geojson', 'mcp', 'schema', 'csv', 'ical', 'ckan', 'ws'];
 const QUERY = /^[a-z0-9-]{1,32}$/;
 
 // The standard a kind belongs to: `ogc.cql2` -> `ogc`.

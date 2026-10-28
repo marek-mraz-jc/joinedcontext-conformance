@@ -10,6 +10,7 @@
 #   slow-neighbours.js                - 5 slow read loops beside a quick probe on one endpoint (T-4903)
 #   fair-share.js                     - pipeline writes and a steward beside an anonymous flood (T-5124)
 #   policy-budgets.js                 - every representation at 1/10/50 clients, Server-Timing split (T-5042)
+#   capacity.js                       - rising steps per standard or mixed, the ceiling and the gate floor (T-5900)
 # Extra arguments go to `k6 run`, e.g.  jc-conformance k6 -- --vus 10
 set -euo pipefail
 here=$(cd -- "$(dirname -- "$0")" && pwd)
@@ -18,7 +19,7 @@ mkdir -p "$out"
 
 if [ "${JC_K6_SCRIPT:-}" = "bulk-export.js" ]; then
   : "${EXPORT_URL:?set EXPORT_URL to the root of an endpoint, e.g. https://host/api/endpoint/<slug>}"
-elif [ "${JC_K6_SCRIPT:-}" = "api-mix-100rps.js" ]; then
+elif [ "${JC_K6_SCRIPT:-}" = "api-mix-100rps.js" ] || [ "${JC_K6_SCRIPT:-}" = "capacity.js" ]; then
   : "${JC_K6_REQUESTS:?set JC_K6_REQUESTS to the request list, e.g. tasks/evidence/T-4714/requests-mix-dev.tsv}"
 elif [ "${JC_K6_SCRIPT:-}" = "platform-surfaces.js" ]; then
   : "${ENDPOINT_URL:?set ENDPOINT_URL to the root of an endpoint, e.g. https://host/api/endpoint/<slug>}"

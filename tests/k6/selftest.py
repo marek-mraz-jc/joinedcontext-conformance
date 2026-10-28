@@ -530,6 +530,38 @@ def main() -> int:
     if aborted.returncode == 0 or time.monotonic() - started > 20:
         failures.append(f"a stack failing every request was not aborted early:\n{aborted.stdout}\n{aborted.stderr}")
 
+    # 11. T-5900: the capacity steps, one standard alone, the ceiling, and a floor that goes red.
+    cap_list = os.path.join(mix_dir, "capacity.tsv")
+    with open(cap_list, "w", encoding="utf-8") as out:
+        out.write(f"ngsi\tGET\t{stub}/ngsi-ld/v1/entities?type=Item\n")
+        out.write(f"odata\tGET\t{stub}/ngsi-ld/v1/entities/urn:ngsi-ld:Item:1\n")
+    cap_env = {"JC_K6_REQUESTS": cap_list, "JC_REPORTS_DIR": mix_dir, "JC_K6_STEPS": "4,8", "JC_K6_STEP": "2s"}
+    cap_args = ["k6", "run", "--quiet", os.path.join(HERE, "capacity.js")]
+
+    def cap_report() -> dict:
+        with open(os.path.join(mix_dir, "capacity.json"), encoding="utf-8") as f:
+            return json.load(f)
+
+    cap = k6(cap_args, {**cap_env, "JC_K6_FLOOR": "8"}, workdir)
+    if cap.returncode != 0 or "CEILING 8 req/s (floor 8: held)" not in cap.stdout:
+        failures.append(f"the capacity steps did not hold 8/s against the stub:\n{cap.stdout}\n{cap.stderr}")
+    else:
+        report = cap_report()
+        if [s["rate"] for s in report["steps"]] != [4, 8] or set(report["perKind"]) != {"ngsi", "odata"}:
+            failures.append(f"the capacity report misses a step or a kind: {report}")
+    alone = k6(cap_args, {**cap_env, "JC_K6_KINDS": "odata"}, workdir)
+    if alone.returncode != 0 or cap_report()["kinds"] != ["odata"]:
+        failures.append(f"JC_K6_KINDS=odata did not send odata alone:\n{alone.stdout}\n{alone.stderr}")
+    over = k6(cap_args, {**cap_env, "JC_K6_FLOOR": "8", "JC_K6_P95_MS": "0"}, workdir)
+    if over.returncode == 0 or "CEILING 0 req/s (floor 8: NOT held)" not in over.stdout:
+        failures.append(f"a floor the stack cannot hold did not go red:\n{over.stdout}")
+    missing = k6(cap_args, {**cap_env, "JC_K6_KINDS": "sta"}, workdir)
+    if missing.returncode == 0 or "the list has no sta request" not in missing.stdout + missing.stderr:
+        failures.append("a kind the list lacks was not refused")
+    falling = k6(cap_args, {**cap_env, "JC_K6_STEPS": "8,4"}, workdir)
+    if falling.returncode == 0 or "JC_K6_STEPS" not in falling.stdout + falling.stderr:
+        failures.append("falling steps were not refused")
+
     for failure in failures:
         print(f"FAIL {failure}", file=sys.stderr)
     if failures:
