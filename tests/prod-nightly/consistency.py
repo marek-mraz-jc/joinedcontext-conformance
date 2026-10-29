@@ -58,9 +58,28 @@ UA = "joinedcontext-prod-nightly consistency (T-5130)"
 enc = lambda p: urllib.parse.urlencode(p, quote_via=urllib.parse.quote)
 
 
+def patient(fetch, url, tries=3):
+    """fetch(url), asked again after a 503's Retry-After (the gateway's two download slots and
+    its shedding answer that way, T-4782); a 503 that stays is still a difference."""
+    for _ in range(tries - 1):
+        answer = fetch(url)
+        wait = answer[1].get("Retry-After") if isinstance(answer[1], dict) else None
+        if answer[0] != 503 or not str(wait or "").isdigit():
+            return answer
+        time.sleep(min(int(wait), 30))
+    return fetch(url)
+
+
 class Http(probe.Http):
+    def get(self, url):
+        return patient(super().get, url)
+
     def text(self, url):
-        """(status, body text); never raises on an HTTP or network error."""
+        status, _, body = patient(self._text, url)
+        return status, body
+
+    def _text(self, url):
+        """(status, headers, body text); never raises on an HTTP or network error."""
         time.sleep(max(0.0, self.last + self.pace - time.monotonic()))
         self.last = time.monotonic()
         request = urllib.request.Request(
@@ -68,11 +87,11 @@ class Http(probe.Http):
         )
         try:
             with urllib.request.urlopen(request, timeout=300) as r:
-                return r.status, r.read().decode("utf-8", "replace")
+                return r.status, dict(r.headers), r.read().decode("utf-8", "replace")
         except urllib.error.HTTPError as e:
-            return e.code, ""
+            return e.code, dict(e.headers), ""
         except (urllib.error.URLError, TimeoutError, OSError):
-            return 0, ""
+            return 0, {}, ""
 
 
 def plain(row):
@@ -409,6 +428,10 @@ class Fake:
 
 
 def self_test():
+    busy = iter([(503, {"Retry-After": "0"}, None), (200, {}, "ok")])
+    assert patient(lambda _: next(busy), "u") == (200, {}, "ok")
+    assert patient(lambda _: (503, {"Retry-After": "0"}, None), "u")[0] == 503
+    assert patient(lambda _: (503, {}, None), "u")[0] == 503
     a, b = "urn:ngsi-ld:Garden:x:1", "urn:ngsi-ld:Garden:x:2"
     ref = (2, {a: {"vrstva": "zeleň", "typ": 2}, b: {"vrstva": "db", "typ": 0}})
     assert (
