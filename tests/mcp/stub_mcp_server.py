@@ -111,6 +111,12 @@ ANONYMOUS_TOOLS = frozenset(
     }
 )
 
+#: The Endpoints the hub door `/api/mcp` serves: a caller without a token reads the public one
+#: alone, and a non-public slug answers exactly as an unknown one (T-6026). Defect (broken mode):
+#: the hub names the non-public Endpoint to everyone.
+HUB_ENDPOINTS = {"aq-public": ("Air quality", True), "rec-internal": ("Records of the region", False)}
+
+
 #: The hub's search of its knowledge sources (EP-133, T-4659), answered with one fixed hit.
 SEARCH_DOCUMENTS = {
     "name": "search_documents",
@@ -404,6 +410,9 @@ class StubMcpHandler(BaseHTTPRequestHandler):
                     error={"code": -32602, "message": f"`{tool_name}` is not offered here: this surface reads only"},
                 )
                 return
+            if path == "/api/mcp" and tool_name in ("get_endpoint", "list_endpoints", "search", "query_entities"):
+                self._hub_door(req_id, tool_name, tool_args, anonymous)
+                return
             if tool_name == "search_documents" and self._is_hub(path) and self.server.mode != "broken":
                 invalid = next(
                     (f"invalid parameter for tool search_documents: {e.message}"
@@ -439,6 +448,30 @@ class StubMcpHandler(BaseHTTPRequestHandler):
             return
 
         self._send_json_rpc(req_id, error={"code": -32601, "message": f"Method not found: {method}"})
+
+    def _hub_door(self, req_id, tool_name: str, tool_args: dict, anonymous: bool) -> None:
+        """The gateway hub's catalogue tools over HUB_ENDPOINTS (T-6026)."""
+        # `anonymous` is never true in broken mode, so the defect reads every Endpoint.
+        readable = {slug: title for slug, (title, open_) in HUB_ENDPOINTS.items() if open_ or not anonymous}
+        slug = str(tool_args.get("endpoint", ""))
+        if tool_name == "query_entities" and slug not in readable:
+            # EP-87 (T-6031): the one tool error for every slug outside reach, a non-public one alike.
+            self._send_json_rpc(req_id, result={"isError": True, "content": [{"type": "text", "text": HUB_OUTSIDE_REACH}]})
+            return
+        if tool_name == "get_endpoint" and slug not in readable:
+            self._send_json_rpc(req_id, result={"isError": False, "content": [
+                {"type": "text", "text": f"no Endpoint you may read is called `{slug}`; closest: aq-public (Air quality)"}]})
+            return
+        if tool_name == "get_endpoint":
+            text = f"NGSI-LD Endpoint {slug} ({readable[slug]})"
+        elif tool_name == "query_entities":
+            text = json.dumps({"entities": self._sanitized("ovzdusie")})
+        else:
+            words = str(tool_args.get("query", "")).lower().split()
+            rows = [(s, t) for s, t in readable.items()
+                    if tool_name == "list_endpoints" or any(w in t.lower() for w in words)]
+            text = "slug | title\n" + "\n".join(f"{s} | {t}" for s, t in rows)
+        self._send_json_rpc(req_id, result={"isError": False, "content": [{"type": "text", "text": text}]})
 
     def _schema_violation(self, tool_name: str, arguments: dict, is_config_plane: bool) -> str | None:
         """The published inputSchema of the tool, applied to the arguments (AG-21).

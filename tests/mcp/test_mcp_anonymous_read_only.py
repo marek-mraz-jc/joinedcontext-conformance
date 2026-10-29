@@ -176,7 +176,103 @@ def test_an_anonymous_call_on_the_old_host_moves_to_the_data_host(
     )
 
 
-def test_an_unknown_or_internal_slug_on_the_hub_is_a_tool_error_not_a_401(make_mcp_client):
+#: An Endpoint a caller without a token may not read, and its title (T-6026), probed on the hub
+#: door `PUBLIC_MCP_URL`: neither its slug, its title nor a count of it reaches the caller.
+NONPUBLIC = ("NONPUBLIC_ENDPOINT", "NONPUBLIC_ENDPOINT_TITLE")
+#: A slug nobody registered: a non-public one has to answer like it.
+UNKNOWN_SLUG = "zzzzzzzzzzzzzzzzzzzzzzzzzz"
+
+
+@pytest.fixture
+def hub_door(make_mcp_client):
+    url = os.getenv("PUBLIC_MCP_URL", "").strip().rstrip("/")
+    slug, title = (os.getenv(name, "").strip() for name in NONPUBLIC)
+    if not (url and slug and title):
+        pytest.skip(
+            "PUBLIC_MCP_URL, NONPUBLIC_ENDPOINT and NONPUBLIC_ENDPOINT_TITLE, see tests/mcp/README.md"
+        )
+    client = make_mcp_client(url, None)
+    client.initialize()
+    return client, slug, title
+
+
+def _call(client, tool: str, arguments: dict) -> tuple[int, str]:
+    """The status and the body of one anonymous `tools/call`, a refusal included."""
+    response = client.post(
+        {
+            "jsonrpc": "2.0",
+            "id": 7,
+            "method": "tools/call",
+            "params": {"name": tool, "arguments": arguments},
+        },
+        raw=True,
+    )
+    return response.status_code, response.text
+
+
+def _shape(status: int, body: str, slug: str) -> tuple:
+    """What an answer says, the asked slug (and the suggestions a miss lists) set aside."""
+    try:
+        frame = json.loads(body)
+    except ValueError:
+        return status, body.replace(slug, "<slug>")
+    result = frame.get("result") if isinstance(frame, dict) else None
+    if result is None:
+        return status, body.replace(slug, "<slug>")
+    return (
+        status,
+        bool(result.get("isError")),
+        sorted(result),
+        "structuredContent" in result,
+    )
+
+
+def test_a_non_public_slug_answers_like_an_unknown_one(hub_door):
+    """T-6026: asked by slug, a non-public Endpoint is the same refusal as one that does not
+    exist, so the answer confirms nothing; its title never comes back."""
+    client, slug, title = hub_door
+    for tool, arguments in (
+        ("get_endpoint", {}),
+        ("query_entities", {"type": "AirQualityObserved", "count": True, "limit": 1}),
+    ):
+        asked = [
+            _call(client, tool, dict(arguments, endpoint=s))
+            for s in (slug, UNKNOWN_SLUG)
+        ]
+        assert _shape(*asked[0], slug) == _shape(*asked[1], UNKNOWN_SLUG), (tool, asked)
+        assert title not in asked[0][1], f"{tool} names `{title}`: {asked[0][1][:300]}"
+
+
+def test_a_non_public_title_finds_no_endpoint(hub_door):
+    """T-6026: asked by its title words, or listed whole, the hub neither names the non-public
+    Endpoint nor counts it."""
+    client, slug, title = hub_door
+    for tool, arguments in (
+        ("get_endpoint", {"endpoint": title}),
+        ("list_endpoints", {}),
+    ):
+        status, body = _call(client, tool, arguments)
+        assert status == 200, (tool, status, body[:300])
+        # A miss quotes what was asked; that echo is the caller's own text, not the hub's.
+        body = body.replace(f"`{title}`", "")
+        assert slug not in body and title not in body, (
+            f"{tool} leaks the non-public Endpoint: {body[:300]}"
+        )
+
+
+def test_search_finds_no_non_public_endpoint(hub_door):
+    """T-6026: a search for the non-public Endpoint's title answers public hits alone."""
+    client, slug, title = hub_door
+    status, body = _call(client, "search", {"query": title})
+    assert status == 200, (status, body[:300])
+    assert slug not in body and title not in body, (
+        f"search leaks the non-public Endpoint: {body[:300]}"
+    )
+
+
+def test_an_unknown_or_internal_slug_on_the_hub_is_a_tool_error_not_a_401(
+    make_mcp_client,
+):
     """A hub call naming a slug the caller cannot read answers HTTP 200 with one tool error, never
     401: Claude Code reads a 401 on a call as the connector signed out (T-6031, EP-87). Two
     well-formed slugs nobody owns answer the same bytes, and neither is echoed (SP-20)."""
