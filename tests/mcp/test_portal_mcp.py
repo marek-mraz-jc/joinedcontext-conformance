@@ -103,7 +103,7 @@ def test_pf57_a_proposal_without_a_verdict_is_refused_on_every_door(portal_mcp: 
     assert not refused(put), f"jc_draft_put refused the probe draft: {put}"
     try:
         proposal = portal_mcp.tool_call(
-            "jc_datasource_propose", {"project": project, "draft": {"kind": "DataSource", "name": name}}
+            "jc_resource_propose", {"project": project, "draft": {"kind": "DataSource", "name": name}}
         )
         assert refused(proposal), f"PF-57: an unchecked draft was proposed: {proposal}"
         body = proposal.get("result", {}).get("structuredContent") or {}
