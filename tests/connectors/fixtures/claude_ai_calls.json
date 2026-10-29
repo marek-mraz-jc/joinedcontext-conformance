@@ -1,0 +1,175 @@
+{
+ "items": [
+  {
+   "at": "2026-10-29T09:23:47Z",
+   "subject": "5b0f3c1e-2a7d-4e61-9a43-0d6f2b8c7e10",
+   "client": "https://claude.ai/oauth/mcp-client-metadata",
+   "tool": "jc_change_approve",
+   "target": "t6024-full/ChangeRequest/2",
+   "verdict": "refused: decision door",
+   "durationMs": 420
+  },
+  {
+   "at": "2026-10-29T09:23:41Z",
+   "subject": "5b0f3c1e-2a7d-4e61-9a43-0d6f2b8c7e10",
+   "client": "https://claude.ai/oauth/mcp-client-metadata",
+   "tool": "jc_change_list",
+   "target": "t6024-full",
+   "verdict": "allowed",
+   "durationMs": 420
+  },
+  {
+   "at": "2026-10-29T09:21:11Z",
+   "subject": "5b0f3c1e-2a7d-4e61-9a43-0d6f2b8c7e10",
+   "client": "https://claude.ai/oauth/mcp-client-metadata",
+   "tool": "jc_activity_list",
+   "target": "t6024-full",
+   "verdict": "allowed",
+   "durationMs": 420
+  },
+  {
+   "at": "2026-10-29T09:21:09Z",
+   "subject": "5b0f3c1e-2a7d-4e61-9a43-0d6f2b8c7e10",
+   "client": "https://claude.ai/oauth/mcp-client-metadata",
+   "tool": "jc_change_list",
+   "target": "t6024-full",
+   "verdict": "allowed",
+   "durationMs": 420
+  },
+  {
+   "at": "2026-10-29T09:18:39Z",
+   "subject": "5b0f3c1e-2a7d-4e61-9a43-0d6f2b8c7e10",
+   "client": "https://claude.ai/oauth/mcp-client-metadata",
+   "tool": "jc_change_plan",
+   "target": "t6024-full/Pipeline/counters",
+   "verdict": "allowed",
+   "durationMs": 420
+  },
+  {
+   "at": "2026-10-29T09:18:27Z",
+   "subject": "5b0f3c1e-2a7d-4e61-9a43-0d6f2b8c7e10",
+   "client": "https://claude.ai/oauth/mcp-client-metadata",
+   "tool": "jc_resource_get",
+   "target": "t6024-full/Pipeline/counters",
+   "verdict": "allowed",
+   "durationMs": 420
+  },
+  {
+   "at": "2026-10-29T09:15:57Z",
+   "subject": "5b0f3c1e-2a7d-4e61-9a43-0d6f2b8c7e10",
+   "client": "https://claude.ai/oauth/mcp-client-metadata",
+   "tool": "jc_kpi_compute",
+   "target": "t6024-full/Endpoint/t6024-full-counters",
+   "verdict": "allowed",
+   "durationMs": 420
+  },
+  {
+   "at": "2026-10-29T09:13:27Z",
+   "subject": "5b0f3c1e-2a7d-4e61-9a43-0d6f2b8c7e10",
+   "client": "https://claude.ai/oauth/mcp-client-metadata",
+   "tool": "jc_change_plan",
+   "target": "t6024-full/ServiceAccount/import-script",
+   "verdict": "allowed",
+   "durationMs": 420
+  },
+  {
+   "at": "2026-10-29T09:13:17Z",
+   "subject": "5b0f3c1e-2a7d-4e61-9a43-0d6f2b8c7e10",
+   "client": "https://claude.ai/oauth/mcp-client-metadata",
+   "tool": "jc_schema_get",
+   "target": "ServiceAccount",
+   "verdict": "allowed",
+   "durationMs": 420
+  },
+  {
+   "at": "2026-10-29T09:10:47Z",
+   "subject": "5b0f3c1e-2a7d-4e61-9a43-0d6f2b8c7e10",
+   "client": "https://claude.ai/oauth/mcp-client-metadata",
+   "tool": "jc_change_apply",
+   "target": "t6024-full/Pipeline/counters",
+   "verdict": "allowed",
+   "durationMs": 420
+  },
+  {
+   "at": "2026-10-29T09:10:36Z",
+   "subject": "5b0f3c1e-2a7d-4e61-9a43-0d6f2b8c7e10",
+   "client": "https://claude.ai/oauth/mcp-client-metadata",
+   "tool": "jc_change_plan",
+   "target": "t6024-full/Pipeline/counters",
+   "verdict": "allowed",
+   "durationMs": 420
+  },
+  {
+   "at": "2026-10-29T09:10:28Z",
+   "subject": "5b0f3c1e-2a7d-4e61-9a43-0d6f2b8c7e10",
+   "client": "https://claude.ai/oauth/mcp-client-metadata",
+   "tool": "jc_resource_get",
+   "target": "t6024-full/Pipeline/counters",
+   "verdict": "allowed",
+   "durationMs": 420
+  },
+  {
+   "at": "2026-10-29T09:07:58Z",
+   "subject": "5b0f3c1e-2a7d-4e61-9a43-0d6f2b8c7e10",
+   "client": "https://claude.ai/oauth/mcp-client-metadata",
+   "tool": "jc_change_apply",
+   "target": "t6024-full/DataModel/bike-counter",
+   "verdict": "allowed",
+   "durationMs": 420
+  },
+  {
+   "at": "2026-10-29T09:07:44Z",
+   "subject": "5b0f3c1e-2a7d-4e61-9a43-0d6f2b8c7e10",
+   "client": "https://claude.ai/oauth/mcp-client-metadata",
+   "tool": "jc_change_plan",
+   "target": "t6024-full/DataModel/bike-counter",
+   "verdict": "allowed",
+   "durationMs": 420
+  },
+  {
+   "at": "2026-10-29T09:07:35Z",
+   "subject": "5b0f3c1e-2a7d-4e61-9a43-0d6f2b8c7e10",
+   "client": "https://claude.ai/oauth/mcp-client-metadata",
+   "tool": "jc_resource_get",
+   "target": "t6024-full/DataModel/bike-counter",
+   "verdict": "allowed",
+   "durationMs": 420
+  },
+  {
+   "at": "2026-10-29T09:05:05Z",
+   "subject": "5b0f3c1e-2a7d-4e61-9a43-0d6f2b8c7e10",
+   "client": "https://claude.ai/oauth/mcp-client-metadata",
+   "tool": "jc_data_query",
+   "target": "t6024-full/Endpoint/t6024-full-counters",
+   "verdict": "allowed",
+   "durationMs": 420
+  },
+  {
+   "at": "2026-10-29T09:05:01Z",
+   "subject": "5b0f3c1e-2a7d-4e61-9a43-0d6f2b8c7e10",
+   "client": "https://claude.ai/oauth/mcp-client-metadata",
+   "tool": "tools/list",
+   "target": null,
+   "verdict": "allowed",
+   "durationMs": 95
+  },
+  {
+   "at": "2026-10-29T09:00:01Z",
+   "subject": "5b0f3c1e-2a7d-4e61-9a43-0d6f2b8c7e10",
+   "client": "https://claude.ai/oauth/mcp-client-metadata",
+   "tool": "tools/list",
+   "target": null,
+   "verdict": "allowed",
+   "durationMs": 95
+  },
+  {
+   "at": "2026-10-29T09:00:00Z",
+   "subject": "5b0f3c1e-2a7d-4e61-9a43-0d6f2b8c7e10",
+   "client": "https://claude.ai/oauth/mcp-client-metadata",
+   "tool": "initialize",
+   "target": null,
+   "verdict": "allowed",
+   "durationMs": 40
+  }
+ ]
+}
