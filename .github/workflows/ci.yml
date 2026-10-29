@@ -55,8 +55,6 @@ jobs:
         run: python3 tests/schemathesis/selftest.py
       - name: MCP framing and isolation assertions fail a broken server (T-0060, T-0061)
         run: python3 tests/mcp/selftest.py
-      - name: the Claude Code connector transcripts read back into the same table (T-6025)
-        run: python3 -m pytest tests/connectors -q
       - name: the DCAT-AP record and the CKAN publication go red when they are wrong (T-0320)
         run: python3 tests/ckan/selftest.py
       - name: the assistant eval grades, gates and picks a model offline (T-4144)
@@ -87,7 +85,7 @@ jobs:
         run: python3 tests/prod-nightly/consistency.py --self-test
       - name: the iCalendar validator fails each broken feed with its named rule, and the Event mapping bites (T-5044)
         run: python3 -m pytest tests/ical -q
-      - name: the connector audit table splits the calls per prompt and fails a wrong client, an approval or a refused write (T-6024)
+      - name: the connector audit table splits the calls per prompt and fails a wrong client, an approval or a refused write (T-6024), and the Claude Code transcripts read back into the same table (T-6025)
         run: python3 -m pytest tests/connectors -q
       - name: the feed validator fails each broken Atom, RSS and JSON Feed with its named rule, and refuses an entity bomb (T-5201)
         run: python3 -m pytest compliance/feeds -q
