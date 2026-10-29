@@ -593,3 +593,34 @@ def test_a_cross_space_id_is_the_same_miss_on_both_doors(
     assert refused(frame) or not entities_of(frame.get("result", {})), (
         f"the tool served another space: {frame!r:.300}"
     )
+
+
+def test_the_endpoint_list_pages_to_the_same_endpoints_as_one_wide_page(http_session: requests.Session):
+    """T-6061: paging neither widens nor narrows the hub's list. The default pages, followed by
+    nextCursor, name the Endpoints one `limit: 100` page names, in the same order."""
+    url = os.getenv("PUBLIC_MCP_URL", "").strip().rstrip("/")
+    if not url:
+        pytest.skip("PUBLIC_MCP_URL is not set, see tests/mcp/README.md")
+    client = McpClient(url, None, http_session)
+    client.initialize()
+
+    def rows(arguments: dict) -> tuple[list[str], dict]:
+        result = client.tool_call("list_endpoints", arguments).get("result") or {}
+        structured = result.get("structuredContent") or {}
+        assert "endpoints" in structured, f"list_endpoints answered no rows: {result!r:.300}"
+        return [row["slug"] for row in structured["endpoints"]], structured
+
+    wide, whole = rows({"limit": 100})
+    paged: list[str] = []
+    arguments: dict = {}
+    for _ in range(100):
+        slugs, structured = rows(arguments)
+        assert structured["total"] == whole["total"], (structured["total"], whole["total"])
+        paged.extend(slugs)
+        if "nextCursor" not in structured:
+            break
+        arguments = {"cursor": structured["nextCursor"]}
+    if whole["total"] <= 100:
+        assert paged == wide, (paged, wide)
+    else:
+        assert paged[:100] == wide and len(paged) == whole["total"], (len(paged), whole["total"])

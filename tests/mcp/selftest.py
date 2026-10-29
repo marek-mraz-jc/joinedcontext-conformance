@@ -58,6 +58,8 @@ REQUIRED_FAILURES = [
     "test_a_client_the_connector_does_not_allow_is_refused",
     "test_a_non_public_slug_answers_like_an_unknown_one",
     "test_a_non_public_title_finds_no_endpoint",
+    # T-6061: the broken hub pages the non-public Endpoint to everyone.
+    "test_a_default_endpoint_page_is_small_and_its_cursor_reaches_every_endpoint",
     "test_search_finds_no_non_public_endpoint",
 ]
 

@@ -114,7 +114,15 @@ ANONYMOUS_TOOLS = frozenset(
 #: The Endpoints the hub door `/api/mcp` serves: a caller without a token reads the public one
 #: alone, and a non-public slug answers exactly as an unknown one (T-6026). Defect (broken mode):
 #: the hub names the non-public Endpoint to everyone.
-HUB_ENDPOINTS = {"aq-public": ("Air quality", True), "rec-internal": ("Records of the region", False)}
+HUB_ENDPOINTS = {
+    "aq-public": ("Air quality", True),
+    "rec-internal": ("Records of the region", False),
+    "tr-public": ("Traffic counts", True),
+}
+
+#: The rows a `list_endpoints` call without `limit` answers here: one, so the two public
+#: Endpoints take two pages and a client has to follow nextCursor (T-6061; the gateway's is 20).
+HUB_LIST_PAGE = 1
 
 
 #: The hub's search of its knowledge sources (EP-133, T-4659), answered with one fixed hit.
@@ -466,12 +474,28 @@ class StubMcpHandler(BaseHTTPRequestHandler):
             text = f"NGSI-LD Endpoint {slug} ({readable[slug]})"
         elif tool_name == "query_entities":
             text = json.dumps({"entities": self._sanitized("ovzdusie")})
+        elif tool_name == "list_endpoints":
+            self._send_json_rpc(req_id, result=self._endpoint_page(readable, tool_args))
+            return
         else:
             words = str(tool_args.get("query", "")).lower().split()
-            rows = [(s, t) for s, t in readable.items()
-                    if tool_name == "list_endpoints" or any(w in t.lower() for w in words)]
+            rows = [(s, t) for s, t in readable.items() if any(w in t.lower() for w in words)]
             text = "slug | title\n" + "\n".join(f"{s} | {t}" for s, t in rows)
         self._send_json_rpc(req_id, result={"isError": False, "content": [{"type": "text", "text": text}]})
+
+    @staticmethod
+    def _endpoint_page(readable: dict, tool_args: dict) -> dict:
+        """One `list_endpoints` page (T-6061): `limit` rows from the offset `cursor` names."""
+        rows = sorted(readable.items())
+        start = int(tool_args.get("cursor") or 0)
+        limit = int(tool_args.get("limit") or HUB_LIST_PAGE)
+        page = rows[start : start + limit]
+        structured = {"endpoints": [{"slug": s, "title": t} for s, t in page], "total": len(rows)}
+        text = "slug | title\n" + "".join(f"{s} | {t}\n" for s, t in page) + f"total {len(rows)}"
+        if start + limit < len(rows):
+            structured["nextCursor"] = str(start + limit)
+            text += f"; nextCursor {start + limit}"
+        return {"isError": False, "content": [{"type": "text", "text": text}], "structuredContent": structured}
 
     def _schema_violation(self, tool_name: str, arguments: dict, is_config_plane: bool) -> str | None:
         """The published inputSchema of the tool, applied to the arguments (AG-21).

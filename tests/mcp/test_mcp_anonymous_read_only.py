@@ -247,14 +247,13 @@ def test_a_non_public_title_finds_no_endpoint(hub_door):
     """T-6026: asked by its title words, or listed whole, the hub neither names the non-public
     Endpoint nor counts it."""
     client, slug, title = hub_door
-    for tool, arguments in (
-        ("get_endpoint", {"endpoint": title}),
-        ("list_endpoints", {}),
-    ):
-        status, body = _call(client, tool, arguments)
-        assert status == 200, (tool, status, body[:300])
+    status, found = _call(client, "get_endpoint", {"endpoint": title})
+    assert status == 200, (status, found[:300])
+    # The list is read to its last page: a page holds only some Endpoints (T-6061).
+    listed = [json.dumps(result) for result, _ in walk_endpoints(client, {})]
+    for tool, answer in [("get_endpoint", found)] + [("list_endpoints", page) for page in listed]:
         # A miss quotes what was asked; that echo is the caller's own text, not the hub's.
-        body = body.replace(f"`{title}`", "")
+        body = answer.replace(f"`{title}`", "")
         assert slug not in body and title not in body, (
             f"{tool} leaks the non-public Endpoint: {body[:300]}"
         )
@@ -305,3 +304,47 @@ def test_an_unknown_or_internal_slug_on_the_hub_is_a_tool_error_not_a_401(
         assert slug not in response.text, response.text[:300]
         bodies.append(frame["result"])
     assert bodies[0] == bodies[1], bodies
+
+
+#: What one anonymous `list_endpoints` page without `limit` may hold (T-6061): dev's 50-row
+#: default answered 24,396 bytes, the largest answer a public client read after a schema.
+DEFAULT_PAGE_ROWS = 20
+DEFAULT_PAGE_BYTES = 10_000
+
+
+def walk_endpoints(client, first: dict) -> list[tuple[dict, int]]:
+    """Every `list_endpoints` page from `first` on, each with its body's bytes, following
+    nextCursor to the end."""
+    pages: list[tuple[dict, int]] = []
+    arguments = dict(first)
+    while len(pages) < 1000:
+        status, body = _call(client, "list_endpoints", arguments)
+        assert status == 200, (arguments, status, body[:300])
+        frame = json.loads(body)
+        result = frame.get("result") or {}
+        assert not result.get("isError"), (arguments, body[:300])
+        pages.append((result, len(body.encode("utf-8"))))
+        cursor = (result.get("structuredContent") or {}).get("nextCursor")
+        if cursor is None:
+            return pages
+        arguments = dict(first, cursor=cursor)
+    raise AssertionError("list_endpoints never ended: 1000 pages")
+
+
+def test_a_default_endpoint_page_is_small_and_its_cursor_reaches_every_endpoint(hub_door):
+    """T-6061: without `limit`, each page holds at most 20 rows in under 10,000 bytes; the
+    cursor walks every Endpoint the caller may read once, and never a non-public one."""
+    client, slug, title = hub_door
+    pages = walk_endpoints(client, {})
+    slugs = []
+    for result, size in pages:
+        rows = result["structuredContent"]["endpoints"]
+        assert len(rows) <= DEFAULT_PAGE_ROWS, f"{len(rows)} rows on one default page"
+        assert size < DEFAULT_PAGE_BYTES, f"{size} bytes for {len(rows)} rows"
+        text = result["content"][0]["text"]
+        assert slug not in text and title not in text, f"a page names the non-public Endpoint: {text[:300]}"
+        slugs.extend(row["slug"] for row in rows)
+    total = pages[0][0]["structuredContent"]["total"]
+    assert len(slugs) == len(set(slugs)) == total, (total, slugs)
+    assert slug not in slugs
+
