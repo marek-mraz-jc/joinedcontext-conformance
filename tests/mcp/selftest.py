@@ -52,6 +52,8 @@ REQUIRED_FAILURES = [
     "test_a_token_for_another_resource_is_not_passed_through",
     "test_a_token_for_one_connector_is_refused_at_another_with_its_scope",
     "test_a_header_that_disagrees_with_the_body_is_a_header_mismatch[method-differs]",
+    # T-6024: the broken connector door answers a client its allowed clients do not name.
+    "test_a_client_the_connector_does_not_allow_is_refused",
 ]
 
 
@@ -79,6 +81,7 @@ def make_env(port: int) -> dict[str, str]:
             "CONNECTOR_URL": f"http://127.0.0.1:{port}/c/cstubaaaaaaaaaaaaaaaaaaaaa",
             "OTHER_CONNECTOR_URL": f"http://127.0.0.1:{port}/c/cstubbbbbbbbbbbbbbbbbbbbbb",
             "CONNECTOR_TOKEN": "connector-a-token",
+            "CONNECTOR_UNLISTED_CLIENT_TOKEN": "connector-a-claude-code-token",
         }
     )
     return env

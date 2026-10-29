@@ -2,7 +2,7 @@
 
 Conforming mode answers as the Portal's door should: RFC 9728 metadata naming the connector,
 a 401 challenge naming that metadata and the connector's scope, a 403 `insufficient_scope` to a
-token scoped to another connector, a 401 to a token issued for another resource, and the
+token scoped to another connector, a 403 to a token a client the connector does not allow obtained, a 401 to a token issued for another resource, and the
 2026-07-28 stateless transport (per-request `_meta`, `MCP-Protocol-Version` / `Mcp-Method` /
 `Mcp-Name` checked against the body, `server/discover`). Broken mode carries one defect per
 case of `test_connector_door.py`, so each case can be seen going red (selftest.py).
@@ -18,6 +18,9 @@ CONNECTORS = {
     "cstubaaaaaaaaaaaaaaaaaaaaa": "connector-a-token",
     "cstubbbbbbbbbbbbbbbbbbbbbb": "connector-b-token",
 }
+#: Connector A answers only claude.ai (allowed clients, T-6024): a token for A that Claude Code
+#: obtained is the owner's and scoped right, and still refused for its client.
+UNLISTED_CLIENT_TOKEN = "connector-a-claude-code-token"
 #: A token the same realm issued for another resource (the data plane's `MCP_TOKEN`).
 FOREIGN_TOKEN = "viewer-token"
 VERSIONS = ["2026-07-28", "2025-11-25"]
@@ -74,7 +77,7 @@ def handle_post(handler, path: str, raw_body: bytes) -> bool:
     cid, broken = match.group(1), handler.server.mode == "broken"
     auth = handler.headers.get("Authorization", "")
     token = auth[len("Bearer "):].strip() if auth.startswith("Bearer ") else ""
-    known = set(CONNECTORS.values()) | {FOREIGN_TOKEN}
+    known = set(CONNECTORS.values()) | {FOREIGN_TOKEN, UNLISTED_CLIENT_TOKEN}
     if token not in known or (token == FOREIGN_TOKEN and not broken):
         # Defect (broken mode): a token issued for another resource passes through.
         _json(handler, 401, {"title": "Unauthorized"}, _challenge(handler, cid))
@@ -82,6 +85,12 @@ def handle_post(handler, path: str, raw_body: bytes) -> bool:
     if token in CONNECTORS.values() and token != CONNECTORS.get(cid) and not broken:
         # Defect (broken mode): any connector's token opens every connector.
         _json(handler, 403, {"title": "Forbidden"}, _challenge(handler, cid, "insufficient_scope"))
+        return True
+    if token == UNLISTED_CLIENT_TOKEN and not broken:
+        # Defect (broken mode): the connector's allowed clients are never compared with the token's.
+        _json(handler, 403, {"title": "Forbidden", "detail": "this connector answers only "
+                             "https://claude.ai/oauth/mcp-client-metadata; the token was obtained by "
+                             "https://claude.ai/oauth/claude-code-client-metadata"})
         return True
     try:
         req = json.loads(raw_body)
