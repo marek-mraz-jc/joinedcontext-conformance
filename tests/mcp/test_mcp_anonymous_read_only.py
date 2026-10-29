@@ -174,3 +174,36 @@ def test_an_anonymous_call_on_the_old_host_moves_to_the_data_host(
     assert response.headers.get("Location") == url + "?probe=1", (
         f"{old}: {response.headers.get('Location')}"
     )
+
+
+def test_an_unknown_or_internal_slug_on_the_hub_is_a_tool_error_not_a_401(anonymous):
+    """A hub call naming a slug the caller cannot read answers HTTP 200 with one tool error, never
+    401: Claude Code reads a 401 on a call as the connector signed out (T-6031, EP-87). Two
+    well-formed slugs nobody owns answer the same bytes, and neither is echoed (SP-20)."""
+    surface, client = anonymous
+    if surface != "HUB_MCP_URL":
+        pytest.skip("only the hub routes by `endpoint`")
+    bodies = []
+    for slug in ("z" * 26, "y" * 26):
+        response = client.post(
+            {
+                "jsonrpc": "2.0",
+                "id": 7,
+                "method": "tools/call",
+                "params": {
+                    "name": "query_entities",
+                    "arguments": {"endpoint": slug, "type": ["X"], "limit": 5},
+                },
+            },
+            raw=True,
+        )
+        assert response.status_code == 200, (
+            f"{slug}: HTTP {response.status_code} {response.text[:300]}"
+        )
+        assert "www-authenticate" not in response.headers, dict(response.headers)
+        frame = response.json()
+        assert frame.get("result", {}).get("isError") is True, frame
+        assert "list_endpoints" in frame["result"]["content"][0]["text"], frame
+        assert slug not in response.text, response.text[:300]
+        bodies.append(frame["result"])
+    assert bodies[0] == bodies[1], bodies
