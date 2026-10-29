@@ -44,6 +44,8 @@ REQUIRED_FAILURES = [
     "test_describe_access_names_the_websocket_an_agent_can_open",
     # T-5044: the broken stub's describe_access grants an anonymous caller a write.
     "test_an_anonymous_caller_reads_the_access_it_has[ENDPOINT_MCP_URL]",
+    # T-6031: the broken hub answers 401 for a slug outside reach.
+    "test_an_unknown_or_internal_slug_on_the_hub_is_a_tool_error_not_a_401",
     # T-5969: the broken connector door names the host as its resource, sends no RFC 9207 iss,
     # takes a token for another resource and another connector's token, and never compares
     # the 2026-07-28 headers with the body.

@@ -33,6 +33,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
 import threading
 import uuid
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
@@ -79,6 +80,12 @@ ENTITIES_BY_SPACE = {
 }
 
 
+
+#: The hub's one answer for a slug the caller cannot read (platform `mcp/hub.rs` OUTSIDE_REACH, T-6031).
+HUB_OUTSIDE_REACH = (
+    "no Endpoint you may read has that slug: list_endpoints lists the ones you may read, and an "
+    "Endpoint that is not public is read after signing in with an account its Policy grants"
+)
 
 #: What a caller without a token may list and call (platform `mcp/tools.rs` ANONYMOUS_TOOLS, T-4168).
 ANONYMOUS_TOOLS = frozenset(
@@ -424,6 +431,19 @@ class StubMcpHandler(BaseHTTPRequestHandler):
                 # anything downstream sees them. Defect 10 (broken mode) skips this on purpose.
                 self._send_json_rpc(req_id, error={"code": -32602, "message": invalid})
                 return
+            slug = tool_args.get("endpoint")
+            # Only a well-formed slug (EP-03: 26+ chars of base32) is answered as outside reach;
+            # the gateway answers any other with a -32602 naming the closest of the caller's.
+            well_formed = isinstance(slug, str) and re.fullmatch(r"[a-z2-7]{26,}", slug)
+            if self._is_hub(path) and well_formed and slug not in self.HUB_MEMBERS:
+                if self.server.mode == "broken":
+                    # T-6031 / defect: a slug outside reach answers 401, which a client reads
+                    # as the whole connector signed out.
+                    self._send_bytes(401, "application/json", b'{"error":"unauthorized"}')
+                    return
+                # EP-87: one tool error for every slug outside reach, naming none (SP-20).
+                self._send_json_rpc(req_id, result={"isError": True, "content": [{"type": "text", "text": HUB_OUTSIDE_REACH}]})
+                return
             self._call_tool(req_id, tool_name, tool_args, is_config_plane, path)
             return
 
@@ -435,11 +455,8 @@ class StubMcpHandler(BaseHTTPRequestHandler):
         readable = {slug: title for slug, (title, open_) in HUB_ENDPOINTS.items() if open_ or not anonymous}
         slug = str(tool_args.get("endpoint", ""))
         if tool_name == "query_entities" and slug not in readable:
-            # The gateway's login prompt, the same for a non-public and an unknown slug.
-            body = json.dumps({"type": "https://joinedcontext.com/errors/unauthorized", "status": 401,
-                               "detail": "the hub needs an access token"}).encode()
-            self._send_bytes(401, "application/problem+json", body,
-                             headers={"WWW-Authenticate": 'Bearer resource_metadata="/.well-known/oauth-protected-resource"'})
+            # EP-87 (T-6031): the one tool error for every slug outside reach, a non-public one alike.
+            self._send_json_rpc(req_id, result={"isError": True, "content": [{"type": "text", "text": HUB_OUTSIDE_REACH}]})
             return
         if tool_name == "get_endpoint" and slug not in readable:
             self._send_json_rpc(req_id, result={"isError": False, "content": [
