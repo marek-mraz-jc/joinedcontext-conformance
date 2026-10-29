@@ -207,6 +207,16 @@ mcp)
 	else
 		_jc_note "HUB_MCP_URL: no helsinki-hub endpoint in the seed, so the hub cases skip"
 	fi
+	# The gateway hub, the public connector (T-6026): anonymous, so the non-public probes ask it
+	# for an organization-only Endpoint and expect neither its slug nor its title back.
+	export PUBLIC_MCP_URL="$JC_DEV_BASE/api/mcp"
+	JC_DEV_SLUG_INTERNAL=$(_jc_slug projects__helsinki__spaces__helsinki__endpoints__helsinki-bikes-ops)
+	if [ -n "$JC_DEV_SLUG_INTERNAL" ]; then
+		export NONPUBLIC_ENDPOINT="$JC_DEV_SLUG_INTERNAL"
+		export NONPUBLIC_ENDPOINT_TITLE="Helsinki city bike stations, operations"
+	else
+		_jc_note "NONPUBLIC_ENDPOINT: no helsinki-bikes-ops endpoint in the seed, so the non-public probes skip"
+	fi
 	# The operations registry is the configuration plane (ADR-N-021): one MCP server, in the
 	# Portal, reached with a person's token. It is also the private surface of SP-17 — it answers
 	# 401 with a Bearer challenge naming its RFC 9728 metadata document.

@@ -54,6 +54,9 @@ REQUIRED_FAILURES = [
     "test_a_header_that_disagrees_with_the_body_is_a_header_mismatch[method-differs]",
     # T-6024: the broken connector door answers a client its allowed clients do not name.
     "test_a_client_the_connector_does_not_allow_is_refused",
+    "test_a_non_public_slug_answers_like_an_unknown_one",
+    "test_a_non_public_title_finds_no_endpoint",
+    "test_search_finds_no_non_public_endpoint",
 ]
 
 
@@ -76,6 +79,9 @@ def make_env(port: int) -> dict[str, str]:
             "HUB_TYPE": "AirQualityObserved",
             # The connector and a named server (T-4115, EP-112): one catalogue with the Endpoint's.
             "CONNECTOR_MCP_URL": f"http://127.0.0.1:{port}/api/mcp",
+            "PUBLIC_MCP_URL": f"http://127.0.0.1:{port}/api/mcp",
+            "NONPUBLIC_ENDPOINT": "rec-internal",
+            "NONPUBLIC_ENDPOINT_TITLE": "Records of the region",
             "NAMED_MCP_URL": f"http://127.0.0.1:{port}/api/mcp/ovzdusie/air",
             # Two personal connectors (T-5969); MCP_TOKEN above is the foreign token.
             "CONNECTOR_URL": f"http://127.0.0.1:{port}/c/cstubaaaaaaaaaaaaaaaaaaaaa",
