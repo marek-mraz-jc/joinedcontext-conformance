@@ -401,7 +401,8 @@ def sweep(http):
 
 def entity(eid, t1):
     return {"id": eid, "type": TYPE,
-            "name": {"type": "Property", "value": "t-roundtrip probe"},
+            # The conformance space's model types name as a LanguageProperty (DM-86 refuses a Property).
+            "name": {"type": "LanguageProperty", "languageMap": {"sk": "t-roundtrip sonda", "en": "t-roundtrip probe"}},
             "dateObserved": {"type": "Property", "value": t1},
             "pm10": {"type": "Property", "value": 18.4, "unitCode": "GQ", "observedAt": t1},
             "location": {"type": "GeoProperty", "value": {"type": "Point", "coordinates": [19.1462, 48.7359]}}}
