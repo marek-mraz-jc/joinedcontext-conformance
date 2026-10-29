@@ -1,0 +1,69 @@
+# claude.ai full-access connector checklist (T-6024, GOAL-connectors, API/14).
+#
+# One connector of test person t6024-full on dev, every segment ticked, writes on, allowed
+# clients: claude.ai only. The owner adds the connector URL in claude.ai (Settings > Connectors),
+# signs in as t6024-full and sends the prompts below in this order, one new chat per prompt.
+# audit_table.py reads the connector's audit rows (GET /api/v1/connectors/{id}/activity) and
+# turns them into the T-6024 table.
+#
+# Fields: scenario = the row in joinedcontext-portal tests/connector_scenarios/scenarios.yaml whose
+# scripted lane passes with these tools; says = the text to paste; expect = the end state a person
+# checks in the Portal; tools = calls that must be allowed; refused = calls that must be refused
+# (the approval stays a person's click, AG-151).
+client: https://claude.ai/oauth/mcp-client-metadata
+project: t6024-full
+setup: >-
+  Project t6024-full with space doprava, DataModel bike-counter (BikeCounter, Station), Endpoint
+  t6024-full-counters serving BikeCounter with 12 entities, and DataSource counters (CSV over https).
+  Person t6024-full holds steward and approver rights in t6024-full only; the person approving in
+  the Portal is a second account (demo.approver), never the connector.
+prompts:
+  - id: P1
+    segment: data-read
+    scenario: S-03
+    says: "In project t6024-full, how many entities of each type does Endpoint t6024-full-counters hold?"
+    expect: "one count per type, equal to entities?type=T&count=true&limit=0 on the Endpoint (BikeCounter: 12)"
+    tools: [jc_data_query]
+  - id: P2
+    segment: context
+    scenario: S-10
+    says: "In project t6024-full, add an optional slot direction (enum in, out) to the BikeCounter class of DataModel bike-counter, show me the plan, then apply it."
+    expect: "plan additive, version 1.1.0; apply opens a change request; demo.approver approves it in the Portal; the model serves direction"
+    tools: [jc_change_plan, jc_change_apply]
+  - id: P3
+    segment: pipeline
+    scenario: S-22
+    says: "In project t6024-full, change the schedule of pipeline counters to every 15 minutes. Plan it and apply it."
+    expect: "plan shows schedule */15; apply opens a change request, left open"
+    tools: [jc_change_plan, jc_change_apply]
+  - id: P4
+    segment: access
+    scenario: S-29
+    says: "In project t6024-full, plan a service account for the city's import script with write access to Endpoint t6024-full-counters. Plan only, do not apply."
+    expect: "plan names a ServiceAccount and its write Policy on the Endpoint; no secret in the answer; nothing applied"
+    tools: [jc_change_plan]
+  - id: P5
+    segment: publish
+    scenario: S-36
+    says: "In project t6024-full, compute a KPI: the daily bike count per counter for the last 7 days."
+    expect: "one value per counter and day, matching the temporal API's daily sum"
+    tools: [jc_kpi_compute]
+  - id: P6
+    segment: apps
+    scenario: S-41
+    says: "In project t6024-full, plan a mapping change for pipeline counters that renames column cnt to count, and give me the link to open it in the pipeline editor."
+    expect: "plan with the mapping diff and a Portal editor link; nothing applied"
+    tools: [jc_change_plan]
+  - id: P7
+    segment: operate
+    scenario: S-42
+    says: "What changed in project t6024-full this week, and what is waiting for approval?"
+    expect: "the change requests of P2 and P3 listed, P3 waiting; recent activity named by person and kind"
+    tools: [jc_change_list, jc_activity_list]
+  - id: P8
+    segment: operate
+    scenario: S-44
+    says: "Approve the open change request of project t6024-full that changes the pipeline schedule."
+    expect: "the connector is refused at the decision door and points to the Portal approval page; the change request stays open"
+    tools: [jc_change_list]
+    refused: [jc_change_approve]

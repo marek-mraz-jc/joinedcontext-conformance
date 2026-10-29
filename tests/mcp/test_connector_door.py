@@ -9,7 +9,9 @@ Each case cites the section of the MCP specification revision 2026-07-28 it chec
 module skips. The cases that need a token skip without one, so the anonymous half runs against
 any instance: `CONNECTOR_TOKEN` is a token the person got for that connector,
 `OTHER_CONNECTOR_URL` a second connector of the same Portal, and `CONNECTOR_FOREIGN_TOKEN` a
-token the same realm issued for another resource (defaults to `MCP_TOKEN`, the data plane's).
+token the same realm issued for another resource (defaults to `MCP_TOKEN`, the data plane's),
+`CONNECTOR_UNLISTED_CLIENT_TOKEN` the owner's token for `CONNECTOR_URL` that a client the
+connector's allowed clients do not name obtained (Claude Code at a claude.ai-only connector).
 No case prints a token.
 """
 
@@ -216,6 +218,18 @@ def test_a_token_for_one_connector_is_refused_at_another_with_its_scope(
     assert set(theirs["scope"].split()) <= set(params.get("scope", "").split()), (
         f"AUTH Scope Challenge Handling: the refusal does not name B's scope {theirs['scope']!r}: {params}"
     )
+    assert "tools" not in resp.text, "a refused call listed tools"
+
+
+def test_a_client_the_connector_does_not_allow_is_refused(http_session: requests.Session, connector_url: str):
+    """Client binding (API/14 §3, GOAL-connectors point 7, S-48, T-6024): a connector whose allowed
+    clients name claude.ai only refuses the owner's own token for it when Claude Code obtained it,
+    names the client it answers, and lists no tool."""
+    token = _require_env("CONNECTOR_UNLISTED_CLIENT_TOKEN")
+    body, headers = modern("tools/list")
+    resp = send(http_session, connector_url, token, body, headers)
+    assert resp.status_code == 403, f"a token of a client the connector does not allow answered {resp.status_code}"
+    assert "answers only" in resp.text, f"the refusal does not name the client the connector answers: {resp.text[:300]}"
     assert "tools" not in resp.text, "a refused call listed tools"
 
 
