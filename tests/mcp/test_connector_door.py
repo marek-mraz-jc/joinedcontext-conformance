@@ -15,6 +15,8 @@ No case prints a token.
 
 from __future__ import annotations
 
+import base64
+import json
 import os
 import re
 from urllib.parse import urlsplit
@@ -155,7 +157,15 @@ def test_the_authorization_server_sends_iss_and_takes_s256(http_session: request
         assert "S256" in found.get("code_challenge_methods_supported", []), f"AUTH PKCE: {issuer} lacks S256"
 
 
-@pytest.mark.parametrize("token", ["not-a-token", "eyJhbGciOiJub25lIn0.eyJzY29wZSI6ImNvbm5lY3RvciJ9."])
+def _unsigned_jwt() -> str:
+    """An alg=none JWT, built here so no token-shaped literal sits in the source."""
+    def part(obj: dict) -> str:
+        return base64.urlsafe_b64encode(json.dumps(obj).encode()).rstrip(b"=").decode()
+
+    return f"{part({'alg': 'none'})}.{part({'scope': 'connector'})}."
+
+
+@pytest.mark.parametrize("token", ["not-a-token", _unsigned_jwt()], ids=["garbage", "unsigned"])
 def test_an_invalid_token_is_401_with_the_challenge(http_session: requests.Session, connector_url: str, token: str):
     """AUTH "Token Handling": an invalid token, an unsigned one included, is a 401 that still
     tells the client where to get a good one."""
