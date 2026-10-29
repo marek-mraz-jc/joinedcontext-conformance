@@ -516,7 +516,6 @@ portal,mcp-tool,call,jc_change_list,src/ops/changes.rs:128,joinedcontext-portal 
 portal,mcp-tool,call,jc_change_reject,src/ops/resources.rs:489,joinedcontext-portal tests/edge_ops_gate_tests.rs
 portal,mcp-tool,call,jc_ckan_status,src/ops/views.rs:652,joinedcontext-portal tests/edge_ops_gate_tests.rs
 portal,mcp-tool,call,jc_datasource_check,src/ops/proposals.rs:847,joinedcontext-portal tests/edge_ops_gate_tests.rs
-portal,mcp-tool,call,jc_datasource_propose,src/ops/proposals.rs:883,joinedcontext-portal tests/edge_ops_gate_tests.rs
 portal,mcp-tool,call,jc_draft_drop,src/ops/drafts.rs:1086,joinedcontext-portal tests/edge_ops_gate_tests.rs
 portal,mcp-tool,call,jc_draft_get,src/ops/drafts.rs:1017,joinedcontext-portal tests/edge_ops_gate_tests.rs
 portal,mcp-tool,call,jc_draft_list,src/ops/drafts.rs:1052,joinedcontext-portal tests/edge_ops_gate_tests.rs
@@ -528,7 +527,6 @@ portal,mcp-tool,call,jc_flow_start,src/ops/runs.rs:446,joinedcontext-portal test
 portal,mcp-tool,call,jc_kpi_compute,src/ops/compute.rs:289,joinedcontext-portal tests/edge_ops_gate_tests.rs
 portal,mcp-tool,call,jc_manifest_dry_run,src/ops/proposals.rs:769,joinedcontext-portal tests/edge_ops_gate_tests.rs
 portal,mcp-tool,call,jc_model_infer,src/ops/compute.rs:452,joinedcontext-portal tests/edge_ops_gate_tests.rs
-portal,mcp-tool,call,jc_model_propose,src/ops/proposals.rs:946,joinedcontext-portal tests/edge_ops_gate_tests.rs
 portal,mcp-tool,call,jc_model_source_get,src/ops/views.rs:487,joinedcontext-portal tests/edge_ops_gate_tests.rs
 portal,mcp-tool,call,jc_model_source_put,src/ops/admin.rs:492,joinedcontext-portal tests/edge_ops_gate_tests.rs
 portal,mcp-tool,call,jc_person_create,src/ops/people.rs:213,joinedcontext-portal tests/edge_ops_gate_tests.rs
@@ -539,7 +537,6 @@ portal,mcp-tool,call,jc_person_get,src/ops/people.rs:193,joinedcontext-portal te
 portal,mcp-tool,call,jc_person_list,src/ops/people.rs:161,joinedcontext-portal tests/edge_ops_gate_tests.rs
 portal,mcp-tool,call,jc_person_sign_out,src/ops/people.rs:314,joinedcontext-portal tests/edge_ops_gate_tests.rs
 portal,mcp-tool,call,jc_pipeline_metrics,src/ops/views.rs:400,joinedcontext-portal tests/edge_ops_gate_tests.rs
-portal,mcp-tool,call,jc_pipeline_propose,src/ops/proposals.rs:904,joinedcontext-portal tests/edge_ops_gate_tests.rs
 portal,mcp-tool,call,jc_pipeline_sample_source,src/ops/pipeline_steps.rs:291,joinedcontext-portal tests/edge_ops_gate_tests.rs
 portal,mcp-tool,call,jc_pipeline_test,src/ops/compute.rs:346,joinedcontext-portal tests/edge_ops_gate_tests.rs
 portal,mcp-tool,call,jc_pipeline_try_mapping,src/ops/pipeline_steps.rs:341,joinedcontext-portal tests/edge_ops_gate_tests.rs
@@ -566,7 +563,6 @@ portal,mcp-tool,call,jc_service_account_key_mint,src/ops/admin.rs:526,joinedcont
 portal,mcp-tool,call,jc_service_account_key_revoke,src/ops/admin.rs:617,joinedcontext-portal tests/edge_ops_gate_tests.rs
 portal,mcp-tool,call,jc_service_account_key_rotate,src/ops/admin.rs:574,joinedcontext-portal tests/edge_ops_gate_tests.rs
 portal,mcp-tool,call,jc_space_complete,src/ops/space_complete.rs:1620,joinedcontext-portal tests/edge_ops_gate_tests.rs
-portal,mcp-tool,call,jc_space_propose,src/ops/proposals.rs:925,joinedcontext-portal tests/edge_ops_gate_tests.rs
 portal,mcp-tool,call,jc_syncsource_detach,src/ops/sync_sources.rs:195,joinedcontext-portal tests/edge_ops_gate_tests.rs
 portal,mcp-tool,call,jc_syncsource_pause,src/ops/sync_sources.rs:164,joinedcontext-portal tests/edge_ops_gate_tests.rs
 portal,mcp-tool,call,jc_syncsource_status,src/ops/sync_sources.rs:99,joinedcontext-portal tests/edge_ops_gate_tests.rs
