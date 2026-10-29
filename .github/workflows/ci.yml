@@ -85,7 +85,7 @@ jobs:
         run: python3 tests/prod-nightly/consistency.py --self-test
       - name: the iCalendar validator fails each broken feed with its named rule, and the Event mapping bites (T-5044)
         run: python3 -m pytest tests/ical -q
-      - name: the connector audit table splits the calls per prompt and fails a wrong client, an approval or a refused write (T-6024)
+      - name: the connector audit table splits the calls per prompt and fails a wrong client, an approval or a refused write (T-6024), and the Claude Code transcripts read back into the same table (T-6025)
         run: python3 -m pytest tests/connectors -q
       - name: the feed validator fails each broken Atom, RSS and JSON Feed with its named rule, and refuses an entity bomb (T-5201)
         run: python3 -m pytest compliance/feeds -q
