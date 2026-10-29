@@ -57,7 +57,29 @@ MCP_URL=https://host/cs/ovzdusie/mcp jc-conformance mcp
 | `MCP_SURFACE` | `broker`: the surface is the Antares broker's view MCP (`/x/views/{view}/mcp`): its own parity table, the type argument a list; run with `-m "not platform_only"` |
 | `MCP_NARROWED_URL` | A second MCP door that sees less, for the narrowed parity case (the broker narrows by view, not by token); defaults to `ENDPOINT_MCP_URL` |
 | `CONNECTOR_MCP_URL` | The portal's one connector, `https://host/api/mcp` (T-4115, EP-112): `test_mcp_catalogue.py` diffs its `tools/list` against `ENDPOINT_MCP_URL`'s; it may add only `list_endpoints` and `endpoint` |
+| `CONNECTOR_URL` | A personal connector's MCP server, `https://portal.{domain}/c/{id}` (T-5969, API/14 §3): `test_connector_door.py` skips without it |
+| `OTHER_CONNECTOR_URL` | A second connector of the same Portal: its scope and metadata differ, and `CONNECTOR_TOKEN` is refused there |
+| `CONNECTOR_TOKEN` | A token the person got for `CONNECTOR_URL` (scope `connector:{id}`); unset skips the token half |
+| `CONNECTOR_FOREIGN_TOKEN` | A token of the same realm for another resource, refused at the connector (no token passthrough); defaults to `MCP_TOKEN` |
 | `NAMED_MCP_URL` | A named server, `https://host/api/mcp/{project}/{name}`, diffed the same way |
+
+## Personal connectors against MCP 2026-07-28
+
+`test_connector_door.py` (T-5969) checks one connector's door, `/c/{id}`, case by case against the
+MCP specification revision 2026-07-28, each case citing its section: the 401 challenge naming the
+RFC 9728 metadata and the connector's scope, `resource` equal to the connector's address, the
+authorization server's issuer, RFC 9207 `iss` support and S256, invalid and unsigned tokens (401),
+a query-string token (401), a token for another resource (no passthrough), connector A's token at
+connector B (401, or 403 `insufficient_scope` naming B's scope), and the stateless transport:
+`tools/list` without `initialize`, `server/discover`, `-32020` HeaderMismatch for a missing or
+differing `MCP-Protocol-Version` / `Mcp-Method`, `-32022` for an unknown version. Without tokens
+the anonymous half runs against any instance:
+
+```bash
+CONNECTOR_URL=https://portal.dev.joinedcontext.com/c/<id> \
+OTHER_CONNECTOR_URL=https://portal.dev.joinedcontext.com/c/<other id> \
+python3 -m pytest -q tests/mcp/test_connector_door.py
+```
 
 ## City events read-back
 

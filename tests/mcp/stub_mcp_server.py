@@ -38,6 +38,7 @@ import uuid
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 import jsonschema
+import stub_connector
 
 ENTITIES_BY_SPACE = {
     "ovzdusie": [
@@ -196,7 +197,7 @@ class StubMcpHandler(BaseHTTPRequestHandler):
 
     def do_GET(self) -> None:
         path = self.path.split("?", 1)[0].rstrip("/")
-        if self._rest_entities(path):
+        if self._rest_entities(path) or stub_connector.handle_get(self, path):
             return
         if path == "/.well-known/oauth-protected-resource/cs/tajne/mcp":
             host = self.headers.get("Host") or f"127.0.0.1:{self.server.server_address[1]}"
@@ -272,6 +273,8 @@ class StubMcpHandler(BaseHTTPRequestHandler):
         # read the body before any early return: an unread body desynchronizes the keep-alive
         # connection and the next request on it comes back as a 400 from http.server itself
         raw_body = self.rfile.read(int(self.headers.get("Content-Length", 0)))
+        if stub_connector.handle_post(self, path, raw_body):
+            return
 
         # SP-17: Private MCP surface authentication check
         if path == "/cs/tajne/mcp" and self.server.mode != "broken":

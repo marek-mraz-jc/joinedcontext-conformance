@@ -44,6 +44,14 @@ REQUIRED_FAILURES = [
     "test_describe_access_names_the_websocket_an_agent_can_open",
     # T-5044: the broken stub's describe_access grants an anonymous caller a write.
     "test_an_anonymous_caller_reads_the_access_it_has[ENDPOINT_MCP_URL]",
+    # T-5969: the broken connector door names the host as its resource, sends no RFC 9207 iss,
+    # takes a token for another resource and another connector's token, and never compares
+    # the 2026-07-28 headers with the body.
+    "test_the_401_challenge_names_this_connector_its_metadata_and_scope",
+    "test_the_authorization_server_sends_iss_and_takes_s256",
+    "test_a_token_for_another_resource_is_not_passed_through",
+    "test_a_token_for_one_connector_is_refused_at_another_with_its_scope",
+    "test_a_header_that_disagrees_with_the_body_is_a_header_mismatch[method-differs]",
 ]
 
 
@@ -67,6 +75,10 @@ def make_env(port: int) -> dict[str, str]:
             # The connector and a named server (T-4115, EP-112): one catalogue with the Endpoint's.
             "CONNECTOR_MCP_URL": f"http://127.0.0.1:{port}/api/mcp",
             "NAMED_MCP_URL": f"http://127.0.0.1:{port}/api/mcp/ovzdusie/air",
+            # Two personal connectors (T-5969); MCP_TOKEN above is the foreign token.
+            "CONNECTOR_URL": f"http://127.0.0.1:{port}/c/cstubaaaaaaaaaaaaaaaaaaaaa",
+            "OTHER_CONNECTOR_URL": f"http://127.0.0.1:{port}/c/cstubbbbbbbbbbbbbbbbbbbbbb",
+            "CONNECTOR_TOKEN": "connector-a-token",
         }
     )
     return env

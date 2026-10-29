@@ -24,6 +24,12 @@ on:
         description: private space MCP surface for RFC 9728 401 verification
         required: false
         default: https://api.dev.joinedcontext.com/cs/secret-space/mcp
+      connector_url:
+        description: a personal connector's MCP server, https://portal.{domain}/c/{id} (T-5969)
+        required: false
+      other_connector_url:
+        description: a second connector of the same Portal
+        required: false
 permissions: { contents: read }
 jobs:
   mcp:
@@ -41,6 +47,9 @@ jobs:
           OTHER_SPACE_MCP_URL: ${{ inputs.other_space_mcp_url }}
           CONFIG_MCP_URL: ${{ inputs.config_mcp_url }}
           PRIVATE_MCP_URL: ${{ inputs.private_mcp_url }}
+          CONNECTOR_URL: ${{ inputs.connector_url }}
+          OTHER_CONNECTOR_URL: ${{ inputs.other_connector_url }}
+          CONNECTOR_TOKEN: ${{ secrets.CONNECTOR_TOKEN }}
           MCP_TOKEN: ${{ secrets.MCP_TOKEN }}
           MCP_AGENT_TOKEN: ${{ secrets.MCP_AGENT_TOKEN }}
           MCP_HIDDEN_ATTR: ${{ vars.MCP_HIDDEN_ATTR }}
