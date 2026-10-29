@@ -89,7 +89,7 @@ def handle_post(handler, path: str, raw_body: bytes) -> bool:
     if token == UNLISTED_CLIENT_TOKEN and not broken:
         # Defect (broken mode): the connector's allowed clients are never compared with the token's.
         _json(handler, 403, {"title": "Forbidden", "detail": "this connector answers only "
-                             "https://claude.ai/oauth/mcp-client-metadata; the token was obtained by "
+                             "https://claude.ai/oauth/mcp-oauth-client-metadata; the token was obtained by "
                              "https://claude.ai/oauth/claude-code-client-metadata"})
         return True
     try:

@@ -7,7 +7,7 @@ each from a scenario the portal scripted lane passes (`tests/connector_scenarios
 
 1. Setup on dev (the deployer, never a worker without the cluster): person `t6024-full` and project
    `t6024-full` as the checklist's `setup` says; one connector of that person with every segment,
-   writes on, allowed clients `https://claude.ai/oauth/mcp-client-metadata` only.
+   writes on, allowed clients `https://claude.ai/oauth/mcp-oauth-client-metadata` only.
 2. The owner adds the connector URL in claude.ai (Settings > Connectors), signs in as `t6024-full`
    and sends the prompts in order, one new chat each, at least a minute apart. The P2 change
    request is approved by `demo.approver` in the Portal.

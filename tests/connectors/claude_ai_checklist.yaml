@@ -10,7 +10,7 @@
 # scripted lane passes with these tools; says = the text to paste; expect = the end state a person
 # checks in the Portal; tools = calls that must be allowed; refused = calls that must be refused
 # (the approval stays a person's click, AG-151).
-client: https://claude.ai/oauth/mcp-client-metadata
+client: https://claude.ai/oauth/mcp-oauth-client-metadata
 project: t6024-full
 setup: >-
   Project t6024-full with space doprava, DataModel bike-counter (BikeCounter, Station), Endpoint
