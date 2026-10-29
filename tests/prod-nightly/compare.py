@@ -50,8 +50,9 @@ def ets_defects(xml: str) -> dict[str, str]:
     as the broker parser keys them: the server answered as the standard asks.
     - FeatureCrsParameter* run with feature id null: the collection holds no feature, so the ETS
       asks for /items/null and gets the 404 Core requires.
-    - FeatureCrsParameterTransform NullPointerException on a feature whose geometry is null
-      (RFC 7946 3.2, Features Core /req/geojson/content): the ETS transforms the null geometry."""
+    - Feature(s)CrsParameterTransform NullPointerException on a feature whose geometry is null
+      (RFC 7946 3.2, Features Core /req/geojson/content): the ETS transforms the null geometry
+      after its one assertion (status 200) passed; upstream master still has it (T-6034)."""
     found, seen = {}, set()
     for test in ET.fromstring(xml).iter("test"):
         group = test.get("name", "")
@@ -65,19 +66,23 @@ def ets_defects(xml: str) -> dict[str, str]:
                 while key in seen:
                     key, n = f"{base} #{n}", n + 1
                 seen.add(key)
-                if m.get("status") != "FAIL" or not short.startswith(
-                    "FeatureCrsParameter"
+                if m.get("status") != "FAIL" or not re.match(
+                    r"Features?CrsParameter", short
                 ):
                     continue
                 value = m.find("params/param[@index='2']/value")
                 exc = m.find("exception")
                 response = m.find("attributes/attribute[@name='response']")
-                if value is not None and value.get("is-null") == "true":
+                if (
+                    short.startswith("FeatureCrsParameter")
+                    and value is not None
+                    and value.get("is-null") == "true"
+                ):
                     found[key] = (
                         "ETS asked for feature null: the collection holds no feature"
                     )
                 elif (
-                    short == "FeatureCrsParameterTransform"
+                    short.endswith("CrsParameterTransform")
                     and exc is not None
                     and exc.get("class") == "java.lang.NullPointerException"
                     and response is not None
@@ -256,11 +261,16 @@ def self_test() -> None:
           <attributes><attribute name="response">{"geometry": null}</attribute></attributes></test-method>
         <test-method status="FAIL" name="m"><exception class="java.lang.NullPointerException"/>
           <attributes><attribute name="response">{"geometry": {"type": "Point"}}</attribute></attributes></test-method>
+      </class>
+      <class name="x.FeaturesCrsParameterTransform">
+        <test-method status="FAIL" name="t"><exception class="java.lang.NullPointerException"/>
+          <attributes><attribute name="response">{"features": [{"geometry": null}]}</attribute></attributes></test-method>
       </class></test></suite></testng-results>"""
     # a real 404 of a feature id and an NPE on a feature with geometry stay failures
     assert sorted(ets_defects(ets)) == [
         "CRS :: FeatureCrsParameter.verifyFeatureCrsParameter #2",
         "CRS :: FeatureCrsParameterTransform.m",
+        "CRS :: FeaturesCrsParameterTransform.t",
     ], ets_defects(ets)
     good = {
         "type": "FeatureCollection",
