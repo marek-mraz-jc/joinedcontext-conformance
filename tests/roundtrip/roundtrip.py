@@ -300,7 +300,19 @@ def served(http) -> dict[str, bool]:
 
 
 async def ws_listen(url: str, token: str, eid: str, ready: asyncio.Event, want: float) -> list[str]:
-    """Subscribe to `eid` over the Endpoint's WebSocket; differences once a notification carries `want`."""
+    """Subscribe to `eid` over the Endpoint's WebSocket; differences once a notification carries `want`.
+
+    A refused upgrade, a closed connection or a timeout is a red case of its own, never a traceback
+    that ends the run before the junit is written."""
+    from websockets.exceptions import WebSocketException
+
+    try:
+        return await _ws_listen(url, token, eid, ready, want)
+    except (WebSocketException, OSError, TimeoutError, ValueError) as e:
+        return [f"WebSocket: {type(e).__name__}: {e}"]
+
+
+async def _ws_listen(url: str, token: str, eid: str, ready: asyncio.Event, want: float) -> list[str]:
     from websockets.asyncio.client import connect
 
     headers = {"User-Agent": UA, **({"Authorization": f"Bearer {token}"} if token else {})}
@@ -529,6 +541,9 @@ def self_test() -> int:
     assert not rep.red
     rep.add("c", ["bad"])
     assert rep.red
+    # a WebSocket that refuses the connection is a red case, not a traceback
+    gone = asyncio.run(ws_listen("ws://127.0.0.1:9/ws", "", "urn:x", asyncio.Event(), 1.0))
+    assert gone and gone[0].startswith("WebSocket: "), gone
     print("roundtrip.py self-test: ok")
     return 0
 
