@@ -55,6 +55,8 @@ jobs:
         run: python3 tests/schemathesis/selftest.py
       - name: MCP framing and isolation assertions fail a broken server (T-0060, T-0061)
         run: python3 tests/mcp/selftest.py
+      - name: the Claude Code connector transcripts read back into the same table (T-6025)
+        run: python3 -m pytest tests/connectors -q
       - name: the DCAT-AP record and the CKAN publication go red when they are wrong (T-0320)
         run: python3 tests/ckan/selftest.py
       - name: the assistant eval grades, gates and picks a model offline (T-4144)
