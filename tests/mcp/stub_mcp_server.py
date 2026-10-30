@@ -134,6 +134,9 @@ SEARCH_DOCUMENTS = {
         "properties": {
             "query": {"type": "string", "minLength": 1, "maxLength": 300},
             "limit": {"type": "integer", "minimum": 1, "maximum": 10},
+            # T-6167: the question in each content language, merged by rank fusion.
+            "translations": {"type": "object", "maxProperties": 3,
+                             "additionalProperties": {"type": "string", "minLength": 1, "maxLength": 300}},
         },
         "required": ["query"],
     },
@@ -143,6 +146,7 @@ SEARCH_HIT = {
     "title": "Klientske centrum", "url": "https://www.banskabystrica.sk/kc", "publisher": "banskabystrica",
     "description": None, "published": None, "modified": "2026-09-30T08:12:00Z", "language": "sk",
     "text": "Pondelok 8:00 až 17:00", "score": 0.03,
+    "cite": "Klientske centrum (banskabystrica), https://www.banskabystrica.sk/kc, modified 2026-09-30",
 }
 
 class StubMcpHandler(BaseHTTPRequestHandler):
@@ -431,7 +435,8 @@ class StubMcpHandler(BaseHTTPRequestHandler):
                     self._send_json_rpc(req_id, error={"code": -32602, "message": invalid})
                 else:
                     self._send_json_rpc(req_id, result={"content": [{"type": "text", "text": "1 hit"}],
-                                                        "structuredContent": {"hits": [SEARCH_HIT]}, "isError": False})
+                                                        "structuredContent": {"hits": [SEARCH_HIT]}, "isError": False,
+                                                        "_meta": {"jc/untrusted": True}})
                 return
             invalid = self._schema_violation(tool_name, tool_args, is_config_plane)
             if invalid and self.server.mode != "broken":

@@ -151,6 +151,33 @@ def test_the_hub_searches_its_public_documents_with_their_metadata(make_mcp_clie
     assert refused.get("error", {}).get("code") == -32602, refused
 
 
+def test_the_hub_merges_the_translations_of_a_question(make_mcp_client):
+    """EP-133 (T-6167): a question with its translations into the content languages answers one
+    fused list whose hits each carry a `cite` line, labelled untrusted data; more than three
+    translations are refused before anything is searched."""
+    url = os.getenv("HUB_MCP_URL", "").strip().rstrip("/")
+    if not url:
+        pytest.skip("HUB_MCP_URL is not set, see tests/mcp/README.md")
+    client = make_mcp_client(url, None)
+    client.initialize()
+    if "search_documents" not in client.tool_names():
+        pytest.skip("the hub lists no search_documents: no knowledge source is attached")
+    frame = client.tool_call(
+        "search_documents",
+        {"query": "plavárne", "translations": {"fi": "uimahallit", "en": "swimming halls"}, "limit": 3},
+    )
+    assert "result" in frame, frame
+    result = frame["result"]
+    assert result.get("_meta", {}).get("jc/untrusted") is True, result
+    hits = result["structuredContent"]["hits"]
+    assert len(hits) <= 3, hits
+    for hit in hits:
+        assert hit["url"] in hit["cite"], hit
+    four = {"fi": "a", "sv": "b", "en": "c", "de": "d"}
+    refused = client.tool_call("search_documents", {"query": "x", "translations": four})
+    assert refused.get("error", {}).get("code") == -32602, refused
+
+
 @pytest.mark.parametrize("surface", SURFACES)
 def test_an_anonymous_call_on_the_old_host_moves_to_the_data_host(
     surface, http_session
