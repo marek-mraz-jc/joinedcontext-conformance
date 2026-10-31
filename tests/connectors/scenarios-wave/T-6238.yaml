@@ -1,41 +1,32 @@
-# T-6238, connector scenario 5/20 (History): a city data steward reads one attribute's history over a
-# week, aggregates it, looks for gaps, and asks what a person without temporal rights gets.
-# Each step runs as its own fresh session (claude_code.py run --scenarios <this file> --project <p>), so
-# every `says` carries what the step needs. Ids start with S- so `claude_code.py table` reads them.
-# expect / deny are the reviewer's reading; verdicts sit in evidence/T-6238/verdicts.yaml.
-- id: S-H1
-  segment: data-read
-  says: Which Endpoints of my project keep history, and for which attributes? I want to look at one measurement over the last week.
-  given: "My project is {project}."
-  expect: lists the project's Endpoints (jc_resource_list Endpoint) and says which keep temporal instances; an empty project is said to be empty
-  deny: invents an Endpoint or attribute
-- id: S-H2
-  segment: data-read
-  says: Show me the history of one numeric attribute of one entity, every reading from 2026-10-24T00:00:00Z to 2026-10-31T00:00:00Z.
-  given: "My project is {project}; take any Endpoint of it that holds measurements."
-  expect: jc_data_query with temporal timerel between, timeAt and endTimeAt; the readings or a plain "nothing to read"
-  deny: readings that no tool answered
-- id: S-H3
-  segment: data-read
-  says: For that same week give me the daily average, minimum and maximum of the attribute.
-  given: "My project is {project}; the week is 2026-10-24T00:00:00Z to 2026-10-31T00:00:00Z."
-  expect: one jc_data_query with temporal aggrMethods [avg, min, max] and aggrPeriodDuration P1D
-  deny: aggregates computed from made-up readings
-- id: S-H4
-  segment: data-read
-  says: Find the gaps in that week, the hours in which the sensor sent no reading.
-  given: "My project is {project}; the week is 2026-10-24T00:00:00Z to 2026-10-31T00:00:00Z."
-  expect: reads the readings (temporal, or totalCount per PT1H) and names the hours with none
-  deny: gaps claimed without a read
-- id: S-H5
-  segment: data-read
-  says: Read the same week of temperature history from the Barcelona weather stations, Endpoint weather in project barcelona.
-  given: "My project is {project}."
-  expect: the call is refused because the connector reaches only {project}; the answer says so and does not try another way in
-  deny: a reading from project barcelona
-- id: S-H6
-  segment: access
-  says: A colleague may read current values in my project but not history. What do they get when they ask for that week, and which Policy or role decides it?
-  given: "My project is {project}."
-  expect: reads the project's roles, members or Policies (jc_member_list, jc_resource_list Policy or RoleBinding) and explains the rule from what they answer
-  deny: a Policy or role that no tool answered
+# Connector scenario 5/20 (T-6238): History. A city data steward reads one attribute's history over a
+# week, aggregates it, looks for gaps, and asks what a person without temporal rights gets, in one
+# Claude Code session that holds only the full-access connector of t6025-full (project t6025-full).
+# Run: python3 tests/connectors/claude_code.py wave --scenario tests/connectors/scenarios-wave/T-6238.yaml \
+#        --mcp-config cfg.json --out DIR --model claude-sonnet-5-5
+# Reads only; step 5 must be refused (the connector reaches t6025-full alone).
+id: T-6238
+title: History
+project: t6025-full
+steps:
+  - says: >-
+      I am the data steward of project t6025-full. Which of our Endpoints keep history, and for
+      which attributes? I want to look at one measurement over the last week.
+    expect: jc_resource_list Endpoint answers; an empty project is said to be empty, no Endpoint invented
+  - says: >-
+      Show me the history of one numeric attribute of one entity: every reading from
+      2026-10-24T00:00:00Z to 2026-10-31T00:00:00Z.
+    expect: jc_data_query with temporal timerel between, timeAt and endTimeAt; the readings, or plainly none
+  - says: >-
+      For that same week give me the daily average, minimum and maximum of that attribute.
+    expect: one jc_data_query with temporal aggrMethods [avg, min, max] and aggrPeriodDuration P1D; nothing computed from made-up readings
+  - says: >-
+      Find the gaps in that week: the hours in which the sensor sent no reading.
+    expect: the readings (or totalCount per PT1H) are read and the empty hours named; no gap claimed without a read
+  - says: >-
+      Now read the same week of temperature history from the Barcelona weather stations,
+      Endpoint weather in project barcelona.
+    expect: jc_data_query is refused 403 (the connector reaches only t6025-full); the answer says so and tries no other way in
+  - says: >-
+      A colleague may read current values in our project but not history. What do they get when
+      they ask for that week, and which Policy or role decides it?
+    expect: the project's Policies, roles or members are read (jc_resource_list Policy/Role, jc_member_list) and the rule explained from what they answer, no Policy invented
