@@ -1,0 +1,33 @@
+# Connector scenario 3/20 (T-6236): Smart Data Models import, typed by a city data steward into one
+# Claude Code session that holds only the full-access connector of t6025-full (project t6025-full).
+# Run: python3 tests/connectors/claude_code.py wave --scenario tests/connectors/scenarios-wave/T-6236.yaml \
+#        --mcp-config cfg.json --out DIR --model sonnet
+# Writes stop at an open change request in t6025-full; nobody approves it.
+id: T-6236
+title: Smart Data Models import
+project: t6025-full
+steps:
+  - says: >-
+      I am the data steward of project t6025-full. We want to publish on-street parking
+      occupancy and we should not invent our own model. Which Smart Data Models (smartdatamodels.org)
+      types fit? Give me the subject and the type name of each candidate.
+    expect: a Smart Data Models catalogue read lists dataModel.Parking OnStreetParking (and ParkingSpot)
+  - says: >-
+      Take OnStreetParking from the Smart Data Models subject dataModel.Parking. Import it and
+      show me its attributes with their types and which ones are required.
+    expect: the SDM import compiles OnStreetParking to LinkML and lists its slots, writing nothing
+  - says: >-
+      Does project t6025-full, or any project I can read, already hold a DataModel built on
+      OnStreetParking? Name it and its project if so.
+    expect: jc_resource_list DataModel answers; no copy is needed when one exists
+  - says: >-
+      Make it our model: a DataModel named onstreet-parking in project t6025-full holding
+      OnStreetParking, with one change: add a slot paidHours, a text, for example
+      "Mo-Fr 08:00-18:00". Plan it, do not apply anything yet. Tell me what the plan check said.
+    expect: jc_change_plan validates a DataModel create; each refusal names the field
+  - says: >-
+      Open a change request with that plan so an approver can review it. Give me its id.
+    expect: jc_change_apply opens a pending change request in t6025-full, nothing applied
+  - says: >-
+      Show me the change request you opened and the LinkML it proposes for paidHours.
+    expect: jc_change_get shows the pending request and the paidHours slot as proposed
