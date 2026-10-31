@@ -8,6 +8,7 @@ Endpoint slug that does not exist; the hub answered 401, Claude Code reported th
 from __future__ import annotations
 
 import base64
+import json
 import shutil
 import sys
 from pathlib import Path
@@ -128,4 +129,15 @@ def test_the_prompt_adds_the_given_facts_with_the_project_filled_in():
             "t6025-full",
         )
         == "Retire it.\n\nEndpoint t6025-full-counters."
+    )
+
+
+def test_scrub_keeps_a_schema_member_named_authorization_valid_json():
+    text = json.dumps(
+        {"properties": {"Authorization": {"type": "object"}, "auth": ["a"]}}
+    )
+    assert json.loads(claude_code.scrub(text)) == json.loads(text)
+    escaped = json.dumps({"text": text})
+    assert json.loads(json.loads(claude_code.scrub(escaped))["text"]) == json.loads(
+        text
     )

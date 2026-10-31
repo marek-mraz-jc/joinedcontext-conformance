@@ -52,7 +52,11 @@ LARGE_ANSWER = 40_000
 _SECRETS = (
     (re.compile(r"(?i)(bearer\s+)[A-Za-z0-9._~+/=-]+"), r"\1***"),
     (re.compile(r"eyJ[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]*"), "***"),
-    (re.compile(r'(?i)(authorization\\?"?\s*[:=]\s*\\?"?)[^"\\\s,}]+'), r"\1***"),
+    # A value opening an object or array is a schema member named Authorization, not a header value.
+    (
+        re.compile(r'(?i)(authorization\\?"?\s*[:=]\s*\\?"?)(?![{\[])[^"\\\s,{}\[\]]+'),
+        r"\1***",
+    ),
     (re.compile(r'(?i)(mcp-session-id\\?"?\s*[:=]\s*\\?"?)[^"\\\s,}]+'), r"\1***"),
 )
 
