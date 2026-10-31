@@ -1,6 +1,6 @@
 """The per-step check of claude_code.py `wave` / `verdict` (T-6235) and its recorded session.
 
-fixtures/T-6235/ and fixtures/T-6240/ step-NN.jsonl are the recorded live sessions of scenarios-wave/<id>.yaml against dev's
+fixtures/T-6235/, fixtures/T-6240/ and fixtures/T-6245/ step-NN.jsonl are the recorded live sessions of scenarios-wave/<id>.yaml against dev's
 full-access connector of t6025-full (scrubbed), one file per step; the synthetic lines below cover the
 check's edge cases.
 """
@@ -30,6 +30,10 @@ SESSIONS = {
     "T-6240": (
         ["ok", "ok", "defect", "defect", "defect", "ok", "ok"],
         ["ok", "ok", "ok", "ok", "check", "ok", "check"],
+    ),
+    "T-6245": (
+        ["defect", "defect", "defect", "defect", "defect", "defect", "defect", "ok"],
+        ["ok", "check", "ok", "ok", "check", "check", "ok", "ok"],
     ),
 }
 
@@ -211,7 +215,7 @@ def test_from_resumes_at_a_step_in_the_session_of_the_step_before(
     shutil.copy(recorded / "step-01.jsonl", tmp_path / "step-01.jsonl")
     asked = []
 
-    def fake(says, cfg, turns, model, session, keep):
+    def fake(says, cfg, turns, model, session, **_):
         asked.append(session)
         return (recorded / "step-02.jsonl").read_text(encoding="utf-8")
 

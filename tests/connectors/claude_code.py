@@ -38,6 +38,7 @@ import re
 import subprocess
 import sys
 import tempfile
+import time
 from dataclasses import dataclass, field
 from datetime import datetime
 from pathlib import Path
@@ -60,6 +61,10 @@ CLASSES = (
 
 #: An answer past this many bytes is about 10k tokens of the model's context for one call.
 LARGE_ANSWER = 40_000
+# A wave step whose MCP server offered no tool (the connector's 60 calls a minute were spent, often by
+# another session on it) is run again after the minute passed, from the same earlier step.
+CONNECT_TRIES = 3
+CONNECT_WAIT_S = 65
 
 _SECRETS = (
     (re.compile(r"(?i)(bearer\s+)[A-Za-z0-9._~+/=-]+"), r"\1***"),
@@ -75,11 +80,19 @@ _SECRETS = (
         re.compile(r'(?i)(mcp-session-id(?:\\?")?\s*[:=]\s*(?:\\?")?)[^"\\\s,}]+'),
         r"\1***",
     ),
+    # Claude Code hands the model its account e-mail, which then reaches tool arguments and answers;
+    # addresses under the reserved test domains (RFC 2606) are the test persons' and stay.
+    (
+        re.compile(
+            r"[A-Za-z0-9._%+-]+@(?![A-Za-z0-9.-]*\b(?:invalid|example)\b)[A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)+"
+        ),
+        "person@example.invalid",
+    ),
 )
 
 
 def scrub(text: str) -> str:
-    """Replace bearer tokens, JWTs, Authorization values and MCP session ids with ***."""
+    """Replace bearer tokens, JWTs, Authorization values and MCP session ids with ***, e-mails too."""
     for pattern, repl in _SECRETS:
         text = pattern.sub(repl, text)
     return text
@@ -380,6 +393,7 @@ def _claude(
     model: str | None,
     resume: str | None = None,
     keep: bool = False,
+    fork: bool = False,
 ) -> str:
     argv = [
         "claude",
@@ -398,6 +412,8 @@ def _claude(
     ]
     if resume:
         argv += ["--resume", resume]
+        if fork:
+            argv.append("--fork-session")
     elif not keep:
         argv.append("--no-session-persistence")
     if mcp_config:
@@ -504,18 +520,34 @@ def _wave(args: argparse.Namespace) -> int:
         if n < args.first:
             continue
         path = args.out / f"step-{n:02d}.jsonl"
-        path.write_text(
-            _claude(
-                says, args.mcp_config, args.max_turns, args.model, session, keep=True
-            ),
-            encoding="utf-8",
-        )
-        run = load(path)
+        for attempt in range(1, CONNECT_TRIES + 1):
+            # Each step forks the earlier step's session, so a retried step meets no failed attempt.
+            path.write_text(
+                _claude(
+                    says,
+                    args.mcp_config,
+                    args.max_turns,
+                    args.model,
+                    session,
+                    keep=True,
+                    fork=True,
+                ),
+                encoding="utf-8",
+            )
+            run = load(path)
+            if run.tools_offered or attempt == CONNECT_TRIES:
+                break
+            print(
+                f"{run.scenario}: the MCP server offered no tool (attempt {attempt}); "
+                f"again in {CONNECT_WAIT_S} s"
+            )
+            time.sleep(CONNECT_WAIT_S)
         if not run.session_id:
             raise SystemExit(f"{path}: no session id in the result, cannot resume")
         session = run.session_id
         print(
-            f"{run.scenario}: {len(run.calls)} calls, {run.turns} turns, {run.duration_ms} ms, USD {run.cost_usd:.4f}"
+            f"{run.scenario}: {len(run.calls)} calls, {run.turns} turns, {run.duration_ms} ms, "
+            f"USD {run.cost_usd:.4f}, {run.tools_offered} tools offered"
         )
     return 0
 
