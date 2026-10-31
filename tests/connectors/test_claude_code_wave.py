@@ -119,6 +119,21 @@ def test_the_check_names_what_a_step_misses():
     )
 
 
+def test_an_answered_call_the_step_refuses_is_named():
+    # T-6253: a read of another project must come back refused; one the server answered is a leak.
+    leak = claude_code.Call("mcp__jc__jc_resource_list", 0, args='{"project":"helsinki"}')
+    door = claude_code.Call(
+        "mcp__jc__jc_data_query", 0, refused=True, args='{"project":"helsinki"}'
+    )
+    own = claude_code.Call("mcp__jc__jc_change_list", 0, args='{"project":"t6025-full"}')
+    run = claude_code.Run("step-04", calls=[leak, door, own], answer="out of scope")
+    spec = {"refuse": ['"project":\\s*"(?!t6025-full")'], "answer": "scope"}
+    assert claude_code.check(run, spec) == [
+        'jc_resource_list {"project":"helsinki"} answered'
+    ]
+    assert claude_code.check(claude_code.Run("s", calls=[door, own], answer="scope"), spec) == []
+
+
 def test_a_step_the_check_fails_reads_check_until_judged(tmp_path):
     (tmp_path / "step-01.jsonl").write_text(
         "\n".join(_session(([("jc_schema_get", False)], "it is LinkML"))),
