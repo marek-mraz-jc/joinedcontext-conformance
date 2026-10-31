@@ -1,0 +1,30 @@
+# Connector scenario 11/20 (T-6244): an App from a template on an Endpoint, its build, the build log,
+# the address to open it; typed by a city data steward into one Claude Code session that holds only the
+# full-access connector of t6025-full (project t6025-full, writes on).
+# Run: python3 tests/connectors/claude_code.py wave --scenario tests/connectors/scenarios-wave/T-6244.yaml \
+#        --mcp-config cfg.json --out DIR --model sonnet
+# Writes, if any, land in project t6025-full only. Portal REST behind the same steps:
+# GET /api/v1/app-templates, POST /api/v1/projects/{project}/app-templates/{name}/apps,
+# GET /api/v1/projects/{project}/apps/{name}/builds.
+id: T-6244
+title: Applications
+project: t6025-full
+steps:
+  - says: >-
+      I am the data steward of project t6025-full. Which App templates can I start a new App from,
+      and which Endpoints could such an App read?
+    expect: the template list (names and what each shows) and the Endpoints the App may read, or a plain word that the connector has no template tool
+  - says: >-
+      Create an App named stops-board in project t6025-full from the template that shows entities
+      on a map, reading the Helsinki public transport stops (GtfsStop) of Endpoint
+      si6epqkx364lprho5uaigutk274r5grb.
+    expect: an App created from the template (a change planned and applied, or the template call), or a plain refusal naming why (Endpoint outside the project, no template tool)
+  - says: >-
+      Is stops-board building? Show me the state of its latest build.
+    expect: the build state (queued, running, succeeded, failed) of stops-board's newest build, or that no App or build exists
+  - says: >-
+      Show me the build log of that build. If it failed, which line says why?
+    expect: the log lines, or a plain word that no tool reads build logs
+  - says: >-
+      Give me the address where I open stops-board in the browser.
+    expect: the App's URL from its status, or that the App does not exist; never an invented URL

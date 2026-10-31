@@ -21,3 +21,21 @@ it with the dev recording (scrubbed of nothing: the rows hold no token or input 
 
 The deny half is `tests/mcp/test_connector_door.py::test_a_client_the_connector_does_not_allow_is_refused`
 with `CONNECTOR_UNLISTED_CLIENT_TOKEN`: the same connector's token obtained by Claude Code is 403.
+
+## Multi-step scenarios through Claude Code (T-6235 and the scenario wave)
+
+`scenarios-wave/T-*.yaml` holds one scenario each: 3-8 prompts a steward types into ONE Claude Code
+session, with a check per step (`tools` answered, `called`, `deny`, an `answer` regex).
+
+1. Sign the test person in to the full-access connector and write the bearer into a mode-600
+   `cfg.json` (T-6025's evidence holds `signin.py`); give each run an evidence dir nobody else uses.
+2. `python3 tests/connectors/claude_code.py wave --scenario scenarios-wave/T-6235.yaml
+   --mcp-config cfg.json --out evidence/T-6235 --model claude-sonnet-5-5` starts one `claude -p` per
+   step, `--resume`s the session for each later step and writes `<out>/step-NN.jsonl`.
+3. `python3 tests/connectors/claude_code.py verdict evidence/T-6235 --scenario scenarios-wave/T-6235.yaml`
+   prints the verdict table: `ok` where the step's own check holds, `check` where it does not. Judge
+   each `check` row in `<out>/verdicts.yaml` (`step-03: {verdict: defect, proof: ...}`, `defect` or
+   `model-error`, with the direct call that proves it); the same command prints the same table again.
+
+The connector allows 60 calls a minute across every session on it: scenario workers sharing one
+connector get 429s when they run at the same time.
