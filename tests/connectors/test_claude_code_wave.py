@@ -274,3 +274,10 @@ def test_sizes_counts_calls_and_ranks_the_biggest_answers_of_recorded_waves():
     biggest = [int(r.split(" | ")[0].lstrip("| ")) for r in rows[-2:]]
     assert biggest == sorted(biggest, reverse=True)
     assert "jc_activity_list" in rows[-2]
+
+
+def test_sizes_costs_a_wave_its_last_step_total_since_steps_resume_one_session():
+    wave = HERE / "fixtures" / "T-6250"
+    last = claude_code.load(max(wave.glob("step-*.jsonl"))).cost_usd
+    row = claude_code.sizes([wave]).splitlines()[2]
+    assert row.endswith(f"| {last:.2f} |"), row

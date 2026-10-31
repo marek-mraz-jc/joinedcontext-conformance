@@ -262,8 +262,18 @@ def table(out: Path) -> str:
     return "\n".join(rows) + "\n"
 
 
+def _cost(runs: list[Run]) -> float:
+    waves = [r.cost_usd for r in runs if r.scenario.startswith("step-")]
+    return max(waves, default=0.0) + sum(
+        r.cost_usd for r in runs if not r.scenario.startswith("step-")
+    )
+
+
 def sizes(dirs: list[Path], top: int = 10) -> str:
-    """Calls and answer bytes per recorded run (`<dir>/step-NN.jsonl` or `S-*.jsonl`), then the `top` biggest answers."""
+    """Calls and answer bytes per recorded run (`<dir>/step-NN.jsonl` or `S-*.jsonl`), then the `top` biggest answers.
+
+    The steps of a wave resume one session, so each step's `total_cost_usd` is the session's total so far:
+    a wave costs its highest step total; `S-*` runs are fresh sessions and add up."""
     rows = [
         "| scenario | steps | calls | refused | answer bytes | largest B | USD |",
         "|---|---|---|---|---|---|---|",
@@ -282,7 +292,7 @@ def sizes(dirs: list[Path], top: int = 10) -> str:
         rows.append(
             f"| {name} | {len(runs)} | {len(calls)} | {sum(c.refused for c in calls)} "
             f"| {sum(c.answer_bytes for c in calls)} | {max((c.answer_bytes for c in calls), default=0)} "
-            f"| {sum(r.cost_usd for r in runs):.2f} |"
+            f"| {_cost(runs):.2f} |"
         )
         biggest += [
             (c.answer_bytes, name, r.scenario, c) for r in runs for c in r.calls
