@@ -141,3 +141,18 @@ def test_scrub_keeps_a_schema_member_named_authorization_valid_json():
     assert json.loads(json.loads(claude_code.scrub(escaped))["text"]) == json.loads(
         text
     )
+
+
+@pytest.mark.parametrize(
+    "wave",
+    sorted((Path(__file__).parent / "scenarios-wave").glob("T-*.yaml")),
+    ids=lambda p: p.stem,
+)
+def test_a_scenario_wave_file_runs_through_the_same_reader(wave):
+    every = claude_code.scenarios(None, wave)
+    ids = [s["id"] for s in every]
+    assert every and len(ids) == len(set(ids))
+    # table() reads `<out>/S-*.jsonl`: a step id outside S- would vanish from the table.
+    assert all(i.startswith("S-") for i in ids)
+    assert all(s["says"].strip() and s.get("expect") for s in every)
+    assert claude_code.scenarios([ids[-1]], wave)[0]["id"] == ids[-1]

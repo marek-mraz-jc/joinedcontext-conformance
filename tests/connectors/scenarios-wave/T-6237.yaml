@@ -1,0 +1,43 @@
+# Connector scenario wave, T-6237 (4/20): partial reads of one large type.
+# A city data steward reads the Helsinki tree register (Tree, ~68k entities on dev) a part at a time:
+# a count alone, a page of a few attributes, a later page by cursor, a q filter with a count, one entity's
+# one attribute, and a count per class. Each step is one fresh `claude -p` session (no memory between
+# steps), so each prompt names everything it needs.
+#   python3 tests/connectors/claude_code.py run --scenarios tests/connectors/scenarios-wave/T-6237.yaml \
+#     --mcp-config cfg.json --out DIR --model claude-sonnet-5-5 --project t6025-full
+# Read-only: no step asks for a write. Verdicts of the dev run: /workspace/evidence/T-6237/verdict.md.
+- id: S-6237-1
+  segment: data-read
+  says: "How many trees are in the Helsinki tree register (street and park trees)? I only need the number, do not list them."
+  given: "You work in project {project}."
+  expect: 'one count-only read (count true, no page of entities or the smallest page); the total equals the broker count'
+- id: S-6237-2
+  segment: data-read
+  says: "Show me the first 20 trees of the Helsinki tree register with only their species and trunk diameter class, as a table."
+  given: "You work in project {project}."
+  expect: 'one read with limit 20 and only species, trunkDiameterClass (attrs/pick), keyValues; answer bytes far below a full page'
+- id: S-6237-3
+  segment: data-read
+  says: "Read the Helsinki tree register 50 trees at a time and tell me the species of trees number 101 to 150 in the register's order."
+  given: "You work in project {project}."
+  expect: 'three pages of 50 chained by nextCursor (or fewer reads with a smaller payload); no limit-1000 page read whole'
+- id: S-6237-4
+  segment: data-read
+  says: "How many street trees (not park trees) of the species Tilia x vulgaris are in the Helsinki tree register? Just the count."
+  given: "You work in project {project}."
+  expect: 'one read with q treeSetting=="street";species=="Tilia x vulgaris" (or the exact species text the data holds) and count; no listing'
+- id: S-6237-5
+  segment: data-read
+  says: "Which trees of the Helsinki tree register stand on Mannerheimintie? Give me their ids and species only, at most 30."
+  given: "You work in project {project}."
+  expect: 'one read with q on treeSite, limit <= 30, only species picked; a total when there are more'
+- id: S-6237-6
+  segment: data-read
+  says: "Where exactly is the tree urn:ngsi-ld:Tree:hel.fi:helsinki:tree-K-1 of the Helsinki tree register? I only need its coordinates."
+  given: "You work in project {project}."
+  expect: 'one get of that id with only location picked; the coordinates match the broker'
+- id: S-6237-7
+  segment: data-read
+  says: "For the Helsinki tree register, how many trees fall in each trunk diameter class? A small table with the class and its count."
+  given: "You work in project {project}."
+  expect: 'one count-only read per class (or a summarize call), never all 68k entities paged through'
