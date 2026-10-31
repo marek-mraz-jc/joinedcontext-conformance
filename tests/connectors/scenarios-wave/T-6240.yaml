@@ -1,0 +1,58 @@
+# MCP connector scenario 7/20 (T-6240): a city data steward builds a pipeline from an HTTP source into a
+# space of project t6025-full through the full-access connector: sample, mapping, schedule, test, propose,
+# run once, read what it wrote.
+# Run: python3 tests/connectors/claude_code.py wave --scenario <this file> --mcp-config cfg.json --out DIR,
+#      then claude_code.py verdict DIR --scenario <this file> (recorded run: fixtures/T-6240).
+# Step checks as in T-6235.yaml (`tools` answered once without an error, `called` called, `deny` not
+# called, `answer` a case-insensitive regular expression over the final answer). Writes stop at an open
+# change request in t6025-full; nobody approves it, so "run it once" must end in a plain refusal.
+id: T-6240
+title: Pipeline create
+project: t6025-full
+steps:
+  - says: >-
+      In project {project} I want to load the Bratislava bike-share stations into a context space
+      every hour. The source is the public GBFS feed
+      https://gbfs.nextbike.net/maps/gbfs/v2/nextbike_bi/sk/station_information.json . Before writing
+      anything: what does the project hold today (spaces, data sources, pipelines, models), and what
+      does a pipeline need on this platform? A few lines, please.
+    tools: [jc_resource_list]
+    deny: [jc_change_apply]
+    answer: (DataSource|data source)
+  - says: >-
+      Sample that source and show me three stations with the fields they carry. If the platform cannot
+      read the URL before a data source exists, say so plainly and tell me what it needs instead.
+    called: [jc_pipeline_sample_source]
+    deny: [jc_change_apply]
+    answer: (station_id|lat|data source|DataSource)
+  - says: >-
+      Write the mapping: one entity of type BikeHireDockingStation per station, with id
+      urn:ngsi-ld:BikeHireDockingStation:<station_id>, name, location as a GeoJSON Point from lon and
+      lat, and capacity when the record has it. Try it on these two records the feed returned today
+      and show me the entities it makes:
+      {"data":{"stations":[{"station_id":"622290687","name":"TESCO Express Martinčekova","lat":48.148543,"lon":17.144699},{"station_id":"622290896","name":"Námestie pri zimnom štadióne","lat":48.159455,"lon":17.135093,"capacity":10}]}}
+    tools: [jc_pipeline_try_mapping]
+    deny: [jc_change_apply]
+    answer: BikeHireDockingStation:622290687
+  - says: >-
+      Now plan it in {project}, without applying: a context space for it if the project has none, the
+      DataSource that reads the feed over HTTP, and the Pipeline with your mapping, running every hour.
+      Have the platform check the plan and fix what it refuses until it passes. Tell me what it said.
+    tools: [jc_change_plan]
+    deny: [jc_change_apply]
+    answer: (valid|pass|accept|no (errors|problems))
+  - says: >-
+      Before anyone approves it, test the planned pipeline on a sample of the source and tell me how
+      many entities it would write and whether any record fails.
+    called: [jc_pipeline_test]
+    deny: [jc_change_apply]
+    answer: (entit|record|sample)
+  - says: Good. Open the change request so an approver can review it, and give me its id.
+    tools: [jc_change_apply]
+    answer: chg-
+  - says: >-
+      Run the pipeline once now, then show me its last run, its logs and what it wrote into the space.
+      If it cannot run yet, tell me why and what has to happen first.
+    called: [jc_pipeline_run]
+    deny: []
+    answer: (approv|pending|not (yet )?(merged|exist|live))

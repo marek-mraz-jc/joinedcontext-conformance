@@ -37,6 +37,7 @@ import json
 import re
 import subprocess
 import sys
+import tempfile
 import time
 from dataclasses import dataclass, field
 from datetime import datetime
@@ -74,11 +75,19 @@ _SECRETS = (
         r"\1***",
     ),
     (re.compile(r'(?i)(mcp-session-id\\?"?\s*[:=]\s*\\?"?)[^"\\\s,}]+'), r"\1***"),
+    # Claude Code hands the model its account e-mail, which then reaches tool arguments and answers;
+    # addresses under the reserved test domains (RFC 2606) are the test persons' and stay.
+    (
+        re.compile(
+            r"[A-Za-z0-9._%+-]+@(?![A-Za-z0-9.-]*\b(?:invalid|example)\b)[A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)+"
+        ),
+        "person@example.invalid",
+    ),
 )
 
 
 def scrub(text: str) -> str:
-    """Replace bearer tokens, JWTs, Authorization values and MCP session ids with ***."""
+    """Replace bearer tokens, JWTs, Authorization values and MCP session ids with ***, e-mails too."""
     for pattern, repl in _SECRETS:
         text = pattern.sub(repl, text)
     return text
@@ -361,6 +370,17 @@ def steps(source: Path) -> list[str]:
     return [step["says"] for step in wave(source)["steps"]]
 
 
+def workdir() -> Path:
+    """An empty directory for `claude -p`: run inside a clone, the model sees the repo in its prompt
+    and answers with file tools it does not hold instead of the connector's (T-6249 step 1). One
+    stable path, since `--resume` finds a session only under the directory it started in."""
+    home = Path(tempfile.gettempdir()) / "claude-code-connector-run"
+    home.mkdir(mode=0o700, exist_ok=True)
+    if any(home.iterdir()):
+        raise SystemExit(f"{home} is not empty; claude would read it as the project")
+    return home
+
+
 def _claude(
     prompt: str,
     mcp_config: Path | None,
@@ -406,6 +426,7 @@ def _claude(
         capture_output=True,
         text=True,
         stdin=subprocess.DEVNULL,
+        cwd=workdir(),
         timeout=900,
         check=False,
     )

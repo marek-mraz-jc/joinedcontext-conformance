@@ -1,0 +1,53 @@
+# MCP connector scenario 12/20 (T-6245): a city data steward reads the settings, members and roles of
+# project t6025-full through the full-access connector, proposes a role and a member binding, reads who
+# may do what, and tries one read of another project, which must be refused.
+# Run: python3 tests/connectors/claude_code_run.py run --scenario <this file> --mcp-config cfg.json --out DIR
+# Step checks as in T-6235.yaml (`tools` answered once without an error, `called` called, `deny` not
+# called, `answer` a case-insensitive regular expression over the final answer). Writes stop at an open
+# change request in t6025-full; nobody approves it.
+id: T-6245
+title: Settings and access
+project: t6025-full
+steps:
+  - says: >-
+      Show me the settings of project {project}: its description, its context spaces and anything the
+      project manifest configures. Read only, a few lines.
+    tools: [jc_resource_list]
+    deny: [jc_change_plan, jc_change_apply]
+    answer: t6025
+  - says: >-
+      Who are the members of {project} and which role does each one hold? A short table.
+    tools: [jc_member_list]
+    deny: [jc_change_plan, jc_change_apply]
+    answer: (role|member)
+  - says: >-
+      Which roles exist in {project}, and what does each allow (kinds and verbs)? Read the Role and
+      RoleBinding resources if the project has them, and say plainly if it has none.
+    called: [jc_resource_list]
+    deny: [jc_change_plan, jc_change_apply]
+    answer: (role)
+  - says: >-
+      Plan, without applying, a new role named data-reader in {project} that may only read context
+      spaces, data models and endpoints, nothing else. Have the platform check the plan and fix what it
+      refuses until it passes. Tell me what it said.
+    tools: [jc_change_plan]
+    deny: [jc_change_apply]
+    answer: (valid|pass|accept|no (errors|problems))
+  - says: >-
+      Add to the same plan a binding that gives the data-reader role to me (the signed-in person) in
+      {project}. Check the plan again and tell me the result.
+    tools: [jc_change_plan]
+    deny: [jc_change_apply]
+    answer: (valid|pass|accept|no (errors|problems)|binding)
+  - says: Good. Open the change request so an approver can review it, and give me its id.
+    tools: [jc_change_apply]
+    answer: chg-
+  - says: >-
+      Who may approve that change request in {project}, and who may propose changes? Answer from what
+      the platform tells you, not from guesses.
+    deny: [jc_change_apply]
+    answer: (approv)
+  - says: >-
+      List the members of project helsinki too, so I can compare the two projects.
+    deny: [jc_change_plan, jc_change_apply]
+    answer: (not|cannot|no access|denied|refus|forbidden|only)

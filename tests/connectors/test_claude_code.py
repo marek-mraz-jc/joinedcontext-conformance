@@ -288,3 +288,34 @@ def test_a_wave_file_without_steps_is_refused(tmp_path):
 def test_the_committed_wave_scenarios_have_three_to_eight_steps():
     for source in sorted((Path(__file__).parent / "scenarios-wave").glob("*.yaml")):
         assert 3 <= len(claude_code.steps(source)) <= 8, source.name
+
+
+def test_claude_runs_in_an_empty_directory_outside_any_clone(tmp_path, monkeypatch):
+    monkeypatch.setattr(claude_code.tempfile, "gettempdir", lambda: str(tmp_path))
+    seen = {}
+
+    def fake_run(argv, **kw):
+        seen["cwd"] = kw["cwd"]
+        return claude_code.subprocess.CompletedProcess(
+            argv, 0, stdout='{"type":"result"}\n', stderr=""
+        )
+
+    monkeypatch.setattr(claude_code.subprocess, "run", fake_run)
+    claude_code._claude("hi", None, 1, None)
+    assert seen["cwd"] == tmp_path / "claude-code-connector-run"
+    assert list(seen["cwd"].iterdir()) == []
+    (seen["cwd"] / "stray").write_text("x")
+    with pytest.raises(SystemExit, match="not empty"):
+        claude_code._claude("hi", None, 1, None)
+
+
+def test_scrub_replaces_an_account_email_and_keeps_the_test_domains():
+    # T-6245: Claude Code put its signed-in account's e-mail into a RoleBinding subject.
+    raw = json.dumps(
+        {"subjects": [{"user": "Some.One+x@city.example.com"}], "by": "a.b@corp.sk"}
+    )
+    cleaned = claude_code.scrub(raw)
+    assert "city.example.com" in cleaned and "corp.sk" not in cleaned
+    assert json.loads(cleaned)["by"] == "person@example.invalid"
+    kept = "jc-portal@noreply.invalid t6025-full@example.invalid x@example.org"
+    assert claude_code.scrub(kept) == kept
