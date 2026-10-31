@@ -309,6 +309,12 @@ def test_claude_runs_in_an_empty_directory_outside_any_clone(tmp_path, monkeypat
         claude_code._claude("hi", None, 1, None)
 
 
+def test_scrub_keeps_an_escape_after_an_authorization_key_valid_json():
+    # A YAML manifest in a model answer: `authorization:` then an escaped newline (T-6251 step 4).
+    text = json.dumps({"text": "http:\n  authorization:\n    headerRef: {name: a}"})
+    assert claude_code.scrub(text) == text
+
+
 def test_scrub_replaces_an_account_email_and_keeps_the_test_domains():
     # T-6245: Claude Code put its signed-in account's e-mail into a RoleBinding subject.
     raw = json.dumps(

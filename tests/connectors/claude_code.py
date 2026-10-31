@@ -16,7 +16,7 @@ table: rerunning it over the same files prints the same table.
 
 `wave` runs one scenario of several steps (scenarios-wave/*.yaml: `project` and `steps`, each a
 `says` a person types, `{project}` filled in) as ONE session: the first step starts it, every later
-step resumes it, and each step's stream-json goes to `<out>/step-NN.jsonl`. `verdict` prints one line
+step resumes it, and each step's stream-json goes to `<out>/step-NN.jsonl` (`--from N` resumes at step N in the session of step N-1). `verdict` prints one line
 per step from those files and `<out>/verdicts.yaml` (`step-01: {verdict: ok|defect|model-error,
 proof: text}`). With `--scenario` it also runs each step's own check: every tool of `tools` answered
 once without an error, every tool of `called` was called (a refusal counts), no tool of `deny` was
@@ -71,10 +71,15 @@ _SECRETS = (
     (re.compile(r"eyJ[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]*"), "***"),
     # A value opening an object or array is a schema member named Authorization, not a header value.
     (
-        re.compile(r'(?i)(authorization\\?"?\s*[:=]\s*\\?"?)(?![{\[])[^"\\\s,{}\[\]]+'),
+        re.compile(
+            r'(?i)(authorization(?:\\?")?\s*[:=]\s*(?:\\?")?)(?![{\[])[^"\\\s,{}\[\]]+'
+        ),
         r"\1***",
     ),
-    (re.compile(r'(?i)(mcp-session-id\\?"?\s*[:=]\s*\\?"?)[^"\\\s,}]+'), r"\1***"),
+    (
+        re.compile(r'(?i)(mcp-session-id(?:\\?")?\s*[:=]\s*(?:\\?")?)[^"\\\s,}]+'),
+        r"\1***",
+    ),
     # Claude Code hands the model its account e-mail, which then reaches tool arguments and answers;
     # addresses under the reserved test domains (RFC 2606) are the test persons' and stay.
     (
@@ -465,6 +470,13 @@ def main(argv: list[str]) -> int:
     wave_p.add_argument("--out", type=Path, required=True)
     wave_p.add_argument("--max-turns", type=int, default=12)
     wave_p.add_argument("--model")
+    wave_p.add_argument(
+        "--from",
+        dest="first",
+        type=int,
+        default=1,
+        help="resume at this step, in the session of the step before it in --out",
+    )
     verdict_p = sub.add_parser("verdict")
     verdict_p.add_argument("out", type=Path)
     verdict_p.add_argument(
@@ -502,7 +514,11 @@ def main(argv: list[str]) -> int:
 
 def _wave(args: argparse.Namespace) -> int:
     session = None
+    if args.first > 1:
+        session = load(args.out / f"step-{args.first - 1:02d}.jsonl").session_id
     for n, says in enumerate(steps(args.scenario), start=1):
+        if n < args.first:
+            continue
         path = args.out / f"step-{n:02d}.jsonl"
         for attempt in range(1, CONNECT_TRIES + 1):
             # Each step forks the earlier step's session, so a retried step meets no failed attempt.
