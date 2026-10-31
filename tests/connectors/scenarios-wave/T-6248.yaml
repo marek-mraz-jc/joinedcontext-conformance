@@ -1,0 +1,62 @@
+# Connector scenario 15/20 (T-6248): devices. A city data steward reads an MQTT broker's setup and one
+# device topic's latest values into a context space, in one Claude Code session that holds only the
+# full-access connector of t6025-full (project t6025-full, writes on).
+# Run: python3 tests/connectors/claude_code.py wave --scenario tests/connectors/scenarios-wave/T-6248.yaml \
+#        --mcp-config cfg.json --out DIR --model sonnet
+# Writes: at most open change requests in t6025-full (a person approves; nothing goes live here).
+# Portal REST behind the steps: GET /api/v1/projects/{project}/mqttbrokers,
+# GET /api/v1/projects/{project}/mqttbrokers/{name}/captured (the captured messages of a capture broker).
+id: T-6248
+title: Devices
+project: t6025-full
+steps:
+  - says: >-
+      I am the data steward of project t6025-full. Which MQTT brokers does the project run, and
+      which devices (service accounts) may publish to them? Answer in a short list.
+    tools: [jc_resource_list]
+    deny: [jc_change_apply]
+    answer: (MqttBroker|broker)
+    expect: jc_resource_list of MqttBroker and ServiceAccount in t6025-full; the project holds none
+  - says: >-
+      Plan an MQTT broker t6248-sensors in capture mode that keeps the newest 20 messages per topic
+      for one hour. Role "sensor" may publish to sensors/+/air, role "reader" may subscribe to
+      sensors/#. Add a device service account t6248-sensor-01 that holds the sensor role. Plan it
+      and show me the plan; if it passes, send it to an approver.
+    tools: [jc_change_plan]
+    answer: (chg-|refus|invalid|error)
+    expect: >-
+      jc_change_plan of an MqttBroker (mode capture, capture.messagesPerTopic 20, window PT1H, two
+      roles) plus a ServiceAccount and its RoleBinding mqtt/t6248-sensors/sensor; jc_change_apply
+      opens a change request, or the refusal names the field
+  - says: >-
+      Show me the setup of broker t6248-sensors as a device installer needs it: the address and
+      port a device connects to, how it signs in, the topics each role may use and the limits.
+    deny: [jc_change_apply]
+    answer: (port|address|host)
+    expect: >-
+      the planned or open change's spec (roles, limits, deviceAuth) read back; the address only
+      once the broker is live, never an invented host name
+  - says: >-
+      Read the latest values device t6248-sensor-01 published on topic sensors/t6248-sensor-01/air.
+    deny: [jc_change_apply]
+    answer: (no tool|none of my tools|cannot|can.t|not live|not running|pending|approv|no message|captured)
+    expect: >-
+      the captured messages of that topic, or a plain word why not (the broker waits for approval;
+      no connector tool reads /mqttbrokers/{name}/captured); never invented readings
+  - says: >-
+      Bring that topic into the project: plan a context space t6248-air for AirQualityObserved, a
+      DataSource of type mqtt that subscribes to sensors/+/air on broker t6248-sensors, and a
+      Pipeline that writes each message into the space. Plan them, show me the plan, do not apply.
+    tools: [jc_change_plan]
+    deny: [jc_change_apply]
+    answer: (DataSource|Pipeline)
+    expect: >-
+      jc_change_plan of a ContextSpace, a DataSource (type mqtt, mqtt.broker t6248-sensors, topic
+      sensors/+/air) and a Pipeline; the verdict quoted, a refusal naming its field
+  - says: >-
+      Summarise for the approver: which change requests are open, what each one sets up, and what
+      they must check before approving.
+    tools: [jc_change_list]
+    deny: [jc_change_apply]
+    answer: (chg-|no open|none)
+    expect: the open change ids from jc_change_list, one sentence each, no secret
