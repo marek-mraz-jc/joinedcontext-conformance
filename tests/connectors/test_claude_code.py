@@ -141,3 +141,80 @@ def test_scrub_keeps_a_schema_member_named_authorization_valid_json():
     assert json.loads(json.loads(claude_code.scrub(escaped))["text"]) == json.loads(
         text
     )
+
+
+def test_the_verdict_lines_rerun_from_saved_step_files_are_the_same(tmp_path):
+    shutil.copy(FIXTURES / "public-hub-pass.jsonl", tmp_path / "step-01.jsonl")
+    shutil.copy(FIXTURES / "public-hub-refused.jsonl", tmp_path / "step-02.jsonl")
+    (tmp_path / "verdicts.yaml").write_text(
+        "step-01: {verdict: ok, proof: 'list_endpoints answered 127 | 2 pages'}\n"
+        "step-02: {verdict: defect, proof: hub answered 401}\n",
+        encoding="utf-8",
+    )
+    first = claude_code.verdict(tmp_path)
+    assert first == claude_code.verdict(tmp_path)
+    rows = first.splitlines()
+    assert len(rows) == 4
+    pass_run = claude_code.load(tmp_path / "step-01.jsonl")
+    assert rows[2] == (
+        f"| step-01 | list_endpoints x 2 | {pass_run.duration_ms} "
+        f"| {sum(c.answer_bytes for c in pass_run.calls)} | ok "
+        "| list_endpoints answered 127 \\| 2 pages |"
+    )
+    assert pass_run.duration_ms == 11_937
+    assert rows[3].startswith("| step-02 | query_entities x 1 | 22544 | 72 |")
+    assert rows[3].endswith("| defect | hub answered 401 |")
+
+
+def test_a_verdict_outside_ok_defect_model_error_is_refused(tmp_path):
+    shutil.copy(FIXTURES / "public-hub-refused.jsonl", tmp_path / "step-01.jsonl")
+    (tmp_path / "verdicts.yaml").write_text(
+        "step-01: {verdict: fine}\n", encoding="utf-8"
+    )
+    with pytest.raises(ValueError, match="verdict 'fine' is not one of"):
+        claude_code.verdict(tmp_path)
+
+
+def test_a_wave_resumes_one_session_step_after_step(tmp_path, monkeypatch):
+    source = tmp_path / "w.yaml"
+    source.write_text("steps:\n  - says: one\n  - says: two\n", encoding="utf-8")
+    recorded = (FIXTURES / "public-hub-pass.jsonl").read_text(encoding="utf-8")
+    seen = []
+
+    def fake(prompt, mcp_config, max_turns, model, resume=None, keep=False):
+        seen.append((prompt, resume, keep))
+        return recorded
+
+    monkeypatch.setattr(claude_code, "_claude", fake)
+    cfg = tmp_path / "cfg.json"
+    cfg.write_text('{"mcpServers": {"jc": {}}}', encoding="utf-8")
+    assert (
+        claude_code.main(
+            [
+                "wave",
+                "--scenario",
+                str(source),
+                "--mcp-config",
+                str(cfg),
+                "--out",
+                str(tmp_path),
+            ]
+        )
+        == 0
+    )
+    session = claude_code.load(tmp_path / "step-01.jsonl").session_id
+    assert session
+    assert seen == [("one", None, True), ("two", session, True)]
+    assert (tmp_path / "step-02.jsonl").exists()
+
+
+def test_a_wave_file_without_steps_is_refused(tmp_path):
+    source = tmp_path / "w.yaml"
+    source.write_text("id: x\n", encoding="utf-8")
+    with pytest.raises(SystemExit, match="lists no steps"):
+        claude_code.steps(source)
+
+
+def test_the_committed_wave_scenarios_have_three_to_eight_steps():
+    for source in sorted((Path(__file__).parent / "scenarios-wave").glob("*.yaml")):
+        assert 3 <= len(claude_code.steps(source)) <= 8, source.name

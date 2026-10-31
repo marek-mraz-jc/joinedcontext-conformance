@@ -11,6 +11,13 @@ table: rerunning it over the same files prints the same table.
         [--scenarios portal/tests/connector_scenarios/scenarios.yaml] [--project t6025-full]
     claude_code.py baseline --out DIR
     claude_code.py table DIR
+    claude_code.py wave --scenario scenarios-wave/T-6234.yaml --mcp-config cfg.json --out DIR [--model M]
+    claude_code.py verdict DIR
+
+`wave` runs one scenario of several steps (scenarios-wave/*.yaml: `steps`, each a `says` a person
+types) as ONE session: the first step starts it, every later step resumes it, and each step's
+stream-json goes to `<out>/step-NN.jsonl`. `verdict` prints one line per step from those files and
+`<out>/verdicts.yaml` (`step-01: {verdict: ok|defect|model-error, proof: text}`).
 
 verdicts.yaml maps a scenario id to `{pass: true|false, class: <one of CLASSES>, note: text}`, a
 person's (or a reviewer's) reading of the answer against the scenario's expect and deny lines.
@@ -91,6 +98,8 @@ class Run:
     cost_usd: float = 0.0
     is_error: bool = False
     answer: str = ""
+    duration_ms: int = 0
+    session_id: str = ""
 
     @property
     def largest_answer(self) -> int:
@@ -188,6 +197,8 @@ def parse(lines: list[str], scenario: str) -> Run:
             run.cost_usd = float(event.get("total_cost_usd") or 0)
             run.is_error = bool(event.get("is_error"))
             run.answer = str(event.get("result") or "")
+            run.duration_ms = int(event.get("duration_ms") or 0)
+            run.session_id = str(event.get("session_id") or "")
     return run
 
 
@@ -251,8 +262,58 @@ def prompt(scenario: dict, project: str) -> str:
     return text.replace("{project}", project)
 
 
+VERDICTS = ("ok", "defect", "model-error")
+
+
+def verdict(out: Path) -> str:
+    """One line per `<out>/step-NN.jsonl`: calls by tool, ms, answer bytes, the written verdict and proof."""
+    verdicts_file = out / "verdicts.yaml"
+    verdicts = (
+        yaml.safe_load(verdicts_file.read_text(encoding="utf-8"))
+        if verdicts_file.exists()
+        else {}
+    ) or {}
+    rows = [
+        "| step | tool calls (name x n) | ms | answer bytes | verdict | proof |",
+        "|---|---|---|---|---|---|",
+    ]
+    for path in sorted(out.glob("step-*.jsonl")):
+        run = load(path)
+        counts: dict[str, int] = {}
+        for c in run.calls:
+            name = c.tool.split("__")[-1]
+            counts[name] = counts.get(name, 0) + 1
+        calls = ", ".join(f"{n} x {k}" for n, k in counts.items()) or "none"
+        given = verdicts.get(run.scenario) or {}
+        mark = given.get("verdict", "unjudged")
+        if mark not in VERDICTS + ("unjudged",):
+            raise ValueError(
+                f"{verdicts_file}: {run.scenario} verdict {mark!r} is not one of {', '.join(VERDICTS)}"
+            )
+        proof = str(given.get("proof", "")).replace("|", "\\|").replace("\n", " ")
+        rows.append(
+            f"| {run.scenario} | {calls} | {run.duration_ms} "
+            f"| {sum(c.answer_bytes for c in run.calls)} | {mark} | {proof} |"
+        )
+    return "\n".join(rows) + "\n"
+
+
+def steps(source: Path) -> list[str]:
+    """The `says` of each step of a wave scenario file, in order."""
+    doc = yaml.safe_load(source.read_text(encoding="utf-8"))
+    said = [str(step["says"]).strip() for step in doc.get("steps") or []]
+    if not said:
+        raise SystemExit(f"{source} lists no steps")
+    return said
+
+
 def _claude(
-    prompt: str, mcp_config: Path | None, max_turns: int, model: str | None
+    prompt: str,
+    mcp_config: Path | None,
+    max_turns: int,
+    model: str | None,
+    resume: str | None = None,
+    keep: bool = False,
 ) -> str:
     argv = [
         "claude",
@@ -265,11 +326,14 @@ def _claude(
         str(max_turns),
         "--tools",
         "",
-        "--no-session-persistence",
         "--setting-sources",
         "",
         "--strict-mcp-config",
     ]
+    if resume:
+        argv += ["--resume", resume]
+    elif not keep:
+        argv.append("--no-session-persistence")
     if mcp_config:
         servers = json.loads(mcp_config.read_text(encoding="utf-8"))["mcpServers"]
         argv += [
@@ -317,10 +381,21 @@ def main(argv: list[str]) -> int:
     base_p.add_argument("--out", type=Path, required=True)
     table_p = sub.add_parser("table")
     table_p.add_argument("out", type=Path)
+    wave_p = sub.add_parser("wave")
+    wave_p.add_argument("--scenario", type=Path, required=True)
+    wave_p.add_argument("--mcp-config", type=Path, required=True)
+    wave_p.add_argument("--out", type=Path, required=True)
+    wave_p.add_argument("--max-turns", type=int, default=12)
+    wave_p.add_argument("--model")
+    verdict_p = sub.add_parser("verdict")
+    verdict_p.add_argument("out", type=Path)
     args = parser.parse_args(argv)
 
     if args.command == "table":
         sys.stdout.write(table(args.out))
+        return 0
+    if args.command == "verdict":
+        sys.stdout.write(verdict(args.out))
         return 0
     args.out.mkdir(parents=True, exist_ok=True)
     if args.command == "baseline":
@@ -328,6 +403,8 @@ def main(argv: list[str]) -> int:
             _claude("Answer with the single word OK.", None, 1, None), encoding="utf-8"
         )
         return 0
+    if args.command == "wave":
+        return _wave(args)
     for scenario in scenarios(
         args.ids.split(",") if args.ids else None, args.scenarios
     ):
@@ -338,6 +415,26 @@ def main(argv: list[str]) -> int:
         run = load(args.out / f"{scenario['id']}.jsonl")
         print(
             f"{run.scenario}: {len(run.calls)} calls, {run.turns} turns, {run.input_tokens} in, USD {run.cost_usd:.4f}"
+        )
+    return 0
+
+
+def _wave(args: argparse.Namespace) -> int:
+    session = None
+    for n, says in enumerate(steps(args.scenario), start=1):
+        path = args.out / f"step-{n:02d}.jsonl"
+        path.write_text(
+            _claude(
+                says, args.mcp_config, args.max_turns, args.model, session, keep=True
+            ),
+            encoding="utf-8",
+        )
+        run = load(path)
+        if not run.session_id:
+            raise SystemExit(f"{path}: no session id in the result, cannot resume")
+        session = run.session_id
+        print(
+            f"{run.scenario}: {len(run.calls)} calls, {run.turns} turns, {run.duration_ms} ms, USD {run.cost_usd:.4f}"
         )
     return 0
 
