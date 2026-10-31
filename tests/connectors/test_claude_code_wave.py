@@ -1,6 +1,6 @@
 """The per-step check of claude_code.py `wave` / `verdict` (T-6235) and its recorded session.
 
-fixtures/T-6235/step-NN.jsonl is the recorded live session of scenarios-wave/T-6235.yaml against dev's
+fixtures/T-6235/ and fixtures/T-6240/ step-NN.jsonl are the recorded live sessions of scenarios-wave/<id>.yaml against dev's
 full-access connector of t6025-full (scrubbed), one file per step; the synthetic lines below cover the
 check's edge cases.
 """
@@ -20,6 +20,18 @@ import claude_code
 HERE = Path(__file__).parent
 SCENARIO = HERE / "scenarios-wave" / "T-6235.yaml"
 RECORDED = HERE / "fixtures" / "T-6235"
+# Each recorded session (fixtures/<id>/step-NN.jsonl of scenarios-wave/<id>.yaml): the marks with its
+# verdicts.yaml, then unjudged.
+SESSIONS = {
+    "T-6235": (
+        ["ok", "ok", "defect", "defect", "defect", "ok"],
+        ["ok", "ok", "check", "check", "check", "ok"],
+    ),
+    "T-6240": (
+        ["ok", "ok", "defect", "defect", "defect", "ok", "ok"],
+        ["ok", "ok", "ok", "ok", "check", "ok", "check"],
+    ),
+}
 
 
 def _session(*steps: tuple[list[tuple[str, bool]], str]) -> list[str]:
@@ -151,25 +163,32 @@ def test_an_answer_that_is_no_regular_expression_is_refused(tmp_path):
         claude_code.steps(bad)
 
 
-def test_the_recorded_session_gives_the_same_verdicts_again(tmp_path):
-    for f in RECORDED.glob("step-*.jsonl"):
+@pytest.mark.parametrize("task", SESSIONS)
+def test_the_recorded_session_gives_the_same_verdicts_again(tmp_path, task):
+    recorded, scenario = (
+        HERE / "fixtures" / task,
+        HERE / "scenarios-wave" / f"{task}.yaml",
+    )
+    for f in recorded.glob("step-*.jsonl"):
         shutil.copy(f, tmp_path / f.name)
-    shutil.copy(RECORDED / "verdicts.yaml", tmp_path / "verdicts.yaml")
-    first = claude_code.verdict(tmp_path, SCENARIO)
-    assert first == claude_code.verdict(tmp_path, SCENARIO)
-    assert first == (RECORDED / "verdict.md").read_text(encoding="utf-8")
+    shutil.copy(recorded / "verdicts.yaml", tmp_path / "verdicts.yaml")
+    first = claude_code.verdict(tmp_path, scenario)
+    assert first == claude_code.verdict(tmp_path, scenario)
+    assert first == (recorded / "verdict.md").read_text(encoding="utf-8")
     marks = [row.split(" | ")[4] for row in first.splitlines()[2:]]
-    assert marks == ["ok", "ok", "defect", "defect", "defect", "ok"]
+    assert marks == SESSIONS[task][0]
 
 
-def test_the_recorded_session_unjudged_marks_the_refused_steps_check(tmp_path):
-    for f in RECORDED.glob("step-*.jsonl"):
+@pytest.mark.parametrize("task", SESSIONS)
+def test_the_recorded_session_unjudged_marks_the_refused_steps_check(tmp_path, task):
+    for f in (HERE / "fixtures" / task).glob("step-*.jsonl"):
         shutil.copy(f, tmp_path / f.name)
+    scenario = HERE / "scenarios-wave" / f"{task}.yaml"
     marks = [
         row.split(" | ")[4]
-        for row in claude_code.verdict(tmp_path, SCENARIO).splitlines()[2:]
+        for row in claude_code.verdict(tmp_path, scenario).splitlines()[2:]
     ]
-    assert marks == ["ok", "ok", "check", "check", "check", "ok"]
+    assert marks == SESSIONS[task][1]
 
 
 def test_step_files_short_of_the_scenario_are_refused(tmp_path):
@@ -178,7 +197,8 @@ def test_step_files_short_of_the_scenario_are_refused(tmp_path):
         claude_code.verdict(tmp_path, SCENARIO)
 
 
-def test_the_recorded_session_holds_no_token():
-    for f in RECORDED.glob("step-*.jsonl"):
+@pytest.mark.parametrize("task", SESSIONS)
+def test_the_recorded_session_holds_no_token(task):
+    for f in (HERE / "fixtures" / task).glob("step-*.jsonl"):
         text = f.read_text(encoding="utf-8")
         assert claude_code.scrub(text) == text, f.name
