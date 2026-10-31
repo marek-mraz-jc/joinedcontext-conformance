@@ -1,0 +1,32 @@
+# Connector scenario 14/20 (T-6247): a city data steward publishes an Endpoint to the open data catalogue
+# (CKAN/DCAT), reads the dataset page back and withdraws it.
+# Project t6025-full held no merged Endpoint and no CkanInstance on 2026-10-31; its open change chg-00000009
+# (T-6242) proposes Endpoint t6242-bike-stations, which the publish plan may build on.
+# Run: python3 tests/connectors/claude_code.py wave --scenario tests/connectors/scenarios-wave/T-6247.yaml \
+#        --mcp-config cfg.json --out DIR --model claude-sonnet-5-5
+# Writes: at most one change request (PendingApproval) in t6025-full; nothing is approved.
+# Verdicts: /workspace/evidence/T-6247/verdict.md.
+id: T-6247
+title: Publish
+project: t6025-full
+steps:
+- says: Which open data catalogues can project t6025-full publish to, and which of its Endpoints are published
+    there today, including ones still waiting in an open change request?
+  expect: jc_ckan_status and jc_resource_list (CkanInstance, Endpoint) or jc_change_list; says no catalogue and
+    no publication exist yet; names t6242-bike-stations from the open change; nothing invented
+- says: Plan publishing the Endpoint t6242-bike-stations to the open data catalogue as a dataset titled
+    "Bike stations Bratislava" with a one-line description and the licence CC-BY-4.0. Show me the diff and
+    the verdict, do not apply yet.
+  expect: jc_schema_get Endpoint (publish field), then jc_change_plan; either a valid plan naming the
+    publish block or a refusal that names the missing catalogue; no apply
+- says: If the plan passed, open the change request for it. If it was refused, tell me exactly what I must
+    create first and who can do it.
+  expect: jc_change_apply on the planId when the plan passed (PendingApproval), else no apply and an
+    answer that names the refusal from the plan's verdict
+- says: Read the dataset page of "Bike stations Bratislava" back from the catalogue - its URL, title,
+    licence and the distributions it lists.
+  expect: jc_ckan_status (and jc_catalog_search); says the dataset is not in the catalogue until the change
+    merges and publishes; no invented URL
+- says: Withdraw the dataset from the catalogue again. Plan the withdrawal only, do not apply it.
+  expect: jc_change_plan dropping the publish block (or jc_change_revert_plan for a merged change); or says
+    nothing is published so there is nothing to withdraw; no apply
