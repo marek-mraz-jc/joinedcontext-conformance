@@ -1,7 +1,8 @@
 # MCP connector scenario 7/20 (T-6240): a city data steward builds a pipeline from an HTTP source into a
 # space of project t6025-full through the full-access connector: sample, mapping, schedule, test, propose,
 # run once, read what it wrote.
-# Run: python3 tests/connectors/claude_code_run.py run --scenario <this file> --mcp-config cfg.json --out DIR
+# Run: python3 tests/connectors/claude_code.py wave --scenario <this file> --mcp-config cfg.json --out DIR,
+#      then claude_code.py verdict DIR --scenario <this file> (recorded run: fixtures/T-6240).
 # Step checks as in T-6235.yaml (`tools` answered once without an error, `called` called, `deny` not
 # called, `answer` a case-insensitive regular expression over the final answer). Writes stop at an open
 # change request in t6025-full; nobody approves it, so "run it once" must end in a plain refusal.

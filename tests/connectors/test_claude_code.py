@@ -220,6 +220,25 @@ def test_the_committed_wave_scenarios_have_three_to_eight_steps():
         assert 3 <= len(claude_code.steps(source)) <= 8, source.name
 
 
+def test_claude_runs_in_an_empty_directory_outside_any_clone(tmp_path, monkeypatch):
+    monkeypatch.setattr(claude_code.tempfile, "gettempdir", lambda: str(tmp_path))
+    seen = {}
+
+    def fake_run(argv, **kw):
+        seen["cwd"] = kw["cwd"]
+        return claude_code.subprocess.CompletedProcess(
+            argv, 0, stdout='{"type":"result"}\n', stderr=""
+        )
+
+    monkeypatch.setattr(claude_code.subprocess, "run", fake_run)
+    claude_code._claude("hi", None, 1, None)
+    assert seen["cwd"] == tmp_path / "claude-code-connector-run"
+    assert list(seen["cwd"].iterdir()) == []
+    (seen["cwd"] / "stray").write_text("x")
+    with pytest.raises(SystemExit, match="not empty"):
+        claude_code._claude("hi", None, 1, None)
+
+
 def test_scrub_replaces_an_account_email_and_keeps_the_test_domains():
     # T-6245: Claude Code put its signed-in account's e-mail into a RoleBinding subject.
     raw = json.dumps(

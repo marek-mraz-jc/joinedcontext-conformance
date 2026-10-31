@@ -1,0 +1,45 @@
+# Reader's verdicts on the T-6245 session (worker-t6245, 2026-10-31); proofs in evidence/T-6245/direct-calls.txt.
+step-01:
+  proof: 'jc_resource_list ContextSpace -> {"items":[]}; jc_schema_get Project gave fields only. Direct E jc_resource_get
+    {kind: Project, name: t6025-full} -> "this connector''s segments (data-read, context, pipeline, access, publish,
+    apps, operate) read only App, CkanInstance, ContextSpace, ..." (no Project): the full-access connector cannot
+    read its own project''s settings. line on later/T-6288'
+  verdict: defect
+step-02:
+  proof: 'jc_member_list {project: t6025-full} -> "forbidden: no role grants read on RoleBinding in project t6025-full
+    (PF-50)"; direct B answers the same. T-6266 (fix in review, not on dev yet)'
+  verdict: defect
+step-03:
+  proof: jc_resource_list Role -> 20 org Roles; 26 jc_resource_get Role (with and without project) -> "kind 'Role'
+    not found in project 'org'"; direct A answers the same. later/T-6273. The model said plainly it could not read
+    any rule
+  verdict: defect
+step-04:
+  proof: 'jc_change_plan Role data-reader with kinds ContextSpace, DataModel, Endpoint -> "invalid spec.rules[].kinds
+    `DataModel`: a role inside a project names project kinds only; Role, RoleBinding, Group, Organization and Project
+    belong to the organization''s own roles (PF-68)"; direct C (DataModel alone) the same. jc-core role.rs validate_in_project
+    accepts Scope::Project only, DataModel is OrganizationOrProject. later/T-6289. Plan without DataModel passed;
+    the model told the steward the role is narrower than asked'
+  verdict: defect
+step-05:
+  proof: 'jc_change_plan Role + RoleBinding -> namespace org for the binding, then PF-126 "a person is named by
+    their Keycloak user id ... never by e-mail"; the person cannot learn their own id (jc_member_list refused, T-6266).
+    Direct G with the bearer''s sub as subject -> "no role t6245-data-reader is defined where this binding applies;
+    propose the role before a binding to it (PF-52, PF-69)": a role and its binding cannot plan together (line on
+    later/T-6279). Model used the Claude Code account e-mail as subject (scrubbed; claude_code.scrub now replaces
+    it)'
+  verdict: defect
+step-06:
+  proof: 'no tool call: the model refused to open a change request without a passing plan holding what the steward
+    asked for, and asked for the user id or a go-ahead for the Role alone. Right behaviour; the goal is blocked
+    by steps 4 and 5'
+  verdict: defect
+step-07:
+  proof: jc_member_list -> PF-50 again (T-6266); jc_change_list -> 8 PendingApproval changes; role rules unreadable
+    (later/T-6273). The model answered "the platform does not tell me" instead of guessing, which is right
+  verdict: defect
+step-08:
+  proof: 'this session got two 429s (shared 60 calls a minute with sibling scenario workers) and said so; run1 (run1/T-6245.jsonl)
+    and direct F jc_member_list {project: helsinki} -> "this connector does not reach project helsinki; its scope
+    names t6025-full". No cross-project read'
+  verdict: ok

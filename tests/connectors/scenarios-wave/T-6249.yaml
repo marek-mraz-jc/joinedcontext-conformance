@@ -1,0 +1,32 @@
+# Connector scenario 16/20 (T-6249): Knowledge and assistant. A city data steward adds a knowledge
+# source (a publisher's web pages) to project t6025-full, asks a question grounded in it and reads
+# which sources the answer used, in one Claude Code session that holds only the full-access
+# connector of t6025-full (project t6025-full, writes on).
+# Run: python3 tests/connectors/claude_code.py wave --scenario tests/connectors/scenarios-wave/T-6249.yaml \
+#        --mcp-config cfg.json --out DIR --model sonnet
+# Writes, if any, land in project t6025-full only. Portal REST behind the same steps:
+# GET/POST /api/v1/projects/{project}/knowledge/sources (src/api/knowledge.rs),
+# GET .../knowledge/sources/{source}/pages and .../search,
+# GET .../knowledge/deployments/{deployment}/context (src/api/assistant_context.rs).
+id: T-6249
+title: Knowledge and assistant
+project: t6025-full
+steps:
+  - says: >-
+      I am the data steward of project t6025-full. Which knowledge sources and assistants does our
+      project have, and what kinds of source can I add (web pages, files, a CKAN catalogue)?
+    expect: the project's KnowledgeSources and AssistantDeployments (none today) and the source kinds from the KnowledgeSource schema, or a plain word that the connector has no knowledge tool
+  - says: >-
+      Add a knowledge source named city-open-data-pages to project t6025-full that reads the web
+      pages under https://opendata.bratislava.sk/ in Slovak and English.
+    expect: a planned change creating KnowledgeSource city-open-data-pages in t6025-full that waits for approval, or a plain refusal naming why (kind outside the connector's segments)
+  - says: >-
+      Has city-open-data-pages crawled anything yet? How many pages does it hold?
+    expect: the source's crawl state and page count, or that the source does not exist; never an invented count
+  - says: >-
+      Using only that knowledge source, answer: which open data portal does Bratislava run and
+      what licence do its datasets use?
+    expect: an answer grounded in the source's pages, or a plain word that no tool searches knowledge pages; never an answer from the model's own memory presented as grounded
+  - says: >-
+      Which sources and pages did that answer use? Give me their addresses.
+    expect: the page URLs a tool returned for the answer, or that no tool returned any; never invented URLs

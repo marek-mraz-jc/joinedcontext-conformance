@@ -1,0 +1,49 @@
+# Connector scenario 8/20 (T-6241): Pipeline diagnosis, typed by a city data steward into one
+# Claude Code session that holds only the full-access connector of t6025-full (project t6025-full).
+# Run: python3 tests/connectors/claude_code.py wave --scenario tests/connectors/scenarios-wave/T-6241.yaml \
+#        --mcp-config cfg.json --out DIR --model sonnet
+# Nothing is written: every pipeline step here is a dry run on the project's runner, and step 06
+# tells the model not to open a change request.
+id: T-6241
+title: Pipeline diagnosis
+project: t6025-full
+steps:
+  - says: >-
+      I am the data steward of project t6025-full. Which of our pipelines failed or rejected
+      records in the last day? Check the pipelines themselves and the project's activity log for
+      errors, and tell me what you found.
+    expect: jc_resource_list Pipeline and jc_activity_list (severity error) answer; the model reports what is there and invents no run
+  - says: >-
+      A colleague says our pipeline counters-hourly rejects rows. Show me its newest runs, how many
+      records each sent, rejected and failed, and why the rejected ones were refused.
+    expect: jc_pipeline_logs answers not found naming counters-hourly in t6025-full; the model says the pipeline does not exist and asks for its name
+  - says: |-
+      It has not been saved yet; here is the draft. Try it on these three records without writing
+      anything and tell me which record fails, at which step and line, and why.
+
+      Pipeline (JSON): {"apiVersion":"joinedcontext.com/v1alpha1","kind":"Pipeline",
+      "metadata":{"name":"bike-counts","namespace":"t6025-full"},"spec":{"class":"scheduled",
+      "schedule":"0 * * * *","targetEndpoint":"urn:ngsi-ld:Endpoint:t6025-full:bike-counts",
+      "source":{"dataSourceRef":"counters"},"compute":{"kind":"bloblang","bloblang":
+      "root.id = \"urn:ngsi-ld:BikeCounter:\" + this.station\nroot.type = \"BikeCounter\"\nroot.intensity = {\"type\": \"Property\", \"value\": this.count.number(), \"observedAt\": this.time}"},
+      "output":{"type":"BikeCounter","mode":"upsert"}}}
+
+      Records (CSV):
+      station,count,time
+      s1,12,2026-10-31T08:00:00Z
+      s2,n/a,2026-10-31T08:00:00Z
+      s3,7,2026-10-31T08:00:00Z
+    expect: jc_pipeline_try_mapping over the CSV sample names record s2 failing at the mapping (number() of "n/a") and shows s1 and s3 as BikeCounter records
+  - says: >-
+      Find the cause and fix the mapping so a record with a count that is not a number is left out
+      with a clear reason instead of failing. Try the fixed version on the same three records and
+      show me what it would write.
+    expect: a second jc_pipeline_try_mapping with the fixed mapping writes s1 and s3 and reports s2 as left out
+  - says: >-
+      Now run the full pipeline test with validation on the fixed draft and the same records. What
+      is the verdict, and what does each finding say?
+    expect: jc_pipeline_test answers a verdict whose findings, if any, each name a record and a reason
+  - says: >-
+      Write me a short diagnosis for my colleague: the cause, the evidence from the tools, and the
+      fix. Do not open any change request.
+    expect: a summary grounded in the tool answers above, no jc_change_plan or jc_change_apply call
