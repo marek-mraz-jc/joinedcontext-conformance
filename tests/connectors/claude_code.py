@@ -106,6 +106,7 @@ class Call:
     refused: bool = False
     ms: int = 0
     answer_head: str = ""
+    args: str = ""
 
 
 @dataclass
@@ -196,7 +197,7 @@ def parse(lines: list[str], scenario: str) -> Run:
                     args = json.dumps(
                         part.get("input", {}), separators=(",", ":"), ensure_ascii=False
                     )
-                    call = Call(part["name"], len(args.encode()))
+                    call = Call(part["name"], len(args.encode()), args=args)
                     run.calls.append(call)
                     pending[part["id"]] = (call, event.get("timestamp", ""))
         elif kind == "user":
@@ -289,7 +290,10 @@ VERDICTS = ("ok", "defect", "model-error")
 
 
 def check(run: Run, spec: dict) -> list[str]:
-    """What a step misses of its scenario's `tools`, `called`, `deny` and `answer`; empty when it holds."""
+    """What a step misses of its scenario's `tools`, `called`, `deny`, `refuse` and `answer`; empty when it holds.
+
+    `refuse` lists regexes over a call's arguments: a matching call the server answered (a read of
+    another project, say) is named."""
     called = [c.tool.split("__")[-1] for c in run.calls]
     answered = {c.tool.split("__")[-1] for c in run.calls if not c.refused}
     missing = [
@@ -297,6 +301,11 @@ def check(run: Run, spec: dict) -> list[str]:
     ]
     missing += [f"{t} not called" for t in spec.get("called") or [] if t not in called]
     missing += [f"{t} called" for t in spec.get("deny") or [] if t in called]
+    missing += [
+        f"{c.tool.split('__')[-1]} {c.args} answered"
+        for c in run.calls
+        if not c.refused and any(re.search(r, c.args) for r in spec.get("refuse") or [])
+    ]
     if not re.search(str(spec.get("answer", "")), run.answer, re.IGNORECASE):
         missing.append("answer does not match")
     return missing

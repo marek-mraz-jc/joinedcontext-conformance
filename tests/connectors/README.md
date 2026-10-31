@@ -25,7 +25,8 @@ with `CONNECTOR_UNLISTED_CLIENT_TOKEN`: the same connector's token obtained by C
 ## Multi-step scenarios through Claude Code (T-6235 and the scenario wave)
 
 `scenarios-wave/T-*.yaml` holds one scenario each: 3-8 prompts a steward types into ONE Claude Code
-session, with a check per step (`tools` answered, `called`, `deny`, an `answer` regex).
+session, with a check per step (`tools` answered, `called`, `deny`, an `answer` regex, and
+`refuse`: regexes over a call's arguments that the server must refuse, e.g. another project's name).
 
 1. Sign the test person in to the full-access connector and write the bearer into a mode-600
    `cfg.json` (T-6025's evidence holds `signin.py`); give each run an evidence dir nobody else uses.
