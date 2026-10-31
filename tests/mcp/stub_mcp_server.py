@@ -94,6 +94,7 @@ ANONYMOUS_TOOLS = frozenset(
         "get_endpoint",
         "search",
         "search_documents",
+        "read_knowledge_context",
         "list_types",
         "get_type",
         "list_type_details",
@@ -133,15 +134,47 @@ SEARCH_DOCUMENTS = {
         "type": "object",
         "properties": {
             "query": {"type": "string", "minLength": 1, "maxLength": 300},
-            "limit": {"type": "integer", "minimum": 1, "maximum": 10},
+            "limit": {"type": "integer", "minimum": 1, "maximum": 20},
             # T-6167: the question in each content language, merged by rank fusion.
             "translations": {"type": "object", "maxProperties": 3,
                              "additionalProperties": {"type": "string", "minLength": 1, "maxLength": 300}},
+            # T-6183: hits whose path starts with one of these; the next page of the same search.
+            "pathPrefix": {"anyOf": [
+                {"type": "string", "pattern": "^/", "maxLength": 200},
+                {"type": "array", "minItems": 1, "maxItems": 5,
+                 "items": {"type": "string", "pattern": "^/", "maxLength": 200}},
+            ]},
+            "cursor": {"type": "string", "maxLength": 100},
         },
         "required": ["query"],
     },
     "annotations": {"readOnlyHint": True},
 }
+#: The passages around one search_documents hit (EP-167, T-6183; gateway `mcp/documents.rs`).
+READ_KNOWLEDGE_CONTEXT = {
+    "name": "read_knowledge_context",
+    "description": "Read the passages before and after a search_documents hit, in page order.",
+    "inputSchema": {
+        "type": "object",
+        "properties": {
+            "chunkId": {"type": "integer", "minimum": 1},
+            "before": {"type": "integer", "minimum": 0, "maximum": 10},
+            "after": {"type": "integer", "minimum": 0, "maximum": 10},
+        },
+        "required": ["chunkId"],
+        "additionalProperties": False,
+    },
+    "annotations": {"readOnlyHint": True},
+}
+#: The pages the hub's knowledge source holds: (path, passages in page order). A passage's
+#: chunkId is 10 * page number + ordinal.
+KNOWLEDGE_PAGES = [
+    ("/sk/urad/klientske-centrum", ["Klientske centrum", "Pondelok 8:00 až 17:00", "Utorok 8:00 až 15:00"]),
+    ("/sk/urad/podatelna", ["Podateľňa", "Streda 8:00 až 17:00", "Piatok 8:00 až 12:00", "Sobota zatvorené"]),
+    ("/fi/palvelut/asiakaspalvelu", ["Asiakaspalvelu", "Aukioloajat ma-pe 8-16"]),
+]
+#: The ranked hits of every question, best first, as (page number, ordinal).
+KNOWLEDGE_RANKING = [(1, 1), (2, 1), (3, 1), (1, 2), (2, 2), (1, 0), (2, 3), (3, 0)]
 SEARCH_HIT = {
     "title": "Klientske centrum", "url": "https://www.banskabystrica.sk/kc", "publisher": "banskabystrica",
     "description": None, "published": None, "modified": "2026-09-30T08:12:00Z", "language": "sk",
@@ -405,7 +438,7 @@ class StubMcpHandler(BaseHTTPRequestHandler):
                     if tool.get("annotations", {}).get("readOnlyHint") is True
                 ]
             if self._is_hub(path) and self.server.mode != "broken":
-                tools = tools + [SEARCH_DOCUMENTS]
+                tools = tools + [SEARCH_DOCUMENTS, READ_KNOWLEDGE_CONTEXT]
             if path == "/api/mcp" and self.server.mode == "broken" and tools:
                 # EP-112 / defect: the connector lists one tool under a name of its own.
                 tools = [dict(tools[0], name=tools[0]["name"] + "_v0")] + tools[1:]
@@ -431,11 +464,26 @@ class StubMcpHandler(BaseHTTPRequestHandler):
                      for e in jsonschema.Draft7Validator(SEARCH_DOCUMENTS["inputSchema"]).iter_errors(tool_args)),
                     None,
                 )
-                if invalid:
-                    self._send_json_rpc(req_id, error={"code": -32602, "message": invalid})
+                page = None if invalid else self._search_page(tool_args)
+                if invalid or isinstance(page, str):
+                    self._send_json_rpc(req_id, error={"code": -32602, "message": invalid or page})
                 else:
-                    self._send_json_rpc(req_id, result={"content": [{"type": "text", "text": "1 hit"}],
-                                                        "structuredContent": {"hits": [SEARCH_HIT]}, "isError": False,
+                    self._send_json_rpc(req_id, result={"content": [{"type": "text", "text": f"{len(page['hits'])} hits"}],
+                                                        "structuredContent": page, "isError": False,
+                                                        "_meta": {"jc/untrusted": True}})
+                return
+            if tool_name == "read_knowledge_context" and self._is_hub(path) and self.server.mode != "broken":
+                invalid = next(
+                    (f"invalid parameter for tool read_knowledge_context: {e.message}"
+                     for e in jsonschema.Draft7Validator(READ_KNOWLEDGE_CONTEXT["inputSchema"]).iter_errors(tool_args)),
+                    None,
+                )
+                passages = None if invalid else self._passages_around(tool_args)
+                if invalid or passages is None:
+                    self._send_json_rpc(req_id, error={"code": -32602, "message": invalid or "`chunkId` names no passage of this hub"})
+                else:
+                    self._send_json_rpc(req_id, result={"content": [{"type": "text", "text": f"{len(passages)} passages"}],
+                                                        "structuredContent": {"passages": passages}, "isError": False,
                                                         "_meta": {"jc/untrusted": True}})
                 return
             invalid = self._schema_violation(tool_name, tool_args, is_config_plane)
@@ -461,6 +509,44 @@ class StubMcpHandler(BaseHTTPRequestHandler):
             return
 
         self._send_json_rpc(req_id, error={"code": -32601, "message": f"Method not found: {method}"})
+
+    @staticmethod
+    def _passage(page: int, ordinal: int) -> dict:
+        path, texts = KNOWLEDGE_PAGES[page - 1]
+        return {"chunkId": 10 * page + ordinal, "ordinal": ordinal, "path": path, "text": texts[ordinal]}
+
+    def _search_page(self, tool_args: dict) -> dict | str:
+        """One search_documents page (T-6183): the ranked hits kept to `pathPrefix`, cut at the
+        offset a cursor of the same arguments names. Answers the refusal text otherwise."""
+        prefixes = tool_args.get("pathPrefix") or []
+        prefixes = [prefixes] if isinstance(prefixes, str) else prefixes
+        hits = [
+            dict(SEARCH_HIT, **self._passage(page, ordinal))
+            for page, ordinal in KNOWLEDGE_RANKING
+            if not prefixes or any(KNOWLEDGE_PAGES[page - 1][0].startswith(p) for p in prefixes)
+        ]
+        # The gateway seals a cursor to the caller and every argument but limit and cursor.
+        bound = json.dumps({k: v for k, v in tool_args.items() if k not in ("limit", "cursor")}, sort_keys=True)
+        start = 0
+        if "cursor" in tool_args:
+            offset, _, seal = tool_args["cursor"].partition(".")
+            if not offset.isdigit() or seal != str(uuid.uuid5(uuid.NAMESPACE_URL, bound)):
+                return "`cursor` is not a nextCursor of this search: pass the one the last page answered, with the same arguments"
+            start = int(offset)
+        limit = int(tool_args.get("limit") or 5)
+        page = {"hits": hits[start : start + limit]}
+        if start + limit < len(hits):
+            page["nextCursor"] = f"{start + limit}.{uuid.uuid5(uuid.NAMESPACE_URL, bound)}"
+        return page
+
+    def _passages_around(self, tool_args: dict) -> list[dict] | None:
+        """The passages of the hit's page from `before` ahead of it to `after` past it (T-6183)."""
+        page, ordinal = divmod(int(tool_args["chunkId"]), 10)
+        if not 1 <= page <= len(KNOWLEDGE_PAGES) or ordinal >= len(KNOWLEDGE_PAGES[page - 1][1]):
+            return None
+        first = max(0, ordinal - int(tool_args.get("before", 2)))
+        last = min(len(KNOWLEDGE_PAGES[page - 1][1]) - 1, ordinal + int(tool_args.get("after", 2)))
+        return [dict(self._passage(page, o), hit=o == ordinal) for o in range(first, last + 1)]
 
     def _hub_door(self, req_id, tool_name: str, tool_args: dict, anonymous: bool) -> None:
         """The gateway hub's catalogue tools over HUB_ENDPOINTS (T-6026)."""
