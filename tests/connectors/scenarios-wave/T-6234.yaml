@@ -1,0 +1,35 @@
+# Connector scenario 1/20 (T-6234): open data import, typed by a city data steward into one
+# Claude Code session that holds only the full-access connector of t6025-full (project t6025-full).
+# Run: python3 tests/connectors/claude_code.py wave --scenario tests/connectors/scenarios-wave/T-6234.yaml \
+#        --mcp-config cfg.json --out DIR --model sonnet
+# Writes stop at an open change request in t6025-full; nobody approves it.
+id: T-6234
+title: Open data import
+project: t6025-full
+steps:
+  - says: >-
+      I am the data steward of project t6025-full. Find me an open dataset of a Slovak city
+      (Bratislava or Banská Bystrica) with point locations, for example benches, playgrounds,
+      public toilets or trees, that is published on CKAN, ArcGIS or a DCAT catalogue. Give me the
+      dataset title, its publisher and the download or API URL.
+    expect: a catalogue or document search names one dataset with a real source URL
+  - says: >-
+      Take that dataset. Sample its source and show me five records and the fields they carry,
+      with their types.
+    expect: jc_pipeline_sample_source reads the URL (or says plainly it needs a DataSource first)
+  - says: >-
+      Infer a data model for it: one NGSI-LD class, the fields that matter as slots, the position
+      as a GeoProperty location. Plan it as a DataModel in project t6025-full, but do not apply
+      anything yet. Tell me what the plan check said.
+    expect: jc_change_plan validates a DataModel create; each refusal names the field
+  - says: >-
+      Now add a DataSource in t6025-full that reads this source over HTTP, planned together with
+      the DataModel in one plan. Tell me whether the plan is valid.
+    expect: one plan with the DataModel and the DataSource, valid, or a refusal naming the field
+  - says: >-
+      Open a change request with that plan so an approver can review it. Give me its id.
+    expect: jc_change_apply opens a pending change request in t6025-full, nothing applied
+  - says: >-
+      What is the state of that change request, and what still has to happen before the data
+      source exists?
+    expect: jc_change_get shows the pending request and names the approval step
