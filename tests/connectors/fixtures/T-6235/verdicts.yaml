@@ -1,17 +1,17 @@
 # Reader's verdicts on T-6235.jsonl (worker-t6235, 2026-10-31); steps the own check passed and nobody judged stay ok.
-3:
+step-03:
   verdict: defect
   proof: >-
     jc_change_plan refused the new model at 1.0.0 ("a breaking change cannot be saved under version 1.0.0; publish it
     as 2.0.0: new required slot 'CollectionRoute.id' was added" x8), at 2.0.0 asked for 3.0.0; direct call
     (direct-calls.txt F) refuses the same with seed conventions; required: false passes (G). T-6268
-4:
+step-04:
   verdict: defect
   proof: >-
     nothing to propose: jc_change_apply needs a passed plan and step 3's plan cannot pass (T-6268); the model refused to
     drop `required` behind the steward's back (transcript step 4). Direct apply of the optional variant opened
     chg-00000005 PendingApproval (direct-calls.txt H)
-5:
+step-05:
   verdict: defect
   proof: >-
     no change to read (T-6268); on chg-00000005 jc_change_get answers author jc-portal@noreply.invalid and
