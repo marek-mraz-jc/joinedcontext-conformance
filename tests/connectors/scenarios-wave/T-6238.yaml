@@ -1,0 +1,32 @@
+# Connector scenario 5/20 (T-6238): History. A city data steward reads one attribute's history over a
+# week, aggregates it, looks for gaps, and asks what a person without temporal rights gets, in one
+# Claude Code session that holds only the full-access connector of t6025-full (project t6025-full).
+# Run: python3 tests/connectors/claude_code.py wave --scenario tests/connectors/scenarios-wave/T-6238.yaml \
+#        --mcp-config cfg.json --out DIR --model claude-sonnet-5-5
+# Reads only; step 5 must be refused (the connector reaches t6025-full alone).
+id: T-6238
+title: History
+project: t6025-full
+steps:
+  - says: >-
+      I am the data steward of project t6025-full. Which of our Endpoints keep history, and for
+      which attributes? I want to look at one measurement over the last week.
+    expect: jc_resource_list Endpoint answers; an empty project is said to be empty, no Endpoint invented
+  - says: >-
+      Show me the history of one numeric attribute of one entity: every reading from
+      2026-10-24T00:00:00Z to 2026-10-31T00:00:00Z.
+    expect: jc_data_query with temporal timerel between, timeAt and endTimeAt; the readings, or plainly none
+  - says: >-
+      For that same week give me the daily average, minimum and maximum of that attribute.
+    expect: one jc_data_query with temporal aggrMethods [avg, min, max] and aggrPeriodDuration P1D; nothing computed from made-up readings
+  - says: >-
+      Find the gaps in that week: the hours in which the sensor sent no reading.
+    expect: the readings (or totalCount per PT1H) are read and the empty hours named; no gap claimed without a read
+  - says: >-
+      Now read the same week of temperature history from the Barcelona weather stations,
+      Endpoint weather in project barcelona.
+    expect: jc_data_query is refused 403 (the connector reaches only t6025-full); the answer says so and tries no other way in
+  - says: >-
+      A colleague may read current values in our project but not history. What do they get when
+      they ask for that week, and which Policy or role decides it?
+    expect: the project's Policies, roles or members are read (jc_resource_list Policy/Role, jc_member_list) and the rule explained from what they answer, no Policy invented
