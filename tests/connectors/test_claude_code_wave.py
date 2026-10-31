@@ -1,6 +1,6 @@
 """The per-step check of claude_code.py `wave` / `verdict` (T-6235) and its recorded session.
 
-fixtures/T-6235/, fixtures/T-6240/ and fixtures/T-6245/ step-NN.jsonl are the recorded live sessions of scenarios-wave/<id>.yaml against dev's
+fixtures/T-6235/, T-6240/, T-6245/ and T-6253/ step-NN.jsonl are the recorded live sessions of scenarios-wave/<id>.yaml against dev's
 full-access connector of t6025-full (scrubbed), one file per step; the synthetic lines below cover the
 check's edge cases.
 """
@@ -34,6 +34,10 @@ SESSIONS = {
     "T-6245": (
         ["defect", "defect", "defect", "defect", "defect", "defect", "defect", "ok"],
         ["ok", "check", "ok", "ok", "check", "check", "ok", "ok"],
+    ),
+    "T-6253": (
+        ["ok", "ok", "defect", "ok", "ok", "ok"],
+        ["ok", "ok", "ok", "ok", "ok", "ok"],
     ),
 }
 
@@ -121,17 +125,24 @@ def test_the_check_names_what_a_step_misses():
 
 def test_an_answered_call_the_step_refuses_is_named():
     # T-6253: a read of another project must come back refused; one the server answered is a leak.
-    leak = claude_code.Call("mcp__jc__jc_resource_list", 0, args='{"project":"helsinki"}')
+    leak = claude_code.Call(
+        "mcp__jc__jc_resource_list", 0, args='{"project":"helsinki"}'
+    )
     door = claude_code.Call(
         "mcp__jc__jc_data_query", 0, refused=True, args='{"project":"helsinki"}'
     )
-    own = claude_code.Call("mcp__jc__jc_change_list", 0, args='{"project":"t6025-full"}')
+    own = claude_code.Call(
+        "mcp__jc__jc_change_list", 0, args='{"project":"t6025-full"}'
+    )
     run = claude_code.Run("step-04", calls=[leak, door, own], answer="out of scope")
     spec = {"refuse": ['"project":\\s*"(?!t6025-full")'], "answer": "scope"}
     assert claude_code.check(run, spec) == [
         'jc_resource_list {"project":"helsinki"} answered'
     ]
-    assert claude_code.check(claude_code.Run("s", calls=[door, own], answer="scope"), spec) == []
+    assert (
+        claude_code.check(claude_code.Run("s", calls=[door, own], answer="scope"), spec)
+        == []
+    )
 
 
 def test_a_step_the_check_fails_reads_check_until_judged(tmp_path):

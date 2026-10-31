@@ -299,8 +299,7 @@ def check(run: Run, spec: dict) -> list[str]:
     missing += [
         f"{c.tool.split('__')[-1]} {c.args} answered"
         for c in run.calls
-        if not c.refused
-        and any(re.search(r, c.args) for r in spec.get("refuse") or [])
+        if not c.refused and any(re.search(r, c.args) for r in spec.get("refuse") or [])
     ]
     if not re.search(str(spec.get("answer", "")), run.answer, re.IGNORECASE):
         missing.append("answer does not match")
