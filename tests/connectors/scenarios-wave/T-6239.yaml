@@ -1,0 +1,33 @@
+# Connector scenario 6/20 (T-6239): geo queries, typed by a city data steward into one Claude Code
+# session that holds only the full-access connector of t6025-full (project t6025-full).
+# Run: python3 tests/connectors/claude_code.py wave --scenario tests/connectors/scenarios-wave/T-6239.yaml \
+#        --mcp-config cfg.json --out DIR --model sonnet
+# Reads only; nothing is written. Ground truth (direct NGSI-LD reads of dev's public Helsinki Endpoints,
+# 2026-10-31): 14 GtfsStop within the polygon, 43 GtfsStop near the point (300 m), 11 OnStreetParking
+# intersecting the line.
+id: T-6239
+title: Geo queries
+project: t6025-full
+steps:
+  - says: >-
+      I am the data steward of project t6025-full. Which Endpoints can I read that hold entities
+      with a location? I need Helsinki public transport stops (GtfsStop) and parking zones
+      (OnStreetParking).
+    expect: the connector lists the readable Endpoints with geo data, or says plainly which project it is limited to
+  - says: >-
+      Find the public transport stops inside this polygon in central Helsinki (longitude, latitude):
+      24.935 60.165, 24.945 60.165, 24.945 60.170, 24.935 60.170, back to 24.935 60.165.
+      How many are there, and name five.
+    expect: georel within with a Polygon; 14 stops
+  - says: >-
+      Now the stops within 300 metres of the point 24.9414 60.1710 (Helsinki railway station).
+      How many, and which is the closest?
+    expect: georel near;maxDistance==300 with a Point; 43 stops
+  - says: >-
+      Which parking zones intersect the line from 24.9380 60.1690 to 24.9300 60.1850
+      (Mannerheimintie)? Give the count and their names.
+    expect: georel intersects with a LineString on OnStreetParking; 11 zones
+  - says: >-
+      I want to check the polygon query in the Portal's data grid. Give me the exact filter or
+      address that shows the same stops there, so I can compare the two counts.
+    expect: an Explore address or the NGSI-LD query with the same georel, geometry and coordinates
