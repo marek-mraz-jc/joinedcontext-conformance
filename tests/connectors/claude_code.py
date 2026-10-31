@@ -37,6 +37,7 @@ import json
 import re
 import subprocess
 import sys
+import tempfile
 from dataclasses import dataclass, field
 from datetime import datetime
 from pathlib import Path
@@ -356,6 +357,17 @@ def steps(source: Path) -> list[str]:
     return [step["says"] for step in wave(source)["steps"]]
 
 
+def workdir() -> Path:
+    """An empty directory for `claude -p`: run inside a clone, the model sees the repo in its prompt
+    and answers with file tools it does not hold instead of the connector's (T-6249 step 1). One
+    stable path, since `--resume` finds a session only under the directory it started in."""
+    home = Path(tempfile.gettempdir()) / "claude-code-connector-run"
+    home.mkdir(mode=0o700, exist_ok=True)
+    if any(home.iterdir()):
+        raise SystemExit(f"{home} is not empty; claude would read it as the project")
+    return home
+
+
 def _claude(
     prompt: str,
     mcp_config: Path | None,
@@ -398,6 +410,7 @@ def _claude(
         capture_output=True,
         text=True,
         stdin=subprocess.DEVNULL,
+        cwd=workdir(),
         timeout=900,
         check=False,
     )
