@@ -1,0 +1,30 @@
+# Connector scenario 9/20 (T-6242): a city data steward makes a dataset Endpoint over one type with an
+# attribute subset, reads through it and asks for its NGSI-LD, OGC API Features and OData addresses.
+# Project t6025-full held no merged space, model or Endpoint on 2026-10-31; its open change chg-00000006
+# (T-6240) proposes space bratislava-bikeshare with a bike-station DataModel, which a new Endpoint may name.
+# Run: python3 tests/connectors/claude_code.py wave --scenario tests/connectors/scenarios-wave/T-6242.yaml \
+#        --mcp-config cfg.json --out DIR --model claude-sonnet-5-5
+# Writes: at most one change request (PendingApproval) in t6025-full; nothing is approved.
+# Verdicts: /workspace/evidence/T-6242/verdict.md.
+id: T-6242
+title: Endpoints
+project: t6025-full
+steps:
+- says: In project t6025-full, which context spaces and data models could a new dataset Endpoint read from,
+    including ones still waiting in an open change request? Name the entity types each model defines.
+  expect: jc_resource_list (ContextSpace, DataModel, Endpoint) and jc_change_list/jc_change_get; names
+    bratislava-bikeshare and its model's type from the open change; says nothing is merged yet
+- says: Plan a dataset Endpoint named t6242-bike-stations in project t6025-full over the space
+    bratislava-bikeshare, serving only the bike station type of its model and only its name, location and
+    capacity attributes (or the closest ones the model has). Show me the diff and the verdict, do not apply yet.
+  expect: jc_schema_get Endpoint, then one jc_change_plan with a valid verdict naming the type and the
+    attribute subset; no apply
+- says: Looks good, open the change request for that plan.
+  expect: one jc_change_apply on the planId; answers the change name and PendingApproval; no second plan
+- says: Read the first 5 bike stations through the Endpoint t6242-bike-stations, only the attributes it serves.
+  expect: one jc_data_query (or a jc_resource_get first); an answer that says the Endpoint is not served until
+    the change is approved and merged; no invented rows
+- says: Which addresses does the Endpoint t6242-bike-stations serve for NGSI-LD, OGC API Features and OData?
+    Give me the URLs and whether each one answers today.
+  expect: jc_resource_get Endpoint (status, addresses) or jc_change_get; URLs from the platform, none invented;
+    says none answers before the merge
