@@ -202,3 +202,29 @@ def test_the_recorded_session_holds_no_token(task):
     for f in (HERE / "fixtures" / task).glob("step-*.jsonl"):
         text = f.read_text(encoding="utf-8")
         assert claude_code.scrub(text) == text, f.name
+
+
+def test_from_resumes_at_a_step_in_the_session_of_the_step_before(
+    tmp_path, monkeypatch
+):
+    recorded = HERE / "fixtures" / "T-6235"
+    shutil.copy(recorded / "step-01.jsonl", tmp_path / "step-01.jsonl")
+    asked = []
+
+    def fake(says, cfg, turns, model, session, keep):
+        asked.append(session)
+        return (recorded / "step-02.jsonl").read_text(encoding="utf-8")
+
+    monkeypatch.setattr(claude_code, "_claude", fake)
+    args = [
+        "wave",
+        "--scenario",
+        str(SCENARIO),
+        "--mcp-config",
+        "c",
+        "--out",
+        str(tmp_path),
+    ]
+    assert claude_code.main([*args, "--from", "2"]) == 0
+    first = claude_code.load(tmp_path / "step-01.jsonl").session_id
+    assert asked[0] == first and len(asked) == len(claude_code.steps(SCENARIO)) - 1

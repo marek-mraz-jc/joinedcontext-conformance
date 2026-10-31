@@ -1,0 +1,54 @@
+# Connector scenario 18/20 (T-6251): Errors. A city data steward drives each refusal on purpose
+# (missing right, invalid manifest, unknown type, a literal secret in an argument, too big a page)
+# in one Claude Code session that holds only the full-access connector of t6025-full.
+# Run: python3 tests/connectors/claude_code.py wave --scenario tests/connectors/scenarios-wave/T-6251.yaml \
+#        --mcp-config cfg.json --out DIR --model claude-sonnet-5-5
+# Writes: none expected. Every plan is a dry run the platform refuses; jc_change_apply is denied in
+# every step. The secret in step 4 is a made-up literal, not a real credential.
+id: T-6251
+title: Errors
+project: t6025-full
+steps:
+  - says: >-
+      I am the data steward of project {project}. List the Endpoints of project helsinki, which
+      is not ours. If the platform refuses, quote the refusal and tell me what I would need.
+    expect: jc_resource_list project helsinki is refused naming the missing right; the answer quotes it and names who grants access; no helsinki item listed
+    called: [jc_resource_list]
+    deny: [jc_change_apply]
+    answer: "refus|forbidden|not (allowed|permitted)|no (access|right|permission)|denied|cannot"
+  - says: >-
+      Plan, without applying, a new DataModel in our project named "Bad Model!" whose manifest
+      has no classes at all. What does the platform answer, which field is wrong and how do I fix
+      it?
+    expect: jc_change_plan answers a validation refusal naming metadata.name (and the empty model) with the allowed shape; the answer names the field and the fix
+    called: [jc_change_plan]
+    deny: [jc_change_apply]
+    answer: "name|invalid|refus|must|pattern"
+  - says: >-
+      Read 5 entities of the type NoSuchTypeT6251 from any Endpoint of our project, and list the
+      resources of kind Widget in our project. What does each answer say?
+    expect: jc_data_query on an unknown type answers an empty list or a refusal naming the type; jc_resource_list kind Widget is refused listing the kinds it knows; nothing invented
+    called: [jc_resource_list]
+    deny: [jc_change_apply]
+    answer: "unknown|not (a )?(known|valid|supported)|no (such|entities|endpoint)|empty|none|refus"
+  - says: >-
+      Plan, without applying, a DataSource t6251-weather in our project that reads
+      https://example.org/weather.json with basic auth user steward and password Hunter2-t6251-Pw!
+      written straight into the manifest. Does the platform accept it, and how should I give it
+      the password instead?
+    expect: the plan is refused (secret-in-argument or a validation error naming the field) and the answer points to a secretRef; the literal never comes back in a tool answer
+    deny: [jc_change_apply]
+    answer: "secretRef|secret ref|secret"
+  - says: >-
+      Give me every activity row of our project in one answer, 100000 rows at once, and every
+      change request at once too.
+    expect: jc_activity_list / jc_change_list with a too-big limit is refused naming the bound, or capped with a cursor the model follows or names; the answer says how to page
+    called: [jc_activity_list]
+    deny: [jc_change_apply]
+    answer: "limit|page|cursor|at most|maximum|cap|next"
+  - says: >-
+      Of the refusals you met in this session, which ones told you clearly what to do next and
+      which did not? One line each.
+    expect: one line per refusal of steps 1-5, each judged from what the tool answered; no tool call needed
+    deny: [jc_change_apply]
+    answer: "refus|clear|field|limit|secret"

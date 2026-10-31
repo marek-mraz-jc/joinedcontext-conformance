@@ -237,3 +237,9 @@ def test_claude_runs_in_an_empty_directory_outside_any_clone(tmp_path, monkeypat
     (seen["cwd"] / "stray").write_text("x")
     with pytest.raises(SystemExit, match="not empty"):
         claude_code._claude("hi", None, 1, None)
+
+
+def test_scrub_keeps_an_escape_after_an_authorization_key_valid_json():
+    # A YAML manifest in a model answer: `authorization:` then an escaped newline (T-6251 step 4).
+    text = json.dumps({"text": "http:\n  authorization:\n    headerRef: {name: a}"})
+    assert claude_code.scrub(text) == text
