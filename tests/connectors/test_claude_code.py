@@ -71,6 +71,14 @@ def test_a_verdict_class_outside_the_list_is_refused(tmp_path):
         claude_code.table(tmp_path)
 
 
+def test_a_row_failed_on_an_empty_test_project_names_the_fixture(tmp_path):
+    shutil.copy(FIXTURES / "public-hub-refused.jsonl", tmp_path / "S-02.jsonl")
+    (tmp_path / "verdicts.yaml").write_text(
+        "S-02: {pass: false, class: fixture missing}\n", encoding="utf-8"
+    )
+    assert claude_code.table(tmp_path).splitlines()[2].endswith("| fixture missing |")
+
+
 def test_an_unjudged_row_says_so(tmp_path):
     shutil.copy(FIXTURES / "public-hub-pass.jsonl", tmp_path / "S-01.jsonl")
     assert "| S-01 | unjudged |" in claude_code.table(tmp_path)

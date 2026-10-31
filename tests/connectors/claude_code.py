@@ -40,6 +40,9 @@ CLASSES = (
     "answer too large",
     "unclear error",
     "auth",
+    # The person's connector works, but the test project holds nothing the scenario needs (no space,
+    # Endpoint or source): the row measures the setup, not the connector.
+    "fixture missing",
 )
 
 #: An answer past this many bytes is about 10k tokens of the model's context for one call.
