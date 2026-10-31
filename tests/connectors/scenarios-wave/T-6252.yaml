@@ -1,0 +1,45 @@
+# Connector scenario 19/20 (T-6252): Size and cost. A city data steward asks for small answers on
+# purpose (a few activity rows, the open changes, only the class names of a model) in one Claude Code
+# session that holds only the full-access connector of t6025-full, then asks the model which answer
+# cost the most. The bytes per call come from the transcript; tools/list and the page sizes of
+# jc_activity_list and jc_change_list are measured by direct MCP calls (evidence/T-6252/direct-calls.txt).
+# Run: python3 tests/connectors/claude_code.py wave --scenario tests/connectors/scenarios-wave/T-6252.yaml \
+#        --mcp-config cfg.json --out DIR --model claude-sonnet-5-5
+#      python3 tests/connectors/claude_code.py sizes DIR   (calls and answer bytes, biggest answers)
+# Writes: none. Every step reads; jc_change_apply and jc_change_plan are denied in every step.
+id: T-6252
+title: Size and cost
+project: t6025-full
+steps:
+  - says: >-
+      I am the data steward of project {project}. Without calling any tool: how many tools does
+      this connector give you, and which three of them have the biggest definitions?
+    expect: the model counts the tools it was offered (24) from its own tool list and names three; no tool call
+    deny: [jc_change_apply, jc_change_plan]
+    answer: "\\b2[0-9]\\b|tools"
+  - says: >-
+      Show me only the 10 newest activity events of our project: time, kind and one-line summary
+      each. Ask the platform for no more than you need.
+    expect: jc_activity_list with limit 10 (about 5 KB), not the default page of 50 (about 23 KB); ten rows answered
+    called: [jc_activity_list]
+    deny: [jc_change_apply, jc_change_plan]
+    answer: "mcp|activity|event|ran"
+  - says: >-
+      How many change requests are open in our project? Give me the count and the three newest by
+      name and phase only.
+    expect: one jc_change_list call; the count and three names with phase PendingApproval; the answer has no paging, so the whole open list arrives
+    called: [jc_change_list]
+    deny: [jc_change_apply, jc_change_plan]
+    answer: "chg-|PendingApproval|pending"
+  - says: >-
+      Which data models does our project hold? Names only, with the fewest calls you can.
+    expect: one jc_resource_list kind DataModel (or jc_schema_get) call; model names listed, no schema bodies read
+    called: [jc_resource_list]
+    deny: [jc_change_apply, jc_change_plan]
+    answer: "t62|model|DataModel"
+  - says: >-
+      Of the tool answers in this session, which one was the biggest, and how could you have asked
+      for less? One line per tool you called.
+    expect: the model names the biggest answer (jc_change_list or jc_activity_list) from what it read and a way to ask for less (limit, filter, names only); no tool call needed
+    deny: [jc_change_apply, jc_change_plan]
+    answer: "jc_(change|activity|resource)_list|limit|filter"

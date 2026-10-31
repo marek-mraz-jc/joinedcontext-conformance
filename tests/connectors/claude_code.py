@@ -261,6 +261,44 @@ def table(out: Path) -> str:
     return "\n".join(rows) + "\n"
 
 
+def sizes(dirs: list[Path], top: int = 10) -> str:
+    """Calls and answer bytes per recorded run (`<dir>/step-NN.jsonl` or `S-*.jsonl`), then the `top` biggest answers."""
+    rows = [
+        "| scenario | steps | calls | refused | answer bytes | largest B | USD |",
+        "|---|---|---|---|---|---|---|",
+    ]
+    biggest: list[tuple[int, str, str, Call]] = []
+    for out in dirs:
+        runs = [
+            load(p)
+            for p in sorted(out.glob("*.jsonl"))
+            if re.match(r"(step|S)-", p.name)
+        ]
+        name = (
+            out.name if out.name.startswith("T-") else f"{out.parent.name}/{out.name}"
+        )
+        calls = [c for r in runs for c in r.calls]
+        rows.append(
+            f"| {name} | {len(runs)} | {len(calls)} | {sum(c.refused for c in calls)} "
+            f"| {sum(c.answer_bytes for c in calls)} | {max((c.answer_bytes for c in calls), default=0)} "
+            f"| {sum(r.cost_usd for r in runs):.2f} |"
+        )
+        biggest += [
+            (c.answer_bytes, name, r.scenario, c) for r in runs for c in r.calls
+        ]
+    biggest.sort(key=lambda b: -b[0])
+    rows += [
+        "",
+        "| answer B | scenario | step | tool | refused |",
+        "|---|---|---|---|---|",
+    ]
+    rows += [
+        f"| {n} | {name} | {step} | {c.tool.split('__')[-1]} | {c.refused} |"
+        for n, name, step, c in biggest[:top]
+    ]
+    return "\n".join(rows) + "\n"
+
+
 def scenarios(ids: list[str] | None, source: Path = SCENARIOS) -> list[dict]:
     every = [
         s
@@ -482,7 +520,14 @@ def main(argv: list[str]) -> int:
     verdict_p.add_argument(
         "--scenario", type=Path, help="the wave file whose per-step checks to run"
     )
+    sizes_p = sub.add_parser("sizes")
+    sizes_p.add_argument("dirs", type=Path, nargs="+", help="recorded wave dirs")
+    sizes_p.add_argument("--top", type=int, default=10)
     args = parser.parse_args(argv)
+
+    if args.command == "sizes":
+        sys.stdout.write(sizes(args.dirs, args.top))
+        return 0
 
     if args.command == "table":
         sys.stdout.write(table(args.out))

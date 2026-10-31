@@ -236,3 +236,15 @@ def test_from_resumes_at_a_step_in_the_session_of_the_step_before(
     assert claude_code.main([*args, "--from", "2"]) == 0
     first = claude_code.load(tmp_path / "step-01.jsonl").session_id
     assert asked[0] == first and len(asked) == len(claude_code.steps(SCENARIO)) - 1
+
+
+def test_sizes_counts_calls_and_ranks_the_biggest_answers_of_recorded_waves():
+    out = claude_code.sizes(
+        [HERE / "fixtures" / "T-6250", HERE / "fixtures" / "T-6245"], top=2
+    )
+    rows = out.splitlines()
+    assert rows[2].startswith("| T-6250 | 7 | 11 | 1 | ")
+    assert rows[3].startswith("| T-6245 | 8 | 42 | 35 | ")
+    biggest = [int(r.split(" | ")[0].lstrip("| ")) for r in rows[-2:]]
+    assert biggest == sorted(biggest, reverse=True)
+    assert "jc_activity_list" in rows[-2]
