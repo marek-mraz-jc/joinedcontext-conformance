@@ -1,0 +1,47 @@
+# MCP connector scenario 2/20 (T-6235): a city data steward builds a data model from scratch through the
+# full-access connector, has the platform check it, proposes it and reads the proposal back.
+# Run: python3 tests/connectors/claude_code_run.py run --scenario <this file> --mcp-config cfg.json --out DIR
+# Each step is one prompt of the same session. A step is ok when every tool of `tools` answered at least
+# once without an error, every tool of `called` was called (a refusal counts: "not there yet" can be the
+# right answer), no tool of `deny` was called and the final answer matches `answer` (a regular
+# expression, case-insensitive); otherwise the reader judges it in DIR/verdicts.yaml (defect or model-error).
+id: T-6235
+title: Manual data model
+project: t6025-full
+steps:
+  - says: >-
+      In project {project} I want a new data model for the city's public waste containers, named
+      waste-bins. Before writing anything, find out what a data model needs on this platform and tell
+      me in a few lines.
+    tools: [jc_schema_get]
+    deny: [jc_change_apply]
+    answer: linkml
+  - says: >-
+      Draft it now. Two classes: WasteContainer and CollectionRoute. A WasteContainer has fillLevel in
+      percent, temperature in degrees Celsius, a status that is one of ok, full or damaged, and a
+      location. A CollectionRoute has a name and the date of its next run. Every WasteContainer belongs
+      to exactly one CollectionRoute. Show me the LinkML; do not save anything yet.
+    tools: []
+    deny: [jc_change_apply]
+    answer: CollectionRoute[\s\S]*(P1|percent|%)[\s\S]*(CEL|celsius)|(CEL|celsius)[\s\S]*(P1|percent|%)
+  - says: >-
+      Have the platform check that draft without saving it. Tell me exactly what it refuses, if
+      anything, fix that and check again until it passes.
+    tools: [jc_change_plan]
+    deny: [jc_change_apply]
+    answer: (valid|pass|accept|no (errors|problems))
+  - says: Good. Propose it as version 1.0.0 of the model so an approver can review it.
+    tools: [jc_change_apply]
+    deny: []
+    answer: chg-
+  - says: >-
+      Read the proposal back from the platform: which change is it, who wrote it, where does it stand,
+      and did the units, the status values and the link to CollectionRoute come through as I asked?
+    tools: [jc_change_get]
+    deny: [jc_change_apply]
+    answer: (pending|approv|review)
+  - says: Is the model live in the project yet? Read what the repository holds for waste-bins.
+    tools: []
+    called: [jc_model_source_get]
+    deny: [jc_change_apply]
+    answer: (not (yet )?(live|merged|in the repository)|pending|until .*approv)
