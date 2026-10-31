@@ -26,6 +26,8 @@ ANONYMOUS_TOOLS = {
     "search",
     # The public pages and documents of the attached knowledge sources (EP-133, T-4659).
     "search_documents",
+    # The passages around a search_documents hit (EP-167, T-6183).
+    "read_knowledge_context",
     "list_types",
     "get_type",
     "list_type_details",
@@ -147,7 +149,7 @@ def test_the_hub_searches_its_public_documents_with_their_metadata(make_mcp_clie
         assert {"title", "description", "published", "modified", "language"} <= set(
             hit
         ), hit
-    refused = client.tool_call("search_documents", {"query": "x", "limit": 11})
+    refused = client.tool_call("search_documents", {"query": "x", "limit": 21})
     assert refused.get("error", {}).get("code") == -32602, refused
 
 
@@ -176,6 +178,45 @@ def test_the_hub_merges_the_translations_of_a_question(make_mcp_client):
     four = {"fi": "a", "sv": "b", "en": "c", "de": "d"}
     refused = client.tool_call("search_documents", {"query": "x", "translations": four})
     assert refused.get("error", {}).get("code") == -32602, refused
+
+
+def test_the_hub_pages_a_search_keeps_to_a_path_and_reads_around_a_hit(make_mcp_client):
+    """EP-133, EP-167 (T-6183): two pages of a search are the first hits of one longer call; a
+    `pathPrefix` keeps hits whose `path` starts with it; `read_knowledge_context` answers the
+    passages around a hit in order, the hit marked; a cursor of another question is refused."""
+    url = os.getenv("HUB_MCP_URL", "").strip().rstrip("/")
+    if not url:
+        pytest.skip("HUB_MCP_URL is not set, see tests/mcp/README.md")
+    client = make_mcp_client(url, None)
+    client.initialize()
+    if "read_knowledge_context" not in client.tool_names():
+        pytest.skip("the hub lists no read_knowledge_context: no knowledge source is attached")
+    ask = {"query": "úradné hodiny", "translations": {"fi": "aukioloajat"}}
+    whole = client.tool_call("search_documents", {**ask, "limit": 6})["result"]["structuredContent"]
+    first = client.tool_call("search_documents", {**ask, "limit": 3})["result"]["structuredContent"]
+    if len(whole["hits"]) < 6:
+        pytest.skip("the attached sources hold fewer than six hits for the question")
+    second = client.tool_call(
+        "search_documents", {**ask, "limit": 3, "cursor": first["nextCursor"]}
+    )["result"]["structuredContent"]
+    ids = lambda page: [hit["chunkId"] for hit in page["hits"]]
+    assert ids(first) + ids(second) == ids(whole), (first, second, whole)
+    other = client.tool_call(
+        "search_documents", {"query": "parkovanie", "cursor": first["nextCursor"]}
+    )
+    assert other.get("error", {}).get("code") == -32602, other
+    hit = whole["hits"][0]
+    prefix = "/".join(hit["path"].split("/")[:2]) or "/"
+    kept = client.tool_call("search_documents", {**ask, "pathPrefix": [prefix]})
+    for each in kept["result"]["structuredContent"]["hits"]:
+        assert each["path"].startswith(prefix), each
+    around = client.tool_call(
+        "read_knowledge_context", {"chunkId": hit["chunkId"], "before": 1, "after": 1}
+    )["result"]["structuredContent"]["passages"]
+    assert [p["chunkId"] for p in around if p["hit"]] == [hit["chunkId"]], around
+    ordinals = [p["ordinal"] for p in around]
+    assert ordinals == sorted(ordinals), around
+    assert all(abs(o - hit["ordinal"]) <= 1 for o in ordinals), around
 
 
 @pytest.mark.parametrize("surface", SURFACES)
