@@ -1,0 +1,39 @@
+# Connector scenario 4/20 (T-6237): partial reads of one large type, typed by a city data steward.
+# The Helsinki tree register (Tree, 67,742 entities on dev's public Endpoint xwl3gxuwwqw3gqqxlme2wz2rwsvhqdx4):
+# a count alone, a page of two attributes, a later page by cursor, a q filter with a count, a q with a
+# short list, one entity's one attribute, a count per class. Each step names everything it needs, so it
+# also runs as a fresh session (the 2026-10-31 dev run did: one `claude -p` per step).
+# Run: python3 tests/connectors/claude_code.py wave --scenario tests/connectors/scenarios-wave/T-6237.yaml \
+#        --mcp-config cfg.json --out DIR --model claude-sonnet-5-5
+# Reads only; nothing is written. Ground truth (direct reads, 2026-10-31): 67,742 Tree; 9,540 street
+# Tilia x vulgaris; tree-K-1 at [24.89070917, 60.206715]; trunk classes 15827/13387/9503/13434/4965/1664
+# plus 8962 without a class. Verdicts: /workspace/evidence/T-6237/verdict.md.
+id: T-6237
+title: Partial reads
+project: t6025-full
+steps:
+- says: How many trees are in the Helsinki tree register (street and park trees)? I only need the number, do not
+    list them.
+  expect: one count-only read (count true, no page of entities or the smallest page); the total equals the broker
+    count
+- says: Show me the first 20 trees of the Helsinki tree register with only their species and trunk diameter class,
+    as a table.
+  expect: one read with limit 20 and only species, trunkDiameterClass (attrs/pick), keyValues; answer bytes far
+    below a full page
+- says: Read the Helsinki tree register 50 trees at a time and tell me the species of trees number 101 to 150 in
+    the register's order.
+  expect: three pages of 50 chained by nextCursor (or fewer reads with a smaller payload); no limit-1000 page read
+    whole
+- says: How many street trees (not park trees) of the species Tilia x vulgaris are in the Helsinki tree register?
+    Just the count.
+  expect: one read with q treeSetting=="street";species=="Tilia x vulgaris" (or the exact species text the data
+    holds) and count; no listing
+- says: Which trees of the Helsinki tree register stand on Mannerheimintie? Give me their ids and species only,
+    at most 30.
+  expect: one read with q on treeSite, limit <= 30, only species picked; a total when there are more
+- says: Where exactly is the tree urn:ngsi-ld:Tree:hel.fi:helsinki:tree-K-1 of the Helsinki tree register? I only
+    need its coordinates.
+  expect: one get of that id with only location picked; the coordinates match the broker
+- says: For the Helsinki tree register, how many trees fall in each trunk diameter class? A small table with the
+    class and its count.
+  expect: one count-only read per class (or a summarize call), never all 68k entities paged through

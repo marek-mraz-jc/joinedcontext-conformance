@@ -1,0 +1,49 @@
+# Connector scenario 10/20 (T-6243): granular policy, typed by a city data steward into one Claude
+# Code session that holds only the full-access connector of t6025-full (project t6025-full).
+# Run: python3 tests/connectors/claude_code.py wave --scenario tests/connectors/scenarios-wave/T-6243.yaml \
+#        --mcp-config cfg.json --out DIR --model sonnet
+# Writes: at most open change requests in t6025-full (a person approves; nothing goes live here).
+# Ground truth (direct jc_change_plan calls, 2026-10-31): a ContextSpace, its Endpoint and a Policy
+# planned together are refused, the Endpoint and Policy checks do not see the space of the same plan.
+id: T-6243
+title: Granular policy
+project: t6025-full
+steps:
+  - says: >-
+      I am the data steward of project t6025-full. Which context spaces, Endpoints and Policies
+      does the project hold now? Answer in a short list.
+    expect: jc_resource_list per kind with project t6025-full; the project holds none of the three
+  - says: >-
+      I want a context space t6243-parking for on-street parking zones (type OnStreetParking), an
+      Endpoint t6243-parking-wardens of it that only project t6025-full can read, and a Policy
+      t6243-wardens-paid-area: the group t6243-wardens may update only the attribute
+      availableSpotNumber of OnStreetParking entities, and only inside this polygon in central
+      Helsinki (longitude latitude): 24.935 60.165, 24.945 60.165, 24.945 60.170, 24.935 60.170,
+      back to 24.935 60.165. Plan the three together and show me the plan. Do not apply it yet.
+    expect: >-
+      jc_change_plan with a Policy of operations updateAttrs, information propertyNames
+      [availableSpotNumber] on type OnStreetParking and geoQ within Polygon; the platform refuses
+      the Endpoint and Policy because the space of the same plan does not exist yet
+  - says: >-
+      If the platform refused it, do what it asks so that the space goes to an approver, then plan
+      the Endpoint and the Policy again. Tell me which change requests are open and what is still
+      refused.
+    expect: >-
+      jc_change_plan + jc_change_apply of the space alone (an open change request); the Endpoint
+      and Policy plan either passes against the open change or names why not
+  - says: >-
+      Check that the platform validates the grant: plan the Policy once with an attribute the
+      parking model does not have (noSuchAttribute) and once with the georel misspelled as
+      "inside". Does it refuse either, and naming which field?
+    expect: each answer quoted; a refusal names the field, an accepted one is said plainly
+  - says: >-
+      Would a warden's update of availableSpotNumber on a zone outside the polygon, or of
+      totalSpotNumber on a zone inside it, be refused? Prove it with your tools if you can,
+      otherwise say exactly what is missing.
+    expect: >-
+      the connector holds no data-write tool and the Policy is not live: the model says so and
+      names what an approver and a write-capable client must do; no invented proof
+  - says: >-
+      Summarise for the approver: which change requests are open, what each grants, and what they
+      must check before approving.
+    expect: the open change ids from jc_change_list, the grant in one sentence each, no secret

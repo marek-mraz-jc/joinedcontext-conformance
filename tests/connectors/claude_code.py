@@ -12,12 +12,16 @@ table: rerunning it over the same files prints the same table.
     claude_code.py baseline --out DIR
     claude_code.py table DIR
     claude_code.py wave --scenario scenarios-wave/T-6234.yaml --mcp-config cfg.json --out DIR [--model M]
-    claude_code.py verdict DIR
+    claude_code.py verdict DIR [--scenario scenarios-wave/T-6235.yaml]
 
-`wave` runs one scenario of several steps (scenarios-wave/*.yaml: `steps`, each a `says` a person
-types) as ONE session: the first step starts it, every later step resumes it, and each step's
-stream-json goes to `<out>/step-NN.jsonl`. `verdict` prints one line per step from those files and
-`<out>/verdicts.yaml` (`step-01: {verdict: ok|defect|model-error, proof: text}`).
+`wave` runs one scenario of several steps (scenarios-wave/*.yaml: `project` and `steps`, each a
+`says` a person types, `{project}` filled in) as ONE session: the first step starts it, every later
+step resumes it, and each step's stream-json goes to `<out>/step-NN.jsonl`. `verdict` prints one line
+per step from those files and `<out>/verdicts.yaml` (`step-01: {verdict: ok|defect|model-error,
+proof: text}`). With `--scenario` it also runs each step's own check: every tool of `tools` answered
+once without an error, every tool of `called` was called (a refusal counts), no tool of `deny` was
+called and the step's answer matches `answer` (a regular expression, case-insensitive). A step the
+check passes is `ok`, one it fails is `check` until verdicts.yaml judges it.
 
 verdicts.yaml maps a scenario id to `{pass: true|false, class: <one of CLASSES>, note: text}`, a
 person's (or a reviewer's) reading of the answer against the scenario's expect and deny lines.
@@ -266,32 +270,57 @@ def prompt(scenario: dict, project: str) -> str:
 VERDICTS = ("ok", "defect", "model-error")
 
 
-def verdict(out: Path) -> str:
-    """One line per `<out>/step-NN.jsonl`: calls by tool, ms, answer bytes, the written verdict and proof."""
+def check(run: Run, spec: dict) -> list[str]:
+    """What a step misses of its scenario's `tools`, `called`, `deny` and `answer`; empty when it holds."""
+    called = [c.tool.split("__")[-1] for c in run.calls]
+    answered = {c.tool.split("__")[-1] for c in run.calls if not c.refused}
+    missing = [
+        f"{t} not answered" for t in spec.get("tools") or [] if t not in answered
+    ]
+    missing += [f"{t} not called" for t in spec.get("called") or [] if t not in called]
+    missing += [f"{t} called" for t in spec.get("deny") or [] if t in called]
+    if not re.search(str(spec.get("answer", "")), run.answer, re.IGNORECASE):
+        missing.append("answer does not match")
+    return missing
+
+
+def verdict(out: Path, scenario: Path | None = None) -> str:
+    """One line per `<out>/step-NN.jsonl`: calls by tool, ms, answer bytes, the verdict and proof.
+
+    A verdict written in `<out>/verdicts.yaml` wins; else, with a scenario, the step's own check."""
     verdicts_file = out / "verdicts.yaml"
     verdicts = (
         yaml.safe_load(verdicts_file.read_text(encoding="utf-8"))
         if verdicts_file.exists()
         else {}
     ) or {}
+    specs = wave(scenario)["steps"] if scenario else []
+    files = sorted(out.glob("step-*.jsonl"))
+    if scenario and len(files) != len(specs):
+        raise SystemExit(
+            f"{out}: {len(files)} step files, {scenario} has {len(specs)} steps"
+        )
     rows = [
         "| step | tool calls (name x n) | ms | answer bytes | verdict | proof |",
         "|---|---|---|---|---|---|",
     ]
-    for path in sorted(out.glob("step-*.jsonl")):
+    for i, path in enumerate(files):
         run = load(path)
         counts: dict[str, int] = {}
         for c in run.calls:
             name = c.tool.split("__")[-1]
             counts[name] = counts.get(name, 0) + 1
         calls = ", ".join(f"{n} x {k}" for n, k in counts.items()) or "none"
+        missing = check(run, specs[i]) if specs else []
         given = verdicts.get(run.scenario) or {}
-        mark = given.get("verdict", "unjudged")
-        if mark not in VERDICTS + ("unjudged",):
+        own = ("ok" if not missing else "check") if specs else "unjudged"
+        mark = given.get("verdict", own)
+        if mark not in VERDICTS + ("unjudged", "check"):
             raise ValueError(
                 f"{verdicts_file}: {run.scenario} verdict {mark!r} is not one of {', '.join(VERDICTS)}"
             )
-        proof = str(given.get("proof", "")).replace("|", "\\|").replace("\n", " ")
+        default = ("; ".join(missing) or "own check holds") if specs else ""
+        proof = str(given.get("proof", default)).replace("|", "\\|").replace("\n", " ")
         rows.append(
             f"| {run.scenario} | {calls} | {run.duration_ms} "
             f"| {sum(c.answer_bytes for c in run.calls)} | {mark} | {proof} |"
@@ -299,13 +328,33 @@ def verdict(out: Path) -> str:
     return "\n".join(rows) + "\n"
 
 
-def steps(source: Path) -> list[str]:
-    """The `says` of each step of a wave scenario file, in order."""
-    doc = yaml.safe_load(source.read_text(encoding="utf-8"))
-    said = [str(step["says"]).strip() for step in doc.get("steps") or []]
-    if not said:
+def wave(source: Path) -> dict:
+    """A wave scenario file, every step's `says` with `{project}` filled in and its `answer` compiled."""
+    doc = yaml.safe_load(source.read_text(encoding="utf-8")) or {}
+    project = str(doc.get("project", ""))
+    for n, step in enumerate(doc.get("steps") or [], start=1):
+        said = str(step.get("says", "")).strip()
+        if not said:
+            raise SystemExit(f"{source}: step {n} has no `says`")
+        if "{project}" in said and not project:
+            raise SystemExit(
+                f"{source}: step {n} names {{project}} but the file has no `project`"
+            )
+        step["says"] = said.replace("{project}", project)
+        try:
+            re.compile(str(step.get("answer", "")))
+        except re.error as e:
+            raise SystemExit(
+                f"{source}: step {n} answer is no regular expression: {e}"
+            ) from e
+    if not doc.get("steps"):
         raise SystemExit(f"{source} lists no steps")
-    return said
+    return doc
+
+
+def steps(source: Path) -> list[str]:
+    """The `says` of each step of a wave scenario file, in order, `{project}` filled in."""
+    return [step["says"] for step in wave(source)["steps"]]
 
 
 def workdir() -> Path:
@@ -402,13 +451,16 @@ def main(argv: list[str]) -> int:
     wave_p.add_argument("--model")
     verdict_p = sub.add_parser("verdict")
     verdict_p.add_argument("out", type=Path)
+    verdict_p.add_argument(
+        "--scenario", type=Path, help="the wave file whose per-step checks to run"
+    )
     args = parser.parse_args(argv)
 
     if args.command == "table":
         sys.stdout.write(table(args.out))
         return 0
     if args.command == "verdict":
-        sys.stdout.write(verdict(args.out))
+        sys.stdout.write(verdict(args.out, args.scenario))
         return 0
     args.out.mkdir(parents=True, exist_ok=True)
     if args.command == "baseline":
