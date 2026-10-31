@@ -237,3 +237,15 @@ def test_claude_runs_in_an_empty_directory_outside_any_clone(tmp_path, monkeypat
     (seen["cwd"] / "stray").write_text("x")
     with pytest.raises(SystemExit, match="not empty"):
         claude_code._claude("hi", None, 1, None)
+
+
+def test_scrub_replaces_an_account_email_and_keeps_the_test_domains():
+    # T-6245: Claude Code put its signed-in account's e-mail into a RoleBinding subject.
+    raw = json.dumps(
+        {"subjects": [{"user": "Some.One+x@city.example.com"}], "by": "a.b@corp.sk"}
+    )
+    cleaned = claude_code.scrub(raw)
+    assert "city.example.com" in cleaned and "corp.sk" not in cleaned
+    assert json.loads(cleaned)["by"] == "person@example.invalid"
+    kept = "jc-portal@noreply.invalid t6025-full@example.invalid x@example.org"
+    assert claude_code.scrub(kept) == kept
