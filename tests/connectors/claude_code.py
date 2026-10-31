@@ -8,6 +8,7 @@ reads the saved files back, adds the written verdicts of `<out>/verdicts.yaml` a
 table: rerunning it over the same files prints the same table.
 
     claude_code.py run --mcp-config cfg.json --out DIR [--ids S-01,S-07] [--max-turns 12] [--model M]
+        [--scenarios portal/tests/connector_scenarios/scenarios.yaml] [--project t6025-full]
     claude_code.py baseline --out DIR
     claude_code.py table DIR
 
@@ -239,6 +240,13 @@ def scenarios(ids: list[str] | None, source: Path = SCENARIOS) -> list[dict]:
     return [known[i] for i in ids]
 
 
+def prompt(scenario: dict, project: str) -> str:
+    """What the person types: `says`, then the scenario's `given` facts with `{project}` filled in."""
+    given = scenario.get("given")
+    text = scenario["says"] if not given else f"{scenario['says']}\n\n{given}"
+    return text.replace("{project}", project)
+
+
 def _claude(
     prompt: str, mcp_config: Path | None, max_turns: int, model: str | None
 ) -> str:
@@ -296,6 +304,11 @@ def main(argv: list[str]) -> int:
     run_p.add_argument("--max-turns", type=int, default=12)
     run_p.add_argument("--model")
     run_p.add_argument("--scenarios", type=Path, default=SCENARIOS)
+    run_p.add_argument(
+        "--project",
+        default="t-scn",
+        help="the test project `{project}` in a scenario's given text names, e.g. t6025-full",
+    )
     base_p = sub.add_parser("baseline")
     base_p.add_argument("--out", type=Path, required=True)
     table_p = sub.add_parser("table")
@@ -315,7 +328,7 @@ def main(argv: list[str]) -> int:
         args.ids.split(",") if args.ids else None, args.scenarios
     ):
         transcript = _claude(
-            scenario["says"], args.mcp_config, args.max_turns, args.model
+            prompt(scenario, args.project), args.mcp_config, args.max_turns, args.model
         )
         (args.out / f"{scenario['id']}.jsonl").write_text(transcript, encoding="utf-8")
         run = load(args.out / f"{scenario['id']}.jsonl")

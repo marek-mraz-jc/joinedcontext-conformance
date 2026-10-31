@@ -118,3 +118,14 @@ def test_scenarios_keep_the_connector_segments_and_refuse_unknown_ids(tmp_path):
     assert [s["id"] for s in claude_code.scenarios(None, source)] == ["S-01"]
     with pytest.raises(SystemExit, match="unknown scenario id S-99"):
         claude_code.scenarios(["S-99"], source)
+
+
+def test_the_prompt_adds_the_given_facts_with_the_project_filled_in():
+    assert claude_code.prompt({"says": "List it."}, "p") == "List it."
+    assert (
+        claude_code.prompt(
+            {"says": "Retire it.", "given": "Endpoint {project}-counters."},
+            "t6025-full",
+        )
+        == "Retire it.\n\nEndpoint t6025-full-counters."
+    )
