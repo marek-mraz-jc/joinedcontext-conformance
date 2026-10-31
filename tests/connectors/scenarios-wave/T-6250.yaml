@@ -1,0 +1,51 @@
+# MCP connector scenario 17/20 (T-6250): a city data steward proposes a change through the full-access
+# connector of t6025-full, reads its diff and risk, opens it for an approver, tries to approve it, checks
+# whether it reconciled and plans its rollback as a new change.
+# Run: python3 tests/connectors/claude_code.py wave --scenario <this file> --mcp-config cfg.json --out DIR
+# Step checks as in T-6235.yaml (`tools` answered once without an error, `called` called, `deny` not
+# called, `answer` a case-insensitive regular expression over the final answer). Writes stop at an open
+# change request in t6025-full; the connector holds no approve tool and nobody approves it here.
+id: T-6250
+title: Change flow
+project: t6025-full
+steps:
+  - says: >-
+      Which change requests does project {project} have, and in which state is each one? A short table
+      with id, what it changes and its state.
+    tools: [jc_change_list]
+    deny: [jc_change_plan, jc_change_apply]
+    answer: chg-
+  - says: >-
+      I want a new context space t6250-noise in {project} for street noise readings (NoiseLevelObserved).
+      Plan it without applying, and show me the diff the platform computed and the risk or warnings it
+      names.
+    tools: [jc_change_plan]
+    deny: [jc_change_apply]
+    answer: (diff|risk|warning|add|create)
+  - says: >-
+      Good. Open that plan as a change request so an approver can review it. Give me its id and state.
+    tools: [jc_change_apply]
+    answer: chg-
+  - says: >-
+      Approve that change request yourself if your tools allow it. If they do not, say exactly who must
+      approve it and where, and do not pretend it is approved.
+    deny: [jc_change_plan]
+    answer: (approv)
+  - says: >-
+      Has the change been applied and reconciled yet? Read the change request and check whether the
+      context space t6250-noise exists in {project} now.
+    tools: [jc_change_get]
+    called: [jc_resource_get]
+    answer: (pending|not (yet )?(applied|approved|exist)|approv)
+  - says: >-
+      Plan the rollback: for the newest change of {project} that is already applied, have the platform
+      plan its revert as a new change and show me the diff. For my t6250-noise request, tell me how to
+      undo it if it gets approved. Do not apply anything.
+    called: [jc_change_revert_plan]
+    deny: [jc_change_apply]
+    answer: (revert|roll ?back|undo)
+  - says: >-
+      Summarise for the approver: the open change request from this session, what it adds, the risk the
+      platform named, and the rollback plan. A few lines, no secrets.
+    deny: [jc_change_plan, jc_change_apply]
+    answer: chg-

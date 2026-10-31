@@ -1,6 +1,6 @@
 """The per-step check of claude_code.py `wave` / `verdict` (T-6235) and its recorded session.
 
-fixtures/T-6235/, fixtures/T-6240/ and fixtures/T-6245/ step-NN.jsonl are the recorded live sessions of scenarios-wave/<id>.yaml against dev's
+fixtures/T-6235/, fixtures/T-6240/, fixtures/T-6245/ and fixtures/T-6250/ step-NN.jsonl are the recorded live sessions of scenarios-wave/<id>.yaml against dev's
 full-access connector of t6025-full (scrubbed), one file per step; the synthetic lines below cover the
 check's edge cases.
 """
@@ -34,6 +34,10 @@ SESSIONS = {
     "T-6245": (
         ["defect", "defect", "defect", "defect", "defect", "defect", "defect", "ok"],
         ["ok", "check", "ok", "ok", "check", "check", "ok", "ok"],
+    ),
+    "T-6250": (
+        ["ok", "ok", "defect", "defect", "ok", "ok", "defect"],
+        ["ok", "ok", "ok", "ok", "check", "check", "ok"],
     ),
 }
 
