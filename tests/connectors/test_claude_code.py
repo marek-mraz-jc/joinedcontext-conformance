@@ -181,8 +181,8 @@ def test_a_wave_resumes_one_session_step_after_step(tmp_path, monkeypatch):
     recorded = (FIXTURES / "public-hub-pass.jsonl").read_text(encoding="utf-8")
     seen = []
 
-    def fake(prompt, mcp_config, max_turns, model, resume=None, keep=False):
-        seen.append((prompt, resume, keep))
+    def fake(prompt, mcp_config, max_turns, model, resume=None, keep=False, fork=False):
+        seen.append((prompt, resume, keep, fork))
         return recorded
 
     monkeypatch.setattr(claude_code, "_claude", fake)
@@ -204,8 +204,78 @@ def test_a_wave_resumes_one_session_step_after_step(tmp_path, monkeypatch):
     )
     session = claude_code.load(tmp_path / "step-01.jsonl").session_id
     assert session
-    assert seen == [("one", None, True), ("two", session, True)]
+    assert seen == [("one", None, True, True), ("two", session, True, True)]
     assert (tmp_path / "step-02.jsonl").exists()
+
+
+def test_a_wave_step_whose_mcp_server_offered_no_tool_runs_again(tmp_path, monkeypatch):
+    """T-6248: two of six steps met a connector whose minute was spent and saw no tool at all."""
+    source = tmp_path / "w.yaml"
+    source.write_text("steps:\n  - says: one\n  - says: two\n", encoding="utf-8")
+    recorded = (FIXTURES / "public-hub-pass.jsonl").read_text(encoding="utf-8")
+    lines = [json.loads(line) for line in recorded.splitlines() if line.strip()]
+    for event in lines:
+        if event.get("subtype") == "init":
+            event["tools"] = [t for t in event["tools"] if not t.startswith("mcp__")]
+            event["mcp_servers"] = [{"name": "jc", "status": "failed"}]
+    unconnected = "\n".join(json.dumps(e) for e in lines) + "\n"
+    answers = [recorded, unconnected, recorded]
+    seen, slept = [], []
+
+    def fake(prompt, mcp_config, max_turns, model, resume=None, keep=False, fork=False):
+        seen.append((prompt, resume))
+        return answers.pop(0)
+
+    monkeypatch.setattr(claude_code, "_claude", fake)
+    monkeypatch.setattr(claude_code.time, "sleep", slept.append)
+    cfg = tmp_path / "cfg.json"
+    cfg.write_text('{"mcpServers": {"jc": {}}}', encoding="utf-8")
+    argv = [
+        "wave",
+        "--scenario",
+        str(source),
+        "--mcp-config",
+        str(cfg),
+        "--out",
+        str(tmp_path),
+    ]
+    assert claude_code.main(argv) == 0
+    session = claude_code.load(tmp_path / "step-01.jsonl").session_id
+    assert seen == [("one", None), ("two", session), ("two", session)]
+    assert slept == [claude_code.CONNECT_WAIT_S]
+    assert claude_code.load(tmp_path / "step-02.jsonl").tools_offered
+
+
+def test_a_wave_step_still_unconnected_after_every_try_keeps_its_transcript(
+    tmp_path, monkeypatch
+):
+    source = tmp_path / "w.yaml"
+    source.write_text("steps:\n  - says: one\n", encoding="utf-8")
+    recorded = (FIXTURES / "public-hub-pass.jsonl").read_text(encoding="utf-8")
+    unconnected = "\n".join(
+        line
+        for line in recorded.splitlines()
+        if '"subtype": "init"' not in line and '"subtype":"init"' not in line
+    )
+    calls = []
+    monkeypatch.setattr(
+        claude_code, "_claude", lambda *a, **k: calls.append(a) or unconnected
+    )
+    monkeypatch.setattr(claude_code.time, "sleep", lambda s: None)
+    cfg = tmp_path / "cfg.json"
+    cfg.write_text('{"mcpServers": {"jc": {}}}', encoding="utf-8")
+    argv = [
+        "wave",
+        "--scenario",
+        str(source),
+        "--mcp-config",
+        str(cfg),
+        "--out",
+        str(tmp_path),
+    ]
+    assert claude_code.main(argv) == 0
+    assert len(calls) == claude_code.CONNECT_TRIES
+    assert claude_code.load(tmp_path / "step-01.jsonl").tools_offered == 0
 
 
 def test_a_wave_file_without_steps_is_refused(tmp_path):
@@ -237,3 +307,15 @@ def test_claude_runs_in_an_empty_directory_outside_any_clone(tmp_path, monkeypat
     (seen["cwd"] / "stray").write_text("x")
     with pytest.raises(SystemExit, match="not empty"):
         claude_code._claude("hi", None, 1, None)
+
+
+def test_scrub_replaces_an_account_email_and_keeps_the_test_domains():
+    # T-6245: Claude Code put its signed-in account's e-mail into a RoleBinding subject.
+    raw = json.dumps(
+        {"subjects": [{"user": "Some.One+x@city.example.com"}], "by": "a.b@corp.sk"}
+    )
+    cleaned = claude_code.scrub(raw)
+    assert "city.example.com" in cleaned and "corp.sk" not in cleaned
+    assert json.loads(cleaned)["by"] == "person@example.invalid"
+    kept = "jc-portal@noreply.invalid t6025-full@example.invalid x@example.org"
+    assert claude_code.scrub(kept) == kept
