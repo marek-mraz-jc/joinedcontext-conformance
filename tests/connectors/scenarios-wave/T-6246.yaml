@@ -1,0 +1,47 @@
+# Connector scenario 13/20 (T-6246): Subscriptions. A city data steward creates a subscription on a
+# type change, triggers it, reads the notification and deletes it, in one Claude Code session that
+# holds only the full-access connector of t6025-full (project t6025-full).
+# Run: python3 tests/connectors/claude_code.py wave --scenario tests/connectors/scenarios-wave/T-6246.yaml \
+#        --mcp-config cfg.json --out DIR --model claude-sonnet-5-5
+# A Subscription is a manifest here: the only write is a change request in t6025-full, which nobody
+# approves, so no notification is ever sent. The notify URI is an RFC 2606 example.org address.
+id: T-6246
+title: Subscriptions
+project: t6025-full
+steps:
+  - says: >-
+      I am the data steward of project {project}. Which subscriptions does our project have, and
+      which entity types and attributes could a new one watch?
+    expect: jc_resource_list Subscription (and Endpoint or DataModel) answers; an empty project is said to be empty, nothing invented
+    tools: [jc_resource_list]
+    answer: "no |none|empty|not .*any"
+  - says: >-
+      Create a subscription named bike-intensity that tells https://example.org/t6246-notify
+      whenever the intensity of any BikeCounter entity changes, in normalized format, at most once
+      every 10 seconds. Prepare it through the project's normal change process and tell me where
+      it stands.
+    expect: jc_change_plan with one Subscription manifest (entities type BikeCounter, watchedAttributes intensity, notification endpoint uri, throttling 10) answers a change request or a refusal naming the field; the answer states it is not active before approval
+    called: [jc_change_plan]
+    deny: [jc_change_apply]
+    answer: "approv|pending|review|refus|invalid"
+  - says: >-
+      Is the subscription active now? Show me its status and, if it is waiting, who has to act.
+    expect: jc_change_get or jc_change_list reads the change request and the answer names its state; jc_resource_get Subscription answers not found until it merges
+    answer: "pending|approv|not (yet )?active|waiting"
+  - says: >-
+      Trigger it: change the intensity of one BikeCounter entity in our project to 42 so a
+      notification goes out.
+    expect: no connector tool writes an entity; the model says so (or finds no BikeCounter), writes nothing through another route and claims no notification
+    deny: [jc_change_apply, jc_pipeline_run]
+    answer: "cannot|can't|no (tool|way)|not able|unable|no BikeCounter|does not|doesn't"
+  - says: >-
+      Did the notification arrive? Show me the subscription's last notification time, the last
+      failure if any, and how many notifications it sent.
+    expect: jc_resource_get Subscription or jc_change_get answers; the model says nothing was sent because the subscription is not active, no timestamp invented
+    answer: "no|not|none|never"
+  - says: >-
+      We do not need it after all. Delete the subscription bike-intensity and make sure nothing of
+      it is left in the project.
+    expect: the pending change request is withdrawn or a delete is planned (jc_change_revert_plan or a jc_change_plan delete); the answer says what is left and who must approve; no jc_change_apply
+    deny: [jc_change_apply]
+    answer: "withdr|delet|revert|cancel|pending|approv"
