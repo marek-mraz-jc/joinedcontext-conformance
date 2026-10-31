@@ -20,6 +20,11 @@ import claude_code_run as ccr
 HERE = Path(__file__).parent
 SCENARIO = HERE / "scenarios-wave" / "T-6235.yaml"
 RECORDED = HERE / "fixtures" / "T-6235-manual-model.jsonl"
+# Recorded live sessions, (scenario id, transcript): T-6240 is scenario 7, pipeline create.
+SESSIONS = [
+    ("T-6235", RECORDED),
+    ("T-6240", HERE / "fixtures" / "T-6240-pipeline-create.jsonl"),
+]
 
 
 def _session(*steps: tuple[list[tuple[str, bool]], str]) -> list[str]:
@@ -134,13 +139,14 @@ def test_a_scenario_without_steps_is_refused(tmp_path):
         ccr.load_scenario(bad)
 
 
-def test_the_recorded_session_gives_the_same_verdicts_again(tmp_path):
-    scenario = ccr.load_scenario(SCENARIO)
-    shutil.copy(RECORDED, tmp_path / "T-6235.jsonl")
-    shutil.copy(HERE / "fixtures" / "T-6235-verdicts.yaml", tmp_path / "verdicts.yaml")
+@pytest.mark.parametrize(("sid", "recorded"), SESSIONS)
+def test_the_recorded_session_gives_the_same_verdicts_again(tmp_path, sid, recorded):
+    scenario = ccr.load_scenario(HERE / "scenarios-wave" / f"{sid}.yaml")
+    shutil.copy(recorded, tmp_path / f"{sid}.jsonl")
+    shutil.copy(HERE / "fixtures" / f"{sid}-verdicts.yaml", tmp_path / "verdicts.yaml")
     first = ccr.verdict(scenario, tmp_path)
     assert first == ccr.verdict(scenario, tmp_path)
-    assert first == (HERE / "fixtures" / "T-6235-verdict.md").read_text(
+    assert first == (HERE / "fixtures" / f"{sid}-verdict.md").read_text(
         encoding="utf-8"
     )
     assert first.count("\n") == 2 + len(scenario["steps"])
@@ -153,6 +159,7 @@ def test_a_transcript_short_of_steps_is_refused(tmp_path):
         ccr.verdict(scenario, tmp_path)
 
 
-def test_the_recorded_session_holds_no_token():
-    text = RECORDED.read_text(encoding="utf-8")
+@pytest.mark.parametrize(("sid", "recorded"), SESSIONS)
+def test_the_recorded_session_holds_no_token(sid, recorded):
+    text = recorded.read_text(encoding="utf-8")
     assert claude_code.scrub(text) == text
