@@ -20,10 +20,12 @@ import claude_code_run as ccr
 HERE = Path(__file__).parent
 SCENARIO = HERE / "scenarios-wave" / "T-6235.yaml"
 RECORDED = HERE / "fixtures" / "T-6235-manual-model.jsonl"
-# Recorded live sessions, (scenario id, transcript): T-6240 is scenario 7, pipeline create.
+# Recorded live sessions, (scenario id, transcript): T-6240 is scenario 7, pipeline create;
+# T-6245 is scenario 12, settings and access.
 SESSIONS = [
     ("T-6235", RECORDED),
     ("T-6240", HERE / "fixtures" / "T-6240-pipeline-create.jsonl"),
+    ("T-6245", HERE / "fixtures" / "T-6245-settings-access.jsonl"),
 ]
 
 

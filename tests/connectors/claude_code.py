@@ -65,11 +65,19 @@ _SECRETS = (
         r"\1***",
     ),
     (re.compile(r'(?i)(mcp-session-id\\?"?\s*[:=]\s*\\?"?)[^"\\\s,}]+'), r"\1***"),
+    # Claude Code hands the model its account e-mail, which then reaches tool arguments and answers;
+    # addresses under the reserved test domains (RFC 2606) are the test persons' and stay.
+    (
+        re.compile(
+            r"[A-Za-z0-9._%+-]+@(?![A-Za-z0-9.-]*\b(?:invalid|example)\b)[A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)+"
+        ),
+        "person@example.invalid",
+    ),
 )
 
 
 def scrub(text: str) -> str:
-    """Replace bearer tokens, JWTs, Authorization values and MCP session ids with ***."""
+    """Replace bearer tokens, JWTs, Authorization values and MCP session ids with ***, e-mails too."""
     for pattern, repl in _SECRETS:
         text = pattern.sub(repl, text)
     return text
