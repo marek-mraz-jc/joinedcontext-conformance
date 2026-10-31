@@ -8,6 +8,7 @@ Endpoint slug that does not exist; the hub answered 401, Claude Code reported th
 from __future__ import annotations
 
 import base64
+import json
 import shutil
 import sys
 from pathlib import Path
@@ -71,6 +72,14 @@ def test_a_verdict_class_outside_the_list_is_refused(tmp_path):
         claude_code.table(tmp_path)
 
 
+def test_a_row_failed_on_an_empty_test_project_names_the_fixture(tmp_path):
+    shutil.copy(FIXTURES / "public-hub-refused.jsonl", tmp_path / "S-02.jsonl")
+    (tmp_path / "verdicts.yaml").write_text(
+        "S-02: {pass: false, class: fixture missing}\n", encoding="utf-8"
+    )
+    assert claude_code.table(tmp_path).splitlines()[2].endswith("| fixture missing |")
+
+
 def test_an_unjudged_row_says_so(tmp_path):
     shutil.copy(FIXTURES / "public-hub-pass.jsonl", tmp_path / "S-01.jsonl")
     assert "| S-01 | unjudged |" in claude_code.table(tmp_path)
@@ -110,3 +119,25 @@ def test_scenarios_keep_the_connector_segments_and_refuse_unknown_ids(tmp_path):
     assert [s["id"] for s in claude_code.scenarios(None, source)] == ["S-01"]
     with pytest.raises(SystemExit, match="unknown scenario id S-99"):
         claude_code.scenarios(["S-99"], source)
+
+
+def test_the_prompt_adds_the_given_facts_with_the_project_filled_in():
+    assert claude_code.prompt({"says": "List it."}, "p") == "List it."
+    assert (
+        claude_code.prompt(
+            {"says": "Retire it.", "given": "Endpoint {project}-counters."},
+            "t6025-full",
+        )
+        == "Retire it.\n\nEndpoint t6025-full-counters."
+    )
+
+
+def test_scrub_keeps_a_schema_member_named_authorization_valid_json():
+    text = json.dumps(
+        {"properties": {"Authorization": {"type": "object"}, "auth": ["a"]}}
+    )
+    assert json.loads(claude_code.scrub(text)) == json.loads(text)
+    escaped = json.dumps({"text": text})
+    assert json.loads(json.loads(claude_code.scrub(escaped))["text"]) == json.loads(
+        text
+    )
