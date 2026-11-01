@@ -35,7 +35,10 @@ steps:
       Check that the platform validates the grant: plan the Policy once with an attribute the
       parking model does not have (noSuchAttribute) and once with the georel misspelled as
       "inside". Does it refuse either, and naming which field?
-    expect: each answer quoted; a refusal names the field, an accepted one is said plainly
+    expect: >-
+      both plans refused (T-6283): the unknown attribute as an error on
+      spec.information.0.propertyNames.0 naming the model's attributes, the georel "inside" on
+      spec.geoQ; each answer quoted, no plan id applied
   - says: >-
       Would a warden's update of availableSpotNumber on a zone outside the polygon, or of
       totalSpotNumber on a zone inside it, be refused? Prove it with your tools if you can,
