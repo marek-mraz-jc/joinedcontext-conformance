@@ -58,15 +58,17 @@ UA = "joinedcontext-prod-nightly consistency (T-5130)"
 enc = lambda p: urllib.parse.urlencode(p, quote_via=urllib.parse.quote)
 
 
-def patient(fetch, url, tries=3):
+def patient(fetch, url, tries=5):
     """fetch(url), asked again after a 503's Retry-After (the gateway's two download slots and
-    its shedding answer that way, T-4782); a 503 that stays is still a difference."""
-    for _ in range(tries - 1):
+    its shedding answer that way, T-4782), doubling the wait each time (1+2+4+8 s: one prod CSV
+    build takes ~4 s, so three tries at Retry-After 1 gave up while other callers held both slots,
+    T-4877 night 11); a 503 that stays is still a difference."""
+    for i in range(tries - 1):
         answer = fetch(url)
         wait = answer[1].get("Retry-After") if isinstance(answer[1], dict) else None
         if answer[0] != 503 or not str(wait or "").isdigit():
             return answer
-        time.sleep(min(int(wait), 30))
+        time.sleep(min(int(wait) * 2**i, 30))
     return fetch(url)
 
 
