@@ -12,11 +12,12 @@ table: rerunning it over the same files prints the same table.
     claude_code.py baseline --out DIR
     claude_code.py table DIR
     claude_code.py wave --scenario scenarios-wave/T-6234.yaml --mcp-config cfg.json --out DIR [--model M]
+        [--max-budget-usd 1.5]
     claude_code.py verdict DIR [--scenario scenarios-wave/T-6235.yaml]
 
 `wave` runs one scenario of several steps (scenarios-wave/*.yaml: `project` and `steps`, each a
 `says` a person types, `{project}` filled in) as ONE session: the first step starts it, every later
-step resumes it, and each step's stream-json goes to `<out>/step-NN.jsonl` (`--from N` resumes at step N in the session of step N-1). `verdict` prints one line
+step resumes it, and each step's stream-json goes to `<out>/step-NN.jsonl` (`--from N` resumes at step N in the session of step N-1, `--to N` stops after step N). `verdict` prints one line
 per step from those files and `<out>/verdicts.yaml` (`step-01: {verdict: ok|defect|model-error,
 proof: text}`). With `--scenario` it also runs each step's own check: every tool of `tools` answered
 once without an error, every tool of `called` was called (a refusal counts), no tool of `deny` was
@@ -451,6 +452,7 @@ def _claude(
     resume: str | None = None,
     keep: bool = False,
     fork: bool = False,
+    budget_usd: float | None = None,
 ) -> str:
     argv = [
         "claude",
@@ -483,6 +485,8 @@ def _claude(
         ]
     if model:
         argv += ["--model", model]
+    if budget_usd is not None:
+        argv += ["--max-budget-usd", str(budget_usd)]
     done = subprocess.run(
         argv,
         capture_output=True,
@@ -528,11 +532,22 @@ def main(argv: list[str]) -> int:
     wave_p.add_argument("--max-turns", type=int, default=12)
     wave_p.add_argument("--model")
     wave_p.add_argument(
+        "--max-budget-usd",
+        type=float,
+        help="stop a step's session once it has spent this many USD (claude --max-budget-usd)",
+    )
+    wave_p.add_argument(
         "--from",
         dest="first",
         type=int,
         default=1,
         help="resume at this step, in the session of the step before it in --out",
+    )
+    wave_p.add_argument(
+        "--to",
+        dest="last",
+        type=int,
+        help="stop after this step (a person approves in the Portal, then --from the next one)",
     )
     verdict_p = sub.add_parser("verdict")
     verdict_p.add_argument("out", type=Path)
@@ -583,6 +598,8 @@ def _wave(args: argparse.Namespace) -> int:
     for n, says in enumerate(steps(args.scenario), start=1):
         if n < args.first:
             continue
+        if args.last and n > args.last:
+            break
         path = args.out / f"step-{n:02d}.jsonl"
         for attempt in range(1, CONNECT_TRIES + 1):
             # Each step forks the earlier step's session, so a retried step meets no failed attempt.
@@ -595,6 +612,7 @@ def _wave(args: argparse.Namespace) -> int:
                     session,
                     keep=True,
                     fork=True,
+                    budget_usd=args.max_budget_usd,
                 ),
                 encoding="utf-8",
             )

@@ -1,0 +1,62 @@
+# Owner walk T-6377 1/3: a city data steward builds a whole data product in project t6025-full through
+# the full-access connector from Claude Code: space, model (create, add a type, import a Smart Data
+# Model), data source, pipeline (validate, test, run), endpoint (create, publish) and a secret proposal.
+# Every object is named t6377-*; each write ends at an open change request an approver decides in the
+# Portal (T-6377-govern.yaml step 3, then the approver), and T-6377-live.yaml reads what went live.
+# Run: python3 tests/connectors/claude_code.py wave --scenario <this file> --mcp-config cfg.json
+#      --out DIR --model claude-sonnet-5-5 --max-budget-usd 1.5, then claude_code.py verdict DIR --scenario <this file>.
+id: T-6377-build
+title: Owner walk, build
+project: t6025-full
+steps:
+  - says: >-
+      In project {project}, list the context spaces there are today. Then create a new context space
+      named t6377-walk, title "T-6377 walk", for Bratislava bike-share data: plan it, fix what the
+      platform refuses until the plan passes, and open the change request. Give me its id.
+    tools: [jc_change_plan, jc_change_apply]
+    answer: chg-
+  - says: >-
+      Create a data model named t6377-bikes in space t6377-walk with one class
+      BikeHireDockingStation: name (text, required), location (GeoJSON point), capacity (integer).
+      Plan it, fix what is refused until it passes, and open the change request. Give me its id.
+    tools: [jc_change_plan, jc_change_apply]
+    answer: chg-
+  - says: >-
+      Add a second type to the t6377-bikes model: BikeHireDockingStationStatus with
+      availableBikeNumber (integer), freeSlotNumber (integer) and a relationship refDockingStation to
+      BikeHireDockingStation. Plan it on top of the open change and open the change request.
+    tools: [jc_change_plan, jc_change_apply]
+    answer: chg-
+  - says: >-
+      Now import the FIWARE Smart Data Model OnStreetParking (subject dataModel.Parking) into
+      {project} as its own data model t6377-sdm-parking in space t6377-walk, taken from the Smart Data
+      Models catalogue, not written from memory. If the connector has no way to import it, say so plainly.
+    called: [jc_change_plan]
+    answer: (OnStreetParking|Smart Data Model)
+  - says: >-
+      Add a DataSource t6377-gbfs in space t6377-walk that reads the public GBFS feed
+      https://gbfs.nextbike.net/maps/gbfs/v2/nextbike_bi/sk/station_information.json over HTTP. Sample
+      it first and show me two stations, then plan it and open the change request.
+    tools: [jc_pipeline_sample_source, jc_change_plan, jc_change_apply]
+    answer: chg-
+  - says: >-
+      Write the Pipeline t6377-stations from t6377-gbfs into t6377-walk: one BikeHireDockingStation per
+      station, id urn:ngsi-ld:BikeHireDockingStation:<station_id>, name, location from lon/lat,
+      capacity when present, every hour. Validate the mapping on a sample, test the pipeline without
+      writing, then plan and open the change request. Then try to run it once and tell me what happened.
+    tools: [jc_pipeline_try_mapping, jc_pipeline_test, jc_change_plan, jc_change_apply]
+    called: [jc_pipeline_run]
+    answer: chg-
+  - says: >-
+      Create an Endpoint over space t6377-walk that serves BikeHireDockingStation to the public
+      (read-only), titled "Bratislava bike stations (T-6377)", and publish it to the project's open
+      data catalogue. Read the Endpoint schema first, plan it until it passes, open the change request.
+    tools: [jc_schema_get, jc_change_plan, jc_change_apply]
+    answer: chg-
+  - says: >-
+      One more source: a DataSource t6377-private in t6377-walk reading
+      https://example.invalid/api/stations with an API key in the header X-Api-Key. I do not have the
+      key here: propose it so the platform asks an approver for the secret, never write a key into the
+      manifest. Open the change request and tell me what the approver must provide.
+    tools: [jc_change_plan, jc_change_apply]
+    answer: (secret|needsSecret)
