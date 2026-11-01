@@ -181,7 +181,16 @@ def test_a_wave_resumes_one_session_step_after_step(tmp_path, monkeypatch):
     recorded = (FIXTURES / "public-hub-pass.jsonl").read_text(encoding="utf-8")
     seen = []
 
-    def fake(prompt, mcp_config, max_turns, model, resume=None, keep=False, fork=False):
+    def fake(
+        prompt,
+        mcp_config,
+        max_turns,
+        model,
+        resume=None,
+        keep=False,
+        fork=False,
+        budget_usd=None,
+    ):
         seen.append((prompt, resume, keep, fork))
         return recorded
 
@@ -207,6 +216,28 @@ def test_a_wave_resumes_one_session_step_after_step(tmp_path, monkeypatch):
     assert seen == [("one", None, True, True), ("two", session, True, True)]
     assert (tmp_path / "step-02.jsonl").exists()
 
+    # --to stops after a step so a person can approve in the Portal; --from goes on in that session.
+    seen.clear()
+    out = tmp_path / "split"
+    base = [
+        "wave",
+        "--scenario",
+        str(source),
+        "--mcp-config",
+        str(cfg),
+        "--out",
+        str(out),
+    ]
+    assert claude_code.main([*base, "--to", "1"]) == 0
+    assert [s[0] for s in seen] == ["one"] and not (out / "step-02.jsonl").exists()
+    assert claude_code.main([*base, "--from", "2"]) == 0
+    assert seen[-1] == (
+        "two",
+        claude_code.load(out / "step-01.jsonl").session_id,
+        True,
+        True,
+    )
+
 
 def test_a_wave_step_whose_mcp_server_offered_no_tool_runs_again(tmp_path, monkeypatch):
     """T-6248: two of six steps met a connector whose minute was spent and saw no tool at all."""
@@ -222,7 +253,16 @@ def test_a_wave_step_whose_mcp_server_offered_no_tool_runs_again(tmp_path, monke
     answers = [recorded, unconnected, recorded]
     seen, slept = [], []
 
-    def fake(prompt, mcp_config, max_turns, model, resume=None, keep=False, fork=False):
+    def fake(
+        prompt,
+        mcp_config,
+        max_turns,
+        model,
+        resume=None,
+        keep=False,
+        fork=False,
+        budget_usd=None,
+    ):
         seen.append((prompt, resume))
         return answers.pop(0)
 
@@ -307,6 +347,23 @@ def test_claude_runs_in_an_empty_directory_outside_any_clone(tmp_path, monkeypat
     (seen["cwd"] / "stray").write_text("x")
     with pytest.raises(SystemExit, match="not empty"):
         claude_code._claude("hi", None, 1, None)
+
+
+def test_a_budget_reaches_claude_and_none_leaves_it_out(tmp_path, monkeypatch):
+    monkeypatch.setattr(claude_code.tempfile, "gettempdir", lambda: str(tmp_path))
+    seen = []
+
+    def fake_run(argv, **kw):
+        seen.append(argv)
+        return claude_code.subprocess.CompletedProcess(
+            argv, 0, stdout='{"type":"result"}\n', stderr=""
+        )
+
+    monkeypatch.setattr(claude_code.subprocess, "run", fake_run)
+    claude_code._claude("hi", None, 1, None, budget_usd=1.5)
+    claude_code._claude("hi", None, 1, None)
+    assert seen[0][seen[0].index("--max-budget-usd") + 1] == "1.5"
+    assert "--max-budget-usd" not in seen[1]
 
 
 def test_scrub_keeps_an_escape_after_an_authorization_key_valid_json():

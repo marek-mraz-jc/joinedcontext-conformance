@@ -1,0 +1,23 @@
+# Owner walk T-6377 2/3: grants, an App and the review queue in project t6025-full (objects t6377-*).
+# Run after T-6377-build.yaml, same flags; an approver then decides the listed changes in the Portal.
+id: T-6377-govern
+title: Owner walk, govern
+project: t6025-full
+steps:
+  - says: >-
+      In project {project}, who are the members? Grant the member with the fewest roles read access to
+      the t6377-walk space through a Policy (or a RoleBinding if that is how this platform grants it),
+      named t6377-read. Plan it until it passes and open the change request.
+    tools: [jc_member_list, jc_change_plan, jc_change_apply]
+    answer: chg-
+  - says: >-
+      Create an App t6377-map in {project}: a small web page that shows the BikeHireDockingStation
+      entities of the t6377-walk space on a map. Read the App schema, plan it and open the change request.
+    tools: [jc_schema_get, jc_change_plan, jc_change_apply]
+    answer: chg-
+  - says: >-
+      List the open changes of {project} whose names start with t6377 and tell me, per change, what it
+      does and whether it is ready. Then approve the space change. If I cannot approve from here, say so
+      plainly and tell me where an approver does it.
+    tools: [jc_change_list]
+    answer: (approv)

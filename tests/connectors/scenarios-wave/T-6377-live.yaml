@@ -1,0 +1,34 @@
+# Owner walk T-6377 3/3: after the person approved the space, model and App of T-6377-build/-govern in
+# the Portal, finish what waited on them (a second type, the Endpoint), run the pipeline, then read and
+# write through the Endpoint (project t6025-full, objects t6377-*). Same flags as T-6377-build.yaml.
+id: T-6377-live
+title: Owner walk, live
+project: t6025-full
+steps:
+  - says: >-
+      In project {project}, the data model t6377-bikes is merged now. Add a second type to it:
+      BikeHireDockingStationStatus with availableBikeNumber (integer), freeSlotNumber (integer) and a
+      relationship refDockingStation to BikeHireDockingStation. Plan it and open the change request.
+    tools: [jc_change_plan, jc_change_apply]
+    answer: chg-
+  - says: >-
+      Create an Endpoint t6377-bike-stations over space t6377-walk that serves BikeHireDockingStation
+      and BikeHireDockingStationStatus to the public, read-only, titled "Bratislava bike stations
+      (T-6377)". If the project has no open data catalogue to publish to, leave publishing out and
+      say so. Plan it and open the change request.
+    tools: [jc_change_plan, jc_change_apply]
+    answer: chg-
+  - says: >-
+      Is there a pipeline t6377-stations in {project}? If there is, run it once now and show me its last
+      run and log; if there is not, say why not and what I must do first.
+    answer: (pipeline|run)
+  - says: >-
+      Through the Endpoint t6377-bike-stations, read three BikeHireDockingStation entities and their
+      capacity. If it holds none yet, say so.
+    tools: [jc_data_query]
+    answer: (BikeHireDockingStation|no entit|none|empty)
+  - says: >-
+      Through the same Endpoint, create one BikeHireDockingStation urn:ngsi-ld:BikeHireDockingStation:t6377-1
+      named "T-6377 test station" with capacity 12, then read it back. If this connector cannot write
+      entity data, say so plainly and name what can.
+    answer: (12|cannot|not able|no tool)
