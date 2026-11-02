@@ -132,6 +132,16 @@ def test_the_prompt_adds_the_given_facts_with_the_project_filled_in():
     )
 
 
+def test_the_world_replaces_placeholders_shared_first_then_the_scenarios_own():
+    world = {"all": {"Endpoint X": "Endpoint a"}, "S-1": {"the pipeline": "pipeline b"}}
+    scenario = {"id": "S-1", "says": "Run the pipeline into Endpoint X."}
+    assert claude_code.prompt(scenario, "p", world) == "Run pipeline b into Endpoint a."
+    assert (
+        claude_code.prompt({"id": "S-2", "says": "Run the pipeline."}, "p", world)
+        == "Run the pipeline."
+    )
+
+
 def test_scrub_keeps_a_schema_member_named_authorization_valid_json():
     text = json.dumps(
         {"properties": {"Authorization": {"type": "object"}, "auth": ["a"]}}
