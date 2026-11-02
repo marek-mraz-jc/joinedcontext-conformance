@@ -1,6 +1,6 @@
 # Owner test T-6451: one Claude Code session through the full-access connector sets up the whole platform
 # (space, model, write Endpoint, 5 records, source + pipeline, Policy, map layer; project t6025-full, objects
-# t6451-*). `says` are the two prompts of the task; `continue` is what the person says after approving what
+# t6451-*). `says` are the task's two prompts, the second split in two steps; `continue` is what the person says after approving what
 # the session left open. Driver: evidence/T-6451/driver.py (approves as the person between turns).
 id: T-6451
 title: One connector session sets up the whole platform
@@ -29,10 +29,15 @@ steps:
       Now the rest of the platform, in the same space. A data source t6451-gbfs reading the public feed
       https://gbfs.nextbike.net/maps/gbfs/v2/nextbike_bi/sk/station_information.json over HTTP; a pipeline
       t6451-stations that loads each station of that feed into the space as a docking station of my model;
-      run it and tell me how many records it loaded. A Policy t6451-readers giving the group
+      run it and tell me how many records it loaded. Stop for what needs my approval; say ALL DONE when
+      the records are in.
+    tools: [jc_pipeline_sample_source, jc_change_plan, jc_change_apply, jc_pipeline_run]
+    answer: ALL DONE
+  - says: >-
+      A Policy t6451-readers giving the group
       t6025-full-readers read access to the Endpoint t6451-vendor-stations, and check with an access
       simulation that a member of that group may read and a person outside it may not. A map layer
       t6451-stations showing the docking stations of this space. Same rule: stop for what needs my
       approval. Say ALL DONE when every object is live, and list them.
-    tools: [jc_pipeline_sample_source, jc_change_plan, jc_change_apply, jc_pipeline_run, jc_access_simulate]
+    tools: [jc_change_plan, jc_change_apply, jc_access_simulate]
     answer: ALL DONE
