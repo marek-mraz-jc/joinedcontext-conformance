@@ -1,0 +1,38 @@
+# Owner test T-6451: one Claude Code session through the full-access connector sets up the whole platform
+# (space, model, write Endpoint, 5 records, source + pipeline, Policy, map layer; project t6025-full, objects
+# t6451-*). `says` are the two prompts of the task; `continue` is what the person says after approving what
+# the session left open. Driver: evidence/T-6451/driver.py (approves as the person between turns).
+id: T-6451
+title: One connector session sets up the whole platform
+project: t6025-full
+continue: >-
+  I approved every open change request and accepted every open confirmation in the Portal. Go on where you
+  stopped. Stop again only for what needs me; end with ALL DONE when all I asked for is finished.
+steps:
+  - says: >-
+      In project {project}, create a context space t6451-vendor for my organization's bike-share vendor
+      data (VeloNet docking stations), a data model from this sample, a write Endpoint
+      t6451-vendor-stations, and save these 5 records through it.
+
+      id, name, capacity, operational, lon, lat:
+      vn-001, Hlavne namestie, 12, true, 17.1090, 48.1436;
+      vn-002, Eurovea, 20, true, 17.1213, 48.1405;
+      vn-003, Patronka, 8, false, 17.0702, 48.1668;
+      vn-004, Trnavske myto, 16, true, 17.1305, 48.1619;
+      vn-005, Petrzalka Einsteinova, 10, true, 17.1104, 48.1320.
+
+      When a change request needs my approval, stop and give me its id; I approve it in the Portal and tell
+      you to go on. Read the 5 records back through the Endpoint at the end, then say ALL DONE.
+    tools: [jc_change_plan, jc_change_apply, jc_data_write, jc_data_query]
+    answer: ALL DONE
+  - says: >-
+      Now the rest of the platform, in the same space. A data source t6451-gbfs reading the public feed
+      https://gbfs.nextbike.net/maps/gbfs/v2/nextbike_bi/sk/station_information.json over HTTP; a pipeline
+      t6451-stations that loads each station of that feed into the space as a docking station of my model;
+      run it and tell me how many records it loaded. A Policy t6451-readers giving the group
+      t6025-full-readers read access to the Endpoint t6451-vendor-stations, and check with an access
+      simulation that a member of that group may read and a person outside it may not. A map layer
+      t6451-stations showing the docking stations of this space. Same rule: stop for what needs my
+      approval. Say ALL DONE when every object is live, and list them.
+    tools: [jc_pipeline_sample_source, jc_change_plan, jc_change_apply, jc_pipeline_run, jc_access_simulate]
+    answer: ALL DONE
