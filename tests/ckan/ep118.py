@@ -12,7 +12,7 @@ carry a location is read off the NGSI-LD link's first entity, so a located datas
 OGC API - Features is caught. A link outside the catalogue's own resources, such as a source's download, is
 read the same way.
 
-    python3 tests/ckan/ep118.py --ckan https://data.dev.joinedcontext.com [--pace 0.3] [organization ...]
+    python3 tests/ckan/ep118.py --ckan https://opendata.dev.joinedcontext.com [--pace 0.3] [organization ...]
 
 prints one Markdown row per dataset (each mandatory distribution, what is banned, the failed links)
 and exits 1 when any dataset fails. Without organizations it reads the whole catalogue. Only reads.

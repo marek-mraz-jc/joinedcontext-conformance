@@ -18,7 +18,7 @@ endpoints`):
   and p95 over `--samples` writes.
 
     python3 tests/ckan/surfaces.py --portal https://portal.dev.joinedcontext.com \\
-        --ckan https://data.dev.joinedcontext.com helsinki banskabystrica
+        --ckan https://opendata.dev.joinedcontext.com helsinki banskabystrica
 
 prints one table per Endpoint and exits 1 on any FAIL. `PORTAL_TOKEN` reads the endpoint list,
 `JC_GATEWAY_TOKEN` (optional) opens restricted surfaces and `JC_WRITER_TOKEN` writes the probe

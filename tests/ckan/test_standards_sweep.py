@@ -160,7 +160,7 @@ def test_an_endpoint_published_dataset_is_swept_by_its_urls():
         {"name": "Live updates over WebSocket", "url": ROOT + "ws", "mimetype": "application/json"},
         {"name": "Model Context Protocol", "url": ROOT + "mcp", "mimetype": "application/json"},
         {"name": "Data model: SHACL", "url": ROOT + "schema/v1/model.shacl.ttl", "mimetype": "text/turtle"},
-        {"name": "Event", "url": "https://data.dev.joinedcontext.com/datastore/dump/x", "url_type": "datastore"},
+        {"name": "Event", "url": "https://opendata.dev.joinedcontext.com/datastore/dump/x", "url_type": "datastore"},
     ]
     called, seen = [], []
     results = sweep([{"name": "bb-podujatia", "resources": published}],

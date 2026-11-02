@@ -14,7 +14,7 @@ import pytest
 
 from test_assistant_live import BASE, ask
 
-ORIGIN = "https://data.dev.joinedcontext.com"
+ORIGIN = "https://opendata.dev.joinedcontext.com"
 
 
 @pytest.fixture(scope="module")

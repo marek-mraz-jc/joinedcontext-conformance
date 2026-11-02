@@ -95,7 +95,7 @@
    {
     "id": "res-table",
     "name": "AirQualityObserved",
-    "url": "https://data.dev.joinedcontext.com/datastore/dump/res-table",
+    "url": "https://opendata.dev.joinedcontext.com/datastore/dump/res-table",
     "format": "",
     "url_type": "datastore",
     "datastore_active": true,
