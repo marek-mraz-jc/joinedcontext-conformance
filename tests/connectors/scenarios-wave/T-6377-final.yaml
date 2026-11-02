@@ -1,0 +1,58 @@
+# Owner walk T-6377, final: spaces, models, DataSource, secret proposal, Policy grant and App in ONE Claude
+# Code session through the full-access connector (project t6025-full, objects t6377f-*). The person approves
+# each change in the Portal between steps. A Pipeline needs its Endpoint first, so T-6377-final2.yaml and
+# -final3.yaml/-final4.yaml carry the tail. Evidence final/step-09..11 are this file's steps 6-8.
+id: T-6377-final
+title: Owner walk, final
+project: t6025-full
+steps:
+  - says: >-
+      In project {project}, list the context spaces there are today. Then create two new context
+      spaces: t6377f-walk, title "T-6377 final walk", for Bratislava bike-share data, and t6377f-parking,
+      title "T-6377 final parking". Plan them, fix what the platform refuses until the plans pass, and
+      open the change requests. Give me their ids.
+    tools: [jc_change_plan, jc_change_apply]
+    answer: chg-
+  - says: >-
+      The spaces are merged now. A space holds one data model, named like the space. Add to the model
+      t6377f-walk one class BikeHireDockingStation: name (text, required), location (GeoJSON point),
+      capacity (integer). Plan it, fix what is refused until it passes, and open the change request.
+      Give me its id.
+    tools: [jc_change_plan, jc_change_apply]
+    answer: chg-
+  - says: >-
+      That change is merged now. Add a second type to the model t6377f-walk: BikeHireDockingStationStatus with
+      availableBikeNumber (integer), freeSlotNumber (integer) and a relationship refDockingStation to
+      BikeHireDockingStation. Plan it until it passes and open the change request.
+    tools: [jc_change_plan, jc_change_apply]
+    answer: chg-
+  - says: >-
+      Now import the FIWARE Smart Data Model OnStreetParking (subject dataModel.Parking) into the model
+      t6377f-parking of space t6377f-parking, taken from the Smart Data Models catalogue, not written
+      from memory. Keep only what the platform accepts, plan it and open the change request.
+    tools: [jc_model_sdm_import, jc_change_plan, jc_change_apply]
+    answer: chg-
+  - says: >-
+      Add a DataSource t6377f-gbfs in space t6377f-walk that reads the public GBFS feed
+      https://gbfs.nextbike.net/maps/gbfs/v2/nextbike_bi/sk/station_information.json over HTTP. Sample
+      it first and show me two stations, then plan it and open the change request.
+    tools: [jc_pipeline_sample_source, jc_change_plan, jc_change_apply]
+    answer: chg-
+  - says: >-
+      One more source: a DataSource t6377f-private in t6377f-walk reading
+      https://example.invalid/api/stations with an API key in the header X-Api-Key. I do not have the
+      key here: propose it so the platform asks an approver for the secret, never write a key into the
+      manifest. Open the change request and tell me what the approver must provide.
+    tools: [jc_change_plan, jc_change_apply]
+    answer: (secret|needsSecret)
+  - says: >-
+      In project {project}, who are the members? Grant the member with the fewest roles read access to
+      the t6377f-walk space through a Policy (or a RoleBinding if that is how this platform grants it),
+      named t6377f-read. If several tie, take the first. Plan it until it passes and open the change request.
+    tools: [jc_member_list, jc_change_plan, jc_change_apply]
+    answer: chg-
+  - says: >-
+      Create an App t6377f-map in {project}: a small web page that shows the BikeHireDockingStation
+      entities of the t6377f-walk space on a map. Read the App schema, plan it and open the change request.
+    tools: [jc_schema_get, jc_change_plan, jc_change_apply]
+    answer: chg-

@@ -1,0 +1,49 @@
+# Owner walk T-6377, final calls: a pipeline run and an entity write ask the person first (an elicitation
+# page in the Portal); evidence/T-6377/final-driver.py accepts it there, and the next step repeats the call.
+id: T-6377-final3
+title: Owner walk, final calls
+project: t6025-full
+steps:
+  - says: >-
+      In project {project}, the Endpoint t6377f-bike-stations is Live but its status says "no Policy
+      grants anything through this Endpoint". Read its status and find out why. Fix it so that it binds
+      the Policies of its space (the Pipeline write Policy binds only an Endpoint without policyRef, so
+      drop spec.policyRefs), and add a Policy t6377f-public-read that lets the public read both types.
+      Plan until it passes and open the change request.
+    tools: [jc_change_plan, jc_change_apply]
+    answer: chg-
+  - says: >-
+      In project {project}, run the pipeline t6377f-stations once. If the platform asks me to accept the
+      call in the Portal, give me the link and stop.
+    tools: [jc_pipeline_run]
+    answer: (mcp-elicitations|run)
+  - says: >-
+      I accepted the call. Send it again, wait for the run to end (read the run until it has ended, at
+      most 8 times), and show me the last run and the end of its log: how many entities did it write?
+    tools: [jc_pipeline_run]
+    answer: (run|Run)
+  - says: >-
+      Through the Endpoint t6377f-bike-stations, read three BikeHireDockingStation entities and their
+      capacity. If it holds none yet, say so.
+    tools: [jc_data_query]
+    answer: (BikeHireDockingStation|no entit|none|empty)
+  - says: >-
+      Through the same Endpoint, create one BikeHireDockingStation urn:ngsi-ld:BikeHireDockingStation:t6377f-1
+      named "T-6377 test station" with capacity 12. If the platform asks me to accept the call in the
+      Portal, give me the link and stop.
+    tools: [jc_data_write]
+    answer: (mcp-elicitations|12|created)
+  - says: >-
+      I accepted the call. Send it again if it has not run, then read the entity back and show me its capacity.
+    tools: [jc_data_write, jc_data_query]
+    answer: "12"
+  - says: >-
+      The write was refused. Add to the Policy t6377f-bike-write what creating an entity needs (read the
+      Policy schema for the operation names). Plan until it passes and open the change request.
+    tools: [jc_change_plan, jc_change_apply]
+    answer: chg-
+  - says: >-
+      That Policy is merged now. Create the station again. If the platform asks me to accept the call in
+      the Portal, give me the link and stop.
+    tools: [jc_data_write]
+    answer: (mcp-elicitations|12|created)
