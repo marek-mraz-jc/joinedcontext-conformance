@@ -40,7 +40,7 @@ from tests.datasets.validate import (  # noqa: E402
 
 HERE = Path(__file__).resolve().parent
 SEED = HERE / "fixtures" / "seed"
-BASE_URL, CKAN_URL = "https://dev.example.test", "https://data.dev.example.test"
+BASE_URL, CKAN_URL = "https://dev.example.test", "https://opendata.dev.example.test"
 BASE = f"{BASE_URL}/api/endpoint/abc/"
 TYPE = "OffStreetParking"
 CONTEXT = json.dumps({"@context": {"name": "https://schema.org/name"}}).encode()
