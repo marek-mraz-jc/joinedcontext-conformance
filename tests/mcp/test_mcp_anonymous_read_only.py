@@ -416,3 +416,51 @@ def test_a_default_endpoint_page_is_small_and_its_cursor_reaches_every_endpoint(
     assert len(slugs) == len(set(slugs)) == total, (total, slugs)
     assert slug not in slugs
 
+
+
+#: The signed-in callers of ADR-N-067 2.4, each a hub token (`mcp-hub` client, `endpoint:*`).
+MEMBER_TOKENS = ("MEMBER_HUB_TOKEN", "ANALYST_HUB_TOKEN")
+#: The Endpoints dev shares with the whole Organization and with one group of it.
+SHARED_ENDPOINTS = ("ORG_SHARED_ENDPOINT", "TEAM_SHARED_ENDPOINT")
+
+
+def _catalogued(client) -> set[str]:
+    """The Endpoint slugs of the caller's `catalog` Endpoint, one DataService each."""
+    status, body = _call(
+        client,
+        "query_entities",
+        {"endpoint": "catalog", "type": "DataService", "format": "keyValues", "limit": 1000},
+    )
+    assert status == 200, (status, body[:300])
+    result = json.loads(body).get("result") or {}
+    assert not result.get("isError"), body[:300]
+    return {entity.get("identifier") for entity in result["structuredContent"]["entities"]}
+
+
+def test_a_member_and_an_analyst_each_read_their_own_endpoints(make_mcp_client):
+    """ADR-N-067 2.4 (T-6414): the hub lists the public Endpoints to a caller without a token,
+    those plus the Organization's shared one to a member, and those plus the group's one to an
+    analyst; `list_endpoints` (walked to its last cursor), its `total` and the `catalog`
+    Endpoint agree for each, and no list names an Endpoint the caller may not read."""
+    url = os.getenv("PUBLIC_MCP_URL", "").strip().rstrip("/")
+    tokens = [os.getenv(name, "").strip() for name in MEMBER_TOKENS]
+    org, team = (os.getenv(name, "").strip() for name in SHARED_ENDPOINTS)
+    if not (url and all(tokens) and org and team):
+        pytest.skip(
+            "PUBLIC_MCP_URL, MEMBER_HUB_TOKEN, ANALYST_HUB_TOKEN, ORG_SHARED_ENDPOINT and "
+            "TEAM_SHARED_ENDPOINT, see tests/mcp/README.md"
+        )
+    seen: dict[str, set[str]] = {}
+    for who, token in zip(("anonymous", "member", "analyst"), [None, *tokens]):
+        client = make_mcp_client(url, token)
+        client.initialize()
+        pages = walk_endpoints(client, {})
+        slugs = [row["slug"] for result, _ in pages for row in result["structuredContent"]["endpoints"]]
+        total = pages[0][0]["structuredContent"]["total"]
+        assert len(slugs) == len(set(slugs)) == total, (who, total, slugs)
+        assert _catalogued(client) == set(slugs), who
+        seen[who] = set(slugs)
+    assert org not in seen["anonymous"] and team not in seen["anonymous"], "the anonymous answer is unchanged"
+    assert org in seen["member"] and team not in seen["member"], seen["member"]
+    assert {org, team} <= seen["analyst"], seen["analyst"]
+    assert seen["anonymous"] < seen["member"] < seen["analyst"], seen

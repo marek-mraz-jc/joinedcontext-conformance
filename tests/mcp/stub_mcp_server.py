@@ -117,8 +117,18 @@ ANONYMOUS_TOOLS = frozenset(
 #: the hub names the non-public Endpoint to everyone.
 HUB_ENDPOINTS = {
     "aq-public": ("Air quality", True),
+    "org-shared": ("Budget of the region", False),
     "rec-internal": ("Records of the region", False),
+    "team-shared": ("Road works of the team", False),
     "tr-public": ("Traffic counts", True),
+}
+
+#: What a signed-in member and analyst read beside the public Endpoints (ADR-N-067 2.4, T-6414):
+#: the member the Organization's shared one, the analyst also its group's. Any other token reads
+#: every Endpoint. Defect (broken mode): both tokens read every Endpoint.
+HUB_MEMBER_READS = {
+    "member-hub-token": {"org-shared"},
+    "analyst-hub-token": {"org-shared", "team-shared"},
 }
 
 #: The rows a `list_endpoints` call without `limit` answers here: one, so the two public
@@ -456,7 +466,7 @@ class StubMcpHandler(BaseHTTPRequestHandler):
                 )
                 return
             if path == "/api/mcp" and tool_name in ("get_endpoint", "list_endpoints", "search", "query_entities"):
-                self._hub_door(req_id, tool_name, tool_args, anonymous)
+                self._hub_door(req_id, tool_name, tool_args, self._hub_reads(anonymous))
                 return
             if tool_name == "search_documents" and self._is_hub(path) and self.server.mode != "broken":
                 invalid = next(
@@ -548,11 +558,27 @@ class StubMcpHandler(BaseHTTPRequestHandler):
         last = min(len(KNOWLEDGE_PAGES[page - 1][1]) - 1, ordinal + int(tool_args.get("after", 2)))
         return [dict(self._passage(page, o), hit=o == ordinal) for o in range(first, last + 1)]
 
-    def _hub_door(self, req_id, tool_name: str, tool_args: dict, anonymous: bool) -> None:
-        """The gateway hub's catalogue tools over HUB_ENDPOINTS (T-6026)."""
+    def _hub_reads(self, anonymous: bool) -> set[str]:
+        """The HUB_ENDPOINTS the caller may read: the public ones, and what its token adds."""
         # `anonymous` is never true in broken mode, so the defect reads every Endpoint.
-        readable = {slug: title for slug, (title, open_) in HUB_ENDPOINTS.items() if open_ or not anonymous}
+        if anonymous:
+            return {slug for slug, (_, open_) in HUB_ENDPOINTS.items() if open_}
+        token = self.headers.get("Authorization", "").removeprefix("Bearer ").strip()
+        if token in HUB_MEMBER_READS and self.server.mode != "broken":
+            return {slug for slug, (_, open_) in HUB_ENDPOINTS.items() if open_} | HUB_MEMBER_READS[token]
+        return set(HUB_ENDPOINTS)
+
+    def _hub_door(self, req_id, tool_name: str, tool_args: dict, reads: set[str]) -> None:
+        """The gateway hub's catalogue tools over HUB_ENDPOINTS (T-6026)."""
+        readable = {slug: title for slug, (title, _) in HUB_ENDPOINTS.items() if slug in reads}
         slug = str(tool_args.get("endpoint", ""))
+        if tool_name == "query_entities" and slug == "catalog":
+            # The catalog Endpoint: one DataService per Endpoint the caller may read (T-6414).
+            entities = [{"id": f"urn:ngsi-ld:DataService:{s}", "type": "DataService", "identifier": s, "title": t}
+                        for s, t in sorted(readable.items())]
+            self._send_json_rpc(req_id, result={"isError": False, "structuredContent": {"entities": entities},
+                                                "content": [{"type": "text", "text": json.dumps({"entities": entities})}]})
+            return
         if tool_name == "query_entities" and slug not in readable:
             # EP-87 (T-6031): the one tool error for every slug outside reach, a non-public one alike.
             self._send_json_rpc(req_id, result={"isError": True, "content": [{"type": "text", "text": HUB_OUTSIDE_REACH}]})

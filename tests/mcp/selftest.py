@@ -61,6 +61,8 @@ REQUIRED_FAILURES = [
     # T-6061: the broken hub pages the non-public Endpoint to everyone.
     "test_a_default_endpoint_page_is_small_and_its_cursor_reaches_every_endpoint",
     "test_search_finds_no_non_public_endpoint",
+    # T-6414: the broken hub lists the group's Endpoint to a member of the Organization alone.
+    "test_a_member_and_an_analyst_each_read_their_own_endpoints",
 ]
 
 
@@ -92,6 +94,11 @@ def make_env(port: int) -> dict[str, str]:
             "OTHER_CONNECTOR_URL": f"http://127.0.0.1:{port}/c/cstubbbbbbbbbbbbbbbbbbbbbb",
             "CONNECTOR_TOKEN": "connector-a-token",
             "CONNECTOR_UNLISTED_CLIENT_TOKEN": "connector-a-claude-code-token",
+            # ADR-N-067 2.4 (T-6414): a member and an analyst of one Organization on the hub.
+            "MEMBER_HUB_TOKEN": "member-hub-token",
+            "ANALYST_HUB_TOKEN": "analyst-hub-token",
+            "ORG_SHARED_ENDPOINT": "org-shared",
+            "TEAM_SHARED_ENDPOINT": "team-shared",
         }
     )
     return env
