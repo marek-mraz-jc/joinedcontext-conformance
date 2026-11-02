@@ -1,0 +1,50 @@
+# Owner walk T-6377, final tail: run after T-6377-final.yaml steps 1-11 (spaces, models, DataSource, secret
+# proposal, Policy grant, App are live). A Pipeline needs its target Endpoint first and writes only through
+# an Endpoint without policyRef, so the intake Endpoint comes first (objects t6377f-*, project t6025-full).
+id: T-6377-final2
+title: Owner walk, final tail
+project: t6025-full
+steps:
+  - says: >-
+      In project {project}, create a private Endpoint t6377f-intake over space t6377f-walk that a
+      Pipeline can write BikeHireDockingStation to, with no policyRef (a Pipeline's write Policy binds
+      only such an Endpoint). Read the Endpoint schema first, plan until it passes, open the change request.
+    tools: [jc_schema_get, jc_change_plan, jc_change_apply]
+    answer: chg-
+  - says: >-
+      The Endpoint is merged. Write the Pipeline t6377f-stations in space t6377f-walk from the DataSource
+      t6377f-gbfs into the Endpoint t6377f-intake: one BikeHireDockingStation per station, id
+      urn:ngsi-ld:BikeHireDockingStation:<station_id>, name, location from lon/lat, capacity when
+      present, every hour. Validate the mapping on a sample, test the pipeline without writing, then
+      plan until it passes and open the change request.
+    tools: [jc_pipeline_try_mapping, jc_pipeline_test, jc_change_plan, jc_change_apply]
+    answer: chg-
+  - says: >-
+      The pipeline t6377f-stations is merged now. Run it once, wait for the run to end, and show me
+      the last run and the end of its log: how many entities did it write?
+    tools: [jc_pipeline_run]
+    answer: (run|Run)
+  - says: >-
+      Create an Endpoint t6377f-bike-stations over space t6377f-walk that serves BikeHireDockingStation
+      and BikeHireDockingStationStatus: the public reads, and I may also write; my Keycloak user id is
+      aa85b828-7450-40ea-b6c5-38b462a69ba1. Title "Bratislava bike stations (T-6377 final)". Publish it to the project's open
+      data catalogue; if the project lacks what publishing needs, say exactly what is missing and keep the
+      rest. Plan it until it passes and open the change request.
+    tools: [jc_schema_get, jc_change_plan, jc_change_apply]
+    answer: chg-
+  - says: >-
+      List the open changes of {project} whose names start with t6377 and tell me, per change, what it
+      does and whether it is ready. Then approve one of them. If I cannot approve from here, say so
+      plainly and tell me where I do it.
+    tools: [jc_change_list]
+    answer: (approv)
+  - says: >-
+      Through the Endpoint t6377f-bike-stations, read three BikeHireDockingStation entities and their
+      capacity. If it holds none yet, say so.
+    tools: [jc_data_query]
+    answer: (BikeHireDockingStation|no entit|none|empty)
+  - says: >-
+      Through the same Endpoint, create one BikeHireDockingStation urn:ngsi-ld:BikeHireDockingStation:t6377f-1
+      named "T-6377 test station" with capacity 12, then read it back and show me its capacity.
+    tools: [jc_data_write, jc_data_query]
+    answer: "12"
