@@ -94,10 +94,10 @@
      "sources": ["https://www.bbsk.sk/cestovne-poriadky"],
      "must": [["idsbbsk"]]},
     {"id": "data-01", "kind": "data", "q": "Aká je teraz koncentrácia PM10 v Banskej Bystrici?",
-     "sources": ["https://data.dev.joinedcontext.com/dataset/public-air", "https://data.dev.joinedcontext.com/dataset/banskabystrica-verejne"],
+     "sources": ["https://opendata.dev.joinedcontext.com/dataset/public-air", "https://opendata.dev.joinedcontext.com/dataset/banskabystrica-verejne"],
      "must": [["PM10", "PM 10"]]},
     {"id": "data-02", "kind": "data", "q": "Ktoré nemocnice sú v Banskobystrickom kraji podľa otvorených údajov kraja?",
-     "sources": ["https://data.dev.joinedcontext.com/dataset/bbsk-registre"],
+     "sources": ["https://opendata.dev.joinedcontext.com/dataset/bbsk-registre"],
      "must": []}
   ],
   "unknown": [

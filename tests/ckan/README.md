@@ -77,7 +77,7 @@ with no time attribute is current while it equals the broker. Then every other r
 dataset page carries its title, description, licence, organisation, tags, publisher and frequency.
 
 ```bash
-python3 tests/ckan/completeness.py https://data.dev.joinedcontext.com helsinki-bikes bbsk-registre \
+python3 tests/ckan/completeness.py https://opendata.dev.joinedcontext.com helsinki-bikes bbsk-registre \
   --max-age helsinki-bikes=1 --max-age bbsk-registre=336 --max-age banskabystrica-verejne:Event=48
 ```
 
@@ -101,7 +101,7 @@ against dev (`PORTAL_TOKEN` from `tests/dev.env.sh`, read only; `JC_WRITER_TOKEN
 
 ```bash
 python3 tests/ckan/surfaces.py --portal https://portal.dev.joinedcontext.com \
-  --ckan https://data.dev.joinedcontext.com helsinki banskabystrica
+  --ckan https://opendata.dev.joinedcontext.com helsinki banskabystrica
 ```
 
 `test_surfaces.py` holds the comparison offline on a recorded `package_show`

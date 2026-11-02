@@ -9,7 +9,7 @@ many rows: NGSI-LD from `NGSILD-Results-Count`, GeoJSON features, OData `value`,
 lines; a base URL ending in `/` by a JSON landing page), the WebSocket
 by an `x-subscribe` answered 201, MCP by `initialize`.
 
-    python3 tests/ckan/standards_sweep.py --ckan https://data.dev.joinedcontext.com bbsk banskabystrica
+    python3 tests/ckan/standards_sweep.py --ckan https://opendata.dev.joinedcontext.com bbsk banskabystrica
 
 prints one Markdown table row per distribution and a tally, and exits 1 when any is neither OK
 nor RESTRICTED (a 401: the sweep reads anonymously, so a closed distribution answers 401 by

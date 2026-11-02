@@ -15,7 +15,7 @@ For every DataStore resource of one CKAN dataset (one table per entity type, nam
 Then every other resource answers (200, or 401 for a restricted Endpoint, EP-64) with content of
 its kind and a name of its own, and the dataset page carries what a reader needs. Only reads.
 
-    python3 tests/ckan/completeness.py https://data.dev.joinedcontext.com helsinki-bikes [...]
+    python3 tests/ckan/completeness.py https://opendata.dev.joinedcontext.com helsinki-bikes [...]
 
 prints one table per dataset and exits 1 when any check fails.
 """

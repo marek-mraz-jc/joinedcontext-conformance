@@ -1,5 +1,5 @@
 /**
- * T-4161 — UX photo audit 5/7: the public open data portal (CKAN, data.dev.joinedcontext.com) as
+ * T-4161 — UX photo audit 5/7: the public open data portal (CKAN, opendata.dev.joinedcontext.com) as
  * an anonymous visitor. The home page; dataset search with no query, a query, one value of each
  * facet and no results; up to twelve datasets, each with its page and the preview of the resource
  * a visitor would open first, and that resource's download answering; the organizations, the
@@ -18,7 +18,7 @@ import type { APIRequestContext, Page } from '@playwright/test';
 import { shot, writeIndex } from './shoot.js';
 import type { Shot } from './shoot.js';
 
-const PORTAL = (process.env.DATA_PORTAL_URL || 'https://data.dev.joinedcontext.com').replace(/\/$/, '');
+const PORTAL = (process.env.DATA_PORTAL_URL || 'https://opendata.dev.joinedcontext.com').replace(/\/$/, '');
 const WIDTHS = [375, 768, 1440];
 const AREA = 'data-portal';
 const DIR = process.env.SHOTS_DIR;

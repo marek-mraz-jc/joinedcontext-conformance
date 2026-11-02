@@ -15,7 +15,7 @@ of the catalogue (or the ones named), anonymously and with no model call:
 
 A dataset whose endpoint is restricted must expose no MCP resource that answers anonymously.
 
-    python3 tests/ckan/mcp_check.py https://data.dev.joinedcontext.com [dataset ...]
+    python3 tests/ckan/mcp_check.py https://opendata.dev.joinedcontext.com [dataset ...]
 
 prints a table per dataset and exits 1 on any FAIL. It sends no token, so none is printed.
 """
