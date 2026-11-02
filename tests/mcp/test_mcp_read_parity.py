@@ -595,13 +595,20 @@ def test_a_cross_space_id_is_the_same_miss_on_both_doors(
     )
 
 
-def test_the_endpoint_list_pages_to_the_same_endpoints_as_one_wide_page(http_session: requests.Session):
+@pytest.mark.parametrize("token_env", [None, "MEMBER_HUB_TOKEN", "ANALYST_HUB_TOKEN"])
+def test_the_endpoint_list_pages_to_the_same_endpoints_as_one_wide_page(
+    http_session: requests.Session, token_env: str | None
+):
     """T-6061: paging neither widens nor narrows the hub's list. The default pages, followed by
-    nextCursor, name the Endpoints one `limit: 100` page names, in the same order."""
+    nextCursor, name the Endpoints one `limit: 100` page names, in the same order; for a caller
+    without a token and for a signed-in member and analyst alike (ADR-N-067 2.4, T-6414)."""
     url = os.getenv("PUBLIC_MCP_URL", "").strip().rstrip("/")
     if not url:
         pytest.skip("PUBLIC_MCP_URL is not set, see tests/mcp/README.md")
-    client = McpClient(url, None, http_session)
+    token = os.getenv(token_env, "").strip() if token_env else None
+    if token_env and not token:
+        pytest.skip(f"{token_env} is not set, see tests/mcp/README.md")
+    client = McpClient(url, token, http_session)
     client.initialize()
 
     def rows(arguments: dict) -> tuple[list[str], dict]:

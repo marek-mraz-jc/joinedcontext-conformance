@@ -64,6 +64,10 @@ MCP_URL=https://host/cs/ovzdusie/mcp jc-conformance mcp
 | `PUBLIC_MCP_URL` | The public connector, the gateway hub `https://api.{domain}/api/mcp` read without a token (T-6026) |
 | `NONPUBLIC_ENDPOINT` | The slug of an Endpoint a caller without a token may not read; with `PUBLIC_MCP_URL` the non-public probes of `test_mcp_anonymous_read_only.py` ask the hub for it by slug, by title and through `search` (T-6026) |
 | `NONPUBLIC_ENDPOINT_TITLE` | Its English title, which no anonymous answer may carry |
+| `MEMBER_HUB_TOKEN` | A hub token (`mcp-hub` client, scope `endpoint:*`) of `demo.orgmember`, a member of the Organization in no project (ADR-N-067 2.4, T-6414) |
+| `ANALYST_HUB_TOKEN` | The same for `demo.analyst`, a member also in the group `traffic-analysts` |
+| `ORG_SHARED_ENDPOINT` | The slug of the Endpoint dev shares with the whole Organization: the member and the analyst list it, a caller without a token does not |
+| `TEAM_SHARED_ENDPOINT` | The slug of the Endpoint dev shares with `traffic-analysts` alone: only the analyst lists it |
 | `NAMED_MCP_URL` | A named server, `https://host/api/mcp/{project}/{name}`, diffed the same way |
 
 ## Personal connectors against MCP 2026-07-28
