@@ -1,0 +1,28 @@
+# Owner walk T-6377, end of the final calls: the write, a plan-only catalogue check and the cleanup. Same session
+# as T-6377-final3.yaml; evidence final3/step-09..12 are this file's steps 1-4.
+id: T-6377-final4
+title: Owner walk, final calls and cleanup
+project: t6025-full
+steps:
+  - says: >-
+      I accepted the call. Send it again if it has not run, then read the entity back through the
+      Endpoint and show me its capacity.
+    tools: [jc_data_write, jc_data_query]
+    answer: "12"
+  - says: >-
+      Plan only, open no change request: a CkanInstance t6377f-ckan for https://ckan.dev.joinedcontext.com
+      whose API token is a secret an approver brings, plus publishing the Endpoint t6377f-bike-stations
+      to it with publish.ckan. Tell me if the plan passes and what a person must still provide.
+    tools: [jc_change_plan]
+    answer: (secret|token)
+  - says: >-
+      Clean up: propose the removal of everything of mine named t6377-* and t6377f-* in {project}
+      (Apps, Endpoints, Policies, Pipelines, DataSources, then ContextSpaces with their DataModels), in
+      the order the platform needs. Plan each removal and open the change requests. List what you opened.
+    tools: [jc_change_plan, jc_change_apply]
+    answer: chg-
+  - says: >-
+      The first round is merged. Plan the removal of the data models t6377-walk, t6377f-walk and
+      t6377f-parking that are left, and open the change requests. List what you opened.
+    tools: [jc_change_plan, jc_change_apply]
+    answer: chg-
