@@ -328,10 +328,17 @@ def scenarios(ids: list[str] | None, source: Path = SCENARIOS) -> list[dict]:
     return [known[i] for i in ids]
 
 
-def prompt(scenario: dict, project: str) -> str:
-    """What the person types: `says`, then the scenario's `given` facts with `{project}` filled in."""
+def prompt(scenario: dict, project: str, world: dict | None = None) -> str:
+    """What the person types: `says`, then the scenario's `given` facts with `{project}` filled in.
+
+    `world` (live-world.yaml) replaces the catalogue's placeholders with what the live project holds.
+    """
     given = scenario.get("given")
     text = scenario["says"] if not given else f"{scenario['says']}\n\n{given}"
+    world = world or {}
+    for words in (world.get("all", {}), world.get(scenario.get("id"), {})):
+        for old, new in words.items():
+            text = text.replace(old, new)
     return text.replace("{project}", project)
 
 
@@ -517,6 +524,9 @@ def main(argv: list[str]) -> int:
     run_p.add_argument("--model")
     run_p.add_argument("--scenarios", type=Path, default=SCENARIOS)
     run_p.add_argument(
+        "--world", type=Path, help="live-world.yaml: the live project's names"
+    )
+    run_p.add_argument(
         "--project",
         default="t-scn",
         help="the test project `{project}` in a scenario's given text names, e.g. t6025-full",
@@ -577,11 +587,17 @@ def main(argv: list[str]) -> int:
         return 0
     if args.command == "wave":
         return _wave(args)
+    world = (
+        yaml.safe_load(args.world.read_text(encoding="utf-8")) if args.world else None
+    )
     for scenario in scenarios(
         args.ids.split(",") if args.ids else None, args.scenarios
     ):
         transcript = _claude(
-            prompt(scenario, args.project), args.mcp_config, args.max_turns, args.model
+            prompt(scenario, args.project, world),
+            args.mcp_config,
+            args.max_turns,
+            args.model,
         )
         (args.out / f"{scenario['id']}.jsonl").write_text(transcript, encoding="utf-8")
         run = load(args.out / f"{scenario['id']}.jsonl")

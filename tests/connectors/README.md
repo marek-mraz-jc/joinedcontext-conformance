@@ -42,3 +42,20 @@ session, with a check per step (`tools` answered, `called`, `deny`, an `answer` 
 
 The connector allows 60 calls a minute across every session on it: scenario workers sharing one
 connector get 429s when they run at the same time.
+
+## All scenarios through Claude Code and the Portal assistant (T-5962)
+
+`live-world.yaml` maps the catalogue's placeholders ("Endpoint X") to what the live project holds. Both
+lanes read it, so they send the same words.
+
+1. `python3 tests/connectors/claude_code.py run --world tests/connectors/live-world.yaml --mcp-config cfg.json
+   --scenarios <portal>/tests/connector_scenarios/scenarios.yaml --project t6025-full --out DIR` as above.
+2. `python3 tests/connectors/assistant_walk.py --out DIR --world tests/connectors/live-world.yaml
+   --password-file FILE --user EMAIL --scenarios <portal>/tests/connector_scenarios/scenarios.yaml` signs the
+   person in to the Portal and asks each scenario in a fresh conversation of the dock. `<id>.json` keeps the
+   run's events, `<id>-1440.png` and `<id>-400.png` the Portal side. A question gets its first option, up
+   to three times.
+3. Write `DIR/verdicts.yaml`; `python3 tests/connectors/assistant_walk.py table DIR` prints the table.
+
+Run one lane at a time: a change open for an object refuses the next change for it. The project's daily
+assistant budget ended the 2026-11-02 walk after about 70 conversations.

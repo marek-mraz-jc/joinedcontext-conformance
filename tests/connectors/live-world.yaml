@@ -1,0 +1,69 @@
+# What the live walk (T-5962) types instead of a scenario's placeholders: the catalogue says "Endpoint X",
+# dev holds the objects below in project t6025-full. Both lanes (Claude Code, Portal assistant) read this
+# file, so they get the same words. Every key is a plain text replacement, `all` first, then the scenario's own.
+all:
+  Endpoint X: Endpoint t6025-full-counters
+  Endpoint Y: Endpoint t6025-full-counters
+  pipeline P: pipeline counters-load
+  Pipeline P: Pipeline counters-load
+  https://<fixture>/counters.csv: https://raw.githubusercontent.com/plotly/datasets/master/2011_february_us_airport_traffic.csv
+  this source: DataSource counters-csv
+S-02:
+  type Sensor: type BikeCounter
+  last value: count
+S-03:
+  this project: project t6025-full
+S-04:
+  attribute temperature of entity E: attribute count of entity urn:ngsi-ld:BikeCounter:ORD
+S-05:
+  parking places: BikeCounter entities
+S-06:
+  this Endpoint's: Endpoint t6025-full-counters'
+S-07:
+  public Endpoint for air quality: public Endpoint t6025-full-counters
+S-10:
+  to BikeCounter: to BikeCounter in DataModel bike-counter
+S-14:
+  the public Endpoint: the public Endpoint t6025-full-counters
+S-19:
+  these rows: the rows of DataSource counters-csv
+S-20:
+  Create the pipeline: Create a pipeline counters-hourly from DataSource counters-csv
+S-21:
+  The pipeline: Pipeline counters-load
+S-22:
+  the schedule: the schedule of pipeline counters-load
+S-23:
+  the output: the output of pipeline counters-load
+S-24:
+  the pipeline: pipeline counters-load
+S-35:
+  count must: count of BikeCounter in space doprava must
+S-36:
+  daily bike count per counter: daily bike count per counter over BikeCounter of Endpoint t6025-full-counters
+S-38:
+  map of counters: map of counters from Endpoint t6025-full-counters
+S-39:
+  today's events: today's counters
+S-40:
+  air quality widget: Endpoint t6025-full-counters widget
+S-53:
+  yesterday's schedule change: the last schedule change
+  pipeline counters-load: pipeline counters-steps
+  chg-00000035, merged 2026-10-28: chg-00000056, merged today
+# Second pass: names that collide with the seeded world, and persons who exist.
+S-12:
+  context space Doprava: context space Doprava2
+  retention 365 days: retention 365 days of history for entity type BikeCounter
+S-27:
+  user jana: the person T6025 Admin
+S-32:
+  jana: T6025 Admin
+S-43:
+  Pipeline counters-load that reads: Pipeline counters-walk that reads
+S-87:
+  the bike trips source: DataSource trips-csv
+  rider column: airport column
+S-91:
+  from a public URL: from the public CSV https://raw.githubusercontent.com/plotly/datasets/master/2011_february_us_airport_traffic.csv
+  a second group: group t6025-full-readers
