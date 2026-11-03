@@ -631,3 +631,35 @@ def test_the_endpoint_list_pages_to_the_same_endpoints_as_one_wide_page(
         assert paged == wide, (paged, wide)
     else:
         assert paged[:100] == wide and len(paged) == whole["total"], (len(paged), whole["total"])
+
+
+def test_the_open_data_page_is_the_same_in_list_get_and_search(http_session: requests.Session):
+    """T-6569: an Endpoint's open data portal page (`page`) is the one link list_endpoints,
+    get_endpoint and a search hit routing to it give alike; an internal Endpoint has none."""
+    url = os.getenv("PUBLIC_MCP_URL", "").strip().rstrip("/")
+    if not url:
+        pytest.skip("PUBLIC_MCP_URL is not set, see tests/mcp/README.md")
+    client = McpClient(url, None, http_session)
+    client.initialize()
+
+    def structured(tool: str, arguments: dict) -> dict:
+        result = client.tool_call(tool, arguments).get("result") or {}
+        return result.get("structuredContent") or {}
+
+    listed = structured("list_endpoints", {"limit": 100}).get("endpoints") or []
+    pages = {row["slug"]: row["page"] for row in listed if "page" in row}
+    if not pages:
+        pytest.skip("no listed Endpoint publishes to an open data portal")
+    for row in listed:
+        if row.get("access") != "public":
+            assert "page" not in row, row["slug"]
+    for slug, page in list(pages.items())[:5]:
+        assert page.startswith("https://") and "/dataset/" in page, (slug, page)
+        card = structured("get_endpoint", {"endpoint": slug})
+        assert card.get("page") == page, (slug, card.get("page"), page)
+    slug = next(iter(pages))
+    title = next(row["title"] for row in listed if row["slug"] == slug)
+    query = title if isinstance(title, str) else next(iter(title.values()), slug)
+    for hit in structured("search", {"query": query[:200], "limit": 50}).get("hits") or []:
+        if hit["endpoint"] in pages:
+            assert hit.get("page") == pages[hit["endpoint"]], hit
