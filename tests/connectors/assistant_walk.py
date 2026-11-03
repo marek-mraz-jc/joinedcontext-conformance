@@ -128,16 +128,18 @@ def one(
     page.reload(wait_until="load")
     page.wait_for_timeout(1500)
     began = time.time()
-    bubble = page.get_by_role("button", name="Open the assistant")
-    if bubble.count():
-        bubble.first.click()
+    # The shell draws the bubble after its reads answer; a count() right after load misses it.
+    composer = page.get_by_label("Ask the assistant").first
+    bubble = page.get_by_role("button", name="Open the assistant").first
+    bubble.or_(composer).wait_for(timeout=30_000)
+    if bubble.is_visible():
+        bubble.click()
     with page.expect_response(
         lambda r: (
             r.request.method == "POST" and r.url.endswith("/assistant/conversations")
         ),
         timeout=60_000,
     ) as started:
-        composer = page.get_by_label("Ask the assistant").first
         composer.fill(text)
         composer.press("Enter")
     answer = started.value.json()
