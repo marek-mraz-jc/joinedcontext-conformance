@@ -597,7 +597,7 @@ class StubMcpHandler(BaseHTTPRequestHandler):
             return
         if tool_name == "get_endpoint":
             card = hub_row(slug, readable[slug])
-            self._send_json_rpc(req_id, result={"isError": False, "structuredContent": card, "content": [
+            self._send_json_rpc(req_id, result={"isError": False, "structuredContent": {"endpoint": card}, "content": [
                 {"type": "text", "text": f"NGSI-LD Endpoint {slug} ({readable[slug]})"}]})
             return
         elif tool_name == "query_entities":
