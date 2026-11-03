@@ -646,7 +646,14 @@ def test_the_open_data_page_is_the_same_in_list_get_and_search(http_session: req
         result = client.tool_call(tool, arguments).get("result") or {}
         return result.get("structuredContent") or {}
 
-    listed = structured("list_endpoints", {"limit": 100}).get("endpoints") or []
+    listed: list[dict] = []
+    arguments: dict = {"limit": 100}
+    for _ in range(20):
+        page_of = structured("list_endpoints", arguments)
+        listed.extend(page_of.get("endpoints") or [])
+        if "nextCursor" not in page_of:
+            break
+        arguments = {"cursor": page_of["nextCursor"]}
     pages = {row["slug"]: row["page"] for row in listed if "page" in row}
     if not pages:
         pytest.skip("no listed Endpoint publishes to an open data portal")
@@ -655,7 +662,7 @@ def test_the_open_data_page_is_the_same_in_list_get_and_search(http_session: req
             assert "page" not in row, row["slug"]
     for slug, page in list(pages.items())[:5]:
         assert page.startswith("https://") and "/dataset/" in page, (slug, page)
-        card = structured("get_endpoint", {"endpoint": slug})
+        card = structured("get_endpoint", {"endpoint": slug}).get("endpoint") or {}
         assert card.get("page") == page, (slug, card.get("page"), page)
     slug = next(iter(pages))
     title = next(row["title"] for row in listed if row["slug"] == slug)
