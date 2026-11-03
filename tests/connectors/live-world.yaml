@@ -67,3 +67,11 @@ S-87:
 S-91:
   from a public URL: from the public CSV https://raw.githubusercontent.com/plotly/datasets/master/2011_february_us_airport_traffic.csv
   a second group: group t6025-full-readers
+# Third pass (T-6490): fixtures added to t6025-full on 2026-11-03.
+S-25:
+  the sync source: SyncSource regional
+S-26:
+  "https://data.example.sk/arcgis/rest/services/counters/FeatureServer/0 (bike counters: id, name, count, observedAt;": "https://sampleserver6.arcgisonline.com/arcgis/rest/services/Wildfire/FeatureServer/0 (wildfire response points: objectid, description, eventdate, eventtype;"
+  counters-layer: wildfire-layer
+S-33:
+  the open data catalogue: the open data catalogue of CkanInstance open-data
