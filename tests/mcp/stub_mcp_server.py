@@ -123,6 +123,14 @@ HUB_ENDPOINTS = {
     "tr-public": ("Traffic counts", True),
 }
 
+def hub_row(slug: str, title: str) -> dict:
+    """One hub catalogue row: a public Endpoint names its open data portal page (T-6569)."""
+    row = {"slug": slug, "title": title, "access": "public" if HUB_ENDPOINTS[slug][1] else "internal"}
+    if HUB_ENDPOINTS[slug][1]:
+        row["page"] = f"https://data.stub.invalid/dataset/{slug}"
+    return row
+
+
 #: What a signed-in member and analyst read beside the public Endpoints (ADR-N-067 2.4, T-6414):
 #: the member the Organization's shared one, the analyst also its group's. Any other token reads
 #: every Endpoint. Defect (broken mode): both tokens read every Endpoint.
@@ -588,7 +596,10 @@ class StubMcpHandler(BaseHTTPRequestHandler):
                 {"type": "text", "text": f"no Endpoint you may read is called `{slug}`; closest: aq-public (Air quality)"}]})
             return
         if tool_name == "get_endpoint":
-            text = f"NGSI-LD Endpoint {slug} ({readable[slug]})"
+            card = hub_row(slug, readable[slug])
+            self._send_json_rpc(req_id, result={"isError": False, "structuredContent": card, "content": [
+                {"type": "text", "text": f"NGSI-LD Endpoint {slug} ({readable[slug]})"}]})
+            return
         elif tool_name == "query_entities":
             text = json.dumps({"entities": self._sanitized("ovzdusie")})
         elif tool_name == "list_endpoints":
@@ -598,6 +609,10 @@ class StubMcpHandler(BaseHTTPRequestHandler):
             words = str(tool_args.get("query", "")).lower().split()
             rows = [(s, t) for s, t in readable.items() if any(w in t.lower() for w in words)]
             text = "slug | title\n" + "\n".join(f"{s} | {t}" for s, t in rows)
+            hits = [{"endpoint": row.pop("slug"), **row} for row in (hub_row(s, t) for s, t in rows)]
+            self._send_json_rpc(req_id, result={"isError": False, "structuredContent": {"hits": hits},
+                                                "content": [{"type": "text", "text": text}]})
+            return
         self._send_json_rpc(req_id, result={"isError": False, "content": [{"type": "text", "text": text}]})
 
     @staticmethod
@@ -607,7 +622,7 @@ class StubMcpHandler(BaseHTTPRequestHandler):
         start = int(tool_args.get("cursor") or 0)
         limit = int(tool_args.get("limit") or HUB_LIST_PAGE)
         page = rows[start : start + limit]
-        structured = {"endpoints": [{"slug": s, "title": t} for s, t in page], "total": len(rows)}
+        structured = {"endpoints": [hub_row(s, t) for s, t in page], "total": len(rows)}
         text = "slug | title\n" + "".join(f"{s} | {t}\n" for s, t in page) + f"total {len(rows)}"
         if start + limit < len(rows):
             structured["nextCursor"] = str(start + limit)
