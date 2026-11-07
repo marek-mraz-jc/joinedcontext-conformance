@@ -68,6 +68,25 @@ ROWS = [
             "geoproperty": "location",
         },
     ),
+    (
+        "F16",
+        "matchesPattern(id,'bb-')",
+        {"idPattern": "bb-"},
+    ),
+    # F22, F23: `scope` read as a collection, one scope per Entity of the seed
+    ("F23", "scope/all(s: s eq '/SK/BB')", {"scopeQ": "/SK/BB"}),
+    ("F22", "scope/any(s: s eq '/SK/BB')", {"scopeQ": "/SK/BB"}),
+    # metres, as NGSI-LD `near` measures (Antares T-6631)
+    (
+        "F30",
+        "geo.distance(location, geography'SRID=4326;POINT(19.15 48.73)') lt 5000",
+        {
+            "georel": "near;maxDistance==5000",
+            "geometry": "Point",
+            "coordinates": "[19.15,48.73]",
+            "geoproperty": "location",
+        },
+    ),
 ]
 
 BB1, BB2, BA1 = (f"urn:ngsi-ld:AirQualityObserved:{n}" for n in ("bb-1", "bb-2", "ba-1"))
@@ -78,29 +97,36 @@ RESIDUAL = [
     ("F25", "NO2 gt temperature", [BB1, BB2, BA1]),
     ("F25", "temperature ge NO2", []),
     ("F14 F25", "NO2 gt temperature mul 3", [BB2]),
+    # the base members (Antares T-6631): every seed id has 35 characters, and the seed is
+    # written after 2026-01-01
+    ("F17", "length(id) eq 35", [BB1, BB2, BA1]),
+    ("F16 F17", "matchesPattern(id,'^urn.*-1$') and length(id) gt 1", [BB1, BA1]),
+    ("F33", "createdAt gt 2026-01-01T00:00:00Z", [BB1, BB2, BA1]),
+    ("F33", "modifiedAt lt 2026-01-01T00:00:00Z", []),
 ]
 
 # mapped in the design, 501 in the build
 LATER: list[tuple[str, str]] = []
 
 REJECTED = [
+    # `has` takes an enumeration member (URL 5.1.1.1.10) and the model maps no LinkML enum to
+    # an Edm.EnumType (odata-linkml-mapping.md 3.4): no member it could test exists
     ("F13", "NO2 has 1"),
-    ("F16", "matchesPattern(id,'a')"),
-    ("F17", "length(id) gt 1"),
-    # a lambda over `scope` (a base member, no ListProperty): F23 serves ListProperties only
-    ("F23", "scope/all(s: s eq '/SK/BB')"),
-    # geometry literals have no NGSI-LD value type; duration and binary literals parse (T-5905), see MISMATCHED
-    ("F27", "NO2 eq geometry'SRID=0;Point(1 1)'"),
-    ("F30", "geo.distance(location, geography'SRID=4326;POINT(19 48)') lt 1"),
-    ("F33", "createdAt gt 2026-01-01T00:00:00Z"),
+    # a measure has no evaluator (ADR-0028 rule 8): `geo.distance` pushes as `near` only as a
+    # top-level conjunct, never under `or` or `not`
+    ("F30", "geo.distance(location, geography'SRID=4326;POINT(19 48)') lt 1 or NO2 eq 40"),
 ]
 
 
 # F27 literals that parse but cannot meet a number member: a typed literal of another type is 400
-# (OData URL 5.1.1.1.1), never widened to compare as text (Antares T-5905)
+# (OData URL 5.1.1.1.1), never widened to compare as text (Antares T-5905). Each is the right
+# answer, no gap: the seed holds no Edm.Duration or Edm.Binary member, and no NGSI-LD value is
+# planar (a geometry literal meets no member, Antares T-6631)
 MISMATCHED = [
     ("F27", "NO2 eq duration'P1D'"),
     ("F27", "NO2 eq binary'AQID'"),
+    ("F27", "NO2 eq geometry'SRID=0;Point(1 1)'"),
+    ("F27", "geo.intersects(location, geometry'SRID=0;Polygon((0 0,1 0,1 1,0 0))')"),
 ]
 
 
