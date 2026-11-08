@@ -11,11 +11,11 @@ FROM node:22-bookworm-slim@sha256:83f487e0a63425e5b4d146fb5e5be574bcbe1b7b843d3e
 FROM golang:1-bookworm@sha256:972b4110ba0f47539a975c31e52c64765e1ff19f2d74469ae4a595c6676e80a5 AS k6
 ARG K6_VERSION=2.2.0
 # k6 2.2.0 pins google.golang.org/grpc 1.83.0 (CVE-2026-84445, fixed in 1.83.2) and
-# golang.org/x/net 0.58.0 (CVE-2026-78669, fixed in 0.60.0). A throwaway module requiring them
+# golang.org/x/net 0.58.0 (CVE-2026-78669 fixed in 0.60.0, CVE-2026-78661 in 0.62.0; T-6682). A throwaway module requiring them
 # lets minimum version selection build k6 against the fixed modules; drop each extra `go get`
 # the day k6 ships a release that pins it itself.
 ARG GRPC_GO_VERSION=1.83.2
-ARG X_NET_VERSION=0.60.0
+ARG X_NET_VERSION=0.62.0
 ENV CGO_ENABLED=0
 WORKDIR /src
 RUN go mod init k6build \
