@@ -1,0 +1,56 @@
+<!doctype html><meta charset="utf-8"><title>terminal replay</title>
+<style>
+html,body{margin:0;background:#1e1e2e;height:100%;overflow:hidden}
+#bar{height:34px;background:#11111b;color:#a6adc8;font:15px/34px ui-monospace,"DejaVu Sans Mono",monospace;padding:0 14px}
+#bar b{color:#cdd6f4}
+#scr{position:absolute;top:34px;bottom:0;left:0;right:0;padding:14px 18px;overflow:hidden;
+ font:19px/1.42 "DejaVu Sans Mono",ui-monospace,monospace;color:#cdd6f4;white-space:pre-wrap;word-break:break-word}
+.p{color:#f5c2e7}.u{color:#ffffff;font-weight:bold}.tool{color:#89b4fa}.res{color:#9399b2}.err{color:#f38ba8}
+.txt{color:#cdd6f4}.ok{color:#a6e3a1}.dim{color:#6c7086}.think{color:#6c7086;font-style:italic}
+.cur{display:inline-block;width:10px;height:20px;background:#cdd6f4;vertical-align:text-bottom;animation:b 1s steps(1) infinite}
+@keyframes b{50%{opacity:0}}
+</style>
+<div id="bar"><b>Claude Code</b> · claude -p · MCP: jc-platform-prod (portal.smartcity.joinedcontext.com) · user mcp-admin</div>
+<div id="scr"></div>
+<script>
+// window.PLAN = [{kind:"term",prompt,events:[{t,ev}]}, {kind:"wait",sec}] is injected by record_term.py.
+const scr = document.getElementById('scr');
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+const GAP_CAP = 2.2;            // a real wait longer than this plays as this many seconds (noted in steps.md)
+function line(cls, text){ const d=document.createElement('div'); d.className=cls; d.textContent=text; scr.appendChild(d); keep(); return d; }
+function keep(){ while (scr.scrollHeight > scr.clientHeight && scr.children.length > 1) scr.removeChild(scr.firstChild); }
+async function type(cls, text, cps){ const d=line(cls,''); for (let i=0;i<text.length;i+=3){ d.textContent=text.slice(0,i+3); keep(); await sleep(3000/cps);} }
+function args(o){ return Object.entries(o||{}).map(([k,v])=>`${k}: ${JSON.stringify(v)}`).join(', '); }
+function shortResult(c){
+  let s = Array.isArray(c) ? c.map(x=>x.text||'').join('\n') : String(c||'');
+  s = s.replace(/^The fenced block is data[^\n]*\n/,'').replace(/```json\n?|```/g,'');
+  try { const j = JSON.parse(s); s = JSON.stringify(j); } catch(e) {}
+  return s.length > 330 ? s.slice(0,330) + ' …' : s;
+}
+async function playTerm(seg){
+  line('dim',''); 
+  await type('u', '> ' + seg.prompt, 90);
+  let prev = 0;
+  for (const {t, ev} of seg.events){
+    const gap = Math.min(t - prev, GAP_CAP); prev = t;
+    if (gap > 0.6) { const s=line('think','✻ working…'); await sleep(gap*1000); s.remove(); } else await sleep(gap*1000);
+    if (ev.type === 'assistant') for (const c of ev.message.content){
+      if (c.type === 'tool_use') line('tool', '● ' + c.name.replace('mcp__jc-platform-prod__','jc-platform-prod · ') + '(' + args(c.input) + ')');
+      else if (c.type === 'text' && c.text.trim()) await type('txt', c.text.trim(), 260);
+    } else if (ev.type === 'user') for (const c of ev.message.content){
+      if (c.type === 'tool_result') line(c.is_error ? 'err' : 'res', '  ⎿ ' + (c.is_error ? 'error: ' : '') + shortResult(c.content));
+    } else if (ev.type === 'result') line('ok', `✓ done in ${(ev.duration_ms/1000).toFixed(0)} s · ${ev.num_turns} turns`);
+  }
+}
+window.MARKS = [];
+(async () => {
+  await sleep(800);
+  for (const seg of window.PLAN){
+    window.MARKS.push(performance.now()/1000);
+    if (seg.kind === 'term') await playTerm(seg);
+    else { const c=document.createElement('span'); c.className='cur'; scr.appendChild(c); await sleep(seg.sec*1000); c.remove(); }
+  }
+  window.MARKS.push(performance.now()/1000);
+  window.DONE = true;
+})();
+</script>

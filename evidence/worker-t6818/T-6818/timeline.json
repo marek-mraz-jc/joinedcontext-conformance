@@ -1,0 +1,62 @@
+{
+ "segments_s": [
+  0.0,
+  15.299300000190735,
+  37.020100000381476,
+  47.33640000009537,
+  59.41680000019074,
+  70.48349999999999,
+  92.524,
+  102.08040000009537,
+  114.20070000028609
+ ],
+ "captions": [
+  [
+   0,
+   15.3,
+   "1  Claude Code (left) renames one Endpoint title through the platform MCP: read, plan, propose. Right: the public page before."
+  ],
+  [
+   15.3,
+   37.0,
+   "2  A second person (four-eyes rule) opens the Change in the Portal, reads the diff, types the name and approves."
+  ],
+  [
+   37.0,
+   59.4,
+   "3  Claude reads it again: the new title is live. The Portal and the public Endpoint page show it."
+  ],
+  [
+   59.4,
+   92.5,
+   "4  Revert the same way: Claude proposes the old title, the approver approves it, here on a phone."
+  ],
+  [
+   92.5,
+   114.2,
+   "5  Back to \"Helsinki road weather\": jc-prod ends as it started."
+  ]
+ ],
+ "total_s": 114.2,
+ "sheet_times_s": [
+  4.76,
+  14.28,
+  23.79,
+  33.31,
+  42.82,
+  52.34,
+  61.86,
+  71.38,
+  80.89,
+  90.41,
+  99.93,
+  109.44
+ ],
+ "browser_clip_s": {
+  "before": 4.32,
+  "approve8": 21.72,
+  "after8": 12.08,
+  "approve9": 22.04,
+  "after9": 12.12
+ }
+}
