@@ -36,13 +36,22 @@ def norm(src, dst, vf, lead=0.0):
 DESK = "scale=960:1080:flags=lanczos"
 PHONE_IN_MAIN = f"scale=500:1075:flags=lanczos,pad=960:1080:(ow-iw)/2:(oh-ih)/2:color={BG}"
 browser = [("before", "vid/before.webm", DESK), ("approve8", "vid/approve-chg-00000008.webm", DESK),
-           ("after8", "vid/after-chg-00000008.webm", DESK), ("approve9", "vid/approve-chg-00000009-phone.webm", PHONE_IN_MAIN),
+           ("after8", "vid/after-chg-00000008.webm", DESK), ("approve9", "vid/approve-chg-00000009-phone.webm", "select='not(between(t,18.5,19.8))',setpts=N/25/TB," + PHONE_IN_MAIN),
            ("after9", "vid/after-chg-00000009.webm", DESK)]
 bd = {n: norm(src, f"norm/{n}.mp4", vf, 1.5) for n, src, vf in browser}  # 1.5 s: blank page before the first paint
+# approve9 drops 18.5-19.8 s: the page reloads after the merge and shows a blank skeleton for that second
 
 # Terminal track: t1, wait(approve8), t2, wait(after8), t3, wait(approve9), t4, wait(after9).
+CUT = "\n\n`observedRevision`"   # t4's last paragraph, a side remark filed in chyby.md; the video marks the cut
+
+
 def term(name):
     evs = [json.loads(l) for l in open(os.path.join(HERE, name + ".jsonl"))]
+    for e in evs:
+        for c in (e["ev"].get("message") or {}).get("content") or []:
+            if isinstance(c, dict) and c.get("type") == "text" and CUT in c["text"]:
+                c["text"] = c["text"].split(CUT)[0]
+                e["ev"]["message"]["content"].append({"type": "cut", "text": "[cut: one side remark on a revision field; full text in steps.md]"})
     return {"kind": "term", "prompt": open(os.path.join(HERE, name + ".prompt")).read().strip(), "events": evs}
 plan = [term("t1"), {"kind": "wait", "sec": bd["approve8"]}, term("t2"), {"kind": "wait", "sec": bd["after8"]},
         term("t3"), {"kind": "wait", "sec": bd["approve9"]}, term("t4"), {"kind": "wait", "sec": bd["after9"]}]
@@ -77,9 +86,10 @@ ff(*inputs, "-filter_complex", ";".join(filt), "-map", "[br]", "-c:v", "libx264"
 # Captions: one per story step, at the bottom across both halves.
 caps = [(0, seg[1], "1  Claude Code (left) renames one Endpoint title through the platform MCP: read, plan, propose. Right: the public page before."),
         (seg[1], seg[2], "2  A second person (four-eyes rule) opens the Change in the Portal, reads the diff, types the name and approves."),
-        (seg[2], seg[4], "3  Claude reads it again: the new title is live. The Portal and the public Endpoint page show it."),
-        (seg[4], seg[6], "4  Revert the same way: Claude proposes the old title, the approver approves it, here on a phone."),
-        (seg[6], seg[8], "5  Back to \"Helsinki road weather\": jc-prod ends as it started.")]
+        (seg[2], seg[4], "3  Claude reads it again: the new title is live, first in the Portal, then on the public Endpoint page."),
+        (seg[4], seg[5], "4  Revert the same way: Claude proposes the old title through the MCP."),
+        (seg[5], seg[6], "5  On a phone, the approver opens the revert, types the name and approves it."),
+        (seg[6], seg[8], "6  Back to \"Helsinki road weather\": jc-prod ends as it started.")]
 draw = []
 for i, (a, z, text) in enumerate(caps):
     open(os.path.join(HERE, f"cap{i}.txt"), "w").write(text)
@@ -88,20 +98,29 @@ for i, (a, z, text) in enumerate(caps):
 open(os.path.join(HERE, "note.txt"), "w").write("Real run on jc-prod, 2026-11-12. Terminal waits over 2.2 s are shortened; browser clips play at 1x.")
 draw.append(f"drawtext=fontfile={FONT}:textfile=note.txt:fontsize=18:fontcolor=white@0.7:x=w-text_w-16:y=h-28")
 ff("-i", "norm/terminal.mp4", "-i", "norm/browser.mp4", "-filter_complex",
-   f"[0:v][1:v]hstack=inputs=2:shortest=1,scale=1760:990:flags=lanczos,pad=1920:1080:80:0:color={BG}," + ",".join(draw) + "[v]", "-map", "[v]", "-c:v", "libx264", "-preset", "slow",
+   f"[0:v]scale=880:990:flags=lanczos,pad=1040:990:80:0:color={BG}[t];[1:v]scale=880:990:flags=lanczos[b];"   # terminal ground fills the margin
+   f"[t][b]hstack=inputs=2:shortest=1,pad=1920:1080:0:0:color={BG}," + ",".join(draw) + "[v]", "-map", "[v]", "-c:v", "libx264", "-preset", "slow",
    "-crf", "20", "-pix_fmt", "yuv420p", "-movflags", "+faststart", "/w/mcp-settings.mp4")
 
-# Phone cut: the browser half as a phone shows it (before, new title, revert approval, old title).
-phone = [("before-phone", "1  Before: public page"), ("after-chg-00000008-phone", "2  Approved: new title"),
-         ("approve-chg-00000009-phone", "3  Revert: approver approves"), ("after-chg-00000009-phone", "4  Reverted: old title")]
-inputs, filt = [], []
-for i, (n, text) in enumerate(phone):
+# Phone cut: the browser half as a phone shows it. (clip, [(from, to)] in s after the 1.5 s lead, caption);
+# trimmed to loaded frames: after8 shows "Loading…" until 3 s, approve9 enables Approve at 11 s (held 1.5 s) and shows Merged from 20 s.
+phone = [("before-phone", [(0, None)], "1  Before: public page"),
+         ("after-chg-00000008-phone", [(3.0, None)], "2  Approved: new title"),
+         ("approve-chg-00000009-phone", [(9.0, 11.5, 1.5), (11.5, 14.5), (19.8, None)], "3  Revert: approver approves"),
+         ("after-chg-00000009-phone", [(0, None)], "4  Reverted: old title")]
+inputs, filt, parts = [], [], []
+for i, (n, cuts, text) in enumerate(phone):
     norm(f"vid/{n}.webm", f"norm/{n}.mp4", "scale=400:860", 1.5)
     open(os.path.join(HERE, f"pcap{i}.txt"), "w").write(text)
     inputs += ["-i", f"norm/{n}.mp4"]
-    filt.append(f"[{i}:v]drawtext=fontfile={FONT}:textfile=pcap{i}.txt:fontsize=17:fontcolor=white:box=1:boxcolor=black@0.78:"
-                f"boxborderw=8:x=(w-text_w)/2:y=h-text_h-18,setpts=PTS-STARTPTS[p{i}]")
-filt.append("".join(f"[p{i}]" for i in range(len(phone))) + f"concat=n={len(phone)}:v=1:a=0[v]")
+    filt.append(f"[{i}:v]split={len(cuts)}" + "".join(f"[s{i}_{k}]" for k in range(len(cuts))))
+    for k, (a, z, *hold) in enumerate(cuts):
+        rng = f"start={a}" + (f":end={z}" if z else "")
+        hold = f",tpad=stop_mode=clone:stop_duration={hold[0]}" if hold else ""   # holds the enabled Approve before the click
+        filt.append(f"[s{i}_{k}]trim={rng},setpts=PTS-STARTPTS{hold},pad=400:920:0:0:color={BG},"
+                    f"drawtext=fontfile={FONT}:textfile=pcap{i}.txt:fontsize=19:fontcolor=white:x=(w-text_w)/2:y=860+(60-text_h)/2[p{i}_{k}]")
+        parts.append(f"[p{i}_{k}]")
+filt.append("".join(parts) + f"concat=n={len(parts)}:v=1:a=0[v]")
 ff(*inputs, "-filter_complex", ";".join(filt), "-map", "[v]", "-c:v", "libx264", "-crf", "20", "-pix_fmt", "yuv420p",
    "-movflags", "+faststart", "/w/mcp-settings-phone.mp4")
 

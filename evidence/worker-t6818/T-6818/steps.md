@@ -6,10 +6,10 @@ https://api.smartcity.joinedcontext.com/api/endpoint/6wrymzu5x2uwjo2xqei66ppw53m
 
 ## Files
 
-- Videos stay on the shared mount (/workspace/evidence/T-6818/, 15 MB + 1 MB): `mcp-settings.mp4`: 1920x1080 H.264, 114.2 s. Left: terminal replay of the real `claude -p` stream-json
+- `mcp-settings.mp4`: 1920x1080 H.264, 112.0 s. Left: terminal replay of the real `claude -p` stream-json
   transcripts (`work/t1..t4.jsonl`, prompts `work/t?.prompt`). Gaps over 2.2 s between events play as 2.2 s (marked "working…");
   every line is from the run. Right: the Playwright browser clips at 1x (`work/vid/*.webm`), held on their last frame while the terminal plays.
-- `mcp-settings-phone.mp4`: 400x860, the browser half at a 400 px phone viewport. It shows the before page, the new title, the revert
+- `mcp-settings-phone.mp4`: 400x920 (400x860 viewport plus a 60 px caption strip), 32.8 s, the browser half at a 400 px phone viewport. It shows the before page, the new title, the revert
   approval, then the old title. Decided (worker-t6818, owner may override): the first approval ran at desktop width only and the revert
   approval ran at phone width, because one Change can be approved only once. The main video shows the phone approval centred in its right half.
 - `contact-sheet.png`: 12 frames, evenly spaced.
@@ -21,11 +21,22 @@ https://api.smartcity.joinedcontext.com/api/endpoint/6wrymzu5x2uwjo2xqei66ppw53m
 
 | from | to | caption |
 |---|---|---|
-| 0.0 s | 15.3 s | 1  Claude Code (left) renames one Endpoint title through the platform MCP: read, plan, propose. Right: the public page before. |
-| 15.3 s | 37.0 s | 2  A second person (four-eyes rule) opens the Change in the Portal, reads the diff, types the name and approves. |
-| 37.0 s | 59.4 s | 3  Claude reads it again: the new title is live. The Portal and the public Endpoint page show it. |
-| 59.4 s | 92.5 s | 4  Revert the same way: Claude proposes the old title, the approver approves it, here on a phone. |
-| 92.5 s | 114.2 s | 5  Back to "Helsinki road weather": jc-prod ends as it started. |
+| 0 s | 15.5 s | 1  Claude Code (left) renames one Endpoint title through the platform MCP: read, plan, propose. Right: the public page before. |
+| 15.5 s | 37.3 s | 2  A second person (four-eyes rule) opens the Change in the Portal, reads the diff, types the name and approves. |
+| 37.3 s | 59.7 s | 3  Claude reads it again: the new title is live, first in the Portal, then on the public Endpoint page. |
+| 59.7 s | 70.8 s | 4  Revert the same way: Claude proposes the old title through the MCP. |
+| 70.8 s | 91.5 s | 5  On a phone, the approver opens the revert, types the name and approves it. |
+| 91.5 s | 112.0 s | 6  Back to "Helsinki road weather": jc-prod ends as it started. |
+
+Recut 2026-11-12 (integrator-2 review): t4's last paragraph is cut in the video and marked on screen
+"[cut: one side remark on a revision field; full text in steps.md]". The full text, from work/t4.jsonl:
+"`observedRevision` still shows `711c1e2…`, the same value as after chg-00000008. That is odd, since a new merge should move it.
+The title itself has changed, so I expect the revision field is just lagging behind the merge. I haven't confirmed that.
+You can check the revision in the Portal if you care about it." The finding sits in chyby.md.
+In the main video the revert approval drops 18.5-19.8 s of its clip, a blank skeleton while the page reloads after the merge.
+The terminal pane now fills the left margin so the browser pane sits flush right. Caption 4 is split so "on a phone" starts when the phone clip starts. Phone cut: every caption has its own strip; the
+"after" clip starts at 3 s (past "Loading…"); the revert approval keeps 9.0-14.5 s (name typed, Approve enabled and
+clicked, "Change approved"; the frame with Approve enabled is held 1.5 s so the click reads) and 19.8 s to the end (phase Merged).
 
 ## MCP calls (Claude Code 2.1.303, model sonnet, user mcp-admin)
 
@@ -125,13 +136,20 @@ binding lapses by itself at 18:00Z." Local copies are gone: the browser state an
   token, cookie, OTP or session id.
 - Touched: only `metadata.title.en` of helsinki/helsinki-weather, through two red-lane Changes that a second person approved. It is reverted.
 
-## UI judge (Claude subagent, sonnet, contact sheet + frames 10/30/80 s + phone 20 s)
+## UI judge, recut (separate Claude subagents, sonnet; frames main 8/45/75/112 s, phone 2/7/13/14.5/15.5/17/20/24/29/33 s, contact sheet)
 
-| criterion | first read | after fix |
-|---|---|---|
-| terminal readability at 1080p | 4 | 4 |
-| layout | 3 (captions over content, footer overlap) | 4: captions in their own 90 px strip, panes scaled to 1760x990 (my re-read of the 30 s frame) |
-| story | 4 | 4: plainer captions ("four-eyes rule" instead of PF-52) |
-| phone cut | 1 (blank frame at 20 s, clipped caption) | 4: 1.5 s Playwright blank lead trimmed from every clip, short captions, no blank frame at 5 s steps (my re-read) |
+| criterion | integrator-2's judge (before recut) | judge 1 | judge 2 | judge 3 (final) |
+|---|---|---|---|---|
+| terminal readability at 1080p | 4 | 4 | 4 | 4 |
+| layout | 4 | 4 | 3 (band right of the browser pane) | 3 (phone-width pane in step 5 leaves dark space) |
+| story | 4 | 4 ("odd" ending fixed) | 3 (caption 3 named the public page early; blank skeleton in step 5) | 4 |
+| phone cut | 3 | 3 (enabled Approve not seen at 3 s sampling) | 4 | 4 |
+
+Fixes between judges: judge 1 -> enabled Approve frame held 1.5 s; judge 2 -> panes flush (terminal fills the margin), skeleton second cut,
+captions 3 and 5 reworded. Secrets: every judge found no password, token, cookie, OTP or session id.
+Decided (worker-t6818, owner may override): layout 3 from judge 3 stays. Its medium is the phone-width pane in step 5, which the task asks for
+(the revert approval on a 400 px phone viewport); its other claim, a terminal cut off on the left, is the 80 px gutter. Options: scale the phone
+page wider (no longer a phone view) or leave it. The on-screen "[cut: …]" marker also stays (judge 3: medium), because the task forbids
+faking output and a silent cut would edit Claude's answer unmarked.
 
 Not fixed (low): the approver's author box shows the service address mcp-admin@smartcity.joinedcontext.com. This is a platform service account, not a person.

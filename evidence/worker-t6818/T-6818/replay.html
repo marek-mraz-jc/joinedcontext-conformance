@@ -37,6 +37,7 @@ async function playTerm(seg){
     if (ev.type === 'assistant') for (const c of ev.message.content){
       if (c.type === 'tool_use') line('tool', '● ' + c.name.replace('mcp__jc-platform-prod__','jc-platform-prod · ') + '(' + args(c.input) + ')');
       else if (c.type === 'text' && c.text.trim()) await type('txt', c.text.trim(), 260);
+      else if (c.type === 'cut') line('dim', c.text);
     } else if (ev.type === 'user') for (const c of ev.message.content){
       if (c.type === 'tool_result') line(c.is_error ? 'err' : 'res', '  ⎿ ' + (c.is_error ? 'error: ' : '') + shortResult(c.content));
     } else if (ev.type === 'result') line('ok', `✓ done in ${(ev.duration_ms/1000).toFixed(0)} s · ${ev.num_turns} turns`);
