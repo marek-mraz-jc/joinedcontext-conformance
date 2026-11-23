@@ -1,3 +1,4 @@
-# Public prod Endpoints the nightly run tests (T-4877); both serve OGC, OData and STA.
-4ysiqy53qik5qyvawwaj7wgylpt4uoxa
-6b4yqhzqieutqcoeew5rnxrx5udqeert
+# Public jc-prod Endpoints the nightly run tests (T-4877), from opendata.smartcity's CKAN since the jc-prod move:
+# CadastralParcel (bbsk) and PointOfInterest (hel); both serve OGC Features and OData.
+c223begxsfspzmdaq5ij4aayw6vyucjl
+zq6avaaqv3d7ma2avz7rvkwtxelaxkc4
