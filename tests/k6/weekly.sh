@@ -56,7 +56,7 @@ loadtest_client() {
     rm -f /tmp/kcadm-loadtest.config
   ' "${JC_KEYCLOAK_LOCAL_URL:-http://localhost:8080}" "$JC_KEYCLOAK_REALM" "$client" "$1"
 }
-# shellcheck disable=SC2317 # called from the EXIT trap
+# shellcheck disable=SC2317,SC2329 # called from the EXIT trap (0.10 says SC2317, 0.11+ SC2329)
 loadtest_off() {
   [ -z "$token_file" ] || rm -f "$token_file"
   [ -z "$client" ] && return 0
