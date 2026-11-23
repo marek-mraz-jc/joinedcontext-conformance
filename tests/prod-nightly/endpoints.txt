@@ -1,4 +1,4 @@
 # Public jc-prod Endpoints the nightly run tests (T-4877), from opendata.smartcity's CKAN since the jc-prod move:
-# CadastralParcel (bbsk) and PointOfInterest (hel); both serve OGC Features and OData.
+# CadastralParcel and PointOfInterest, both in organization hel; both serve OGC Features and OData.
 c223begxsfspzmdaq5ij4aayw6vyucjl
 zq6avaaqv3d7ma2avz7rvkwtxelaxkc4
